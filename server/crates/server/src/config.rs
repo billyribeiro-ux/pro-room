@@ -10,6 +10,9 @@ pub struct Config {
     pub public_api_url: String,
     pub database_url: String,
     pub redis_url: String,
+    /// Directory on local disk where uploaded file bytes are stored. Created on
+    /// startup if missing (env `APP_UPLOADS_DIR`, default `./uploads`).
+    pub uploads_dir: String,
     /// Reserved for cookie integrity / CSRF token signing. Required (and length-
     /// validated) at load so deployments provision it before it is needed.
     #[allow(dead_code)]
@@ -79,6 +82,7 @@ impl Config {
                 .unwrap_or_else(|| "http://localhost:8080".to_owned()),
             database_url: req("DATABASE_URL")?,
             redis_url: opt("REDIS_URL").unwrap_or_else(|| "redis://localhost:6379".to_owned()),
+            uploads_dir: opt("APP_UPLOADS_DIR").unwrap_or_else(|| "./uploads".to_owned()),
             session_secret,
             session_ttl: Duration::from_secs(ttl_hours * 3600),
             livekit: optional_group(&[

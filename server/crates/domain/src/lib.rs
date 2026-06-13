@@ -11,6 +11,6 @@ pub mod permission;
 pub mod role;
 
 pub use authz::{Action, Context, Decision, Resource, Subject};
-pub use ids::{AlertId, MessageId, NoteId, RoomId, SessionId, UserId};
+pub use ids::{AlertId, FileId, MessageId, NoteId, RoomId, SessionId, UserId};
 pub use permission::Permission;
 pub use role::Role;

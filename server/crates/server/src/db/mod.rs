@@ -6,6 +6,7 @@
 
 pub mod alerts;
 pub mod audit;
+pub mod files;
 pub mod identities;
 pub mod magic;
 pub mod members;

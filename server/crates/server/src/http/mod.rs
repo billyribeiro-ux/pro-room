@@ -2,6 +2,7 @@
 
 pub mod alerts;
 pub mod auth;
+pub mod files;
 pub mod messages;
 pub mod notes;
 pub mod rooms;
@@ -24,6 +25,7 @@ pub fn router(state: AppState) -> Router {
         .merge(auth::router())
         .merge(rooms::router())
         .merge(alerts::router())
+        .merge(files::router())
         .merge(messages::router())
         .merge(notes::router())
         .merge(users::router())

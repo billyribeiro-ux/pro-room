@@ -55,3 +55,4 @@ typed_id!(SessionId);
 typed_id!(AlertId);
 typed_id!(MessageId);
 typed_id!(NoteId);
+typed_id!(FileId);

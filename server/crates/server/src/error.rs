@@ -23,6 +23,8 @@ pub enum AppError {
     NotFound,
     #[error("conflict: {0}")]
     Conflict(String),
+    #[error("payload too large: {0}")]
+    PayloadTooLarge(String),
     #[error("too many requests")]
     RateLimited,
     #[error("feature disabled: {0}")]
@@ -44,6 +46,11 @@ impl AppError {
             Self::Forbidden(m) => (StatusCode::FORBIDDEN, "forbidden", (*m).to_owned()),
             Self::NotFound => (StatusCode::NOT_FOUND, "not_found", "not found".into()),
             Self::Conflict(m) => (StatusCode::CONFLICT, "conflict", m.clone()),
+            Self::PayloadTooLarge(m) => (
+                StatusCode::PAYLOAD_TOO_LARGE,
+                "payload_too_large",
+                m.clone(),
+            ),
             Self::RateLimited => (
                 StatusCode::TOO_MANY_REQUESTS,
                 "rate_limited",

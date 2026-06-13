@@ -29,6 +29,10 @@ async fn main() -> anyhow::Result<()> {
     let config = Config::from_env().context("loading configuration")?;
     let bind_addr = config.bind_addr.clone();
 
+    tokio::fs::create_dir_all(&config.uploads_dir)
+        .await
+        .with_context(|| format!("creating uploads dir {}", config.uploads_dir))?;
+
     let db = db::connect(&config.database_url).await?;
     let cache = Cache::connect(&config.redis_url).await?;
 

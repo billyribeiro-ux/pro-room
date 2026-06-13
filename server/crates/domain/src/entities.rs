@@ -1,7 +1,7 @@
 //! Persistent entities. These mirror database rows but carry no persistence
 //! logic themselves (repositories in the `server` crate own the SQL).
 
-use crate::{AlertId, MessageId, NoteId, Role, RoomId, UserId};
+use crate::{AlertId, FileId, MessageId, NoteId, Role, RoomId, UserId};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
@@ -124,6 +124,75 @@ pub struct Message {
     pub channel: String,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
+}
+
+/// The kind of an uploaded file, derived from its content type. Drives how the
+/// frontend groups files into Files / Images / Sounds drawers.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FileCategory {
+    File,
+    Image,
+    Sound,
+}
+
+impl FileCategory {
+    /// Derive the category from a MIME type: `image/*` → image, `audio/*` →
+    /// sound, anything else → file.
+    #[must_use]
+    pub fn from_content_type(content_type: &str) -> Self {
+        if content_type.starts_with("image/") {
+            Self::Image
+        } else if content_type.starts_with("audio/") {
+            Self::Sound
+        } else {
+            Self::File
+        }
+    }
+
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::File => "file",
+            Self::Image => "image",
+            Self::Sound => "sound",
+        }
+    }
+}
+
+impl std::str::FromStr for FileCategory {
+    type Err = ParseError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "file" => Ok(Self::File),
+            "image" => Ok(Self::Image),
+            "sound" => Ok(Self::Sound),
+            other => Err(ParseError(other.to_owned())),
+        }
+    }
+}
+
+/// A file uploaded to a room's drive. Bytes live on local disk under the
+/// configured uploads directory; this is the metadata view, with a computed
+/// `download_url` for clients.
+#[derive(Debug, Clone, Serialize)]
+pub struct File {
+    pub id: FileId,
+    pub room_id: RoomId,
+    pub filename: String,
+    pub content_type: String,
+    pub size_bytes: i64,
+    pub category: FileCategory,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
+    pub download_url: String,
+}
+
+impl File {
+    #[must_use]
+    pub fn download_url(room_id: RoomId, file_id: FileId) -> String {
+        format!("/api/rooms/{room_id}/files/{file_id}/download")
+    }
 }
 
 /// A named, titled rich-text document scoped to a room. The `body` is plain
