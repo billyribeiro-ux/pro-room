@@ -17,6 +17,12 @@
 		ArrowsClockwise,
 		X
 	} from 'phosphor-svelte';
+	import MobileAppInfoModal from './modals/MobileAppInfoModal.svelte';
+	import ConnectivityCheckModal from './modals/ConnectivityCheckModal.svelte';
+	import AlertLogsModal from './modals/AlertLogsModal.svelte';
+	import ChatLogsModal from './modals/ChatLogsModal.svelte';
+	import MutedUsersModal from './modals/MutedUsersModal.svelte';
+	import FollowedUsersModal from './modals/FollowedUsersModal.svelte';
 
 	interface Props {
 		open: boolean;
@@ -24,6 +30,13 @@
 		onClose?: () => void;
 	}
 	let { open, present, onClose }: Props = $props();
+
+	let mobileAppOpen = $state(false);
+	let connectivityOpen = $state(false);
+	let alertLogsOpen = $state(false);
+	let chatLogsOpen = $state(false);
+	let mutedUsersOpen = $state(false);
+	let followedUsersOpen = $state(false);
 
 	function initialOf(name: string): string {
 		return name.trim().charAt(0).toUpperCase() || '?';
@@ -44,11 +57,21 @@
 	</div>
 
 	<nav class="menu">
-		<button class="item" aria-label="Mobile App Info" title="Mobile App Info" disabled>
+		<button
+			class="item"
+			aria-label="Mobile App Info"
+			title="Mobile App Info"
+			onclick={() => (mobileAppOpen = true)}
+		>
 			<DeviceMobile size={16} /><span>Mobile App Info</span>
 		</button>
 
-		<button class="item" aria-label="Connectivity Check" title="Connectivity Check" disabled>
+		<button
+			class="item"
+			aria-label="Connectivity Check"
+			title="Connectivity Check"
+			onclick={() => (connectivityOpen = true)}
+		>
 			<Plug size={16} /><span>Connectivity Check</span>
 		</button>
 
@@ -58,10 +81,20 @@
 
 		<div class="group">
 			<span class="group-head"><Archive size={16} /> Archives</span>
-			<button class="sub-item" aria-label="Alert Logs" title="Alert Logs" disabled>
+			<button
+				class="sub-item"
+				aria-label="Alert Logs"
+				title="Alert Logs"
+				onclick={() => (alertLogsOpen = true)}
+			>
 				<Bell size={14} /><span>Alert Logs</span>
 			</button>
-			<button class="sub-item" aria-label="Chat Logs" title="Chat Logs" disabled>
+			<button
+				class="sub-item"
+				aria-label="Chat Logs"
+				title="Chat Logs"
+				onclick={() => (chatLogsOpen = true)}
+			>
 				<ChatCircle size={14} /><span>Chat Logs</span>
 			</button>
 			<button class="sub-item" aria-label="Transcript History" title="Transcript History" disabled>
@@ -69,11 +102,21 @@
 			</button>
 		</div>
 
-		<button class="item" aria-label="Manage Muted Users" title="Manage Muted Users" disabled>
+		<button
+			class="item"
+			aria-label="Manage Muted Users"
+			title="Manage Muted Users"
+			onclick={() => (mutedUsersOpen = true)}
+		>
 			<SpeakerSlash size={16} /><span>Manage Muted Users</span>
 		</button>
 
-		<button class="item" aria-label="Manage Followed Users" title="Manage Followed Users" disabled>
+		<button
+			class="item"
+			aria-label="Manage Followed Users"
+			title="Manage Followed Users"
+			onclick={() => (followedUsersOpen = true)}
+		>
 			<UserCheck size={16} /><span>Manage Followed Users</span>
 		</button>
 	</nav>
@@ -108,6 +151,13 @@
 		</ul>
 	</div>
 </aside>
+
+<MobileAppInfoModal open={mobileAppOpen} onClose={() => (mobileAppOpen = false)} />
+<ConnectivityCheckModal open={connectivityOpen} onClose={() => (connectivityOpen = false)} />
+<AlertLogsModal open={alertLogsOpen} onClose={() => (alertLogsOpen = false)} />
+<ChatLogsModal open={chatLogsOpen} onClose={() => (chatLogsOpen = false)} />
+<MutedUsersModal open={mutedUsersOpen} onClose={() => (mutedUsersOpen = false)} />
+<FollowedUsersModal open={followedUsersOpen} onClose={() => (followedUsersOpen = false)} />
 
 <style>
 	.sidebar {
