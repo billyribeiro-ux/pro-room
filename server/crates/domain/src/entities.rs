@@ -120,6 +120,8 @@ pub struct Message {
     pub room_id: RoomId,
     pub author_id: UserId,
     pub body: String,
+    /// The chat channel this message belongs to: `"main"` or `"off_topic"`.
+    pub channel: String,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
 }

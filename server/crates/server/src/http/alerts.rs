@@ -4,6 +4,7 @@
 use crate::auth::session::CurrentUser;
 use crate::authorization::RoomContext;
 use crate::db;
+use crate::db::alerts::AlertView;
 use crate::error::{AppError, AppResult};
 use crate::realtime::event::RoomEvent;
 use crate::state::AppState;
@@ -69,7 +70,7 @@ async fn list(
     State(state): State<AppState>,
     CurrentUser(user): CurrentUser,
     Path(id): Path<RoomId>,
-) -> AppResult<Json<Vec<Alert>>> {
+) -> AppResult<Json<Vec<AlertView>>> {
     let ctx = RoomContext::load(&state, &user, id).await?;
     ctx.ensure(&state, Action::ReadAlert).await?;
     Ok(Json(
