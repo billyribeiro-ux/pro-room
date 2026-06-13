@@ -5,17 +5,11 @@
 	import { api, ApiError } from '$lib/api';
 	import { ScreenShareRoom } from '$lib/livekit.svelte';
 	import { RoomSocket } from '$lib/realtime.svelte';
-	import type {
-		Alert,
-		LiveKitToken,
-		Message,
-		PresentUser,
-		RoomDetail,
-		RoomEvent
-	} from '$lib/types';
+	import type { ChatChannel, LiveKitToken, PresentUser, RoomDetail, RoomEvent } from '$lib/types';
 	import ScreenStage from '$lib/components/ScreenStage.svelte';
-	import AlertFeed, { type AlertItem } from '$lib/components/AlertFeed.svelte';
-	import ChatPanel, { type ChatItem } from '$lib/components/ChatPanel.svelte';
+	import { type AlertItem } from '$lib/components/AlertFeed.svelte';
+	import { type ChatItem } from '$lib/components/ChatPanel.svelte';
+	import AlertsChatDock from '$lib/components/AlertsChatDock.svelte';
 	import PresenceBar from '$lib/components/PresenceBar.svelte';
 	import MembersPanel from '$lib/components/MembersPanel.svelte';
 	import { Broadcast, MonitorPlay, StopCircle, Gear, ArrowLeft } from 'phosphor-svelte';
@@ -25,7 +19,11 @@
 
 	let detail = $state<RoomDetail | null>(null);
 	let alerts = $state<AlertItem[]>([]);
-	let messages = $state<ChatItem[]>([]);
+	// Keep both channels' history so switching tabs is instant and incoming
+	// WS messages can be filed into the right channel even when not shown.
+	let mainMessages = $state<ChatItem[]>([]);
+	let offTopicMessages = $state<ChatItem[]>([]);
+	let channel = $state<ChatChannel>('main');
 	let present = $state<PresentUser[]>([]);
 	let error = $state<string | null>(null);
 	let screenDisabled = $state(false);
@@ -35,15 +33,22 @@
 	let socket: RoomSocket | null = null;
 
 	const caps = $derived(detail?.capabilities);
+	const messages = $derived(channel === 'main' ? mainMessages : offTopicMessages);
 
 	function handleEvent(ev: RoomEvent) {
 		switch (ev.type) {
 			case 'alert':
 				alerts = [{ ...ev.alert, author_name: ev.author_name }, ...alerts].slice(0, 100);
 				break;
-			case 'chat':
-				messages = [...messages, { ...ev.message, author_name: ev.author_name }].slice(-100);
+			case 'chat': {
+				const item = { ...ev.message, author_name: ev.author_name };
+				if (ev.message.channel === 'off_topic') {
+					offTopicMessages = [...offTopicMessages, item].slice(-100);
+				} else {
+					mainMessages = [...mainMessages, item].slice(-100);
+				}
 				break;
+			}
 			case 'presence':
 				present = ev.users;
 				break;
@@ -53,12 +58,33 @@
 		}
 	}
 
+	async function loadMessages(ch: ChatChannel) {
+		const m = await api.get<ChatItem[]>(`/api/rooms/${roomId}/messages?channel=${ch}`);
+		const ordered = [...m].reverse();
+		if (ch === 'off_topic') offTopicMessages = ordered;
+		else mainMessages = ordered;
+	}
+
+	let loaded = $state<Record<ChatChannel, boolean>>({ main: false, off_topic: false });
+
+	async function selectChannel(ch: ChatChannel) {
+		channel = ch;
+		if (!loaded[ch]) {
+			loaded = { ...loaded, [ch]: true };
+			try {
+				await loadMessages(ch);
+			} catch (err) {
+				error = err instanceof ApiError ? err.message : 'Failed to load messages';
+			}
+		}
+	}
+
 	async function postAlert(symbol: string, side: string, note: string) {
 		await api.post(`/api/rooms/${roomId}/alerts`, { symbol, side, note: note || null });
 	}
 
 	async function postMessage(body: string) {
-		await api.post(`/api/rooms/${roomId}/messages`, { body });
+		await api.post(`/api/rooms/${roomId}/messages`, { body, channel });
 	}
 
 	async function toggleLive() {
@@ -86,11 +112,12 @@
 		try {
 			detail = await api.get<RoomDetail>(`/api/rooms/${roomId}`);
 			const [a, m] = await Promise.all([
-				api.get<Alert[]>(`/api/rooms/${roomId}/alerts`),
-				api.get<Message[]>(`/api/rooms/${roomId}/messages`)
+				api.get<AlertItem[]>(`/api/rooms/${roomId}/alerts`),
+				api.get<ChatItem[]>(`/api/rooms/${roomId}/messages?channel=main`)
 			]);
 			alerts = a;
-			messages = [...m].reverse();
+			mainMessages = [...m].reverse();
+			loaded = { ...loaded, main: true };
 		} catch (err) {
 			error = err instanceof ApiError ? err.message : 'Failed to load room';
 			return;
@@ -154,13 +181,21 @@
 	{/if}
 
 	<div class="layout">
+		<aside class="side-col">
+			<AlertsChatDock
+				{alerts}
+				{messages}
+				{channel}
+				canPostAlert={caps?.can_post_alert ?? false}
+				canPostMessage={caps?.can_post_message ?? false}
+				onPostAlert={postAlert}
+				onPostMessage={postMessage}
+				onChannel={selectChannel}
+			/>
+		</aside>
 		<div class="stage-col">
 			<ScreenStage publishers={screen.publishers} connected={screen.connected} />
 		</div>
-		<aside class="side-col">
-			<AlertFeed {alerts} canPost={caps?.can_post_alert ?? false} onPost={postAlert} />
-			<ChatPanel {messages} canPost={caps?.can_post_message ?? false} onPost={postMessage} />
-		</aside>
 	</div>
 
 	{#if showMembers && caps?.can_manage_members}
@@ -233,18 +268,17 @@
 	}
 	.layout {
 		display: grid;
-		grid-template-columns: 1fr 360px;
+		grid-template-columns: auto 1fr;
 		gap: 1rem;
 		height: calc(100vh - 170px);
 	}
 	.stage-col {
 		min-height: 0;
+		min-width: 0;
 	}
 	.side-col {
-		display: grid;
-		grid-template-rows: 1fr 1fr;
-		gap: 1rem;
 		min-height: 0;
+		min-width: 0;
 	}
 	.notice {
 		background: color-mix(in srgb, var(--warn) 12%, transparent);

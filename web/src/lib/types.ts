@@ -58,6 +58,8 @@ export interface MemberView {
 	joined_at: string;
 }
 
+export type ChatChannel = 'main' | 'off_topic';
+
 export interface Alert {
 	id: string;
 	room_id: string;
@@ -66,6 +68,7 @@ export interface Alert {
 	side: string;
 	note: string | null;
 	created_at: string;
+	author_name?: string;
 }
 
 export interface Message {
@@ -73,7 +76,9 @@ export interface Message {
 	room_id: string;
 	author_id: string;
 	body: string;
+	channel: ChatChannel;
 	created_at: string;
+	author_name?: string;
 }
 
 export interface PresentUser {
