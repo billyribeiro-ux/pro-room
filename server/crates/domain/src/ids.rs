@@ -56,3 +56,4 @@ typed_id!(AlertId);
 typed_id!(MessageId);
 typed_id!(NoteId);
 typed_id!(FileId);
+typed_id!(QuestionId);

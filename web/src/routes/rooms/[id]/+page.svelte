@@ -12,6 +12,8 @@
 	import AlertsChatDock from '$lib/components/AlertsChatDock.svelte';
 	import PresenceBar from '$lib/components/PresenceBar.svelte';
 	import MembersPanel from '$lib/components/MembersPanel.svelte';
+	import RoomTopNav from '$lib/components/RoomTopNav.svelte';
+	import RoomSidebar from '$lib/components/RoomSidebar.svelte';
 	import { Broadcast, MonitorPlay, StopCircle, Gear, ArrowLeft } from 'phosphor-svelte';
 
 	// Always present for the /rooms/[id] route.
@@ -28,6 +30,7 @@
 	let error = $state<string | null>(null);
 	let screenDisabled = $state(false);
 	let showMembers = $state(false);
+	let sidebarOpen = $state(true);
 
 	const screen = new ScreenShareRoom();
 	let socket: RoomSocket | null = null;
@@ -139,6 +142,12 @@
 		<a href={resolve('/rooms')}><ArrowLeft size={16} /> Rooms</a> <span>{error}</span>
 	</div>
 {:else if detail}
+	<RoomTopNav
+		userCount={present.length}
+		onToggleSidebar={() => (sidebarOpen = !sidebarOpen)}
+		onReload={() => location.reload()}
+	/>
+
 	<header class="room-head">
 		<a class="back" href={resolve('/rooms')}><ArrowLeft size={18} /></a>
 		<h1>{detail.room.name}</h1>
@@ -180,26 +189,30 @@
 		</p>
 	{/if}
 
-	<div class="layout">
-		<aside class="side-col">
-			<AlertsChatDock
-				{alerts}
-				{messages}
-				{channel}
-				canPostAlert={caps?.can_post_alert ?? false}
-				canPostMessage={caps?.can_post_message ?? false}
-				onPostAlert={postAlert}
-				onPostMessage={postMessage}
-				onChannel={selectChannel}
-			/>
-		</aside>
-		<div class="stage-col">
-			<MainStage
-				{roomId}
-				canManage={caps?.can_manage_room ?? false}
-				publishers={screen.publishers}
-				connected={screen.connected}
-			/>
+	<div class="shell-body">
+		<RoomSidebar open={sidebarOpen} {present} onClose={() => (sidebarOpen = false)} />
+
+		<div class="layout">
+			<aside class="side-col">
+				<AlertsChatDock
+					{alerts}
+					{messages}
+					{channel}
+					canPostAlert={caps?.can_post_alert ?? false}
+					canPostMessage={caps?.can_post_message ?? false}
+					onPostAlert={postAlert}
+					onPostMessage={postMessage}
+					onChannel={selectChannel}
+				/>
+			</aside>
+			<div class="stage-col">
+				<MainStage
+					{roomId}
+					canManage={caps?.can_manage_room ?? false}
+					publishers={screen.publishers}
+					connected={screen.connected}
+				/>
+			</div>
 		</div>
 	</div>
 
@@ -216,6 +229,19 @@
 		align-items: center;
 		gap: 0.75rem;
 		margin-bottom: 1rem;
+		/* Clear the 49px fixed top nav. */
+		margin-top: calc(49px + 1rem);
+	}
+	.shell-body {
+		display: flex;
+		align-items: stretch;
+		gap: 1rem;
+		/* The sidebar slides out via negative margin; keep it from spilling. */
+		overflow: hidden;
+	}
+	.shell-body .layout {
+		flex: 1;
+		min-width: 0;
 	}
 	.back {
 		display: inline-flex;

@@ -1,7 +1,7 @@
 //! Persistent entities. These mirror database rows but carry no persistence
 //! logic themselves (repositories in the `server` crate own the SQL).
 
-use crate::{AlertId, FileId, MessageId, NoteId, Role, RoomId, UserId};
+use crate::{AlertId, FileId, MessageId, NoteId, QuestionId, Role, RoomId, UserId};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
@@ -193,6 +193,25 @@ impl File {
     pub fn download_url(room_id: RoomId, file_id: FileId) -> String {
         format!("/api/rooms/{room_id}/files/{file_id}/download")
     }
+}
+
+/// A question asked against a trade alert (the Alert Q&A thread). Members post
+/// `body`; an admin later sets `answer`/`answered_by`/`answered_at` and flips
+/// `resolved`. Scoped to both the alert and its room.
+#[derive(Debug, Clone, Serialize)]
+pub struct Question {
+    pub id: QuestionId,
+    pub alert_id: AlertId,
+    pub room_id: RoomId,
+    pub author_id: UserId,
+    pub body: String,
+    pub answer: Option<String>,
+    pub answered_by: Option<UserId>,
+    pub resolved: bool,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339::option")]
+    pub answered_at: Option<OffsetDateTime>,
 }
 
 /// A named, titled rich-text document scoped to a room. The `body` is plain

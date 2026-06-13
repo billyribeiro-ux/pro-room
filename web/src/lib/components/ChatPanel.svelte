@@ -1,15 +1,25 @@
 <script lang="ts">
 	import type { Message, ChatChannel } from '$lib/types';
+	import { parseMessage, formatStamp, dayKey, formatDayLabel } from '$lib/message';
 	import {
 		ChatCircle,
 		MagnifyingGlass,
 		Gear,
 		CaretDown,
 		Smiley,
-		Image as ImageIcon
+		Image as ImageIcon,
+		DotsThreeVertical,
+		User,
+		ArrowBendUpLeft,
+		Copy
 	} from 'phosphor-svelte';
 
-	export type ChatItem = Message & { author_name?: string };
+	export type ChatItem = Message & {
+		author_name?: string;
+		image_url?: string;
+		/** Per-message username colour; wins over the theme token when set. */
+		author_color?: string;
+	};
 
 	interface Props {
 		messages: ChatItem[];
@@ -22,6 +32,9 @@
 
 	let body = $state('');
 	let sending = $state(false);
+
+	// Which row's ⠇ menu is open (message id), or null when none.
+	let openMenuId = $state<string | null>(null);
 
 	async function submit(e: SubmitEvent) {
 		e.preventDefault();
@@ -36,10 +49,29 @@
 		}
 	}
 
-	function time(iso: string) {
-		return new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+	function initials(name: string | undefined) {
+		const n = (name ?? 'trader').trim();
+		const parts = n.split(/\s+/).filter(Boolean);
+		if (parts.length === 0) return '?';
+		if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+		return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+	}
+
+	function toggleMenu(id: string) {
+		openMenuId = openMenuId === id ? null : id;
+	}
+
+	async function copyBody(m: ChatItem) {
+		try {
+			await navigator.clipboard.writeText(m.body);
+		} catch {
+			// Clipboard can reject (permissions/insecure context); nothing to recover.
+		}
+		openMenuId = null;
 	}
 </script>
+
+<svelte:window onkeydown={(e) => e.key === 'Escape' && (openMenuId = null)} />
 
 <section class="panel">
 	<header>
@@ -71,11 +103,64 @@
 	</header>
 
 	<ul class="messages">
-		{#each messages as m (m.id)}
-			<li>
-				<span class="author">{m.author_name ?? 'trader'}</span>
-				<span class="text">{m.body}</span>
-				<time class="time">{time(m.created_at)}</time>
+		{#each messages as m, i (m.id)}
+			{@const prev = messages[i - 1]}
+			{@const newDay = !prev || dayKey(prev.created_at) !== dayKey(m.created_at)}
+			{#if newDay}
+				<li class="separator-row">
+					<span class="separator">{formatDayLabel(m.created_at)}</span>
+				</li>
+			{/if}
+			<li class="msg-box">
+				<div class="row1">
+					<div class="msg-menu">
+						<button
+							type="button"
+							class="menu-trigger"
+							aria-label="Message options"
+							aria-haspopup="menu"
+							aria-expanded={openMenuId === m.id}
+							onclick={() => toggleMenu(m.id)}
+						>
+							<DotsThreeVertical size={18} weight="bold" />
+						</button>
+						{#if openMenuId === m.id}
+							<div class="menu" role="menu">
+								<button type="button" role="menuitem" onclick={() => (openMenuId = null)}>
+									<User size={14} weight="fill" /> User Info
+								</button>
+								<button type="button" role="menuitem" onclick={() => (openMenuId = null)}>
+									<ArrowBendUpLeft size={14} weight="bold" /> Mention
+								</button>
+								<button type="button" role="menuitem" onclick={() => copyBody(m)}>
+									<Copy size={14} weight="bold" /> Copy
+								</button>
+							</div>
+						{/if}
+					</div>
+
+					{#if m.image_url}
+						<img class="avatar-img" src={m.image_url} alt="" width="36" height="36" />
+					{:else}
+						<span class="avatar" aria-hidden="true">{initials(m.author_name)}</span>
+					{/if}
+
+					<span class="username" style:color={m.author_color ?? 'var(--username-color)'}
+						>{m.author_name ?? 'trader'}</span
+					>
+
+					<time class="created-at">{formatStamp(m.created_at)}</time>
+				</div>
+
+				<p class="body">
+					{#each parseMessage(m.body) as seg, si (si)}{#if seg.kind === 'ticker'}<span
+								class="ticker">{seg.value}</span
+							>{:else if seg.kind === 'link'}<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- external user-supplied URL, not an internal route --><a
+								href={seg.href}
+								target="_blank"
+								rel="noopener noreferrer">{seg.value}</a
+							>{:else}{seg.value}{/if}{/each}
+				</p>
 			</li>
 		{:else}
 			<li class="empty">No messages yet.</li>
@@ -168,40 +253,148 @@
 	.messages {
 		list-style: none;
 		margin: 0;
-		padding: 0.5rem 0.85rem;
+		padding: 0;
 		flex: 1;
 		overflow-y: auto;
-		display: flex;
-		flex-direction: column;
-		gap: 0.45rem;
 		background: #ffffff;
 	}
-	.messages li {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: baseline;
-		gap: 0.4rem;
-		font-size: 0.85rem;
-		line-height: 1.4;
-	}
-	.author {
-		font-weight: 700;
-		color: #2f80c8;
-		flex-shrink: 0;
-	}
-	.text {
-		color: #1f2430;
-		word-break: break-word;
-	}
-	.time {
-		margin-left: auto;
-		color: #8a909c;
-		font-size: 0.72rem;
-		flex-shrink: 0;
-	}
 	.empty {
+		padding: 0.6rem 0.85rem;
 		color: #8a909c;
+		text-align: center;
+		font-size: 0.85rem;
+	}
+
+	.separator-row {
+		display: flex;
 		justify-content: center;
+		padding: 0.5rem 0.85rem 0.3rem;
+	}
+	.separator {
+		display: inline-block;
+		background: var(--ptr-msgs-separator-bg, #45a2ff);
+		color: var(--ptr-msgs-separator-color, #ffffff);
+		font-size: 0.72rem;
+		font-weight: 700;
+		padding: 0.15rem 0.7rem;
+		border-radius: 999px;
+		white-space: nowrap;
+	}
+
+	.msg-box {
+		position: relative;
+		padding: 0.6rem 0.85rem 0.25rem;
+		border-bottom: 1px solid #ececf1;
+		font-size: var(--msg-font-size);
+	}
+	.row1 {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.msg-menu {
+		position: relative;
+		flex-shrink: 0;
+	}
+	.menu-trigger {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		background: transparent;
+		border: none;
+		color: #9aa1b0;
+		cursor: pointer;
+		padding: 0.1rem;
+		border-radius: 6px;
+	}
+	.menu-trigger:hover {
+		background: #eef0f4;
+		color: #5a6273;
+	}
+	.menu {
+		position: absolute;
+		top: 100%;
+		left: 0;
+		z-index: 5;
+		min-width: 9rem;
+		margin-top: 0.2rem;
+		background: #ffffff;
+		border: 1px solid #e3e5ec;
+		border-radius: 8px;
+		box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+		padding: 0.25rem;
+		display: flex;
+		flex-direction: column;
+	}
+	.menu button {
+		display: flex;
+		align-items: center;
+		gap: 0.45rem;
+		background: transparent;
+		border: none;
+		color: #2b3140;
+		font-size: 0.82rem;
+		text-align: left;
+		padding: 0.4rem 0.55rem;
+		border-radius: 6px;
+		cursor: pointer;
+	}
+	.menu button:hover {
+		background: #f0f4fb;
+	}
+
+	.avatar,
+	.avatar-img {
+		width: 36px;
+		height: 36px;
+		flex-shrink: 0;
+	}
+	.avatar {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50%;
+		background: #e7e9ef;
+		color: #5a6273;
+		font-size: 0.78rem;
+		font-weight: 700;
+	}
+	.avatar-img {
+		border-radius: 50%;
+		object-fit: cover;
+	}
+
+	.username {
+		font-weight: 900;
+		color: var(--username-color);
+	}
+
+	.created-at {
+		margin-left: auto;
+		font-weight: 700;
+		font-size: 0.74rem;
+		color: #444b57;
+		white-space: nowrap;
+		flex-shrink: 0;
+	}
+
+	.body {
+		margin: 0.35rem 0 0;
+		color: #1f2430;
+		line-height: 1.45;
+		word-break: break-word;
+		white-space: pre-wrap;
+		font-size: var(--msg-font-size);
+	}
+	.ticker {
+		color: var(--ticker-color);
+		font-weight: 700;
+	}
+	.body a {
+		color: var(--ptr-link-color, #45a2ff);
+		text-decoration: underline;
+		word-break: break-all;
 	}
 	form {
 		display: flex;

@@ -13,6 +13,7 @@ pub mod members;
 pub mod messages;
 pub mod notes;
 pub mod oauth;
+pub mod questions;
 pub mod rooms;
 pub mod sessions;
 pub mod users;

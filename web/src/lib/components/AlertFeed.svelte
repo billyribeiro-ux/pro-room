@@ -1,27 +1,46 @@
 <script lang="ts">
 	import type { Alert } from '$lib/types';
+	import { parseMessage, formatStamp, dayKey, formatDayLabel } from '$lib/message';
 	import {
 		Bell,
 		MagnifyingGlass,
 		Gear,
 		CaretDown,
-		DotsSixVertical,
-		SealCheck
+		DotsThreeVertical,
+		Question,
+		CheckCircle,
+		User,
+		ArrowBendUpLeft,
+		Copy
 	} from 'phosphor-svelte';
 
-	export type AlertItem = Alert & { author_name?: string; image_url?: string };
+	export type AlertItem = Alert & {
+		author_name?: string;
+		image_url?: string;
+		/** Per-message username colour; wins over the theme token when set. */
+		author_color?: string;
+		/** Q&A: number of questions threaded on this alert (0/absent = none). */
+		question_count?: number;
+		/** Q&A: whether the thread has been answered/resolved. */
+		answered?: boolean;
+	};
 
 	interface Props {
 		alerts: AlertItem[];
 		canPost: boolean;
 		onPost: (symbol: string, side: string, note: string) => Promise<void>;
+		/** Optional: open the Q&A thread for an alert (inert when omitted). */
+		onOpenQa?: (alert: AlertItem) => void;
 	}
-	let { alerts, canPost, onPost }: Props = $props();
+	let { alerts, canPost, onPost, onOpenQa }: Props = $props();
 
 	let symbol = $state('');
 	let side = $state('buy');
 	let note = $state('');
 	let posting = $state(false);
+
+	// Which row's ⠇ menu is open (alert id), or null when none.
+	let openMenuId = $state<string | null>(null);
 
 	async function submit(e: SubmitEvent) {
 		e.preventDefault();
@@ -36,16 +55,6 @@
 		}
 	}
 
-	function stamp(iso: string) {
-		return new Date(iso).toLocaleString([], {
-			year: '2-digit',
-			month: 'numeric',
-			day: 'numeric',
-			hour: 'numeric',
-			minute: '2-digit'
-		});
-	}
-
 	function initials(name: string | undefined) {
 		const n = (name ?? 'Trader').trim();
 		const parts = n.split(/\s+/).filter(Boolean);
@@ -54,22 +63,31 @@
 		return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 	}
 
-	const URL_RE = /(https?:\/\/[^\s]+)/g;
+	// Full text body for an alert: "SYMBOL [side] note".
+	function bodyText(a: AlertItem): string {
+		const head = a.side ? `${a.symbol} ${a.side}` : a.symbol;
+		return a.note ? `${head} ${a.note}` : head;
+	}
 
-	// Split a body into plain-text and URL segments for safe auto-linking.
-	function segments(text: string): { url: boolean; value: string }[] {
-		const out: { url: boolean; value: string }[] = [];
-		let last = 0;
-		for (const m of text.matchAll(URL_RE)) {
-			const i = m.index ?? 0;
-			if (i > last) out.push({ url: false, value: text.slice(last, i) });
-			out.push({ url: true, value: m[0] });
-			last = i + m[0].length;
+	function toggleMenu(id: string) {
+		openMenuId = openMenuId === id ? null : id;
+	}
+
+	async function copyBody(a: AlertItem) {
+		try {
+			await navigator.clipboard.writeText(bodyText(a));
+		} catch {
+			// Clipboard can reject (permissions/insecure context); nothing to recover.
 		}
-		if (last < text.length) out.push({ url: false, value: text.slice(last) });
-		return out;
+		openMenuId = null;
+	}
+
+	function openQa(a: AlertItem) {
+		onOpenQa?.(a);
 	}
 </script>
+
+<svelte:window onkeydown={(e) => e.key === 'Escape' && (openMenuId = null)} />
 
 <section class="panel">
 	<header>
@@ -85,24 +103,76 @@
 	</header>
 
 	<ul class="feed">
-		{#each alerts as a (a.id)}
-			<li>
+		{#each alerts as a, i (a.id)}
+			{@const prev = alerts[i - 1]}
+			{@const newDay = !prev || dayKey(prev.created_at) !== dayKey(a.created_at)}
+			{#if newDay}
+				<li class="separator-row">
+					<span class="separator">{formatDayLabel(a.created_at)}</span>
+				</li>
+			{/if}
+			<li class="msg-box">
 				<div class="row1">
-					<span class="grip" aria-hidden="true"><DotsSixVertical size={16} weight="bold" /></span>
-					<span class="avatar" aria-hidden="true">{initials(a.author_name)}</span>
-					<span class="author">{a.author_name ?? 'Trader'}</span>
-					<span class="badge" aria-hidden="true"><SealCheck size={12} weight="fill" /></span>
-					<time class="stamp">{stamp(a.created_at)}</time>
+					<div class="msg-menu">
+						<button
+							type="button"
+							class="menu-trigger"
+							aria-label="Message options"
+							aria-haspopup="menu"
+							aria-expanded={openMenuId === a.id}
+							onclick={() => toggleMenu(a.id)}
+						>
+							<DotsThreeVertical size={18} weight="bold" />
+						</button>
+						{#if openMenuId === a.id}
+							<div class="menu" role="menu">
+								<button type="button" role="menuitem" onclick={() => (openMenuId = null)}>
+									<User size={14} weight="fill" /> User Info
+								</button>
+								<button type="button" role="menuitem" onclick={() => (openMenuId = null)}>
+									<ArrowBendUpLeft size={14} weight="bold" /> Mention
+								</button>
+								<button type="button" role="menuitem" onclick={() => copyBody(a)}>
+									<Copy size={14} weight="bold" /> Copy
+								</button>
+							</div>
+						{/if}
+					</div>
+
+					{#if a.image_url}
+						<img class="avatar-img" src={a.image_url} alt="" width="36" height="36" />
+					{:else}
+						<span class="avatar" aria-hidden="true">{initials(a.author_name)}</span>
+					{/if}
+
+					<span class="username" style:color={a.author_color ?? 'var(--username-color)'}
+						>{a.author_name ?? 'Trader'}</span
+					>
+
+					{#if (a.question_count ?? 0) > 0 || a.answered}
+						<button type="button" class="alert-qa" onclick={() => openQa(a)}>
+							{#if (a.question_count ?? 0) > 0}<span class="qa-count">({a.question_count})</span
+								>{/if}<Question size={11} weight="fill" />{#if a.answered}<CheckCircle
+									size={11}
+									weight="fill"
+									class="qa-check"
+								/>{/if}
+						</button>
+					{/if}
+
+					<time class="created-at">{formatStamp(a.created_at)}</time>
 				</div>
+
 				<p class="body">
-					<span class="alert-meta">{a.symbol}</span>
-					{#if a.side}<span class="alert-side side-{a.side}">{a.side}</span>{/if}
-					{#if a.note}{#each segments(a.note) as seg, i (i)}{#if seg.url}<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- external user-supplied URL, not an internal route --><a
-									href={seg.value}
-									target="_blank"
-									rel="noopener noreferrer">{seg.value}</a
-								>{:else}{seg.value}{/if}{/each}{/if}
+					{#each parseMessage(bodyText(a)) as seg, si (si)}{#if seg.kind === 'ticker'}<span
+								class="ticker">{seg.value}</span
+							>{:else if seg.kind === 'link'}<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- external user-supplied URL, not an internal route --><a
+								href={seg.href}
+								target="_blank"
+								rel="noopener noreferrer">{seg.value}</a
+							>{:else}{seg.value}{/if}{/each}
 				</p>
+
 				{#if a.image_url}
 					<img class="alert-img" src={a.image_url} alt="" />
 				{/if}
@@ -181,106 +251,176 @@
 		overflow-y: auto;
 		background: #ffffff;
 	}
-	.feed li {
-		padding: 0.6rem 0.85rem;
-		border-bottom: 1px solid #ececf1;
-		font-size: 0.85rem;
-	}
 	.empty {
+		padding: 0.6rem 0.85rem;
 		color: #8a909c;
 		text-align: center;
+		font-size: 0.85rem;
+	}
+
+	.separator-row {
+		display: flex;
+		justify-content: center;
+		padding: 0.5rem 0.85rem 0.3rem;
+	}
+	.separator {
+		display: inline-block;
+		background: var(--ptr-msgs-separator-bg, #45a2ff);
+		color: var(--ptr-msgs-separator-color, #ffffff);
+		font-size: 0.72rem;
+		font-weight: 700;
+		padding: 0.15rem 0.7rem;
+		border-radius: 999px;
+		white-space: nowrap;
+	}
+
+	.msg-box {
+		position: relative;
+		padding: 0.6rem 0.85rem 0.25rem;
+		border-bottom: 1px solid #ececf1;
+		font-size: var(--msg-font-size);
 	}
 	.row1 {
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
 	}
-	.grip {
+
+	.msg-menu {
+		position: relative;
+		flex-shrink: 0;
+	}
+	.menu-trigger {
 		display: inline-flex;
-		color: #c4c9d4;
-		cursor: grab;
+		align-items: center;
+		justify-content: center;
+		background: transparent;
+		border: none;
+		color: #9aa1b0;
+		cursor: pointer;
+		padding: 0.1rem;
+		border-radius: 6px;
+	}
+	.menu-trigger:hover {
+		background: #eef0f4;
+		color: #5a6273;
+	}
+	.menu {
+		position: absolute;
+		top: 100%;
+		left: 0;
+		z-index: 5;
+		min-width: 9rem;
+		margin-top: 0.2rem;
+		background: #ffffff;
+		border: 1px solid #e3e5ec;
+		border-radius: 8px;
+		box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+		padding: 0.25rem;
+		display: flex;
+		flex-direction: column;
+	}
+	.menu button {
+		display: flex;
+		align-items: center;
+		gap: 0.45rem;
+		background: transparent;
+		border: none;
+		color: #2b3140;
+		font-size: 0.82rem;
+		text-align: left;
+		padding: 0.4rem 0.55rem;
+		border-radius: 6px;
+		cursor: pointer;
+	}
+	.menu button:hover {
+		background: #f0f4fb;
+	}
+
+	.avatar,
+	.avatar-img {
+		width: 36px;
+		height: 36px;
 		flex-shrink: 0;
 	}
 	.avatar {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		width: 36px;
-		height: 36px;
-		border-radius: 6px;
+		border-radius: 50%;
 		background: #e7e9ef;
 		color: #5a6273;
 		font-size: 0.78rem;
 		font-weight: 700;
-		flex-shrink: 0;
 	}
-	.author {
-		font-weight: 700;
-		color: #2f80c8;
+	.avatar-img {
+		border-radius: 50%;
+		object-fit: cover;
 	}
-	.badge {
+
+	.username {
+		font-weight: 900;
+		color: var(--username-color);
+	}
+
+	.alert-qa {
 		display: inline-flex;
 		align-items: center;
-		justify-content: center;
-		width: 18px;
-		height: 18px;
-		border-radius: 50%;
-		background: #2b3140;
-		color: #ffffff;
-		margin-left: auto;
-		flex-shrink: 0;
+		gap: 0.15rem;
+		background: #eef4fb;
+		border: 1px solid #cfe0f5;
+		color: #1f86d6;
+		font-size: 10px;
+		line-height: 1;
+		padding: 1px 3px;
+		border-radius: 5px;
+		cursor: pointer;
 	}
-	.stamp {
+	.alert-qa:hover {
+		background: #e0ecfa;
+	}
+	.qa-count {
+		font-weight: 700;
+	}
+	.alert-qa :global(.qa-check) {
+		color: var(--positive, #16c784);
+	}
+
+	.created-at {
+		margin-left: auto;
 		font-weight: 700;
 		font-size: 0.74rem;
 		color: #444b57;
 		white-space: nowrap;
 		flex-shrink: 0;
 	}
+
 	.body {
-		margin: 0.4rem 0 0;
+		margin: 0.35rem 0 0;
 		color: #1f2430;
 		line-height: 1.45;
 		word-break: break-word;
 		white-space: pre-wrap;
+		font-size: var(--msg-font-size);
 	}
-	.alert-meta {
+	.ticker {
+		color: var(--ticker-color);
 		font-weight: 700;
-		font-family: ui-monospace, monospace;
-		margin-right: 0.35rem;
-	}
-	.alert-side {
-		text-transform: uppercase;
-		font-size: 0.68rem;
-		font-weight: 700;
-		padding: 0.1rem 0.35rem;
-		border-radius: 5px;
-		margin-right: 0.4rem;
-	}
-	.side-buy {
-		color: #0f9d58;
-		background: rgba(15, 157, 88, 0.12);
-	}
-	.side-sell {
-		color: #d23b3b;
-		background: rgba(210, 59, 59, 0.12);
-	}
-	.side-watch {
-		color: #c08a00;
-		background: rgba(192, 138, 0, 0.14);
 	}
 	.body a {
-		color: #2f80c8;
+		color: var(--ptr-link-color, #45a2ff);
 		text-decoration: underline;
 		word-break: break-all;
 	}
 	.alert-img {
 		display: block;
+		max-width: 300px;
 		width: 100%;
 		margin-top: 0.5rem;
 		border-radius: 6px;
 		object-fit: cover;
 	}
+
 	form {
 		display: flex;
 		gap: 0.4rem;
