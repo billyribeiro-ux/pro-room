@@ -1,7 +1,7 @@
 //! Persistent entities. These mirror database rows but carry no persistence
 //! logic themselves (repositories in the `server` crate own the SQL).
 
-use crate::{AlertId, MessageId, Role, RoomId, UserId};
+use crate::{AlertId, MessageId, NoteId, Role, RoomId, UserId};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
@@ -124,4 +124,20 @@ pub struct Message {
     pub channel: String,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
+}
+
+/// A named, titled rich-text document scoped to a room. The `body` is plain
+/// text/markdown; the frontend renders it. `position` orders notes within a
+/// room (lower = earlier).
+#[derive(Debug, Clone, Serialize)]
+pub struct Note {
+    pub id: NoteId,
+    pub room_id: RoomId,
+    pub title: String,
+    pub body: String,
+    pub position: i32,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    pub updated_at: OffsetDateTime,
 }

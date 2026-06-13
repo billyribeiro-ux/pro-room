@@ -3,6 +3,7 @@
 pub mod alerts;
 pub mod auth;
 pub mod messages;
+pub mod notes;
 pub mod rooms;
 pub mod users;
 pub mod ws;
@@ -24,6 +25,7 @@ pub fn router(state: AppState) -> Router {
         .merge(rooms::router())
         .merge(alerts::router())
         .merge(messages::router())
+        .merge(notes::router())
         .merge(users::router())
         .merge(ws::router())
         .layer(TraceLayer::new_for_http())

@@ -10,6 +10,7 @@ pub mod identities;
 pub mod magic;
 pub mod members;
 pub mod messages;
+pub mod notes;
 pub mod oauth;
 pub mod rooms;
 pub mod sessions;
