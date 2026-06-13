@@ -1,24 +1,65 @@
 <script lang="ts">
 	import { theme, type ThemeTokenKey } from '$lib/stores/theme.svelte';
-	import { Palette, ArrowCounterClockwise } from 'phosphor-svelte';
+	import { parseHexColor } from '$lib/schemas';
+	import { Palette, ArrowCounterClockwise, TextAa } from 'phosphor-svelte';
 
 	type Field = { key: ThemeTokenKey; label: string };
 
-	// Highlighted pickers requested in the settings UI.
 	const fields: Field[] = [
-		{ key: '--accent', label: 'Accent' },
+		{ key: '--accent', label: 'Accent / links' },
 		{ key: '--bg', label: 'Background' },
+		{ key: '--bg-elev', label: 'Surface' },
 		{ key: '--text', label: 'Text' },
+		{ key: '--text-dim', label: 'Muted text' },
+		{ key: '--username-color', label: 'Username' },
+		{ key: '--ticker-color', label: 'Ticker' },
 		{ key: '--positive', label: 'Positive' },
 		{ key: '--negative', label: 'Negative' },
-		{ key: '--bg-elev', label: 'Surface' },
 		{ key: '--border', label: 'Border' },
 		{ key: '--warn', label: 'Warning' }
 	];
 
+	// Draft text values for the hex inputs, kept separate from the live token so a
+	// half-typed value (e.g. "#45a2f") doesn't get clobbered on re-render. Synced
+	// explicitly on the non-typing mutation paths (preset / reset / colour picker).
+	let drafts = $state<Record<ThemeTokenKey, string>>({ ...theme.tokens });
+	let errors = $state<Partial<Record<ThemeTokenKey, string>>>({});
+
+	function syncDrafts() {
+		drafts = { ...theme.tokens };
+		errors = {};
+	}
+
 	function onPick(key: ThemeTokenKey, e: Event) {
 		const value = (e.currentTarget as HTMLInputElement).value;
 		theme.set(key, value);
+		drafts[key] = value;
+		errors[key] = undefined;
+	}
+
+	function onHex(key: ThemeTokenKey, e: Event) {
+		const value = (e.currentTarget as HTMLInputElement).value;
+		drafts[key] = value;
+		if (parseHexColor(value)) {
+			theme.set(key, value);
+			errors[key] = undefined;
+		} else {
+			errors[key] = 'Use #rrggbb';
+		}
+	}
+
+	function applyPreset(id: string) {
+		theme.applyPreset(id);
+		syncDrafts();
+	}
+
+	function reset() {
+		theme.reset();
+		syncDrafts();
+	}
+
+	function onSize(e: Event) {
+		theme.setFontSize(Number((e.currentTarget as HTMLInputElement).value));
 	}
 </script>
 
@@ -28,16 +69,16 @@
 		<div>
 			<h1>Appearance</h1>
 			<p>
-				Customize the trading room palette. Changes apply instantly and are saved to this browser.
+				Customize the trading room theme. Changes apply instantly and are saved to this browser.
 			</p>
 		</div>
 	</header>
 
 	<section class="block">
-		<h2>Presets</h2>
+		<h2>Theme presets</h2>
 		<div class="presets">
 			{#each theme.presets as preset (preset.id)}
-				<button class="preset" type="button" onclick={() => theme.applyPreset(preset.id)}>
+				<button class="preset" type="button" onclick={() => applyPreset(preset.id)}>
 					<span class="swatches">
 						<span style="background: {preset.tokens['--bg']}"></span>
 						<span style="background: {preset.tokens['--accent']}"></span>
@@ -54,24 +95,72 @@
 		<h2>Colors</h2>
 		<div class="grid">
 			{#each fields as field (field.key)}
-				<label class="swatch">
+				<div class="swatch" class:invalid={errors[field.key]}>
 					<input
 						type="color"
 						value={theme.tokens[field.key]}
 						oninput={(e) => onPick(field.key, e)}
-						aria-label={field.label}
+						aria-label="{field.label} color picker"
 					/>
 					<span class="meta">
 						<span class="name">{field.label}</span>
-						<span class="hex">{theme.tokens[field.key]}</span>
+						<input
+							class="hex"
+							type="text"
+							spellcheck="false"
+							autocomplete="off"
+							value={drafts[field.key]}
+							oninput={(e) => onHex(field.key, e)}
+							aria-label="{field.label} hex value"
+						/>
 					</span>
-				</label>
+				</div>
 			{/each}
+		</div>
+		{#if Object.values(errors).some(Boolean)}
+			<p class="hint">Hex colours look like <code>#45a2ff</code> or <code>#fff</code>.</p>
+		{/if}
+	</section>
+
+	<section class="block">
+		<h2>Message text size</h2>
+		<div class="size-row">
+			<TextAa size={18} />
+			<input
+				type="range"
+				min="10"
+				max="28"
+				step="1"
+				value={theme.fontSize}
+				oninput={onSize}
+				aria-label="Message text size in pixels"
+			/>
+			<span class="size-val">{theme.fontSize}px</span>
 		</div>
 	</section>
 
 	<section class="block">
-		<button class="reset" type="button" onclick={() => theme.reset()}>
+		<h2>Preview</h2>
+		<div class="preview">
+			<div class="msg">
+				<span class="u">heather</span>
+				<span class="t"
+					>Looking for <span class="tick">$SPX</span> to hold the snowline — adding a put debit spread,
+					no stop.</span
+				>
+			</div>
+			<div class="msg">
+				<span class="u">Danielle Shay</span>
+				<span class="t"
+					>Closed <span class="tick">$AAOI</span> for a small win; rotating into
+					<span class="tick">$NBIS</span>.</span
+				>
+			</div>
+		</div>
+	</section>
+
+	<section class="block">
+		<button class="reset" type="button" onclick={reset}>
 			<ArrowCounterClockwise size={18} /> Reset to defaults
 		</button>
 	</section>
@@ -147,7 +236,7 @@
 	}
 	.grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+		grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
 		gap: 1rem;
 	}
 	.swatch {
@@ -159,6 +248,9 @@
 		border-radius: 8px;
 		padding: 0.5rem 0.65rem;
 	}
+	.swatch.invalid {
+		border-color: var(--negative);
+	}
 	.swatch input[type='color'] {
 		appearance: none;
 		-webkit-appearance: none;
@@ -169,6 +261,7 @@
 		border-radius: 8px;
 		background: transparent;
 		cursor: pointer;
+		flex: none;
 	}
 	.swatch input[type='color']::-webkit-color-swatch-wrapper {
 		padding: 2px;
@@ -180,17 +273,85 @@
 	.meta {
 		display: flex;
 		flex-direction: column;
-		gap: 0.1rem;
+		gap: 0.15rem;
+		min-width: 0;
 	}
 	.name {
 		font-size: 0.85rem;
 		font-weight: 600;
 	}
 	.hex {
-		font-size: 0.75rem;
+		width: 100%;
+		background: var(--bg);
+		border: 1px solid var(--border);
+		border-radius: 6px;
 		color: var(--text-dim);
-		text-transform: uppercase;
+		padding: 0.15rem 0.35rem;
+		font-size: 0.75rem;
+		text-transform: lowercase;
 		font-variant-numeric: tabular-nums;
+		font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+	}
+	.hex:focus {
+		outline: none;
+		border-color: var(--accent);
+		color: var(--text);
+	}
+	.invalid .hex {
+		border-color: var(--negative);
+		color: var(--negative);
+	}
+	.hint {
+		margin: 0.85rem 0 0;
+		font-size: 0.8rem;
+		color: var(--text-dim);
+	}
+	.hint code {
+		font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+		color: var(--text);
+	}
+	.size-row {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		color: var(--text-dim);
+	}
+	.size-row input[type='range'] {
+		flex: 1;
+		accent-color: var(--accent);
+	}
+	.size-val {
+		font-variant-numeric: tabular-nums;
+		font-weight: 600;
+		color: var(--text);
+		min-width: 3ch;
+		text-align: right;
+	}
+	.preview {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		background: var(--bg-elev-2);
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		padding: 0.85rem;
+		font-size: var(--msg-font-size);
+	}
+	.preview .msg {
+		display: flex;
+		flex-direction: column;
+		gap: 0.1rem;
+	}
+	.preview .u {
+		font-weight: 900;
+		color: var(--username-color);
+	}
+	.preview .t {
+		color: var(--text);
+	}
+	.preview .tick {
+		color: var(--ticker-color);
+		font-weight: 700;
 	}
 	.reset {
 		display: inline-flex;

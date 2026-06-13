@@ -46,6 +46,14 @@ Per-message inline colors (see §8) are authored on the message and must win ove
 Icons: Phosphor with the `Icon`/named suffix (the app itself uses Font Awesome
 `fa-*`; map each `fa-*` to the nearest Phosphor icon).
 
+**Shipped:** the captured dark-blue brand palette is a selectable theme preset
+**"Revolution Trading Room"** (`id: revolution`) in `web/src/lib/stores/theme.svelte.ts`,
+applied live via inline custom properties on `:root`. New consumable tokens
+`--username-color`, `--ticker-color`, `--msg-font-size` live in `layout.css` and are
+overridable by the theme customizer (`/settings`). The customizer offers presets,
+per-token colour pickers + valibot-validated hex inputs, a message text-size slider,
+and a live preview. Light/Dark class swap is still TODO.
+
 ---
 
 ## 2. Layout metrics & overall shell
@@ -246,8 +254,14 @@ Backlog slices (non-overlapping where possible):
 
 ## 11. Standing rules (do not regress)
 
+- **Frontend stack: Svelte 5 (runes) + SvelteKit, Phosphor icons, valibot for all
+  validation, scoped component `<style>` for new work.** Tailwind is still wired for
+  the `:root` tokens but is not the styling vehicle for new components; don't reach
+  for utility classes, and don't rip Tailwind out without an explicit decision.
 - `.svelte` edits → svelte MCP (`list-sections` → `get-documentation` →
   `svelte-autofixer` until clean). `.rs` edits → rust-analyzer MCP + `cargo clippy`.
+- Validation (forms, persisted/untrusted input) → valibot schemas in
+  `web/src/lib/schemas.ts`; surface `firstIssue()` to the UI.
 - No `{@html}` for message bodies; segment-parse + autolink (§7).
 - Money is `i64` / `BIGINT` end-to-end; row counts may be `i32`.
 - Forward-only migrations; `CREATE INDEX IF NOT EXISTS`.

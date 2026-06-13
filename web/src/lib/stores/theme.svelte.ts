@@ -4,8 +4,10 @@
  * The tokens here mirror the CSS custom properties declared under `:root` in
  * `src/routes/layout.css`. Applying a value sets an inline custom property on
  * `document.documentElement`, which wins over the `:root` declaration so the
- * whole app re-themes live. Overrides persist to `localStorage`.
+ * whole app re-themes live. Overrides persist to `localStorage` and are
+ * validated with valibot on the way in (untrusted storage / user input).
  */
+import { parseHexColor, parseFontSizePx } from '$lib/schemas';
 
 /** Customizable color tokens (subset of the layout tokens worth recoloring). */
 export type ThemeTokens = {
@@ -20,6 +22,8 @@ export type ThemeTokens = {
 	'--positive': string;
 	'--negative': string;
 	'--warn': string;
+	'--username-color': string;
+	'--ticker-color': string;
 };
 
 export type ThemeTokenKey = keyof ThemeTokens;
@@ -36,8 +40,13 @@ const DEFAULTS: ThemeTokens = {
 	'--accent-hover': '#2f6fe0',
 	'--positive': '#16c784',
 	'--negative': '#ea3943',
-	'--warn': '#f0b90b'
+	'--warn': '#f0b90b',
+	'--username-color': '#e6e9ef',
+	'--ticker-color': '#3b82f6'
 };
+
+/** Default message font size in px (mirrors layout.css `--msg-font-size`). */
+const DEFAULT_FONT_SIZE = 14;
 
 export type ThemePreset = {
 	id: string;
@@ -47,6 +56,28 @@ export type ThemePreset = {
 
 /** Built-in presets. "Midnight" is the current default palette. */
 export const PRESETS: ThemePreset[] = [
+	{
+		// Faithful dark-blue brand palette captured from the live trading-room app
+		// (dark blue over a bright link/accent), shipped as the Revolution Trading
+		// Room theme.
+		id: 'revolution',
+		name: 'Revolution Trading Room',
+		tokens: {
+			'--bg': '#0c2434',
+			'--bg-elev': '#0f2e43',
+			'--bg-elev-2': '#103d5c',
+			'--border': '#1a4f74',
+			'--text': '#ffffff',
+			'--text-dim': '#9fc4dd',
+			'--accent': '#45a2ff',
+			'--accent-hover': '#3a8fe6',
+			'--positive': '#92d528',
+			'--negative': '#bb352a',
+			'--warn': '#f0b90b',
+			'--username-color': '#cfe6ff',
+			'--ticker-color': '#45a2ff'
+		}
+	},
 	{
 		id: 'midnight',
 		name: 'Midnight',
@@ -66,7 +97,9 @@ export const PRESETS: ThemePreset[] = [
 			'--accent-hover': '#0e9f72',
 			'--positive': '#22d3a6',
 			'--negative': '#ef4444',
-			'--warn': '#f59e0b'
+			'--warn': '#f59e0b',
+			'--username-color': '#e7f0ea',
+			'--ticker-color': '#10b981'
 		}
 	},
 	{
@@ -83,7 +116,9 @@ export const PRESETS: ThemePreset[] = [
 			'--accent-hover': '#4f51d6',
 			'--positive': '#10b981',
 			'--negative': '#f43f5e',
-			'--warn': '#eab308'
+			'--warn': '#eab308',
+			'--username-color': '#f1f5f9',
+			'--ticker-color': '#6366f1'
 		}
 	},
 	{
@@ -100,24 +135,29 @@ export const PRESETS: ThemePreset[] = [
 			'--accent-hover': '#d8a609',
 			'--positive': '#16c784',
 			'--negative': '#ea3943',
-			'--warn': '#fb923c'
+			'--warn': '#fb923c',
+			'--username-color': '#f5ead9',
+			'--ticker-color': '#f0b90b'
 		}
 	}
 ];
 
 const STORAGE_KEY = 'ptr.theme.tokens';
+const FONT_STORAGE_KEY = 'ptr.theme.fontSize';
 
 function loadOverrides(): Partial<ThemeTokens> {
 	if (typeof window === 'undefined') return {};
 	try {
 		const raw = window.localStorage.getItem(STORAGE_KEY);
 		if (!raw) return {};
-		const parsed = JSON.parse(raw) as Partial<ThemeTokens>;
-		// Only keep keys we recognise.
+		const parsed = JSON.parse(raw) as Partial<Record<ThemeTokenKey, unknown>>;
+		// Only keep keys we recognise whose values pass hex validation.
 		const out: Partial<ThemeTokens> = {};
 		for (const key of Object.keys(DEFAULTS) as ThemeTokenKey[]) {
 			const value = parsed[key];
-			if (typeof value === 'string') out[key] = value;
+			if (typeof value !== 'string') continue;
+			const hex = parseHexColor(value);
+			if (hex) out[key] = hex;
 		}
 		return out;
 	} catch {
@@ -125,9 +165,23 @@ function loadOverrides(): Partial<ThemeTokens> {
 	}
 }
 
+function loadFontSize(): number {
+	if (typeof window === 'undefined') return DEFAULT_FONT_SIZE;
+	try {
+		const raw = window.localStorage.getItem(FONT_STORAGE_KEY);
+		if (!raw) return DEFAULT_FONT_SIZE;
+		return parseFontSizePx(Number(raw)) ?? DEFAULT_FONT_SIZE;
+	} catch {
+		return DEFAULT_FONT_SIZE;
+	}
+}
+
 class ThemeStore {
 	/** Current effective token values (defaults merged with persisted overrides). */
 	tokens = $state<ThemeTokens>({ ...DEFAULTS, ...loadOverrides() });
+
+	/** Current message font size in px. */
+	fontSize = $state<number>(loadFontSize());
 
 	/** The full set of selectable token keys. */
 	get keys(): ThemeTokenKey[] {
@@ -146,22 +200,41 @@ class ThemeStore {
 		for (const key of this.keys) {
 			root.style.setProperty(key, this.tokens[key]);
 		}
+		root.style.setProperty('--msg-font-size', `${this.fontSize}px`);
 	}
 
 	private persist(): void {
 		if (typeof window === 'undefined') return;
 		try {
 			window.localStorage.setItem(STORAGE_KEY, JSON.stringify(this.tokens));
+			window.localStorage.setItem(FONT_STORAGE_KEY, String(this.fontSize));
 		} catch {
 			// Storage may be unavailable (private mode, quota); ignore.
 		}
 	}
 
-	/** Set a single token, then re-apply and persist. */
-	set(key: ThemeTokenKey, value: string): void {
-		this.tokens = { ...this.tokens, [key]: value };
+	/**
+	 * Set a single token, then re-apply and persist. Invalid hex values are
+	 * rejected (validated with valibot) so the theme can't be corrupted.
+	 * Returns true when applied.
+	 */
+	set(key: ThemeTokenKey, value: string): boolean {
+		const hex = parseHexColor(value);
+		if (!hex) return false;
+		this.tokens = { ...this.tokens, [key]: hex };
 		this.apply();
 		this.persist();
+		return true;
+	}
+
+	/** Set the message font size in px (validated/bounded). Returns true when applied. */
+	setFontSize(px: number): boolean {
+		const size = parseFontSizePx(px);
+		if (size === null) return false;
+		this.fontSize = size;
+		this.apply();
+		this.persist();
+		return true;
 	}
 
 	/** Replace all tokens with a named preset's palette. */
@@ -176,10 +249,12 @@ class ThemeStore {
 	/** Restore the default ("Midnight") palette and clear persisted overrides. */
 	reset(): void {
 		this.tokens = { ...DEFAULTS };
+		this.fontSize = DEFAULT_FONT_SIZE;
 		this.apply();
 		if (typeof window !== 'undefined') {
 			try {
 				window.localStorage.removeItem(STORAGE_KEY);
+				window.localStorage.removeItem(FONT_STORAGE_KEY);
 			} catch {
 				// ignore
 			}

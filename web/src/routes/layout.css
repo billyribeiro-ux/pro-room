@@ -16,6 +16,10 @@
 	--positive: #16c784;
 	--negative: #ea3943;
 	--warn: #f0b90b;
+	/* Message chrome (consumed by alert/chat rows + theme customizer preview). */
+	--username-color: #e6e9ef;
+	--ticker-color: #3b82f6;
+	--msg-font-size: 14px;
 	--radius: 10px;
 }
 
