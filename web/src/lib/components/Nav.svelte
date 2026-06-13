@@ -2,7 +2,7 @@
 	import { auth } from '$lib/stores/auth.svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { ChartLineUp, SignOut, UsersThree, ShieldStar } from 'phosphor-svelte';
+	import { ChartLineUp, SignOut, UsersThree, ShieldStar, Palette } from 'phosphor-svelte';
 
 	async function logout() {
 		await auth.logout();
@@ -22,6 +22,7 @@
 			{#if auth.can('user.manage')}
 				<a href={resolve('/admin/users')}><ShieldStar size={18} /> Admin</a>
 			{/if}
+			<a href={resolve('/settings')}><Palette size={18} /> Settings</a>
 		</div>
 		<div class="user">
 			<span class="name">{auth.user.display_name}</span>

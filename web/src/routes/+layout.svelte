@@ -3,6 +3,7 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import Nav from '$lib/components/Nav.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
+	import { theme } from '$lib/stores/theme.svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -14,6 +15,7 @@
 	let booted = $state(false);
 
 	onMount(async () => {
+		theme.apply();
 		await auth.refresh();
 		booted = true;
 	});
