@@ -34,7 +34,12 @@
 </script>
 
 <nav class="topnav">
-	<button class="icon-btn" onclick={onToggleSidebar} aria-label="Toggle sidebar" title="Toggle sidebar">
+	<button
+		class="icon-btn"
+		onclick={onToggleSidebar}
+		aria-label="Toggle sidebar"
+		title="Toggle sidebar"
+	>
 		<List size={18} />
 	</button>
 
