@@ -3,6 +3,7 @@
 //! and the resulting `Decision`. The actual policy logic lives in the `authz`
 //! crate; these are the shared nouns and verbs.
 
+use crate::entities::RoomVisibility;
 use crate::{Role, RoomId, UserId};
 
 /// The actor requesting an action, resolved from the authenticated session.
@@ -71,6 +72,7 @@ pub struct RoomResource {
     pub room_id: RoomId,
     pub owner_id: UserId,
     pub status: RoomStatus,
+    pub visibility: RoomVisibility,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

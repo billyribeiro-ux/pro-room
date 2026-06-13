@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO oauth_states (state, provider, pkce_verifier, redirect_to, expires_at)\n        VALUES ($1, $2::text::identity_provider, $3, $4, $5)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a777b642240924836eb852226e9fe1c8afd4b44a045862dae640f3df2cfd4f8c"
+}

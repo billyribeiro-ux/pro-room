@@ -5,11 +5,37 @@ use crate::{AlertId, MessageId, Role, RoomId, UserId};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
+/// Error returned when parsing a string into a domain enum fails.
+#[derive(Debug, thiserror::Error)]
+#[error("invalid value: {0}")]
+pub struct ParseError(pub String);
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum UserStatus {
     Active,
     Suspended,
+}
+
+impl UserStatus {
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Active => "active",
+            Self::Suspended => "suspended",
+        }
+    }
+}
+
+impl std::str::FromStr for UserStatus {
+    type Err = ParseError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "active" => Ok(Self::Active),
+            "suspended" => Ok(Self::Suspended),
+            other => Err(ParseError(other.to_owned())),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -30,6 +56,27 @@ pub enum RoomVisibility {
     Public,
     /// Only explicit members may join.
     Private,
+}
+
+impl RoomVisibility {
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Public => "public",
+            Self::Private => "private",
+        }
+    }
+}
+
+impl std::str::FromStr for RoomVisibility {
+    type Err = ParseError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "public" => Ok(Self::Public),
+            "private" => Ok(Self::Private),
+            other => Err(ParseError(other.to_owned())),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize)]

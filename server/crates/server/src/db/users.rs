@@ -1,0 +1,187 @@
+//! User repository.
+
+use anyhow::Context as _;
+use domain::entities::{User, UserStatus};
+use domain::{Role, UserId};
+use sqlx::PgPool;
+
+/// A user row including the password hash (needed for credential login). Not
+/// serialized to clients; use [`UserRecord::into_user`] for the public view.
+pub struct UserRecord {
+    pub user: User,
+    pub password_hash: Option<String>,
+}
+
+/// Insert a new user. `password_hash` is `None` for OAuth/magic-link-only users.
+pub async fn create(
+    pool: &PgPool,
+    email: &str,
+    display_name: &str,
+    password_hash: Option<&str>,
+    global_role: Role,
+) -> anyhow::Result<User> {
+    let row = sqlx::query!(
+        r#"
+        INSERT INTO users (email, display_name, password_hash, global_role)
+        VALUES ($1, $2, $3, $4::text::user_role)
+        RETURNING id, email, display_name,
+                  global_role::text AS "global_role!",
+                  status::text AS "status!",
+                  created_at
+        "#,
+        email,
+        display_name,
+        password_hash,
+        global_role.as_str(),
+    )
+    .fetch_one(pool)
+    .await
+    .context("insert user")?;
+
+    Ok(User {
+        id: UserId::from_uuid(row.id),
+        email: row.email,
+        display_name: row.display_name,
+        global_role: row.global_role.parse().context("parse role")?,
+        status: row.status.parse().context("parse status")?,
+        created_at: row.created_at,
+    })
+}
+
+pub async fn find_by_email(pool: &PgPool, email: &str) -> anyhow::Result<Option<UserRecord>> {
+    let row = sqlx::query!(
+        r#"
+        SELECT id, email, display_name, password_hash,
+               global_role::text AS "global_role!",
+               status::text AS "status!",
+               created_at
+        FROM users WHERE email = $1
+        "#,
+        email,
+    )
+    .fetch_optional(pool)
+    .await
+    .context("find user by email")?;
+
+    row.map(|row| {
+        Ok(UserRecord {
+            user: User {
+                id: UserId::from_uuid(row.id),
+                email: row.email,
+                display_name: row.display_name,
+                global_role: row.global_role.parse().context("parse role")?,
+                status: row.status.parse().context("parse status")?,
+                created_at: row.created_at,
+            },
+            password_hash: row.password_hash,
+        })
+    })
+    .transpose()
+}
+
+pub async fn find_by_id(pool: &PgPool, id: UserId) -> anyhow::Result<Option<User>> {
+    let row = sqlx::query!(
+        r#"
+        SELECT id, email, display_name,
+               global_role::text AS "global_role!",
+               status::text AS "status!",
+               created_at
+        FROM users WHERE id = $1
+        "#,
+        id.as_uuid(),
+    )
+    .fetch_optional(pool)
+    .await
+    .context("find user by id")?;
+
+    row.map(|row| {
+        Ok(User {
+            id: UserId::from_uuid(row.id),
+            email: row.email,
+            display_name: row.display_name,
+            global_role: row.global_role.parse().context("parse role")?,
+            status: row.status.parse().context("parse status")?,
+            created_at: row.created_at,
+        })
+    })
+    .transpose()
+}
+
+pub async fn list(pool: &PgPool) -> anyhow::Result<Vec<User>> {
+    let rows = sqlx::query!(
+        r#"
+        SELECT id, email, display_name,
+               global_role::text AS "global_role!",
+               status::text AS "status!",
+               created_at
+        FROM users ORDER BY created_at
+        "#,
+    )
+    .fetch_all(pool)
+    .await
+    .context("list users")?;
+
+    rows.into_iter()
+        .map(|row| {
+            Ok(User {
+                id: UserId::from_uuid(row.id),
+                email: row.email,
+                display_name: row.display_name,
+                global_role: row.global_role.parse().context("parse role")?,
+                status: row.status.parse().context("parse status")?,
+                created_at: row.created_at,
+            })
+        })
+        .collect()
+}
+
+pub async fn set_role(pool: &PgPool, id: UserId, role: Role) -> anyhow::Result<()> {
+    let affected = sqlx::query!(
+        "UPDATE users SET global_role = $2::text::user_role, updated_at = now() WHERE id = $1",
+        id.as_uuid(),
+        role.as_str(),
+    )
+    .execute(pool)
+    .await
+    .context("set user role")?
+    .rows_affected();
+    anyhow::ensure!(affected == 1, "user not found");
+    Ok(())
+}
+
+pub async fn set_status(pool: &PgPool, id: UserId, status: UserStatus) -> anyhow::Result<()> {
+    let affected = sqlx::query!(
+        "UPDATE users SET status = $2::text::user_status, updated_at = now() WHERE id = $1",
+        id.as_uuid(),
+        status.as_str(),
+    )
+    .execute(pool)
+    .await
+    .context("set user status")?
+    .rows_affected();
+    anyhow::ensure!(affected == 1, "user not found");
+    Ok(())
+}
+
+/// Fetch `(id, display_name)` for a set of users, for presence display.
+pub async fn display_names(
+    pool: &PgPool,
+    ids: &[uuid::Uuid],
+) -> anyhow::Result<Vec<(UserId, String)>> {
+    let rows = sqlx::query!("SELECT id, display_name FROM users WHERE id = ANY($1)", ids,)
+        .fetch_all(pool)
+        .await
+        .context("fetch display names")?;
+    Ok(rows
+        .into_iter()
+        .map(|r| (UserId::from_uuid(r.id), r.display_name))
+        .collect())
+}
+
+pub async fn count(pool: &PgPool) -> anyhow::Result<i64> {
+    let row = sqlx::query!(r#"SELECT count(*) AS "count!" FROM users"#)
+        .fetch_one(pool)
+        .await
+        .context("count users")?;
+    Ok(row.count)
+}

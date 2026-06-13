@@ -5,6 +5,7 @@
 //! subject's membership — to decide whether the action is permitted right now.
 
 use domain::authz::{RoomResource, RoomStatus};
+use domain::entities::RoomVisibility;
 use domain::{Action, Context, Decision, Resource, Role, Subject};
 
 /// Evaluate the ABAC policy for `action`. Assumes RBAC has already passed.
@@ -64,30 +65,43 @@ fn publish_screen(subject: &Subject, resource: &Resource, ctx: &Context) -> Deci
     live_or_deny(room)
 }
 
-/// Read/subscribe/join: any member (or super admin) may, as long as the room is
-/// not closed.
+/// Read/subscribe/join: super admins always; otherwise members, plus anyone in
+/// a public room — as long as the room is not closed.
 fn room_access(subject: &Subject, resource: &Resource, ctx: &Context) -> Decision {
     if is_super(subject) {
         return Decision::Allow;
     }
-    let permitted_member = match resource {
-        Resource::Room(room) => room.status != RoomStatus::Closed && ctx.is_room_member,
+    let permitted = match resource {
+        Resource::Room(room) => room.status != RoomStatus::Closed && has_room_access(room, ctx),
         Resource::Alert(_) | Resource::Message(_) => ctx.is_room_member,
         _ => false,
     };
-    if permitted_member {
+    if permitted {
         Decision::Allow
     } else {
         Decision::deny("policy: not a member of the room")
     }
 }
 
-fn post_message(subject: &Subject, _resource: &Resource, ctx: &Context) -> Decision {
-    if is_super(subject) || ctx.is_room_member {
+/// Posting chat: super admins, room members, or anyone in a public room.
+fn post_message(subject: &Subject, resource: &Resource, ctx: &Context) -> Decision {
+    if is_super(subject) {
+        return Decision::Allow;
+    }
+    let permitted = match resource {
+        Resource::Room(room) => has_room_access(room, ctx),
+        _ => ctx.is_room_member,
+    };
+    if permitted {
         Decision::Allow
     } else {
         Decision::deny("policy: not a member of the room")
     }
+}
+
+/// A non-admin may access a room if they are a member or the room is public.
+fn has_room_access(room: &RoomResource, ctx: &Context) -> bool {
+    ctx.is_room_member || room.visibility == RoomVisibility::Public
 }
 
 fn manage_room(subject: &Subject, resource: &Resource) -> Decision {

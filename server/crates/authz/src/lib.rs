@@ -50,6 +50,9 @@ mod tests {
             room_id: RoomId::from_uuid(uuid_const(1)),
             owner_id: owner,
             status,
+            // Default tests to private so membership is required; public access
+            // is covered separately.
+            visibility: domain::entities::RoomVisibility::Private,
         }
     }
 
@@ -143,6 +146,24 @@ mod tests {
         // Non-member cannot subscribe.
         let (m, ctx) = subject(Role::Member, None, false);
         assert!(!authorize(&m, Action::SubscribeScreen, &live, &ctx).is_allowed());
+    }
+
+    #[test]
+    fn public_rooms_let_non_members_view_and_chat_but_not_alert() {
+        let owner = UserId::from_uuid(uuid_const(2));
+        let public = Resource::Room(RoomResource {
+            room_id: RoomId::from_uuid(uuid_const(1)),
+            owner_id: owner,
+            status: RoomStatus::Live,
+            visibility: domain::entities::RoomVisibility::Public,
+        });
+        // A non-member, non-admin user.
+        let (viewer, ctx) = subject(Role::Member, None, false);
+
+        assert!(authorize(&viewer, Action::SubscribeScreen, &public, &ctx).is_allowed());
+        assert!(authorize(&viewer, Action::PostMessage, &public, &ctx).is_allowed());
+        // Still cannot post alerts (RBAC denies the member role).
+        assert!(!authorize(&viewer, Action::PostAlert, &public, &ctx).is_allowed());
     }
 
     #[test]
