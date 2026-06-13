@@ -335,6 +335,9 @@
 		color: var(--text-dim);
 	}
 	@media (max-width: 900px) {
+		.shell-body {
+			flex-direction: column;
+		}
 		.layout {
 			grid-template-columns: 1fr;
 			height: auto;
