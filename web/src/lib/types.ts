@@ -86,6 +86,29 @@ export interface PresentUser {
 	display_name: string;
 }
 
+export interface Note {
+	id: string;
+	room_id: string;
+	title: string;
+	body: string;
+	position: number;
+	created_at: string;
+	updated_at: string;
+}
+
+export type FileCategory = 'file' | 'image' | 'sound';
+
+export interface RoomFile {
+	id: string;
+	room_id: string;
+	filename: string;
+	content_type: string;
+	size_bytes: number;
+	category: FileCategory;
+	created_at: string;
+	download_url: string;
+}
+
 export interface LiveKitToken {
 	url: string;
 	token: string;

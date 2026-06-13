@@ -6,7 +6,7 @@
 	import { ScreenShareRoom } from '$lib/livekit.svelte';
 	import { RoomSocket } from '$lib/realtime.svelte';
 	import type { ChatChannel, LiveKitToken, PresentUser, RoomDetail, RoomEvent } from '$lib/types';
-	import ScreenStage from '$lib/components/ScreenStage.svelte';
+	import MainStage from '$lib/components/MainStage.svelte';
 	import { type AlertItem } from '$lib/components/AlertFeed.svelte';
 	import { type ChatItem } from '$lib/components/ChatPanel.svelte';
 	import AlertsChatDock from '$lib/components/AlertsChatDock.svelte';
@@ -194,7 +194,12 @@
 			/>
 		</aside>
 		<div class="stage-col">
-			<ScreenStage publishers={screen.publishers} connected={screen.connected} />
+			<MainStage
+				{roomId}
+				canManage={caps?.can_manage_room ?? false}
+				publishers={screen.publishers}
+				connected={screen.connected}
+			/>
 		</div>
 	</div>
 
