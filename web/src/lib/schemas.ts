@@ -22,6 +22,28 @@ export const FontSizePxSchema = v.pipe(
 	v.maxValue(28, 'Maximum 28px')
 );
 
+/**
+ * Alert Q&A question body. Mirrors the server cap (`MAX_BODY_LEN = 2000`) and
+ * its required/trimmed check in `http/questions.rs`.
+ */
+export const QuestionBodySchema = v.pipe(
+	v.string(),
+	v.trim(),
+	v.minLength(1, 'Question is required'),
+	v.maxLength(2000, 'Question is too long')
+);
+
+/**
+ * Alert Q&A answer. Mirrors the server cap (`MAX_ANSWER_LEN = 4000`) and its
+ * required/trimmed check in `http/questions.rs`.
+ */
+export const AnswerSchema = v.pipe(
+	v.string(),
+	v.trim(),
+	v.minLength(1, 'Answer is required'),
+	v.maxLength(4000, 'Answer is too long')
+);
+
 /** First human-readable issue from a failed safeParse, or null when valid. */
 export function firstIssue<TSchema extends v.GenericSchema>(
 	result: v.SafeParseResult<TSchema>

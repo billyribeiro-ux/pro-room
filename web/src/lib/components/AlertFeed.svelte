@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Alert } from '$lib/types';
 	import { parseMessage, formatStamp, dayKey, formatDayLabel } from '$lib/message';
+	import AlertQaModal from './AlertQaModal.svelte';
 	import {
 		Bell,
 		MagnifyingGlass,
@@ -41,6 +42,10 @@
 
 	// Which row's ⠇ menu is open (alert id), or null when none.
 	let openMenuId = $state<string | null>(null);
+
+	// The alert whose Q&A thread modal is open, or null when closed. Self-
+	// contained: opening the modal requires no new props from the parent.
+	let qaAlert = $state<AlertItem | null>(null);
 
 	async function submit(e: SubmitEvent) {
 		e.preventDefault();
@@ -83,7 +88,9 @@
 	}
 
 	function openQa(a: AlertItem) {
+		// Notify the parent if it wants to react, then open the thread inline.
 		onOpenQa?.(a);
+		qaAlert = a;
 	}
 </script>
 
@@ -195,6 +202,8 @@
 		</form>
 	{/if}
 </section>
+
+<AlertQaModal alert={qaAlert} onClose={() => (qaAlert = null)} />
 
 <style>
 	.panel {
