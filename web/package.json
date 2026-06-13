@@ -40,5 +40,9 @@
 		"typescript-eslint": "^8.60.1",
 		"vite": "^8.0.16",
 		"vitest": "^4.1.8"
+	},
+	"dependencies": {
+		"livekit-client": "^2.19.2",
+		"phosphor-svelte": "^3.1.0"
 	}
 }
