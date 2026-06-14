@@ -29,7 +29,7 @@ const CHANNEL_PATTERN: &str = "proom:room:*";
 /// One live WebSocket connection registered with the hub. `id` is a process-wide
 /// monotonic counter, so a higher `id` means a newer connection — that's how
 /// "keep each user's most recent session" is decided. `close` is signalled to ask
-/// that one socket's read loop to shut down (used by kick-duplicates).
+/// that one socket's read loop to shut down (kick-duplicates / force-kick).
 struct Conn {
     id: u64,
     user: UserId,
@@ -43,16 +43,95 @@ pub struct ConnHandle {
     pub close: Arc<Notify>,
 }
 
+/// In-memory registry of live local WebSocket connections, used to drop duplicate
+/// sessions, force-close a kicked user, and ref-count presence. Pure in-process
+/// state (no I/O), so it is unit-testable in isolation from the Redis-backed
+/// [`Cache`]. Local to this instance — cross-instance dedup is out of scope.
+#[derive(Default)]
+struct ConnRegistry {
+    conns: Mutex<HashMap<RoomId, Vec<Conn>>>,
+    next_id: AtomicU64,
+}
+
+impl ConnRegistry {
+    fn register(&self, room: RoomId, user: UserId) -> ConnHandle {
+        let id = self.next_id.fetch_add(1, Ordering::Relaxed);
+        let close = Arc::new(Notify::new());
+        let mut conns = self.conns.lock().expect("hub conns mutex poisoned");
+        conns.entry(room).or_default().push(Conn {
+            id,
+            user,
+            close: close.clone(),
+        });
+        ConnHandle { id, close }
+    }
+
+    /// Returns `true` when `conn_id` was the user's last local connection in the
+    /// room (the caller uses that to decide whether to clear presence).
+    fn unregister(&self, room: RoomId, conn_id: u64) -> bool {
+        let mut conns = self.conns.lock().expect("hub conns mutex poisoned");
+        let Some(list) = conns.get_mut(&room) else {
+            return true;
+        };
+        let user = list.iter().find(|c| c.id == conn_id).map(|c| c.user);
+        list.retain(|c| c.id != conn_id);
+        let was_last = match user {
+            Some(u) => !list.iter().any(|c| c.user == u),
+            None => true,
+        };
+        if list.is_empty() {
+            conns.remove(&room);
+        }
+        was_last
+    }
+
+    /// Signal every duplicate connection (all but each user's newest) to close.
+    /// Returns how many were signalled.
+    fn kick_duplicates(&self, room: RoomId) -> usize {
+        let conns = self.conns.lock().expect("hub conns mutex poisoned");
+        let Some(list) = conns.get(&room) else {
+            return 0;
+        };
+        // The newest (highest id) connection per user is the keeper.
+        let mut newest: HashMap<UserId, u64> = HashMap::new();
+        for c in list {
+            let e = newest.entry(c.user).or_insert(c.id);
+            if c.id > *e {
+                *e = c.id;
+            }
+        }
+        let mut signalled = 0;
+        for c in list {
+            if newest.get(&c.user).copied() != Some(c.id) {
+                c.close.notify_one();
+                signalled += 1;
+            }
+        }
+        signalled
+    }
+
+    /// Signal every connection for `user` to close. Returns how many were
+    /// signalled. Used when an admin kicks a user — server-side defense in depth.
+    fn close_user(&self, room: RoomId, user: UserId) -> usize {
+        let conns = self.conns.lock().expect("hub conns mutex poisoned");
+        let Some(list) = conns.get(&room) else {
+            return 0;
+        };
+        let mut signalled = 0;
+        for c in list {
+            if c.user == user {
+                c.close.notify_one();
+                signalled += 1;
+            }
+        }
+        signalled
+    }
+}
+
 #[derive(Clone)]
 pub struct RealtimeHub {
     rooms: Arc<Mutex<HashMap<RoomId, broadcast::Sender<String>>>>,
-    /// Per-room registry of live local connections, used to drop duplicate
-    /// sessions and to ref-count presence (only the user's last local socket
-    /// clears presence on disconnect). Local to this instance — cross-instance
-    /// duplicates are not closed (acceptable: dedup is a single-instance concern).
-    conns: Arc<Mutex<HashMap<RoomId, Vec<Conn>>>>,
-    /// Monotonic source of connection ids (also encodes recency).
-    next_conn_id: Arc<AtomicU64>,
+    registry: Arc<ConnRegistry>,
     cache: Cache,
 }
 
@@ -60,8 +139,7 @@ impl RealtimeHub {
     pub fn new(cache: Cache) -> Self {
         Self {
             rooms: Arc::new(Mutex::new(HashMap::new())),
-            conns: Arc::new(Mutex::new(HashMap::new())),
-            next_conn_id: Arc::new(AtomicU64::new(0)),
+            registry: Arc::new(ConnRegistry::default()),
             cache,
         }
     }
@@ -104,74 +182,40 @@ impl RealtimeHub {
         self.cache.publish(&channel, payload).await
     }
 
-    fn local_sender(&self, room: RoomId) -> broadcast::Sender<String> {
-        let mut rooms = self.rooms.lock().expect("hub mutex poisoned");
-        rooms
-            .entry(room)
-            .or_insert_with(|| broadcast::channel(CHANNEL_CAPACITY).0)
-            .clone()
-    }
-
     /// Register a connection for `user` in `room`. The returned [`ConnHandle`]
     /// carries the connection id (pass it to [`Self::unregister`] on disconnect)
-    /// and the `close` signal the socket must `select!` on so kick-duplicates can
-    /// shut it down.
+    /// and the `close` signal the socket must `select!` on so it can be shut down.
     pub fn register(&self, room: RoomId, user: UserId) -> ConnHandle {
-        let id = self.next_conn_id.fetch_add(1, Ordering::Relaxed);
-        let close = Arc::new(Notify::new());
-        let mut conns = self.conns.lock().expect("hub conns mutex poisoned");
-        conns.entry(room).or_default().push(Conn {
-            id,
-            user,
-            close: close.clone(),
-        });
-        ConnHandle { id, close }
+        self.registry.register(room, user)
     }
 
     /// Deregister a connection. Returns `true` when it was the user's **last**
     /// local connection in the room — the caller uses that to decide whether to
     /// clear presence (a user with another open tab stays present).
     pub fn unregister(&self, room: RoomId, conn_id: u64) -> bool {
-        let mut conns = self.conns.lock().expect("hub conns mutex poisoned");
-        let Some(list) = conns.get_mut(&room) else {
-            return true;
-        };
-        let user = list.iter().find(|c| c.id == conn_id).map(|c| c.user);
-        list.retain(|c| c.id != conn_id);
-        let was_last = match user {
-            Some(u) => !list.iter().any(|c| c.user == u),
-            None => true,
-        };
-        if list.is_empty() {
-            conns.remove(&room);
-        }
-        was_last
+        self.registry.unregister(room, conn_id)
     }
 
     /// Signal every duplicate connection in `room` (all but each user's newest)
-    /// to close. Returns how many were signalled. The closed sockets run their
-    /// own cleanup (deregister + presence refresh) when their read loop exits.
+    /// to close. Returns how many were signalled. The closed sockets run their own
+    /// cleanup (deregister + presence refresh) when their read loop exits.
     pub fn kick_duplicates(&self, room: RoomId) -> usize {
-        let conns = self.conns.lock().expect("hub conns mutex poisoned");
-        let Some(list) = conns.get(&room) else {
-            return 0;
-        };
-        // The newest (highest id) connection per user is the keeper.
-        let mut newest: HashMap<UserId, u64> = HashMap::new();
-        for c in list {
-            let e = newest.entry(c.user).or_insert(c.id);
-            if c.id > *e {
-                *e = c.id;
-            }
-        }
-        let mut signalled = 0;
-        for c in list {
-            if newest.get(&c.user).copied() != Some(c.id) {
-                c.close.notify_one();
-                signalled += 1;
-            }
-        }
-        signalled
+        self.registry.kick_duplicates(room)
+    }
+
+    /// Force every connection for `user` in `room` to close. Returns how many were
+    /// signalled. Used when an admin kicks a user, so the server drops them even if
+    /// their client ignores the `kicked` event.
+    pub fn close_user(&self, room: RoomId, user: UserId) -> usize {
+        self.registry.close_user(room, user)
+    }
+
+    fn local_sender(&self, room: RoomId) -> broadcast::Sender<String> {
+        let mut rooms = self.rooms.lock().expect("hub mutex poisoned");
+        rooms
+            .entry(room)
+            .or_insert_with(|| broadcast::channel(CHANNEL_CAPACITY).0)
+            .clone()
     }
 }
 
@@ -196,4 +240,93 @@ fn dispatch(rooms: &Arc<Mutex<HashMap<RoomId, broadcast::Sender<String>>>>, mess
 fn room_from_channel(channel: &str) -> Option<RoomId> {
     let suffix = channel.strip_prefix(CHANNEL_PREFIX)?;
     suffix.parse::<uuid::Uuid>().ok().map(RoomId::from_uuid)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Duration;
+
+    fn room() -> RoomId {
+        RoomId::from_uuid(uuid::Uuid::new_v4())
+    }
+    fn user() -> UserId {
+        UserId::from_uuid(uuid::Uuid::new_v4())
+    }
+
+    /// A connection's close signal fires iff its `notified()` resolves promptly
+    /// (`notify_one` leaves a stored permit when there is no waiter yet).
+    async fn was_signalled(h: &ConnHandle) -> bool {
+        tokio::time::timeout(Duration::from_millis(50), h.close.notified())
+            .await
+            .is_ok()
+    }
+
+    #[test]
+    fn register_assigns_monotonic_ids() {
+        let reg = ConnRegistry::default();
+        let rid = room();
+        let first = reg.register(rid, user());
+        let second = reg.register(rid, user());
+        assert!(
+            second.id > first.id,
+            "newer connection must get a higher id"
+        );
+    }
+
+    #[test]
+    fn unregister_reports_last_local_connection() {
+        let reg = ConnRegistry::default();
+        let rid = room();
+        let uid = user();
+        let first = reg.register(rid, uid);
+        let second = reg.register(rid, uid);
+        // The user still has `second` after dropping `first`.
+        assert!(
+            !reg.unregister(rid, first.id),
+            "not the user's last connection"
+        );
+        // Now `second` is the last.
+        assert!(reg.unregister(rid, second.id), "the user's last connection");
+        // Unknown id on an empty room reports last.
+        assert!(reg.unregister(rid, 999));
+    }
+
+    #[tokio::test]
+    async fn kick_duplicates_keeps_newest_per_user() {
+        let reg = ConnRegistry::default();
+        let rid = room();
+        let uid = user();
+        let other = user();
+        let oldest = reg.register(rid, uid);
+        let middle = reg.register(rid, uid);
+        let newest = reg.register(rid, uid);
+        let other_conn = reg.register(rid, other); // sole connection for `other`
+
+        assert_eq!(
+            reg.kick_duplicates(rid),
+            2,
+            "two older sessions of the user"
+        );
+        assert!(was_signalled(&oldest).await, "oldest session closed");
+        assert!(was_signalled(&middle).await, "middle session closed");
+        assert!(!was_signalled(&newest).await, "newest session kept");
+        assert!(!was_signalled(&other_conn).await, "other user untouched");
+    }
+
+    #[tokio::test]
+    async fn close_user_signals_all_of_that_users_connections() {
+        let reg = ConnRegistry::default();
+        let rid = room();
+        let uid = user();
+        let other = user();
+        let first = reg.register(rid, uid);
+        let second = reg.register(rid, uid);
+        let keep = reg.register(rid, other);
+
+        assert_eq!(reg.close_user(rid, uid), 2);
+        assert!(was_signalled(&first).await);
+        assert!(was_signalled(&second).await);
+        assert!(!was_signalled(&keep).await, "other user is unaffected");
+    }
 }

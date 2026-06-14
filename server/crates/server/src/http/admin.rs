@@ -91,6 +91,9 @@ async fn kick(
     db::members::remove_if_present(&state.db, id, target).await?;
     let _ = state.cache.presence_remove(id, target).await;
     let _ = state.cache.presence_remove_ip(id, target).await;
+    // Defense in depth: force-close the kicked user's live sockets server-side so
+    // they are dropped even if their client ignores the `kicked` event below.
+    let _ = state.hub.close_user(id, target);
 
     let message = body.message.and_then(|m| {
         let trimmed = m.trim();
