@@ -1,15 +1,44 @@
 //! Persistent entities. These mirror database rows but carry no persistence
 //! logic themselves (repositories in the `server` crate own the SQL).
 
-use crate::{AlertId, MessageId, Role, RoomId, UserId};
+use crate::{
+    AlertId, FileId, MessageId, NoteId, PollId, PollOptionId, QuestionId, Role, RoomId, UserId,
+};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
+use uuid::Uuid;
+
+/// Error returned when parsing a string into a domain enum fails.
+#[derive(Debug, thiserror::Error)]
+#[error("invalid value: {0}")]
+pub struct ParseError(pub String);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum UserStatus {
     Active,
     Suspended,
+}
+
+impl UserStatus {
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Active => "active",
+            Self::Suspended => "suspended",
+        }
+    }
+}
+
+impl std::str::FromStr for UserStatus {
+    type Err = ParseError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "active" => Ok(Self::Active),
+            "suspended" => Ok(Self::Suspended),
+            other => Err(ParseError(other.to_owned())),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -32,6 +61,27 @@ pub enum RoomVisibility {
     Private,
 }
 
+impl RoomVisibility {
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Public => "public",
+            Self::Private => "private",
+        }
+    }
+}
+
+impl std::str::FromStr for RoomVisibility {
+    type Err = ParseError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "public" => Ok(Self::Public),
+            "private" => Ok(Self::Private),
+            other => Err(ParseError(other.to_owned())),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct Room {
     pub id: RoomId,
@@ -40,6 +90,9 @@ pub struct Room {
     pub owner_id: UserId,
     pub visibility: RoomVisibility,
     pub is_live: bool,
+    /// Admin moderation lock. When `true`, non-admins are blocked from
+    /// (re)joining the room; admins and super admins are always allowed in.
+    pub locked: bool,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
 }
@@ -54,7 +107,13 @@ pub struct RoomMember {
 }
 
 /// A trade alert. `side` is intentionally free-form (e.g. "buy", "sell",
-/// "watch") so the room owner is not boxed into a fixed taxonomy.
+/// "watch", "nta" for a non-trade announcement) so the room owner is not boxed
+/// into a fixed taxonomy.
+///
+/// `post_to_x` / `no_push` are the author's delivery-intent flags from the Post
+/// Alert modal: whether to also tweet the alert and whether to suppress the push
+/// notification. They are persisted (nullable, default false) so the intent is
+/// captured; actual X/push delivery is not yet wired.
 #[derive(Debug, Clone, Serialize)]
 pub struct Alert {
     pub id: AlertId,
@@ -65,6 +124,8 @@ pub struct Alert {
     pub note: Option<String>,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
+    pub post_to_x: Option<bool>,
+    pub no_push: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -73,6 +134,217 @@ pub struct Message {
     pub room_id: RoomId,
     pub author_id: UserId,
     pub body: String,
+    /// The chat channel this message belongs to: `"main"` or `"off_topic"`.
+    pub channel: String,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
+}
+
+/// The kind of an uploaded file, derived from its content type. Drives how the
+/// frontend groups files into Files / Images / Sounds drawers.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FileCategory {
+    File,
+    Image,
+    Sound,
+}
+
+impl FileCategory {
+    /// Derive the category from a MIME type: `image/*` → image, `audio/*` →
+    /// sound, anything else → file.
+    #[must_use]
+    pub fn from_content_type(content_type: &str) -> Self {
+        if content_type.starts_with("image/") {
+            Self::Image
+        } else if content_type.starts_with("audio/") {
+            Self::Sound
+        } else {
+            Self::File
+        }
+    }
+
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::File => "file",
+            Self::Image => "image",
+            Self::Sound => "sound",
+        }
+    }
+}
+
+impl std::str::FromStr for FileCategory {
+    type Err = ParseError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "file" => Ok(Self::File),
+            "image" => Ok(Self::Image),
+            "sound" => Ok(Self::Sound),
+            other => Err(ParseError(other.to_owned())),
+        }
+    }
+}
+
+/// A file uploaded to a room's drive. Bytes live on local disk under the
+/// configured uploads directory; this is the metadata view, with a computed
+/// `download_url` for clients.
+#[derive(Debug, Clone, Serialize)]
+pub struct File {
+    pub id: FileId,
+    pub room_id: RoomId,
+    pub filename: String,
+    pub content_type: String,
+    pub size_bytes: i64,
+    pub category: FileCategory,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
+    pub download_url: String,
+}
+
+impl File {
+    #[must_use]
+    pub fn download_url(room_id: RoomId, file_id: FileId) -> String {
+        format!("/api/rooms/{room_id}/files/{file_id}/download")
+    }
+}
+
+/// A question asked against a trade alert (the Alert Q&A thread). Members post
+/// `body`; an admin later sets `answer`/`answered_by`/`answered_at` and flips
+/// `resolved`. Scoped to both the alert and its room.
+#[derive(Debug, Clone, Serialize)]
+pub struct Question {
+    pub id: QuestionId,
+    pub alert_id: AlertId,
+    pub room_id: RoomId,
+    pub author_id: UserId,
+    pub body: String,
+    pub answer: Option<String>,
+    pub answered_by: Option<UserId>,
+    pub resolved: bool,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339::option")]
+    pub answered_at: Option<OffsetDateTime>,
+}
+
+/// A live poll posted to a room. Members vote (one vote each, changeable while
+/// the poll is `open`); the author (an admin) closes it. `anonymous` only
+/// affects how the frontend presents voters — vote counts are always returned.
+/// `status` is `"open"` or `"closed"`.
+#[derive(Debug, Clone, Serialize)]
+pub struct Poll {
+    pub id: PollId,
+    pub room_id: RoomId,
+    pub author_id: UserId,
+    pub question: String,
+    pub anonymous: bool,
+    pub status: String,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
+}
+
+/// A single selectable option on a poll. `position` orders options within a
+/// poll (lower = earlier).
+#[derive(Debug, Clone, Serialize)]
+pub struct PollOption {
+    pub id: PollOptionId,
+    pub poll_id: PollId,
+    pub label: String,
+    pub position: i32,
+}
+
+/// An option together with its current vote tally. `votes` is `i64` to match
+/// Postgres `count(*)` (`bigint`) and to never overflow on a popular poll.
+#[derive(Debug, Clone, Serialize)]
+pub struct PollOptionResult {
+    pub id: PollOptionId,
+    pub label: String,
+    pub position: i32,
+    pub votes: i64,
+}
+
+/// A poll aggregated with its options and per-option vote tallies. This is the
+/// read model returned by every poll endpoint and broadcast over WebSocket.
+#[derive(Debug, Clone, Serialize)]
+pub struct PollDetail {
+    pub id: PollId,
+    pub room_id: RoomId,
+    pub author_id: UserId,
+    pub question: String,
+    pub anonymous: bool,
+    pub status: String,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
+    pub options: Vec<PollOptionResult>,
+    pub total_votes: i64,
+}
+
+/// What an emoji reaction is attached to: a chat message or a trade alert.
+/// Serialized as `"message"` / `"alert"` to match the wire contract the
+/// frontend posts and reads.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ReactionTargetKind {
+    Message,
+    Alert,
+}
+
+impl ReactionTargetKind {
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Message => "message",
+            Self::Alert => "alert",
+        }
+    }
+}
+
+impl std::str::FromStr for ReactionTargetKind {
+    type Err = ParseError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "message" => Ok(Self::Message),
+            "alert" => Ok(Self::Alert),
+            other => Err(ParseError(other.to_owned())),
+        }
+    }
+}
+
+/// One emoji's tally on a target: how many distinct users reacted with it, and
+/// whether the requesting user is one of them. `count` is `i32`: reaction
+/// counts per emoji are small and never approach the `i32` ceiling.
+#[derive(Debug, Clone, Serialize)]
+pub struct ReactionTally {
+    pub emoji: String,
+    pub count: i32,
+    /// Whether the user the summary was built for reacted with this emoji.
+    pub mine: bool,
+}
+
+/// The full set of reaction tallies for one target, scoped to its room. This is
+/// the read model returned by the reactions endpoints and broadcast over
+/// WebSocket so clients can replace a target's reactions in place.
+#[derive(Debug, Clone, Serialize)]
+pub struct ReactionSummary {
+    pub room_id: RoomId,
+    pub target_kind: ReactionTargetKind,
+    pub target_id: Uuid,
+    pub reactions: Vec<ReactionTally>,
+}
+
+/// A named, titled rich-text document scoped to a room. The `body` is plain
+/// text/markdown; the frontend renders it. `position` orders notes within a
+/// room (lower = earlier).
+#[derive(Debug, Clone, Serialize)]
+pub struct Note {
+    pub id: NoteId,
+    pub room_id: RoomId,
+    pub title: String,
+    pub body: String,
+    pub position: i32,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    pub updated_at: OffsetDateTime,
 }

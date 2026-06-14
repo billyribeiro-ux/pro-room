@@ -1,0 +1,140 @@
+<script lang="ts">
+	import { EnvelopeSimpleIcon } from 'phosphor-svelte';
+	import Modal from '../Modal.svelte';
+
+	interface PmThread {
+		id: string;
+		name: string;
+		preview: string;
+		when: string;
+	}
+
+	interface Props {
+		open: boolean;
+		onClose: () => void;
+		threads?: PmThread[];
+	}
+	let { open, onClose, threads = [] }: Props = $props();
+
+	/** First letter of the thread name, upper-cased, for the avatar fallback. */
+	function initial(name: string): string {
+		return name.trim().charAt(0).toUpperCase() || '?';
+	}
+</script>
+
+{#snippet footer()}
+	<button class="btn ghost" type="button" onclick={onClose}>Close</button>
+{/snippet}
+
+<Modal {open} {onClose} title="All private messages" {footer}>
+	{#if threads.length === 0}
+		<div class="empty">
+			<EnvelopeSimpleIcon size={28} />
+			<p>No private messages.</p>
+		</div>
+	{:else}
+		<ul class="threads">
+			{#each threads as thread (thread.id)}
+				<li class="thread">
+					<span class="avatar" aria-hidden="true">{initial(thread.name)}</span>
+					<span class="meta">
+						<span class="name">{thread.name}</span>
+						<span class="preview">{thread.preview}</span>
+					</span>
+					<time class="when">{thread.when}</time>
+				</li>
+			{/each}
+		</ul>
+	{/if}
+</Modal>
+
+<style>
+	.empty {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 1.5rem 0.5rem;
+		color: var(--text-dim);
+	}
+	.empty :global(svg) {
+		color: var(--text-dim);
+		opacity: 0.7;
+	}
+	.empty p {
+		margin: 0;
+		font-size: 0.9rem;
+	}
+	.threads {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
+	.thread {
+		display: flex;
+		align-items: center;
+		gap: 0.65rem;
+		background: var(--bg-elev);
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+		padding: 0.6rem 0.75rem;
+	}
+	.avatar {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 36px;
+		height: 36px;
+		flex: 0 0 36px;
+		border-radius: 50%;
+		background: var(--accent);
+		color: #fff;
+		font-weight: 700;
+		font-size: 0.95rem;
+		text-transform: uppercase;
+	}
+	.meta {
+		display: flex;
+		flex-direction: column;
+		gap: 0.15rem;
+		min-width: 0;
+		flex: 1;
+	}
+	.name {
+		font-weight: 600;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.preview {
+		font-size: 0.8rem;
+		color: var(--text-dim);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.when {
+		font-size: 0.75rem;
+		color: var(--text-dim);
+		flex: 0 0 auto;
+		white-space: nowrap;
+	}
+	.btn {
+		border-radius: var(--radius);
+		padding: 0.5rem 0.9rem;
+		font-weight: 600;
+		font-size: 0.85rem;
+		border: 1px solid var(--border);
+	}
+	.btn.ghost {
+		background: transparent;
+		color: var(--text-dim);
+	}
+	.btn.ghost:hover {
+		color: var(--text);
+		border-color: var(--accent);
+	}
+</style>

@@ -1,3 +1,82 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
+
+/* Dark, focused "trading desk" palette exposed as CSS variables so component
+   scoped styles can reference them without Tailwind. */
+:root {
+	/* Navy "Revolution Trading Room" palette — matches the reference app.
+	   Kept in sync with `DEFAULTS` in `lib/stores/theme.svelte.ts`. */
+	--bg: #0c2434;
+	--bg-elev: #0f2e43;
+	--bg-elev-2: #103d5c;
+	--border: #1a4f74;
+	--text: #ffffff;
+	--text-dim: #9fc4dd;
+	--accent: #45a2ff;
+	/* The reference pairs the bright accent #45a2ff with a darker link/header blue
+	   #0a6db1 (used for hovers, panel headers, usernames, active borders). */
+	--accent-hover: #0a6db1;
+	--positive: #92d528;
+	--negative: #bb352a;
+	--warn: #f39c12;
+	/* Message chrome (consumed by alert/chat rows + theme customizer preview).
+	   Usernames/tickers render on the WHITE message panel, so they use the darker
+	   room blue #0a6db1 (the brighter #45a2ff is reserved for autolinked URLs). */
+	--username-color: #0a6db1;
+	--ticker-color: #0a6db1;
+	--msg-font-size: 13px;
+	--radius: 6px;
+	/* App font — Open Sans is the reference's effective app font; Lato fallback. */
+	--font-sans:
+		'Open Sans', 'Lato', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica,
+		Arial, sans-serif;
+}
+
+/* Light mode. The Settings modal toggles `document.documentElement
+   .dataset.theme` between 'dark' (default, the `:root` block above) and
+   'light'; this block overrides the base palette for the light case.
+   Runtime color-picker overrides (set as inline custom properties on the
+   root by theme.svelte.ts) still win over these, which is intended. */
+:root[data-theme='light'] {
+	--bg: #eef3f8;
+	--bg-elev: #ffffff;
+	--bg-elev-2: #f4f8fc;
+	--border: #cdd9e5;
+	--text: #0c2434;
+	--text-dim: #4a6378;
+	--accent: #1d7fe0;
+	--accent-hover: #1565be;
+	--positive: #4a9e15;
+	--negative: #c23b30;
+	--warn: #b8860b;
+	--username-color: #1565be;
+	--ticker-color: #1d7fe0;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	margin: 0;
+	height: 100%;
+}
+
+body {
+	background: var(--bg);
+	color: var(--text);
+	font-family: var(--font-sans);
+	-webkit-font-smoothing: antialiased;
+}
+
+a {
+	color: var(--accent);
+	text-decoration: none;
+}
+
+button {
+	font: inherit;
+	cursor: pointer;
+}

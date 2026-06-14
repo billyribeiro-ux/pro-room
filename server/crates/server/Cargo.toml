@@ -19,3 +19,24 @@ time = { workspace = true }
 thiserror = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }
+tokio = { version = "1.52.3", features = ["full"] }
+axum = { version = "0.8.9", features = ["macros", "multipart", "ws"] }
+axum-extra = { version = "0.12.6", features = ["cookie", "typed-header"] }
+tower = "0.5.3"
+tower-http = { version = "0.6.11", features = ["cors", "trace", "catch-panic"] }
+futures-util = "0.3.32"
+sqlx = { version = "0.9.0", default-features = false, features = ["runtime-tokio", "tls-rustls-ring", "postgres", "uuid", "time", "json", "macros", "migrate"] }
+fred = { version = "10", features = ["subscriber-client"] }
+argon2 = "0.5.3"
+sha2 = "0.11.0"
+base64 = "0.22.1"
+# `rust_crypto` selects the pure-Rust HMAC/SHA2 provider for HS256 token signing.
+# jsonwebtoken 10's default features enable NO crypto provider, so `encode` panics
+# at runtime ("could not determine CryptoProvider") unless exactly one is chosen.
+# rust_crypto avoids aws_lc_rs's native cmake/clang build deps (cleaner CI builds).
+jsonwebtoken = { version = "10.4.0", features = ["rust_crypto"] }
+dotenvy = "0.15.7"
+url = "2.5.8"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+getrandom = "0.4.2"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "charset", "http2"] }

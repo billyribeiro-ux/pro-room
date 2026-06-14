@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO room_members (room_id, user_id, role, attributes)\n        VALUES ($1, $2, $3::text::user_role, $4)\n        ON CONFLICT (room_id, user_id)\n        DO UPDATE SET role = EXCLUDED.role, attributes = EXCLUDED.attributes\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Jsonb"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "accce205e7776d52e9ab12c43877b0ec9d0e2d873d7f4dc21e8c42445c03c78c"
+}

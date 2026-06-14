@@ -1,0 +1,47 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        DELETE FROM oauth_states\n        WHERE state = $1 AND expires_at > now()\n        RETURNING provider::text AS \"provider!\", pkce_verifier, redirect_to\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "provider!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "pkce_verifier",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "oauth_states",
+            "name": "pkce_verifier"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "redirect_to",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "oauth_states",
+            "name": "redirect_to"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      null,
+      false,
+      true
+    ]
+  },
+  "hash": "48ac164f4874492b36f9539f1115d09bfa32298280cc0ef446e91ed084ff1f52"
+}
