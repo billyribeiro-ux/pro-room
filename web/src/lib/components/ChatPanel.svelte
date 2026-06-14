@@ -10,6 +10,8 @@
 	import MessageBody from './MessageBody.svelte';
 	import ReactionBar from './ReactionBar.svelte';
 	import UserInfoModal from './modals/UserInfoModal.svelte';
+	import AdvancedSearchModal from './modals/AdvancedSearchModal.svelte';
+	import SettingsModal from './modals/SettingsModal.svelte';
 	import Icon from './Icon.svelte';
 
 	export type ChatItem = Message & {
@@ -33,6 +35,9 @@
 		/** Admin: delete any message (shown in the row menu). */
 		canManage?: boolean;
 		onDelete?: (id: string) => void;
+		/** Current user's id. Their own messages render right-aligned (reference
+		 * `.msg-right` bubble); everyone else's stay left (`.msg-left`). */
+		meId?: string;
 	}
 	let {
 		messages,
@@ -45,7 +50,8 @@
 		canReact = false,
 		onReact,
 		canManage = false,
-		onDelete
+		onDelete,
+		meId
 	}: Props = $props();
 
 	let body = $state('');
@@ -56,6 +62,10 @@
 
 	// User-info modal target (a row's author), or null when closed.
 	let infoUser = $state<{ display_name?: string; user_id?: string; online?: boolean } | null>(null);
+
+	// Header affordances (were dead): advanced-search modal + the settings gear.
+	let searchOpen = $state(false);
+	let settingsOpen = $state(false);
 
 	let textareaEl = $state<HTMLTextAreaElement | null>(null);
 
@@ -153,8 +163,17 @@
 			>
 		</div>
 		<div class="actions">
-			<button type="button" aria-label="Search chat"><Icon name="search" size={16} /></button>
-			<button type="button" class="gear" aria-label="Chat settings">
+			<button type="button" aria-label="Search chat" onclick={() => (searchOpen = true)}
+				><Icon name="search" size={16} /></button
+			>
+			<button
+				type="button"
+				class="gear"
+				aria-label="Chat settings"
+				aria-haspopup="dialog"
+				aria-expanded={settingsOpen}
+				onclick={() => (settingsOpen = true)}
+			>
 				<Icon name="cog" size={16} /><Icon name="caret-down" size={10} />
 			</button>
 		</div>
@@ -164,12 +183,13 @@
 		{#each messages as m, i (m.id)}
 			{@const prev = messages[i - 1]}
 			{@const newDay = !prev || dayKey(prev.created_at) !== dayKey(m.created_at)}
+			{@const mine = !!meId && m.author_id === meId}
 			{#if newDay}
 				<li class="separator-row">
 					<span class="separator">{formatDayLabel(m.created_at)}</span>
 				</li>
 			{/if}
-			<li class="msg-box">
+			<li class="msg-box" class:mine>
 				<div class="row1">
 					<div class="msg-menu">
 						<button
@@ -180,7 +200,10 @@
 							aria-expanded={openMenuId === m.id}
 							onclick={() => toggleMenu(m.id)}
 						>
-							<Icon name="ellipsis-v" size={20} />
+							<!-- Reference row menu glyph is the literal char "⠇" (the Angular
+							     app's `.menuTriger::after { content:"⠇" }`), not a FA icon —
+							     20px, weight 600, in the username colour. -->
+							<span class="ellipsis" aria-hidden="true">⠇</span>
 						</button>
 						{#if openMenuId === m.id}
 							<div class="menu" role="menu">
@@ -216,7 +239,7 @@
 						<span class="avatar" aria-hidden="true">{initials(m.author_name)}</span>
 					{/if}
 
-					<span class="username" style:color={m.author_color ?? 'var(--username-color)'}
+					<span class="username" style:color={m.author_color ?? '#000'}
 						>{m.author_name ?? 'trader'}</span
 					>
 
@@ -269,6 +292,8 @@
 	user={infoUser ?? undefined}
 	onClose={() => (infoUser = null)}
 />
+<AdvancedSearchModal open={searchOpen} onClose={() => (searchOpen = false)} />
+<SettingsModal open={settingsOpen} onClose={() => (settingsOpen = false)} />
 
 <style>
 	.panel {
@@ -365,7 +390,8 @@
 		padding: 0;
 		flex: 1;
 		overflow-y: auto;
-		background: #ffffff;
+		/* Reference chat scroll bg matches the rows (--msgs-bg light = #f1f1f1). */
+		background: #f1f1f1;
 	}
 	.empty {
 		padding: 0.6rem 0.85rem;
@@ -398,15 +424,38 @@
 	.msg-box {
 		position: relative;
 		padding: 0.6rem 0.85rem 0.25rem;
-		/* Reference msg rows are white with a top divider (#e1e1e1) and flat. */
-		background: #ffffff;
-		border-top: 1px solid #e1e1e1;
+		/* Reference chat .msg-box: bg --msgs-bg (light) = #f1f1f1, flat, with a top
+		   divider --msg-border-color = #d9d9d9. */
+		background: #f1f1f1;
+		border-top: 1px solid #d9d9d9;
 		font-size: var(--msg-font-size);
 	}
 	.row1 {
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
+	}
+
+	/* Reference chat bubble: the current user's OWN messages right-align
+	   (`.msg-right`: text-align right, margin-right 5px, padding-left 10px) with
+	   the menu/avatar mirrored to the right edge; everyone else stays left
+	   (`.msg-left`). Alerts have no `.msg-right` and so never flip. */
+	.msg-box.mine .row1 {
+		flex-direction: row-reverse;
+	}
+	.msg-box.mine .created-at {
+		margin-left: 0;
+		margin-right: auto;
+	}
+	.msg-box.mine .body {
+		text-align: right;
+		margin-left: 0;
+		margin-right: 5px;
+		padding-left: 10px;
+	}
+	.msg-box.mine .menu {
+		left: auto;
+		right: 0;
 	}
 
 	.msg-menu {
@@ -419,12 +468,18 @@
 		justify-content: center;
 		background: transparent;
 		border: none;
-		/* Reference .msgMenu uses the username blue (#0a6db1), not grey, and is a
-		   flat icon (no border-radius). */
-		color: var(--username-color);
+		/* Reference .msgMenu: the "⠇" glyph at 20px / weight 600 in the username
+		   colour (light-theme --username-color resolves to #000), flat (no radius);
+		   hover #8c8686 (--light-brown) at weight 900. */
+		color: #000;
+		font-weight: 600;
 		cursor: pointer;
 		padding: 0.1rem;
 		border-radius: 0;
+	}
+	.menu-trigger .ellipsis {
+		font-size: 20px;
+		line-height: 1;
 	}
 	.menu-trigger:hover {
 		font-weight: 900;
@@ -493,7 +548,11 @@
 	.username {
 		font-size: 14px;
 		font-weight: 900;
-		color: var(--username-color);
+		/* Reference chat .username colour is the light-theme --username-color = #000
+		   (a per-user author_color still wins via the inline style); cursor:pointer
+		   matches the reference (the name opens user info). */
+		color: #000;
+		cursor: pointer;
 		/* Reference .username (mx-1) has 4px horizontal margin. */
 		margin: 0 4px;
 	}
@@ -502,17 +561,19 @@
 		margin-left: auto;
 		font-weight: 600;
 		font-size: 12px;
-		/* Reference .created-at computed font-style is normal (12px / 600 / #a8a8a8). */
+		/* Reference chat .created-at: 12px / 600, upright, colour --date-color
+		   (light theme) = #8394a9. */
 		font-style: normal;
-		color: #a8a8a8;
+		color: #8394a9;
 		white-space: nowrap;
 		flex-shrink: 0;
 	}
 
 	.body {
 		margin: 0.35rem 0 0 8px;
-		color: #676767;
-		/* Reference body line-height 19.5px / 13px = 1.5. */
+		/* Reference chat body (.msg-left/.msg-right) colour --msg-color (light) =
+		   #1a1a1a; 13px with line-height 1.5 (19.5px). */
+		color: #1a1a1a;
 		line-height: 1.5;
 		word-break: break-word;
 		white-space: pre-wrap;

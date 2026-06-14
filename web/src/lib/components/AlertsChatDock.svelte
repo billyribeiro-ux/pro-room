@@ -21,6 +21,8 @@
 		onPostAlert: (symbol: string, side: string, note: string) => Promise<void>;
 		onPostMessage: (body: string) => Promise<void>;
 		onChannel: (channel: ChatChannel) => void;
+		/** Current user's id — forwarded to ChatPanel to right-align own messages. */
+		meId?: string;
 	}
 	let {
 		alerts,
@@ -37,7 +39,8 @@
 		canPostMessage,
 		onPostAlert,
 		onPostMessage,
-		onChannel
+		onChannel,
+		meId
 	}: Props = $props();
 
 	// The column's WIDTH is now owned by the outer <Split> gutter in the room
@@ -137,6 +140,7 @@
 			canPost={canPostMessage}
 			onPost={onPostMessage}
 			{onChannel}
+			{meId}
 		/>
 	</div>
 </div>
