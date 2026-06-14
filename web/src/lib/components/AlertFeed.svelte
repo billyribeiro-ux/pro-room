@@ -265,7 +265,7 @@
 					</div>
 
 					{#if a.image_url}
-						<img class="avatar-img" src={a.image_url} alt="" width="36" height="36" />
+						<img class="avatar-img" src={a.image_url} alt="" width="35" height="35" />
 					{:else}
 						<span class="avatar" aria-hidden="true">{initials(a.author_name)}</span>
 					{/if}
@@ -274,16 +274,21 @@
 						>{a.author_name ?? 'Trader'}</span
 					>
 
-					{#if (a.question_count ?? 0) > 0 || a.answered}
-						<button type="button" class="alert-qa" onclick={() => openQa(a)}>
-							{#if (a.question_count ?? 0) > 0}<span class="qa-count">({a.question_count})</span
-								>{/if}<Icon name="question-circle" size={11} />{#if a.answered}<Icon
-									name="check-circle"
-									size={11}
-									class="qa-check"
-								/>{/if}
-						</button>
-					{/if}
+					<!-- Reference .alert-qa button: shown on EVERY row (the "ask a question"
+					     affordance) — optional (N) count + fa-question-circle (10px) +
+					     trailing ✅ emoji when answered. -->
+					<button
+						type="button"
+						class="alert-qa"
+						onclick={() => openQa(a)}
+						title="Ask a question"
+						aria-label="Ask a question"
+					>
+						{#if (a.question_count ?? 0) > 0}<span class="qa-count">({a.question_count})</span
+							>{/if}<Icon name="question-circle" size={10} />{#if a.answered}<span class="qa-check"
+								>✅</span
+							>{/if}
+					</button>
 
 					<time class="created-at">{formatStamp(a.created_at)}</time>
 				</div>
@@ -510,8 +515,9 @@
 
 	.avatar,
 	.avatar-img {
-		width: 36px;
-		height: 36px;
+		/* Reference avatar img is 35x35, round. */
+		width: 35px;
+		height: 35px;
 		flex-shrink: 0;
 		/* Round avatars (reference --rosterImg-border-radius: 50%); crop image
 		   avatars so the gravatar is a circle, not a square. */
@@ -548,10 +554,12 @@
 		background: #eef4fb;
 		border: 1px solid #cfe0f5;
 		color: #0a6db1;
+		/* Reference .alert-qa (btn-sm btn-secondary): 10px, padding 1px 3px,
+		   border-radius 4px. Color kept per our theme rules. */
 		font-size: 10px;
 		line-height: 1;
 		padding: 1px 3px;
-		border-radius: 5px;
+		border-radius: 4px;
 		cursor: pointer;
 	}
 	.alert-qa:hover {
@@ -560,12 +568,15 @@
 	.qa-count {
 		font-weight: 700;
 	}
-	.alert-qa :global(.qa-check) {
-		color: var(--positive, #16c784);
+	.qa-check {
+		font-size: 10px;
+		margin-left: 1px;
 	}
 
 	.created-at {
 		margin-left: auto;
+		/* Reference .created-at mr-2 = 8px from the right edge. */
+		margin-right: 8px;
 		font-weight: 600;
 		font-size: 12px;
 		/* Reference .created-at is upright (font-style: normal), color #a8a8a8. */

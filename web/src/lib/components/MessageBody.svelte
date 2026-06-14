@@ -35,8 +35,10 @@
 		line-height: 1.5;
 	}
 	.ticker {
+		/* Reference .stockColor (e.g. $VLO): 13px, font-weight 700, ITALIC. */
 		color: var(--ticker-color, #0a6db1);
 		font-weight: 700;
+		font-style: italic;
 	}
 	.mention {
 		color: #048d04;
