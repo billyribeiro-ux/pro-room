@@ -1,0 +1,250 @@
+[
+ {
+  "label": "Connectivity Check",
+  "glyph": "network-wired",
+  "family": "solid",
+  "raw": "fas fa-network-wired",
+  "x": -243,
+  "y": 197
+ },
+ {
+  "label": "General Settings",
+  "glyph": "cogs",
+  "family": "solid",
+  "raw": "fas fa-cogs",
+  "x": -243,
+  "y": 245
+ },
+ {
+  "label": "Archives",
+  "glyph": "archive",
+  "family": "solid",
+  "raw": "fas fa-archive",
+  "x": -243,
+  "y": 293
+ },
+ {
+  "label": "Manage Muted Users",
+  "glyph": "comments",
+  "family": "solid",
+  "raw": "fas fa-comments",
+  "x": -243,
+  "y": 336
+ },
+ {
+  "label": "Manage Followed Users",
+  "glyph": "users",
+  "family": "solid",
+  "raw": "fas fa-users",
+  "x": -243,
+  "y": 374
+ },
+ {
+  "label": "Users: Sort by Trials",
+  "glyph": "user",
+  "family": "solid",
+  "raw": "fas fa-user",
+  "x": -243,
+  "y": 417
+ },
+ {
+  "label": "",
+  "glyph": "cog",
+  "family": "solid",
+  "raw": "fas fa fa-cog",
+  "x": -33,
+  "y": 417
+ },
+ {
+  "label": "Reload Users",
+  "glyph": "sync",
+  "family": "solid",
+  "raw": "fas fa fa-sync",
+  "x": -63,
+  "y": 417
+ },
+ {
+  "label": "Sort Users",
+  "glyph": "sort-alpha-down",
+  "family": "solid",
+  "raw": "fas fa-sort-alpha-down",
+  "x": -91,
+  "y": 417
+ },
+ {
+  "label": "Search Users",
+  "glyph": "search",
+  "family": "solid",
+  "raw": "fas fa fa-search",
+  "x": -121,
+  "y": 417
+ },
+ {
+  "label": "Volume",
+  "glyph": "volume-up",
+  "family": "solid",
+  "raw": "fas fa-2x fa-volume-up",
+  "x": 1924,
+  "y": 1
+ },
+ {
+  "label": "Reload",
+  "glyph": "sync",
+  "family": "solid",
+  "raw": "fas fa-2x fa-sync",
+  "x": 1974,
+  "y": 1
+ },
+ {
+  "label": "Search",
+  "glyph": "search",
+  "family": "solid",
+  "raw": "fas fa-search",
+  "x": 520,
+  "y": 61
+ },
+ {
+  "label": "(3) \u2705",
+  "glyph": "question-circle",
+  "family": "solid",
+  "raw": "fas fa-question-circle",
+  "x": 407,
+  "y": -8233
+ },
+ {
+  "label": "Ask a question",
+  "glyph": "question-circle",
+  "family": "solid",
+  "raw": "fas fa-question-circle",
+  "x": 440,
+  "y": -8126
+ },
+ {
+  "label": "(4) \u2705",
+  "glyph": "question-circle",
+  "family": "solid",
+  "raw": "fas fa-question-circle",
+  "x": 414,
+  "y": -6168
+ },
+ {
+  "label": "(9) \u2705",
+  "glyph": "question-circle",
+  "family": "solid",
+  "raw": "fas fa-question-circle",
+  "x": 414,
+  "y": -5931
+ },
+ {
+  "label": "(2) \u2705",
+  "glyph": "question-circle",
+  "family": "solid",
+  "raw": "fas fa-question-circle",
+  "x": 407,
+  "y": -5698
+ },
+ {
+  "label": "(1)",
+  "glyph": "question-circle",
+  "family": "solid",
+  "raw": "fas fa-question-circle",
+  "x": 421,
+  "y": -5357
+ },
+ {
+  "label": "(1) \u2705",
+  "glyph": "question-circle",
+  "family": "solid",
+  "raw": "fas fa-question-circle",
+  "x": 414,
+  "y": -4987
+ },
+ {
+  "label": "(6) \u2705",
+  "glyph": "question-circle",
+  "family": "solid",
+  "raw": "fas fa-question-circle",
+  "x": 414,
+  "y": -4763
+ },
+ {
+  "label": "Screens",
+  "glyph": "desktop",
+  "family": "solid",
+  "raw": "fas fa-desktop",
+  "x": 1193,
+  "y": 54
+ },
+ {
+  "label": "Notes",
+  "glyph": "edit",
+  "family": "solid",
+  "raw": "fas fa-edit",
+  "x": 1283,
+  "y": 54
+ },
+ {
+  "label": "Files",
+  "glyph": "folder",
+  "family": "solid",
+  "raw": "fas fa-folder",
+  "x": 1363,
+  "y": 54
+ },
+ {
+  "label": "Welcome",
+  "glyph": "home",
+  "family": "solid",
+  "raw": "fas fa-home",
+  "x": 755,
+  "y": 96
+ },
+ {
+  "label": "JC's Daily Briefing",
+  "glyph": "pen",
+  "family": "solid",
+  "raw": "fas fa-pen mx-1",
+  "x": 859,
+  "y": 96
+ },
+ {
+  "label": "Henry's Workflowy Notes",
+  "glyph": "pen",
+  "family": "solid",
+  "raw": "fas fa-pen mx-1",
+  "x": 992,
+  "y": 96
+ },
+ {
+  "label": "Sam's Mag 7 index",
+  "glyph": "pen",
+  "family": "solid",
+  "raw": "fas fa-pen mx-1",
+  "x": 1162,
+  "y": 96
+ },
+ {
+  "label": "1on1 Coaching/ Prop Firm & Tool Discounts codes.",
+  "glyph": "pen",
+  "family": "solid",
+  "raw": "fas fa-pen mx-1",
+  "x": 1300,
+  "y": 96
+ },
+ {
+  "label": "Taylor's Scorecard Rankings (6/02 CLOSE)",
+  "glyph": "pen",
+  "family": "solid",
+  "raw": "fas fa-pen mx-1",
+  "x": 1609,
+  "y": 96
+ },
+ {
+  "label": "Download",
+  "glyph": "download",
+  "family": "solid",
+  "raw": "fas fa-download mr-2",
+  "x": 602,
+  "y": 1203
+ }
+]

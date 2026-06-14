@@ -1,0 +1,9 @@
+{
+ "note": "presenter Notes-tab + note sub-tab states (groups of deep nodes w/ matchedRules)",
+ "states": {
+  "tab:Notes": {
+   "groups": [],
+   "note": "tab not found"
+  }
+ }
+}

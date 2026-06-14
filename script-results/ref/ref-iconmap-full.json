@@ -1,0 +1,380 @@
+[
+ {
+  "label": "(1)",
+  "icons": [
+   {
+    "glyph": "question-circle",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "(1) \u2705",
+  "icons": [
+   {
+    "glyph": "question-circle",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "(2) \u2705",
+  "icons": [
+   {
+    "glyph": "question-circle",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "(3) \u2705",
+  "icons": [
+   {
+    "glyph": "question-circle",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "(4) \u2705",
+  "icons": [
+   {
+    "glyph": "question-circle",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "(6) \u2705",
+  "icons": [
+   {
+    "glyph": "question-circle",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "(9) \u2705",
+  "icons": [
+   {
+    "glyph": "question-circle",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "1on1 Coaching/ Prop Firm & Tool Discount",
+  "icons": [
+   {
+    "glyph": "pen",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "Add Choice",
+  "icons": [
+   {
+    "glyph": "plus-circle",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "Alerts",
+  "icons": [
+   {
+    "glyph": "bell",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "Archives",
+  "icons": [
+   {
+    "glyph": "archive",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "Ask a question",
+  "icons": [
+   {
+    "glyph": "question-circle",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "Connectivity Check",
+  "icons": [
+   {
+    "glyph": "network-wired",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "Copy Results",
+  "icons": [
+   {
+    "glyph": "copy",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "Download",
+  "icons": [
+   {
+    "glyph": "download",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "Edit my Info and Avatar",
+  "icons": [
+   {
+    "glyph": "user-tie",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "Files",
+  "icons": [
+   {
+    "glyph": "folder",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "Filter out alerts",
+  "icons": [
+   {
+    "glyph": "filter",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "GIF",
+  "icons": [
+   {
+    "glyph": "smile",
+    "family": "regular"
+   }
+  ]
+ },
+ {
+  "label": "General Settings",
+  "icons": [
+   {
+    "glyph": "cogs",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "Henry's Workflowy Notes",
+  "icons": [
+   {
+    "glyph": "pen",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "JC's Daily Briefing",
+  "icons": [
+   {
+    "glyph": "pen",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "Manage Followed Users",
+  "icons": [
+   {
+    "glyph": "users",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "Manage Muted Users",
+  "icons": [
+   {
+    "glyph": "comments",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "Notes",
+  "icons": [
+   {
+    "glyph": "edit",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "Refresh",
+  "icons": [
+   {
+    "glyph": "sync",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "Reload",
+  "icons": [
+   {
+    "glyph": "sync",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "Reload Users",
+  "icons": [
+   {
+    "glyph": "sync",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "Rooms",
+  "icons": [
+   {
+    "glyph": "sync-alt",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "Sam's Mag 7 index",
+  "icons": [
+   {
+    "glyph": "pen",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "Save To Canned",
+  "icons": [
+   {
+    "glyph": "floppy-o",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "Screens",
+  "icons": [
+   {
+    "glyph": "desktop",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "Search",
+  "icons": [
+   {
+    "glyph": "search",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "Search Users",
+  "icons": [
+   {
+    "glyph": "search",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "Sort Users",
+  "icons": [
+   {
+    "glyph": "sort-alpha-down",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "Sort by Trials",
+  "icons": [
+   {
+    "glyph": "cog",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "Start Test",
+  "icons": [
+   {
+    "glyph": "play",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "Taylor's Scorecard Rankings (6/02 CLOSE)",
+  "icons": [
+   {
+    "glyph": "pen",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "Test",
+  "icons": [
+   {
+    "glyph": "volume-up",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "Users: Sort by Trials",
+  "icons": [
+   {
+    "glyph": "user",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "Volume",
+  "icons": [
+   {
+    "glyph": "volume-up",
+    "family": "solid"
+   }
+  ]
+ },
+ {
+  "label": "Welcome",
+  "icons": [
+   {
+    "glyph": "home",
+    "family": "solid"
+   }
+  ]
+ }
+]
