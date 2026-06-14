@@ -15,16 +15,18 @@
 	// Always present for the /rooms/[id] route.
 	const roomId = page.params.id as string;
 
-	type Tab = 'text' | 'url' | 'image' | 'gif' | 'video';
+	// Reference Post Alert modal has THREE tabs: Text Alert / Text Url /
+	// Image-GIF-Video (ONE combined media tab = url input + upload/drop zone).
+	type Tab = 'text' | 'url' | 'media';
 	let tab = $state<Tab>('text');
 
 	// Per-tab composer state.
-	let text = $state('');
-	let url = $state('');
-	let urlText = $state('');
-	let imageUrl = $state('');
-	let gifUrl = $state('');
-	let videoUrl = $state('');
+	let text = $state(''); // Text Alert tab (rows=10)
+	let url = $state(''); // Text Url tab: the link
+	let urlText = $state(''); // Text Url tab: accompanying message (rows=2)
+	let mediaUrl = $state(''); // Image/GIF/Video tab: link OR uploaded file url
+	let mediaText = $state(''); // Image/GIF/Video tab: accompanying message (rows=2)
+	let dragOver = $state(false);
 
 	// Footer options — match the reference Post Alert modal's checkboxes.
 	let keepOpen = $state(false);
@@ -45,12 +47,9 @@
 	/** The text that becomes the alert note for the active tab. */
 	function composeNote(): string {
 		if (tab === 'text') return text.trim();
-		if (tab === 'image') return imageUrl.trim();
-		if (tab === 'gif') return gifUrl.trim();
-		if (tab === 'video') return videoUrl.trim();
-		// url tab
-		const label = urlText.trim();
-		const link = url.trim();
+		// url + media tabs are both "message + link".
+		const label = (tab === 'url' ? urlText : mediaText).trim();
+		const link = (tab === 'url' ? url : mediaUrl).trim();
 		return label ? `${label} ${link}`.trim() : link;
 	}
 
@@ -58,9 +57,8 @@
 		text = '';
 		url = '';
 		urlText = '';
-		imageUrl = '';
-		gifUrl = '';
-		videoUrl = '';
+		mediaUrl = '';
+		mediaText = '';
 		error = null;
 	}
 
@@ -69,22 +67,31 @@
 		onClose();
 	}
 
-	/** Upload a selected image to the room's files store, then use its URL. */
-	async function onUpload(e: Event) {
-		const file = (e.currentTarget as HTMLInputElement).files?.[0];
-		if (!file) return;
+	/** Upload a file to the room's files store, then use its URL as the media link. */
+	async function uploadFile(file: File) {
 		uploading = true;
 		error = null;
 		try {
 			const form = new FormData();
 			form.append('file', file);
 			const uploaded = await api.post<{ url: string }>(`/api/rooms/${roomId}/files`, form);
-			imageUrl = uploaded.url;
+			mediaUrl = uploaded.url;
 		} catch (err) {
 			error = err instanceof ApiError ? err.message : 'Image upload failed';
 		} finally {
 			uploading = false;
 		}
+	}
+	function onUpload(e: Event) {
+		const file = (e.currentTarget as HTMLInputElement).files?.[0];
+		if (file) void uploadFile(file);
+	}
+	/** Reference media tab doubles as a drop zone ("or drop an image"). */
+	function onDrop(e: DragEvent) {
+		e.preventDefault();
+		dragOver = false;
+		const file = e.dataTransfer?.files?.[0];
+		if (file) void uploadFile(file);
 	}
 
 	/** Open a pre-filled tweet for the just-posted alert. Client-side X share
@@ -158,79 +165,101 @@
 			type="button"
 			role="tab"
 			class="tab"
-			class:active={tab === 'image'}
-			aria-selected={tab === 'image'}
-			onclick={() => (tab = 'image')}
+			class:active={tab === 'media'}
+			aria-selected={tab === 'media'}
+			onclick={() => (tab = 'media')}
 		>
-			<Icon name="image" size={15} /> Image
-		</button>
-		<button
-			type="button"
-			role="tab"
-			class="tab"
-			class:active={tab === 'gif'}
-			aria-selected={tab === 'gif'}
-			onclick={() => (tab = 'gif')}
-		>
-			<Icon name="smile" family="regular" size={15} /> GIF
-		</button>
-		<button
-			type="button"
-			role="tab"
-			class="tab"
-			class:active={tab === 'video'}
-			aria-selected={tab === 'video'}
-			onclick={() => (tab = 'video')}
-		>
-			<Icon name="video" size={15} /> Video
+			<Icon name="image" size={15} /> Image / GIF / Video
 		</button>
 	</div>
 
 	<div class="pane">
 		{#if tab === 'text'}
-			<label class="field">
-				<span class="label">Alert text</span>
+			<!-- Reference Text Alert tab: a single rows=10 textarea, placeholder "Alert Text...". -->
+			<div class="field">
 				<textarea
+					id="alert-text"
+					name="alert-text"
+					aria-label="Alert text"
 					bind:value={text}
-					rows="4"
-					placeholder="e.g. $SPX trimming half here, runner to 5300"
+					rows="10"
+					placeholder="Alert Text..."
 				></textarea>
-			</label>
+			</div>
 		{:else if tab === 'url'}
-			<label class="field">
-				<span class="label">URL</span>
-				<input type="url" bind:value={url} placeholder="https://example.com/chart" />
-			</label>
-			<label class="field">
-				<span class="label">Text</span>
-				<input type="text" bind:value={urlText} placeholder="Optional caption" />
-			</label>
-		{:else if tab === 'image'}
-			<label class="field">
-				<span class="label">Image link to show</span>
-				<input type="url" bind:value={imageUrl} placeholder="https://example.com/chart.png" />
-			</label>
-			<label class="upload">
-				<Icon name="upload" size={15} />
-				{uploading ? 'Uploading…' : 'Click to select images to upload'}
-				<input type="file" accept="image/*" onchange={onUpload} disabled={uploading} hidden />
-			</label>
-			{#if imageUrl}
-				<img class="preview" src={imageUrl} alt="Alert attachment preview" />
-			{/if}
-		{:else if tab === 'gif'}
-			<label class="field">
-				<span class="label">GIF link to show</span>
-				<input type="url" bind:value={gifUrl} placeholder="https://media.giphy.com/…/giphy.gif" />
-			</label>
-			{#if gifUrl}
-				<img class="preview" src={gifUrl} alt="GIF preview" />
-			{/if}
+			<!-- Reference Text Url tab: fa-link url input-group + rows=2 message textarea. -->
+			<div class="field input-group">
+				<span class="prepend" aria-hidden="true"><Icon name="link" size={14} /></span>
+				<input
+					id="alert-url"
+					name="alert-url"
+					type="url"
+					aria-label="Link / URL to send to users"
+					bind:value={url}
+					placeholder="Link / URL to send to users"
+				/>
+			</div>
+			<div class="field">
+				<textarea
+					id="alert-url-text"
+					name="alert-url-text"
+					aria-label="Alert text"
+					bind:value={urlText}
+					rows="2"
+					placeholder="Alert Text..."
+				></textarea>
+			</div>
 		{:else}
-			<label class="field">
-				<span class="label">Video link to show</span>
-				<input type="url" bind:value={videoUrl} placeholder="https://example.com/clip.mp4" />
+			<!-- Reference Image/GIF/Video tab: url input + "OR..." + upload/drop zone + rows=2 message. -->
+			<div class="field input-group">
+				<span class="prepend" aria-hidden="true"><Icon name="link" size={14} /></span>
+				<input
+					id="alert-media-url"
+					name="alert-media-url"
+					type="url"
+					aria-label="Image or Video Link to show"
+					bind:value={mediaUrl}
+					placeholder="Image or Video Link to show"
+				/>
+			</div>
+			<div class="or">OR...</div>
+			<label
+				class="upload"
+				class:dragover={dragOver}
+				ondragover={(e) => {
+					e.preventDefault();
+					dragOver = true;
+				}}
+				ondragleave={() => (dragOver = false)}
+				ondrop={onDrop}
+			>
+				<Icon name="upload" size={18} />
+				<span>{uploading ? 'Uploading…' : 'Click to select images to upload'}</span>
+				<span class="drop-hint">or drop an image</span>
+				<input
+					id="fuploadAlert"
+					name="fuploadAlert"
+					type="file"
+					accept="image/*"
+					multiple
+					onchange={onUpload}
+					disabled={uploading}
+					hidden
+				/>
 			</label>
+			{#if mediaUrl}
+				<img class="preview" src={mediaUrl} alt="Alert attachment preview" />
+			{/if}
+			<div class="field">
+				<textarea
+					id="alert-media-text"
+					name="alert-media-text"
+					aria-label="Alert text"
+					bind:value={mediaText}
+					rows="2"
+					placeholder="Alert Text..."
+				></textarea>
+			</div>
 		{/if}
 
 		{#if error}<p class="err" role="alert">{error}</p>{/if}
@@ -299,14 +328,37 @@
 		flex-direction: column;
 		gap: 0.3rem;
 	}
-	.label {
-		font-size: 0.78rem;
-		font-weight: 600;
+	/* Reference url/media inputs sit in a Bootstrap input-group with an fa-link prepend. */
+	.input-group {
+		flex-direction: row;
+		align-items: stretch;
+		gap: 0;
+	}
+	.prepend {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0 0.6rem;
+		background: var(--bg-elev-2);
+		border: 1px solid var(--border);
+		border-right: none;
+		border-radius: var(--radius) 0 0 var(--radius);
 		color: var(--text-dim);
 	}
+	.input-group input {
+		flex: 1;
+		min-width: 0;
+		border-radius: 0 var(--radius) var(--radius) 0;
+	}
+	/* Reference "OR..." separator between the link input and the upload zone. */
+	.or {
+		text-align: center;
+		color: var(--text-dim);
+		font-size: 0.78rem;
+		font-weight: 700;
+	}
 	textarea,
-	input[type='url'],
-	input[type='text'] {
+	input[type='url'] {
 		width: 100%;
 		box-sizing: border-box;
 		background: var(--bg-elev);
@@ -325,23 +377,33 @@
 		outline: none;
 		border-color: var(--accent);
 	}
+	/* Reference media tab: a full-width click-or-drop upload zone
+	   ("Click to select images to upload" / "or drop an image"). */
 	.upload {
-		display: inline-flex;
+		display: flex;
+		flex-direction: column;
 		align-items: center;
-		gap: 0.4rem;
-		align-self: flex-start;
+		gap: 0.3rem;
 		background: var(--bg-elev);
 		border: 1px dashed var(--border);
 		color: var(--text-dim);
 		border-radius: var(--radius);
-		padding: 0.45rem 0.7rem;
+		padding: 1rem;
 		font-size: 0.82rem;
 		font-weight: 600;
 		cursor: pointer;
+		text-align: center;
 	}
-	.upload:hover {
+	.upload:hover,
+	.upload.dragover {
 		border-color: var(--accent);
 		color: var(--text);
+		background: var(--bg-elev-2);
+	}
+	.drop-hint {
+		font-weight: 400;
+		font-size: 0.76rem;
+		opacity: 0.8;
 	}
 	.preview {
 		display: block;
