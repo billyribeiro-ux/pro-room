@@ -8,7 +8,9 @@ services:
       POSTGRES_PASSWORD: proroom
       POSTGRES_DB: proroom
     ports:
-      - "5432:5432"
+      # Host 5433 (not 5432) to avoid clashing with other local Postgres
+      # instances; matches server/.env DATABASE_URL.
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -21,7 +23,9 @@ services:
     image: redis:7-alpine
     command: ["redis-server", "--appendonly", "yes"]
     ports:
-      - "6379:6379"
+      # Host 6380 (not 6379) to avoid clashing with other local Redis
+      # instances; matches server/.env REDIS_URL.
+      - "6380:6379"
     volumes:
       - redisdata:/data
     healthcheck:
