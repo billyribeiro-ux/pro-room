@@ -79,7 +79,8 @@
 		flex-direction: column;
 		background: #000;
 		border: 1px solid var(--border);
-		border-radius: var(--radius);
+		/* Reference presentation-box / screen surface is flat (radius 0). */
+		border-radius: 0;
 		overflow: hidden;
 		height: 100%;
 		min-height: 360px;

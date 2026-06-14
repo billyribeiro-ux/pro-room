@@ -273,7 +273,8 @@
 		display: flex;
 		flex-direction: column;
 		background: #ffffff;
-		border-radius: 0 0 8px 8px;
+		/* Flat: reference room-shell surfaces use border-radius: 0 (no bottom rounding). */
+		border-radius: 0;
 		overflow: hidden;
 		height: 100%;
 		min-height: 0;
@@ -300,16 +301,19 @@
 	.tabs button {
 		background: transparent;
 		border: none;
-		color: rgba(255, 255, 255, 0.78);
-		font-size: 0.85rem;
-		font-weight: 600;
-		padding: 0.3rem 0.7rem;
-		border-radius: 999px;
+		/* Reference chat tabs: 12px, inactive weight 300, white; top-only 6px radius. */
+		color: #ffffff;
+		font-size: 12px;
+		font-weight: 300;
+		padding: 8px 5px 5px;
+		border-radius: 6px 6px 0 0;
 		cursor: pointer;
 	}
 	.tabs button.active {
-		background: rgba(255, 255, 255, 0.22);
+		/* Reference active tab: accent blue (#45a2ff), weight 700. */
+		background: var(--accent, #45a2ff);
 		color: #ffffff;
+		font-weight: 700;
 	}
 	.tabs button:hover:not(.active) {
 		color: #ffffff;
@@ -351,23 +355,30 @@
 	.separator-row {
 		display: flex;
 		justify-content: center;
-		padding: 0.5rem 0.85rem 0.3rem;
+		padding: 0;
 	}
 	.separator {
-		display: inline-block;
-		background: var(--ptr-msgs-separator-bg, #45a2ff);
-		color: var(--ptr-msgs-separator-color, #ffffff);
-		font-size: 0.72rem;
-		font-weight: 700;
-		padding: 0.15rem 0.7rem;
-		border-radius: 999px;
+		/* Reference .separator is a flat, full-width gray bar (#e8e8e8) with the
+		   readable light-theme date color (#373c42) — not a rounded blue pill. */
+		display: block;
+		width: 100%;
+		text-align: center;
+		background: #e8e8e8;
+		color: #373c42;
+		font-size: 12px;
+		font-weight: 300;
+		padding: 0;
+		line-height: 1.5;
+		border-radius: 0;
 		white-space: nowrap;
 	}
 
 	.msg-box {
 		position: relative;
 		padding: 0.6rem 0.85rem 0.25rem;
-		border-bottom: 1px solid #ececf1;
+		/* Reference msg rows are white with a top divider (#e1e1e1) and flat. */
+		background: #ffffff;
+		border-top: 1px solid #e1e1e1;
 		font-size: var(--msg-font-size);
 	}
 	.row1 {
@@ -466,8 +477,8 @@
 		margin-left: auto;
 		font-weight: 600;
 		font-size: 12px;
-		/* Reference timestamps are italic (.created-at font-style: italic). */
-		font-style: italic;
+		/* Reference .created-at computed font-style is normal (12px / 600 / #a8a8a8). */
+		font-style: normal;
 		color: #a8a8a8;
 		white-space: nowrap;
 		flex-shrink: 0;
@@ -476,7 +487,8 @@
 	.body {
 		margin: 0.35rem 0 0;
 		color: #676767;
-		line-height: 1.45;
+		/* Reference body line-height 19.5px / 13px = 1.5. */
+		line-height: 1.5;
 		word-break: break-word;
 		white-space: pre-wrap;
 		font-size: var(--msg-font-size);

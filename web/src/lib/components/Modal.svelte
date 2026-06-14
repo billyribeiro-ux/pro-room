@@ -93,7 +93,9 @@
 		background: var(--bg-elev-2);
 		border: 1px solid var(--border);
 		border-radius: 8px;
-		color: var(--text);
+		/* Reference modal-content body text is a soft near-white (#f4f4f4), a touch
+		   dimmer than the pure-white --text used on room panels. */
+		color: #f4f4f4;
 		box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5);
 		outline: none;
 	}

@@ -160,7 +160,7 @@
 		background: transparent;
 		border: 1px solid var(--border);
 		color: var(--text-dim);
-		border-radius: 8px;
+		border-radius: 4px;
 		padding: 0.3rem;
 		display: inline-flex;
 	}
@@ -201,7 +201,7 @@
 		gap: 0.6rem;
 		background: var(--bg-elev-2);
 		border: 1px solid var(--border);
-		border-radius: 8px;
+		border-radius: 0;
 		padding: 0.45rem 0.65rem;
 	}
 	.meta {
@@ -225,7 +225,7 @@
 		background: var(--bg);
 		border: 1px solid var(--border);
 		color: var(--text);
-		border-radius: 7px;
+		border-radius: 4px;
 		padding: 0.45rem 0.5rem;
 		font-size: 0.85rem;
 	}
@@ -239,7 +239,7 @@
 		background: var(--accent);
 		color: #fff;
 		border: none;
-		border-radius: 7px;
+		border-radius: 4px;
 		padding: 0 0.7rem;
 		font-weight: 600;
 	}
@@ -257,7 +257,7 @@
 		gap: 0.6rem;
 		background: var(--bg-elev-2);
 		border: 1px solid var(--border);
-		border-radius: 8px;
+		border-radius: 0;
 		padding: 0.5rem 0.7rem;
 	}
 	.info {
@@ -284,7 +284,7 @@
 		background: transparent;
 		border: 1px solid var(--border);
 		color: var(--text-dim);
-		border-radius: 7px;
+		border-radius: 4px;
 		padding: 0.3rem;
 		display: inline-flex;
 	}
@@ -297,7 +297,7 @@
 		color: var(--text-dim);
 	}
 	.error {
-		color: #ffd7da;
+		color: var(--negative);
 		font-size: 0.85rem;
 		margin-bottom: 0.75rem;
 	}

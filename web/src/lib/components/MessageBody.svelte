@@ -31,6 +31,8 @@
 		white-space: pre-wrap;
 		word-break: break-word;
 		font-size: var(--msg-font-size);
+		/* Reference .text-formated body: 13px / 19.5px == line-height 1.5. */
+		line-height: 1.5;
 	}
 	.ticker {
 		color: var(--ticker-color, #0a6db1);

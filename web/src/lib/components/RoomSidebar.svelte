@@ -271,7 +271,7 @@
 		background: transparent;
 		border: 1px solid var(--border);
 		color: var(--text-dim);
-		border-radius: var(--radius);
+		border-radius: 4px;
 		padding: 0.25rem;
 		line-height: 0;
 		flex: 0 0 auto;
@@ -304,9 +304,10 @@
 		background: transparent;
 		border: none;
 		color: var(--text);
-		border-radius: var(--radius);
+		border-radius: 4px;
 		padding: 0.5rem 0.6rem;
 		font-size: 1.125rem;
+		font-weight: 700;
 	}
 	.item:hover:not(:disabled) {
 		background: var(--bg-elev-2);
@@ -340,9 +341,10 @@
 		background: transparent;
 		border: none;
 		color: var(--text);
-		border-radius: var(--radius);
+		border-radius: 4px;
 		padding: 0.4rem 0.6rem 0.4rem 1.4rem;
 		font-size: 0.82rem;
+		font-weight: 700;
 	}
 	.sub-item:hover:not(:disabled) {
 		background: var(--bg-elev-2);
@@ -368,7 +370,8 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.4rem;
-		font-size: 0.85rem;
+		font-size: 0.875rem;
+		font-weight: 700;
 		color: var(--text-dim);
 	}
 	.roster-count {
@@ -386,7 +389,7 @@
 		background: transparent;
 		border: 1px solid var(--border);
 		color: var(--text-dim);
-		border-radius: var(--radius);
+		border-radius: 4px;
 		padding: 0.25rem;
 		line-height: 0;
 	}
@@ -407,7 +410,7 @@
 		align-items: center;
 		gap: 0.55rem;
 		padding: 0.35rem 0.45rem;
-		border-radius: var(--radius);
+		border-radius: 0;
 	}
 	.roster-item:hover {
 		background: var(--bg-elev-2);

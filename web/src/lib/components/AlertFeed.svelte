@@ -342,7 +342,8 @@
 		display: flex;
 		flex-direction: column;
 		background: #ffffff;
-		border-radius: 8px 8px 0 0;
+		/* Reference room-shell surfaces are flat (border-radius: 0). */
+		border-radius: 0;
 		overflow: hidden;
 		height: 100%;
 		min-height: 0;
@@ -411,23 +412,34 @@
 	.separator-row {
 		display: flex;
 		justify-content: center;
-		padding: 0.5rem 0.85rem 0.3rem;
+		padding: 0;
 	}
 	.separator {
-		display: inline-block;
-		background: var(--ptr-msgs-separator-bg, #45a2ff);
-		color: var(--ptr-msgs-separator-color, #ffffff);
-		font-size: 0.72rem;
-		font-weight: 700;
-		padding: 0.15rem 0.7rem;
-		border-radius: 999px;
+		/* Reference .separator is a flat, full-width gray bar (#e8e8e8) with
+		   light-gray centered text, not a rounded pill. */
+		display: block;
+		width: 100%;
+		text-align: center;
+		background: #e8e8e8;
+		/* The date text is the reference's readable light-theme separator color
+		   (#373c42); the #ccc the capture shows is the container default, not the
+		   date link itself. */
+		color: #373c42;
+		font-size: 12px;
+		font-weight: 300;
+		padding: 0;
+		line-height: 1.5;
+		border-radius: 0;
 		white-space: nowrap;
 	}
 
 	.msg-box {
 		position: relative;
 		padding: 0.6rem 0.85rem 0.25rem;
-		border-bottom: 1px solid #ececf1;
+		/* Reference rows are white with a top divider (#e1e1e1) and flat corners. */
+		background: #ffffff;
+		border-top: 1px solid #e1e1e1;
+		border-radius: 0;
 		font-size: var(--msg-font-size);
 	}
 	.row1 {
@@ -549,8 +561,8 @@
 		margin-left: auto;
 		font-weight: 600;
 		font-size: 12px;
-		/* Reference timestamps are italic (.created-at font-style: italic). */
-		font-style: italic;
+		/* Reference .created-at is upright (font-style: normal), color #a8a8a8. */
+		font-style: normal;
 		color: #a8a8a8;
 		white-space: nowrap;
 		flex-shrink: 0;
@@ -559,7 +571,8 @@
 	.body {
 		margin: 0.35rem 0 0;
 		color: #676767;
-		line-height: 1.45;
+		/* Reference .text-formated line-height is 1.5 (19.5px @ 13px). */
+		line-height: 1.5;
 		word-break: break-word;
 		white-space: pre-wrap;
 		font-size: var(--msg-font-size);
@@ -577,16 +590,18 @@
 		display: flex;
 		gap: 0.4rem;
 		padding: 0.55rem 0.65rem;
-		border-top: 1px solid #e3e5ec;
-		background: #f7f8fa;
+		border-top: 1px solid #e1e1e1;
+		/* Reference composer surface is white (#fff), not gray. */
+		background: #ffffff;
 		flex-shrink: 0;
 	}
 	input,
 	select {
 		background: #ffffff;
 		border: 1px solid #d3d7e0;
-		color: #1f2430;
-		border-radius: 7px;
+		/* Reference .form-control composer fields are flat (border-radius: 0). */
+		color: #676767;
+		border-radius: 0;
 		padding: 0.4rem 0.5rem;
 		font-size: 0.82rem;
 	}
@@ -601,7 +616,8 @@
 		background: #0a6db1;
 		color: #fff;
 		border: none;
-		border-radius: 7px;
+		/* Small button: keep a subtle radius (~4px) per the flat-surface rule. */
+		border-radius: 4px;
 		padding: 0.4rem 0.8rem;
 		font-weight: 600;
 		cursor: pointer;

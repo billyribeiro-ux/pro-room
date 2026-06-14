@@ -151,7 +151,8 @@
 		min-height: 0;
 		min-width: 0;
 		border: 1px solid var(--border);
-		border-radius: var(--radius);
+		/* Reference presentation-box is a flat (radius 0) room-shell surface. */
+		border-radius: 0;
 		overflow: hidden;
 		background: var(--bg-elev);
 	}
@@ -198,7 +199,8 @@
 		font-size: 12px;
 		font-weight: 300;
 		padding: 0.45rem 0.85rem;
-		border-radius: 8px;
+		/* Reference inactive nav-link top-radius is 6px. */
+		border-radius: 6px;
 		cursor: pointer;
 		flex-shrink: 0;
 		white-space: nowrap;
@@ -214,7 +216,10 @@
 	.tabbar button.active {
 		color: #ffffff;
 		background: var(--accent);
-		font-weight: 700;
+		/* Reference active nav-link keeps the 300 weight (not bolded). */
+		font-weight: 300;
+		/* Reference active nav-link top-radius is 3px. */
+		border-radius: 3px;
 		/* Reference pairs the bright-blue active tab with the darker room-blue border. */
 		border-color: var(--accent-hover);
 	}

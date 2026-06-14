@@ -154,11 +154,13 @@
 		height: 100%;
 		min-height: 0;
 		min-width: 0;
-		border-radius: 8px;
-		/* Clip the square children (the blue header) to the rounded corners so the
-		   top frame doesn't bleed past the radius. */
+		/* Reference alert-chat-box is a FLAT surface (border-radius: 0). The dock
+		   sits flush against the flat blue split gutter on its right edge — any
+		   rounded corner here leaks past the gutter (the "round right radius next
+		   to the flat bar" glitch). Keep overflow:hidden so the square blue header
+		   children stay clipped to the panel box. No box-shadow in the reference. */
+		border-radius: 0;
 		overflow: hidden;
-		box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 		background: #ffffff;
 	}
 	.dock.dragging {
@@ -177,9 +179,9 @@
 		align-items: center;
 		justify-content: center;
 		cursor: row-resize;
-		/* Match the reference's blue split gutter (--split-gutter-bg #0a6db1),
-		   same as the outer <Split> gutter — not a grey divider. */
-		background: var(--ptr-gutter-bg, #0a6db1);
+		/* Reference as-split-gutter is rgb(10, 109, 177) = #0a6db1, same as the
+		   outer <Split> gutter — a solid blue bar, not a grey divider. */
+		background: #0a6db1;
 		touch-action: none;
 		user-select: none;
 	}

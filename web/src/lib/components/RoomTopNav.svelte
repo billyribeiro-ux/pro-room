@@ -179,9 +179,9 @@
 		align-items: center;
 		gap: 0.6rem;
 		padding: 0 0.75rem;
-		/* Reference --navbar-bg is the darkest navy (#0c2434), not the elevated surface. */
+		/* Reference mainAppNav: --navbar-bg is the darkest navy (#0c2434), not the
+		   elevated surface, and it carries NO bottom border (border-bottom-width: 0). */
 		background: var(--bg);
-		border-bottom: 1px solid var(--border);
 		color: var(--text);
 	}
 	.icon-btn {
@@ -215,7 +215,8 @@
 		color: var(--text);
 	}
 	.brand {
-		font-weight: 700;
+		/* Reference navbar-brand: Open Sans light, 20px (1.25rem), weight 300. */
+		font-weight: 300;
 		font-size: 1.25rem;
 		white-space: nowrap;
 	}
