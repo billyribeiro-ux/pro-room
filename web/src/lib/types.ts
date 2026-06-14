@@ -131,8 +131,10 @@ export interface ReactionSummary {
 	reactions: ReactionTally[];
 }
 
-/** Presenter media-for-all broadcast (SoundCloud / YouTube to the whole room). */
-export type MediaKind = 'soundcloud' | 'youtube' | 'stop';
+/** Presenter media-for-all broadcast to the whole room. `soundcloud`/`youtube`
+ * play in a cross-origin iframe; `mp3`/`video` are direct files played in a
+ * native `<audio>`/`<video>` element; `stop` clears the current playback. */
+export type MediaKind = 'soundcloud' | 'youtube' | 'mp3' | 'video' | 'stop';
 
 /** One online member as seen by an admin (GET /rooms/{id}/presence). Admin-only:
  * the public `presence` WS broadcast never carries ip/location. */
@@ -158,5 +160,7 @@ export type RoomEvent =
 	| { type: 'mute_all'; muted: boolean }
 	| { type: 'chat_cleared' }
 	| { type: 'room_locked'; locked: boolean }
+	// Presenter "lock this screen": holds non-admin viewers on the Screens tab.
+	| { type: 'screen_locked'; locked: boolean }
 	| { type: 'message_deleted'; id: string }
 	| { type: 'alert_deleted'; id: string };

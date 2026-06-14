@@ -32,7 +32,7 @@
 	import { broadcastMedia } from '$lib/media';
 	import { deleteAlert, deleteMessage } from '$lib/admin';
 	import { playSound } from '$lib/sound.svelte';
-	import type { ReactionTally, ReactionTarget } from '$lib/types';
+	import type { ReactionTally, ReactionTarget, MediaKind } from '$lib/types';
 	import {
 		BroadcastIcon,
 		MonitorPlayIcon,
@@ -74,9 +74,15 @@
 	let captionsOn = $state(false);
 	// Admin "mute all" broadcast — disables the chat composer for non-admins.
 	let mutedAll = $state(false);
+	// Presenter "lock this screen" broadcast — holds non-admin viewers on Screens.
+	let screenLocked = $state(false);
 	let mediaVolume = $state(70);
-	// Presenter media-for-all (SoundCloud/YouTube) currently playing for the room.
-	let currentMedia = $state<{ kind: 'soundcloud' | 'youtube'; url: string } | null>(null);
+	// Presenter media-for-all currently playing for the room (SoundCloud/YouTube
+	// iframe, or a direct mp3/video file).
+	let currentMedia = $state<{
+		kind: Exclude<MediaKind, 'stop'>;
+		url: string;
+	} | null>(null);
 	// Aggregated reactions per target, keyed `${kind}:${id}`. `mine` is recomputed
 	// from our own local set so another user's reaction event can't flip our pill.
 	let reactionsByTarget = $state<Record<string, ReactionTally[]>>({});
@@ -139,6 +145,16 @@
 		return id ? (present.find((u) => u.user_id === id)?.display_name ?? null) : null;
 	});
 
+	// Live audio streams for the Streams tab: the present users LiveKit currently
+	// reports as speaking, mapped to their roster names (empty when the room's
+	// quiet — the tab shows its own empty state).
+	const speakers = $derived(
+		screen.activeSpeakers
+			.map((id) => present.find((u) => u.user_id === id))
+			.filter((u): u is PresentUser => u !== undefined)
+			.map((u) => ({ id: u.user_id, name: u.display_name }))
+	);
+
 	// Toggle an emoji reaction on a message/alert. The POST response's `mine` is
 	// authoritative for us, so we rebuild our local set from it.
 	async function onReact(targetKind: ReactionTarget, targetId: string, emoji: string) {
@@ -152,7 +168,7 @@
 		}
 	}
 
-	async function playMedia(kind: 'soundcloud' | 'youtube', url: string) {
+	async function playMedia(kind: Exclude<MediaKind, 'stop'>, url: string) {
 		currentMedia = { kind, url };
 		try {
 			await broadcastMedia(roomId, kind, url);
@@ -236,6 +252,10 @@
 				break;
 			case 'room_locked':
 				// Enforced server-side at join; no client-visible change needed here.
+				break;
+			case 'screen_locked':
+				// Hold non-admin viewers on the Screens tab (enforced in MainStage).
+				screenLocked = ev.locked;
 				break;
 		}
 	}
@@ -518,6 +538,8 @@
 		{webcamPublishers}
 		onWebcamClose={() => screen.stopCamera()}
 		captionsActive={captionsOn}
+		{speakers}
+		{screenLocked}
 		actions={stageActions}
 	/>
 {/snippet}

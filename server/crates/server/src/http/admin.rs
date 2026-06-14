@@ -5,9 +5,11 @@
 //!
 //! RBAC mapping (cite-the-rule):
 //! - kick               → [`Action::ManageMembers`]
+//! - kick-duplicates    → [`Action::ManageMembers`]
 //! - mute-all           → [`Action::ManageRoom`]
 //! - clear-chat         → [`Action::ManageRoom`]
 //! - lock               → [`Action::ManageRoom`]
+//! - lock-screen        → [`Action::ManageRoom`]
 //! - delete message     → [`Action::ManageRoom`]
 //! - delete alert       → [`Action::ManageRoom`]
 
@@ -27,9 +29,14 @@ use serde::Deserialize;
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/api/rooms/{id}/admin/kick", post(kick))
+        .route(
+            "/api/rooms/{id}/admin/kick-duplicates",
+            post(kick_duplicates),
+        )
         .route("/api/rooms/{id}/admin/mute-all", post(mute_all))
         .route("/api/rooms/{id}/admin/clear-chat", post(clear_chat))
         .route("/api/rooms/{id}/admin/lock", post(lock))
+        .route("/api/rooms/{id}/admin/lock-screen", post(lock_screen))
         .route(
             "/api/rooms/{id}/messages/{message_id}",
             delete(delete_message),
@@ -101,6 +108,43 @@ async fn kick(
     Ok(ok())
 }
 
+/// Kick all duplicate WebSocket sessions: for each connected user, keep their
+/// newest connection and drop the older ones. RBAC: [`Action::ManageMembers`].
+///
+/// Best-effort / documented no-op. The realtime hub
+/// ([`crate::realtime::RealtimeHub`]) keys fan-out by `RoomId` only — its state is
+/// `rooms: HashMap<RoomId, broadcast::Sender<String>>`, a single `broadcast`
+/// channel per room. Every WS connection (across all users) shares that one
+/// `Sender` and holds its own `Receiver`; the hub keeps no per-user, per-connection
+/// registry and exposes no handle to close an individual connection. Presence is
+/// tracked in Redis keyed by `(room, user)` with no per-connection identity, so the
+/// server cannot distinguish — let alone selectively close — two live connections
+/// for the same user. We therefore RBAC-gate the request, log, and return `ok()`
+/// without closing anything.
+///
+// TODO: To make this real, the hub would need a per-connection registry — e.g.
+// `HashMap<RoomId, HashMap<UserId, Vec<ConnHandle>>>` where each `ConnHandle`
+// carries a connection id + a `tokio::sync::oneshot`/`Notify` close signal that
+// `room_socket` selects on. `kick_duplicates` would then, per user with >1 live
+// handle, fire the close signal on all but the most recent and re-broadcast
+// `Presence` if the roster changed.
+async fn kick_duplicates(
+    State(state): State<AppState>,
+    CurrentUser(user): CurrentUser,
+    Path(id): Path<RoomId>,
+) -> AppResult<Json<serde_json::Value>> {
+    let ctx = RoomContext::load(&state, &user, id).await?;
+    ctx.ensure(&state, Action::ManageMembers).await?;
+
+    tracing::info!(
+        room_id = %id,
+        actor_id = %user.user_id,
+        "kick-duplicates requested, but the realtime hub keeps no per-connection \
+         registry (fan-out is keyed by room only); no-op"
+    );
+    Ok(ok())
+}
+
 #[derive(Deserialize)]
 struct MuteAllBody {
     muted: bool,
@@ -158,6 +202,31 @@ async fn lock(
 
     db::rooms::set_locked(&state.db, id, body.locked).await?;
     let event = RoomEvent::RoomLocked {
+        locked: body.locked,
+    };
+    let _ = state.hub.publish(id, &event.to_json()).await;
+    Ok(ok())
+}
+
+#[derive(Deserialize)]
+struct LockScreenBody {
+    locked: bool,
+}
+
+/// Lock or unlock the live screen for non-admins. Ephemeral — like `mute-all`,
+/// there is no table; the truth lives in the broadcast. Clients hide/freeze the
+/// presenter's screen surface for non-admins while `locked` is `true`. Broadcasts
+/// `screen_locked`. RBAC: [`Action::ManageRoom`].
+async fn lock_screen(
+    State(state): State<AppState>,
+    CurrentUser(user): CurrentUser,
+    Path(id): Path<RoomId>,
+    Json(body): Json<LockScreenBody>,
+) -> AppResult<Json<serde_json::Value>> {
+    let ctx = RoomContext::load(&state, &user, id).await?;
+    ctx.ensure(&state, Action::ManageRoom).await?;
+
+    let event = RoomEvent::ScreenLocked {
         locked: body.locked,
     };
     let _ = state.hub.publish(id, &event.to_json()).await;

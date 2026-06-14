@@ -6,6 +6,8 @@
 		TextTIcon,
 		LinkSimpleIcon,
 		ImageIcon,
+		GifIcon,
+		VideoIcon,
 		UploadSimpleIcon,
 		PaperPlaneTiltIcon
 	} from 'phosphor-svelte';
@@ -21,7 +23,7 @@
 	// Always present for the /rooms/[id] route.
 	const roomId = page.params.id as string;
 
-	type Tab = 'text' | 'url' | 'image';
+	type Tab = 'text' | 'url' | 'image' | 'gif' | 'video';
 	let tab = $state<Tab>('text');
 
 	// Per-tab composer state.
@@ -29,6 +31,8 @@
 	let url = $state('');
 	let urlText = $state('');
 	let imageUrl = $state('');
+	let gifUrl = $state('');
+	let videoUrl = $state('');
 
 	// Footer options — match the reference Post Alert modal's checkboxes.
 	let keepOpen = $state(false);
@@ -50,6 +54,8 @@
 	function composeNote(): string {
 		if (tab === 'text') return text.trim();
 		if (tab === 'image') return imageUrl.trim();
+		if (tab === 'gif') return gifUrl.trim();
+		if (tab === 'video') return videoUrl.trim();
 		// url tab
 		const label = urlText.trim();
 		const link = url.trim();
@@ -61,6 +67,8 @@
 		url = '';
 		urlText = '';
 		imageUrl = '';
+		gifUrl = '';
+		videoUrl = '';
 		error = null;
 	}
 
@@ -87,21 +95,30 @@
 		}
 	}
 
+	/** Open a pre-filled tweet for the just-posted alert. Client-side X share
+	 * intent — no server credentials needed; the user reviews and sends the tweet
+	 * in the popped tab. Uses the core alert text (without the long disclosure) to
+	 * stay within tweet limits. */
+	function shareToX(tweetText: string) {
+		if (typeof window === 'undefined') return;
+		const href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
+		window.open(href, '_blank', 'noopener,noreferrer');
+	}
+
 	async function post() {
-		let note = composeNote();
-		if (!note) {
+		const baseNote = composeNote();
+		if (!baseNote) {
 			error = 'Enter alert content before posting.';
 			return;
 		}
-		if (legalDisclosure) note += DISCLOSURE;
+		const note = legalDisclosure ? baseNote + DISCLOSURE : baseNote;
 		error = null;
 		posting = true;
 		try {
 			// Reference alerts are free-form text. Our backend stores symbol+side+note,
 			// so derive a symbol from the first $cashtag (fallback "ALERT") and a side
-			// from the non-trade flag. The note carries the full composed body. The
-			// tweet/push flags mirror the reference and are sent best-effort (the server
-			// consumes `note`; tweet/push handling is a server-side follow-up).
+			// from the non-trade flag. The note carries the full composed body; the
+			// tweet/push flags are persisted server-side (post_to_x / no_push).
 			const symbolMatch = note.match(/\$([A-Za-z]{1,6})/);
 			const created = await api.post(`/api/rooms/${roomId}/alerts`, {
 				symbol: symbolMatch ? symbolMatch[1].toUpperCase() : 'ALERT',
@@ -110,6 +127,7 @@
 				post_to_x: postToX,
 				no_push: dontPush
 			});
+			if (postToX) shareToX(baseNote);
 			onPosted?.(created);
 			reset();
 			if (!keepOpen) onClose();
@@ -131,7 +149,7 @@
 			aria-selected={tab === 'text'}
 			onclick={() => (tab = 'text')}
 		>
-			<TextTIcon size={15} /> Text
+			<TextTIcon size={15} /> Text Alert
 		</button>
 		<button
 			type="button"
@@ -141,7 +159,7 @@
 			aria-selected={tab === 'url'}
 			onclick={() => (tab = 'url')}
 		>
-			<LinkSimpleIcon size={15} /> Url
+			<LinkSimpleIcon size={15} /> Text Url
 		</button>
 		<button
 			type="button"
@@ -152,6 +170,26 @@
 			onclick={() => (tab = 'image')}
 		>
 			<ImageIcon size={15} /> Image
+		</button>
+		<button
+			type="button"
+			role="tab"
+			class="tab"
+			class:active={tab === 'gif'}
+			aria-selected={tab === 'gif'}
+			onclick={() => (tab = 'gif')}
+		>
+			<GifIcon size={15} /> GIF
+		</button>
+		<button
+			type="button"
+			role="tab"
+			class="tab"
+			class:active={tab === 'video'}
+			aria-selected={tab === 'video'}
+			onclick={() => (tab = 'video')}
+		>
+			<VideoIcon size={15} /> Video
 		</button>
 	</div>
 
@@ -174,9 +212,9 @@
 				<span class="label">Text</span>
 				<input type="text" bind:value={urlText} placeholder="Optional caption" />
 			</label>
-		{:else}
+		{:else if tab === 'image'}
 			<label class="field">
-				<span class="label">Image or Video Link to show</span>
+				<span class="label">Image link to show</span>
 				<input type="url" bind:value={imageUrl} placeholder="https://example.com/chart.png" />
 			</label>
 			<label class="upload">
@@ -187,6 +225,19 @@
 			{#if imageUrl}
 				<img class="preview" src={imageUrl} alt="Alert attachment preview" />
 			{/if}
+		{:else if tab === 'gif'}
+			<label class="field">
+				<span class="label">GIF link to show</span>
+				<input type="url" bind:value={gifUrl} placeholder="https://media.giphy.com/…/giphy.gif" />
+			</label>
+			{#if gifUrl}
+				<img class="preview" src={gifUrl} alt="GIF preview" />
+			{/if}
+		{:else}
+			<label class="field">
+				<span class="label">Video link to show</span>
+				<input type="url" bind:value={videoUrl} placeholder="https://example.com/clip.mp4" />
+			</label>
 		{/if}
 
 		{#if error}<p class="err" role="alert">{error}</p>{/if}
@@ -220,6 +271,7 @@
 <style>
 	.tabs {
 		display: flex;
+		flex-wrap: wrap;
 		gap: 0.4rem;
 		border-bottom: 1px solid var(--border);
 		margin-bottom: 0.85rem;

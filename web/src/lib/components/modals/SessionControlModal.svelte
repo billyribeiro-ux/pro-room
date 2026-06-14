@@ -12,27 +12,38 @@
 	import { confirmDialog } from '$lib/dialog.svelte';
 	import { page } from '$app/state';
 	import { ApiError } from '$lib/api';
-	import { lockRoom, muteAll as muteAllApi, clearChat as clearChatApi } from '$lib/admin';
+	import {
+		lockRoom,
+		muteAll as muteAllApi,
+		clearChat as clearChatApi,
+		lockScreen as lockScreenApi,
+		kickDuplicates as kickDuplicatesApi
+	} from '$lib/admin';
 
 	interface Props {
 		open: boolean;
 		onClose: () => void;
-		/** Lock all viewers to the screen share that is currently on stage. */
-		onLockScreen?: () => void;
-		/** Disconnect any duplicate/ghost sessions for connected users. */
-		onKickDuplicates?: () => void;
 		/** End the session / stop the broadcast for everyone. */
 		onEndSession?: () => void;
 	}
-	let { open, onClose, onLockScreen, onKickDuplicates, onEndSession }: Props = $props();
+	let { open, onClose, onEndSession }: Props = $props();
 
 	const roomId = page.params.id as string;
 	let muted = $state(false);
+	let screenLocked = $state(false);
 	let error = $state<string | null>(null);
 
-	// Non-destructive actions fire straight through to the (optional) callback.
-	function lockScreen() {
-		onLockScreen?.();
+	// "Lock this screen" — toggle whether non-admin viewers are held on the
+	// Screens tab (ephemeral broadcast, same shape as mute-all).
+	async function lockScreen() {
+		error = null;
+		try {
+			screenLocked = !screenLocked;
+			await lockScreenApi(roomId, screenLocked);
+		} catch (err) {
+			screenLocked = !screenLocked;
+			error = err instanceof ApiError ? err.message : 'Could not lock the screen';
+		}
 	}
 
 	// Mute / unmute all non-admins — toggles the room-wide mute broadcast.
@@ -90,7 +101,13 @@
 			confirmLabel: 'Kick duplicates',
 			danger: true
 		});
-		if (ok) onKickDuplicates?.();
+		if (!ok) return;
+		error = null;
+		try {
+			await kickDuplicatesApi(roomId);
+		} catch (err) {
+			error = err instanceof ApiError ? err.message : 'Could not kick duplicate sessions';
+		}
 	}
 
 	async function endSession() {

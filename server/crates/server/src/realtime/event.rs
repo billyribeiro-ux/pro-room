@@ -51,6 +51,10 @@ pub enum RoomEvent {
     /// path rejects non-admins; existing non-admin connections are left in place.
     /// Clients surface a locked indicator.
     RoomLocked { locked: bool },
+    /// An admin locked or unlocked the live screen. Ephemeral (no DB state): while
+    /// `locked` is `true`, clients hide/freeze the presenter's screen surface for
+    /// non-admins. Members joining later won't see it until the next toggle.
+    ScreenLocked { locked: bool },
     /// An admin deleted a single chat message. Clients remove the message with
     /// this `id` from their local history.
     MessageDeleted { id: MessageId },
@@ -75,6 +79,10 @@ pub struct MediaBroadcast {
 pub enum MediaKind {
     Soundcloud,
     Youtube,
+    /// A direct MP3 file URL (any host). Serializes to `"mp3"`.
+    Mp3,
+    /// A direct video file URL (any host). Serializes to `"video"`.
+    Video,
     Stop,
 }
 

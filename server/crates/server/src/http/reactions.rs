@@ -7,11 +7,12 @@
 //! is scoped by room and the target is validated to exist in the room (404
 //! otherwise).
 //!
-//! Media-for-all: broadcasting a SoundCloud/YouTube URL (or stopping) is a
-//! presenter capability — gated on [`Action::PublishScreen`], the same
-//! admin-in-a-live-room gate the authz engine uses for screen sharing. The
-//! broadcast is ephemeral (no persistence): a `media` WS event is fanned out to
-//! the room and nothing is stored.
+//! Media-for-all: broadcasting a SoundCloud/YouTube URL, a direct MP3/video file
+//! URL, or stopping is a presenter capability — gated on [`Action::PublishScreen`],
+//! the same admin-in-a-live-room gate the authz engine uses for screen sharing.
+//! SoundCloud/YouTube URLs are host-allowlisted; `mp3`/`video` accept any host
+//! (direct file links). The broadcast is ephemeral (no persistence): a `media` WS
+//! event is fanned out to the room and nothing is stored.
 
 use crate::auth::session::CurrentUser;
 use crate::authorization::RoomContext;
@@ -144,16 +145,18 @@ async fn list(
 
 #[derive(Deserialize)]
 struct MediaForAllBody {
-    /// `"soundcloud"`, `"youtube"`, or `"stop"`.
+    /// `"soundcloud"`, `"youtube"`, `"mp3"`, `"video"`, or `"stop"`.
     kind: String,
-    /// Required (and host-validated) unless `kind == "stop"`.
+    /// Required (and validated) unless `kind == "stop"`.
     #[serde(default)]
     url: Option<String>,
 }
 
 /// Parse and validate the media kind + URL. For `stop`, the URL is ignored. For
 /// `soundcloud`/`youtube`, the URL must be an `http(s)` URL whose host matches the
-/// expected provider domain.
+/// expected provider domain. For `mp3`/`video`, the URL must be an `http(s)` URL
+/// with a host but may point at ANY host (these are direct file links, not a
+/// fixed provider).
 fn parse_media(body: &MediaForAllBody) -> AppResult<MediaBroadcast> {
     match body.kind.as_str() {
         "stop" => Ok(MediaBroadcast {
@@ -174,13 +177,23 @@ fn parse_media(body: &MediaForAllBody) -> AppResult<MediaBroadcast> {
                 &["youtube.com", "youtu.be"],
             )?),
         }),
+        "mp3" => Ok(MediaBroadcast {
+            kind: MediaKind::Mp3,
+            url: Some(validate_direct_media_url(body.url.as_deref())?),
+        }),
+        "video" => Ok(MediaBroadcast {
+            kind: MediaKind::Video,
+            url: Some(validate_direct_media_url(body.url.as_deref())?),
+        }),
         _ => Err(AppError::BadRequest("invalid media kind".into())),
     }
 }
 
-/// Ensure `raw` is present, is a valid `http(s)` URL, and that its host is (or is
-/// a subdomain of) one of `allowed_hosts`. Returns the normalized URL string.
-fn validate_media_url(raw: Option<&str>, allowed_hosts: &[&str]) -> AppResult<String> {
+/// Ensure `raw` is present, is a valid `http(s)` URL with a host, and return the
+/// parsed URL together with its lowercased host. Shared by both the host-allowlist
+/// validator and the any-host (direct file) validator so the scheme/host checks
+/// can't drift apart.
+fn parse_http_url_with_host(raw: Option<&str>) -> AppResult<(url::Url, String)> {
     let raw = raw
         .map(str::trim)
         .filter(|s| !s.is_empty())
@@ -195,6 +208,13 @@ fn validate_media_url(raw: Option<&str>, allowed_hosts: &[&str]) -> AppResult<St
         .host_str()
         .ok_or_else(|| AppError::BadRequest("url is missing a host".into()))?
         .to_ascii_lowercase();
+    Ok((parsed, host))
+}
+
+/// Ensure `raw` is present, is a valid `http(s)` URL, and that its host is (or is
+/// a subdomain of) one of `allowed_hosts`. Returns the normalized URL string.
+fn validate_media_url(raw: Option<&str>, allowed_hosts: &[&str]) -> AppResult<String> {
+    let (parsed, host) = parse_http_url_with_host(raw)?;
     // Accept the bare host or any subdomain of an allowed host (e.g.
     // `www.youtube.com`, `m.soundcloud.com`).
     let host_ok = allowed_hosts
@@ -205,6 +225,15 @@ fn validate_media_url(raw: Option<&str>, allowed_hosts: &[&str]) -> AppResult<St
             "url host is not an allowed provider".into(),
         ));
     }
+    Ok(parsed.to_string())
+}
+
+/// Ensure `raw` is present and is a valid `http(s)` URL with a host, but allow
+/// ANY host. Used for `mp3`/`video` direct file links, which are not tied to a
+/// fixed provider. Returns the normalized URL string. Deliberately does NOT run
+/// the allowed-hosts test that [`validate_media_url`] applies.
+fn validate_direct_media_url(raw: Option<&str>) -> AppResult<String> {
+    let (parsed, _host) = parse_http_url_with_host(raw)?;
     Ok(parsed.to_string())
 }
 
