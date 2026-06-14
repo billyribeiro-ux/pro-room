@@ -222,7 +222,9 @@
 							aria-expanded={openMenuId === a.id}
 							onclick={() => toggleMenu(a.id)}
 						>
-							<Icon name="ellipsis-v" size={20} />
+							<!-- Same ⠇ glyph as the chat row menu (reference uses the same kebab on
+							     both); alerts keep it on the LEFT. -->
+							<span class="ellipsis" aria-hidden="true">⠇</span>
 						</button>
 						{#if openMenuId === a.id}
 							<div class="menu" role="menu">
@@ -467,12 +469,17 @@
 		justify-content: center;
 		background: transparent;
 		border: none;
-		/* Reference .msgMenu uses the username blue (#0a6db1), not grey, and is a
-		   flat icon (no border-radius). */
+		/* Reference .msgMenu: the ⠇ glyph at 20px / weight 600, flat (no radius),
+		   hover #8c8686. Same kebab as the chat row (alerts keep it on the left). */
 		color: var(--username-color);
+		font-weight: 600;
 		cursor: pointer;
 		padding: 0.1rem;
 		border-radius: 0;
+	}
+	.menu-trigger .ellipsis {
+		font-size: 20px;
+		line-height: 1;
 	}
 	.menu-trigger:hover {
 		font-weight: 900;
@@ -519,23 +526,23 @@
 		width: 35px;
 		height: 35px;
 		flex-shrink: 0;
-		/* Round avatars (reference --rosterImg-border-radius: 50%); crop image
-		   avatars so the gravatar is a circle, not a square. */
-		border-radius: 50%;
+		/* Square avatars — reference gravatars are square (Bootstrap "Darkly",
+		   --rosterImg-border-radius: 0); object-fit crops the image to the box. */
+		border-radius: 0;
 		object-fit: cover;
 	}
 	.avatar {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		border-radius: 50%;
+		border-radius: 0;
 		background: #e7e9ef;
 		color: #5a6273;
 		font-size: 0.78rem;
 		font-weight: 700;
 	}
 	.avatar-img {
-		border-radius: 50%;
+		border-radius: 0;
 		object-fit: cover;
 	}
 
@@ -551,6 +558,10 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.15rem;
+		/* Reference: the Q&A badge sits on the RIGHT, immediately before the
+		   date/time (see Bruce Marshall capture) — auto margin pushes the badge +
+		   created-at cluster to the right edge; everyone else stays left. */
+		margin-left: auto;
 		background: #eef4fb;
 		border: 1px solid #cfe0f5;
 		color: #0a6db1;
@@ -574,7 +585,9 @@
 	}
 
 	.created-at {
-		margin-left: auto;
+		/* The .alert-qa before it now carries the auto margin (badge + date cluster
+		   right), so created-at just sits after the badge. */
+		margin-left: 0;
 		/* Reference .created-at mr-2 = 8px from the right edge. */
 		margin-right: 8px;
 		font-weight: 600;

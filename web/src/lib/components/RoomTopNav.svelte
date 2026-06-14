@@ -325,8 +325,9 @@
 		margin: 0 0.5rem;
 	}
 	/* Reference presenter controls are BARE nav-link icons: muted gray #abb0b5
-	   (navbar-dark .nav-link), margin 0 5px, NO background / border / radius — not
-	   dark buttons. Hover + active (live / recording) → accent #45a2ff. */
+	   (navbar-dark .nav-link), margin 0 5px, NO background / border / radius.
+	   Hover MUST match the reload/volume buttons (.icon-btn): just dim to
+	   opacity 0.8 — NO colour change. (The earlier blue #45a2ff hover was wrong.) */
 	.nav-controls :global(.ctrl) {
 		background: transparent;
 		border: none;
@@ -340,11 +341,13 @@
 		font-size: 20px !important;
 	}
 	.nav-controls :global(.ctrl:hover:not(:disabled)) {
-		color: var(--accent, #45a2ff);
+		opacity: 0.8;
 	}
+	/* NO blue anywhere on these controls (per reference + user): even the active
+	   broadcast/recording state stays the same muted gray as every other nav icon. */
 	.nav-controls :global(.ctrl.stop),
 	.nav-controls :global(.ctrl.live-on) {
-		color: var(--accent, #45a2ff);
+		color: rgb(171, 176, 181);
 	}
 	.volume {
 		position: relative;

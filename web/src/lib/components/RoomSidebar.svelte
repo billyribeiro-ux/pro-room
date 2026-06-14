@@ -553,7 +553,9 @@
 		width: 26px;
 		height: 26px;
 		flex: 0 0 26px;
-		border-radius: 50%;
+		/* Square avatars — reference gravatars are square (Bootstrap "Darkly",
+		   --rosterImg-border-radius: 0). */
+		border-radius: 0;
 		background: var(--bg-elev-2);
 		border: 1px solid var(--border);
 		color: var(--text);

@@ -439,6 +439,10 @@
 	.msg-menu {
 		position: relative;
 		flex-shrink: 0;
+		/* Reference CHAT row: the ⠇ menu sits on the RIGHT of the row (the message
+		   body still renders left-aligned). order:1 pushes it past the
+		   right-floated timestamp to the far right edge. (Alerts keep it on the left.) */
+		order: 1;
 	}
 	.menu-trigger {
 		display: inline-flex;
@@ -466,7 +470,9 @@
 	.menu {
 		position: absolute;
 		top: 100%;
-		left: 0;
+		/* Menu is on the right of the chat row, so the dropdown opens from the right edge. */
+		right: 0;
+		left: auto;
 		z-index: 5;
 		min-width: 9rem;
 		margin-top: 0.2rem;
@@ -503,23 +509,23 @@
 		width: 36px;
 		height: 36px;
 		flex-shrink: 0;
-		/* Round avatars (reference --rosterImg-border-radius: 50%); crop image
-		   avatars so the gravatar is a circle, not a square. */
-		border-radius: 50%;
+		/* Square avatars — reference gravatars are square (Bootstrap "Darkly",
+		   --rosterImg-border-radius: 0); object-fit crops the image to the box. */
+		border-radius: 0;
 		object-fit: cover;
 	}
 	.avatar {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		border-radius: 50%;
+		border-radius: 0;
 		background: #e7e9ef;
 		color: #5a6273;
 		font-size: 0.78rem;
 		font-weight: 700;
 	}
 	.avatar-img {
-		border-radius: 50%;
+		border-radius: 0;
 		object-fit: cover;
 	}
 
