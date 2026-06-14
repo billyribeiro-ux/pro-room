@@ -147,6 +147,8 @@
 	}
 	.pill:hover {
 		background: #e8ebf2;
+		opacity: 0.85;
+		cursor: pointer;
 	}
 	.pill.mine {
 		/* Accent tint for the current user's own reactions. */
@@ -183,6 +185,8 @@
 	.add:hover {
 		background: #e8ebf2;
 		color: #5a6273;
+		opacity: 0.85;
+		cursor: pointer;
 	}
 
 	.picker {

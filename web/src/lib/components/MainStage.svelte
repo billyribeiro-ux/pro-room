@@ -150,8 +150,8 @@
 		height: 100%;
 		min-height: 0;
 		min-width: 0;
-		border: 1px solid var(--border);
-		/* Reference presentation-box is a flat (radius 0) room-shell surface. */
+		/* Reference presentation-box is a flat, borderless surface (no border, radius 0). */
+		border: none;
 		border-radius: 0;
 		overflow: hidden;
 		background: var(--bg-elev);
@@ -195,12 +195,13 @@
 		gap: 0.4rem;
 		background: transparent;
 		border: 1px solid transparent;
-		color: var(--text-dim);
+		color: #cccccc;
 		font-size: 12px;
 		font-weight: 300;
 		padding: 0.45rem 0.85rem;
-		/* Reference inactive nav-link top-radius is 6px. */
-		border-radius: 6px;
+		/* Reference presentation tabs are top-rounded folder tabs (6px top corners,
+		   square bottom) — not flat, not full pills. */
+		border-radius: 6px 6px 0 0;
 		cursor: pointer;
 		flex-shrink: 0;
 		white-space: nowrap;
@@ -216,12 +217,11 @@
 	.tabbar button.active {
 		color: #ffffff;
 		background: var(--accent);
-		/* Reference active nav-link keeps the 300 weight (not bolded). */
-		font-weight: 300;
-		/* Reference active nav-link top-radius is 3px. */
-		border-radius: 3px;
-		/* Reference pairs the bright-blue active tab with the darker room-blue border. */
-		border-color: var(--accent-hover);
+		/* Reference active tab: bold (700), bright-blue (#45a2ff) border, same
+		   top-rounded shape as the idle tabs. */
+		font-weight: 700;
+		border-radius: 6px 6px 0 0;
+		border-color: var(--accent);
 	}
 	.locked-pill {
 		display: inline-flex;

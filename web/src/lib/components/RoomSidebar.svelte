@@ -230,7 +230,7 @@
 		flex: 0 0 250px;
 		width: 250px;
 		align-self: stretch;
-		background: var(--bg-elev);
+		background: #ffffff;
 		border-right: 1px solid var(--border);
 		overflow: hidden;
 		transition:
@@ -245,7 +245,7 @@
 	.sidebar-inner {
 		width: 250px;
 		height: 100%;
-		color: var(--text);
+		color: #676767;
 		display: flex;
 		flex-direction: column;
 		overflow-y: auto;
@@ -303,14 +303,16 @@
 		text-align: left;
 		background: transparent;
 		border: none;
-		color: var(--text);
-		border-radius: 4px;
-		padding: 0.5rem 0.6rem;
-		font-size: 1.125rem;
+		color: #676767;
+		border-radius: 0;
+		/* Reference .sidebar-item: padding 8px 0, margin 0 5px. */
+		padding: 8px 0;
+		margin: 0 5px;
+		font-size: 14px;
 		font-weight: 700;
 	}
 	.item:hover:not(:disabled) {
-		background: var(--bg-elev-2);
+		background: #e9ecef;
 		color: var(--accent);
 	}
 	.item:disabled {
@@ -340,14 +342,14 @@
 		text-align: left;
 		background: transparent;
 		border: none;
-		color: var(--text);
-		border-radius: 4px;
-		padding: 0.4rem 0.6rem 0.4rem 1.4rem;
-		font-size: 0.82rem;
+		color: #676767;
+		border-radius: 0;
+		padding: 8px 0.6rem 8px 1.4rem;
+		font-size: 14px;
 		font-weight: 700;
 	}
 	.sub-item:hover:not(:disabled) {
-		background: var(--bg-elev-2);
+		background: #e9ecef;
 		color: var(--accent);
 	}
 	.sub-item:disabled {

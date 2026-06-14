@@ -180,7 +180,7 @@
 							aria-expanded={openMenuId === m.id}
 							onclick={() => toggleMenu(m.id)}
 						>
-							<Icon name="ellipsis-v" size={18} />
+							<Icon name="ellipsis-v" size={20} />
 						</button>
 						{#if openMenuId === m.id}
 							<div class="menu" role="menu">
@@ -284,8 +284,9 @@
 		display: flex;
 		align-items: center;
 		gap: 0.6rem;
-		padding: 0.5rem 0.85rem;
-		min-height: 40px;
+		/* Reference chat-nav header padding is 4px (p-1). */
+		padding: 4px;
+		min-height: 48px;
 		background: #0a6db1;
 		color: #ffffff;
 		flex-shrink: 0;
@@ -365,7 +366,7 @@
 		text-align: center;
 		background: #e8e8e8;
 		color: #373c42;
-		font-size: 12px;
+		font-size: 13px;
 		font-weight: 300;
 		padding: 0;
 		line-height: 1.5;
@@ -397,15 +398,16 @@
 		justify-content: center;
 		background: transparent;
 		border: none;
-		/* Reference .msgMenu uses the username blue (#0a6db1), not grey. */
+		/* Reference .msgMenu uses the username blue (#0a6db1), not grey, and is a
+		   flat icon (no border-radius). */
 		color: var(--username-color);
 		cursor: pointer;
 		padding: 0.1rem;
-		border-radius: 6px;
+		border-radius: 0;
 	}
 	.menu-trigger:hover {
-		background: #eef0f4;
-		color: #5a6273;
+		font-weight: 900;
+		color: #8c8686;
 	}
 	.menu {
 		position: absolute;
@@ -471,6 +473,8 @@
 		font-size: 14px;
 		font-weight: 900;
 		color: var(--username-color);
+		/* Reference .username (mx-1) has 4px horizontal margin. */
+		margin: 0 4px;
 	}
 
 	.created-at {
@@ -485,7 +489,7 @@
 	}
 
 	.body {
-		margin: 0.35rem 0 0;
+		margin: 0.35rem 0 0 8px;
 		color: #676767;
 		/* Reference body line-height 19.5px / 13px = 1.5. */
 		line-height: 1.5;

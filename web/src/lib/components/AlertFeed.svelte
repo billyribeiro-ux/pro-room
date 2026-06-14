@@ -222,7 +222,7 @@
 							aria-expanded={openMenuId === a.id}
 							onclick={() => toggleMenu(a.id)}
 						>
-							<Icon name="ellipsis-v" size={18} />
+							<Icon name="ellipsis-v" size={20} />
 						</button>
 						{#if openMenuId === a.id}
 							<div class="menu" role="menu">
@@ -354,8 +354,9 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 0.5rem;
-		padding: 0.55rem 0.85rem;
-		min-height: 40px;
+		/* Reference chat-nav header padding is 4px (p-1). */
+		padding: 4px;
+		min-height: 48px;
 		background: #0a6db1;
 		color: #ffffff;
 		flex-shrink: 0;
@@ -425,7 +426,7 @@
 		   (#373c42); the #ccc the capture shows is the container default, not the
 		   date link itself. */
 		color: #373c42;
-		font-size: 12px;
+		font-size: 13px;
 		font-weight: 300;
 		padding: 0;
 		line-height: 1.5;
@@ -458,15 +459,16 @@
 		justify-content: center;
 		background: transparent;
 		border: none;
-		/* Reference .msgMenu uses the username blue (#0a6db1), not grey. */
+		/* Reference .msgMenu uses the username blue (#0a6db1), not grey, and is a
+		   flat icon (no border-radius). */
 		color: var(--username-color);
 		cursor: pointer;
 		padding: 0.1rem;
-		border-radius: 6px;
+		border-radius: 0;
 	}
 	.menu-trigger:hover {
-		background: #eef0f4;
-		color: #5a6273;
+		font-weight: 900;
+		color: #8c8686;
 	}
 	.menu {
 		position: absolute;
@@ -532,6 +534,8 @@
 		font-size: 14px;
 		font-weight: 900;
 		color: var(--username-color);
+		/* Reference .username (mx-1) has 4px horizontal margin. */
+		margin: 0 4px;
 	}
 
 	.alert-qa {
@@ -569,7 +573,7 @@
 	}
 
 	.body {
-		margin: 0.35rem 0 0;
+		margin: 0.35rem 0 0 8px;
 		color: #676767;
 		/* Reference .text-formated line-height is 1.5 (19.5px @ 13px). */
 		line-height: 1.5;
