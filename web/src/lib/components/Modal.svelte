@@ -92,7 +92,7 @@
 		flex-direction: column;
 		background: var(--bg-elev-2);
 		border: 1px solid var(--border);
-		border-radius: var(--radius);
+		border-radius: 8px;
 		color: var(--text);
 		box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5);
 		outline: none;
@@ -102,12 +102,12 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 0.75rem;
-		padding: 0.85rem 1rem;
+		padding: 1rem;
 		border-bottom: 1px solid var(--border);
 	}
 	.title {
 		margin: 0;
-		font-size: 1rem;
+		font-size: 1.25rem;
 		font-weight: 700;
 	}
 	.close {
@@ -124,7 +124,7 @@
 	}
 	.close:hover {
 		color: var(--text);
-		border-color: var(--accent);
+		border-color: var(--accent-hover);
 	}
 	.body {
 		padding: 1rem;
@@ -137,7 +137,7 @@
 		align-items: center;
 		justify-content: flex-end;
 		gap: 0.5rem;
-		padding: 0.75rem 1rem;
+		padding: 1rem;
 		border-top: 1px solid var(--border);
 	}
 </style>

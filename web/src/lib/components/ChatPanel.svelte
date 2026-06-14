@@ -301,6 +301,7 @@
 		align-items: center;
 		gap: 0.6rem;
 		padding: 0.5rem 0.85rem;
+		min-height: 40px;
 		background: #0a6db1;
 		color: #ffffff;
 		flex-shrink: 0;
@@ -468,6 +469,7 @@
 	}
 
 	.username {
+		font-size: 14px;
 		font-weight: 900;
 		color: var(--username-color);
 	}
@@ -475,7 +477,7 @@
 	.created-at {
 		margin-left: auto;
 		font-weight: 600;
-		font-size: 0.74rem;
+		font-size: 12px;
 		color: #a8a8a8;
 		white-space: nowrap;
 		flex-shrink: 0;

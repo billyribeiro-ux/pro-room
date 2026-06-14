@@ -203,8 +203,8 @@
 		background: transparent;
 		border: 1px solid transparent;
 		color: var(--text-dim);
-		font-size: 0.85rem;
-		font-weight: 600;
+		font-size: 12px;
+		font-weight: 300;
 		padding: 0.45rem 0.85rem;
 		border-radius: 8px;
 		cursor: pointer;
@@ -222,6 +222,7 @@
 	.tabbar button.active {
 		color: #ffffff;
 		background: var(--accent);
+		font-weight: 700;
 		/* Reference pairs the bright-blue active tab with the darker room-blue border. */
 		border-color: var(--accent-hover);
 	}

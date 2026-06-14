@@ -327,7 +327,7 @@
 		color: var(--text);
 		border-radius: var(--radius);
 		padding: 0.5rem 0.6rem;
-		font-size: 0.85rem;
+		font-size: 1.125rem;
 	}
 	.item:hover:not(:disabled) {
 		background: var(--bg-elev-2);

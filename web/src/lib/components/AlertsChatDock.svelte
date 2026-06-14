@@ -155,6 +155,9 @@
 		min-height: 0;
 		min-width: 0;
 		border-radius: 8px;
+		/* Clip the square children (the blue header) to the rounded corners so the
+		   top frame doesn't bleed past the radius. */
+		overflow: hidden;
 		box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 		background: #ffffff;
 	}

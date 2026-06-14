@@ -225,7 +225,7 @@
 	}
 	.brand {
 		font-weight: 700;
-		font-size: 0.95rem;
+		font-size: 1.25rem;
 		white-space: nowrap;
 	}
 	.talking {
