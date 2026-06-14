@@ -39,16 +39,16 @@ const DEFAULTS: ThemeTokens = {
 	'--text': '#ffffff',
 	'--text-dim': '#9fc4dd',
 	'--accent': '#45a2ff',
-	'--accent-hover': '#3a8fe6',
+	'--accent-hover': '#0a6db1',
 	'--positive': '#92d528',
 	'--negative': '#bb352a',
-	'--warn': '#f0b90b',
-	'--username-color': '#cfe6ff',
-	'--ticker-color': '#45a2ff'
+	'--warn': '#f39c12',
+	'--username-color': '#0a6db1',
+	'--ticker-color': '#0a6db1'
 };
 
 /** Default message font size in px (mirrors layout.css `--msg-font-size`). */
-const DEFAULT_FONT_SIZE = 14;
+const DEFAULT_FONT_SIZE = 13;
 
 /**
  * Light / dark mode is orthogonal to the recolorable token overrides above:
@@ -83,12 +83,12 @@ export const PRESETS: ThemePreset[] = [
 			'--text': '#ffffff',
 			'--text-dim': '#9fc4dd',
 			'--accent': '#45a2ff',
-			'--accent-hover': '#3a8fe6',
+			'--accent-hover': '#0a6db1',
 			'--positive': '#92d528',
 			'--negative': '#bb352a',
-			'--warn': '#f0b90b',
-			'--username-color': '#cfe6ff',
-			'--ticker-color': '#45a2ff'
+			'--warn': '#f39c12',
+			'--username-color': '#0a6db1',
+			'--ticker-color': '#0a6db1'
 		}
 	},
 	{

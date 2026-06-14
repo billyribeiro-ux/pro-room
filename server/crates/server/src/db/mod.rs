@@ -15,6 +15,7 @@ pub mod notes;
 pub mod oauth;
 pub mod polls;
 pub mod questions;
+pub mod reactions;
 pub mod rooms;
 pub mod sessions;
 pub mod users;

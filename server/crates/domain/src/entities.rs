@@ -6,6 +6,7 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
+use uuid::Uuid;
 
 /// Error returned when parsing a string into a domain enum fails.
 #[derive(Debug, thiserror::Error)]
@@ -103,7 +104,13 @@ pub struct RoomMember {
 }
 
 /// A trade alert. `side` is intentionally free-form (e.g. "buy", "sell",
-/// "watch") so the room owner is not boxed into a fixed taxonomy.
+/// "watch", "nta" for a non-trade announcement) so the room owner is not boxed
+/// into a fixed taxonomy.
+///
+/// `post_to_x` / `no_push` are the author's delivery-intent flags from the Post
+/// Alert modal: whether to also tweet the alert and whether to suppress the push
+/// notification. They are persisted (nullable, default false) so the intent is
+/// captured; actual X/push delivery is not yet wired.
 #[derive(Debug, Clone, Serialize)]
 pub struct Alert {
     pub id: AlertId,
@@ -114,6 +121,8 @@ pub struct Alert {
     pub note: Option<String>,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
+    pub post_to_x: Option<bool>,
+    pub no_push: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -266,6 +275,59 @@ pub struct PollDetail {
     pub created_at: OffsetDateTime,
     pub options: Vec<PollOptionResult>,
     pub total_votes: i64,
+}
+
+/// What an emoji reaction is attached to: a chat message or a trade alert.
+/// Serialized as `"message"` / `"alert"` to match the wire contract the
+/// frontend posts and reads.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ReactionTargetKind {
+    Message,
+    Alert,
+}
+
+impl ReactionTargetKind {
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Message => "message",
+            Self::Alert => "alert",
+        }
+    }
+}
+
+impl std::str::FromStr for ReactionTargetKind {
+    type Err = ParseError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "message" => Ok(Self::Message),
+            "alert" => Ok(Self::Alert),
+            other => Err(ParseError(other.to_owned())),
+        }
+    }
+}
+
+/// One emoji's tally on a target: how many distinct users reacted with it, and
+/// whether the requesting user is one of them. `count` is `i32`: reaction
+/// counts per emoji are small and never approach the `i32` ceiling.
+#[derive(Debug, Clone, Serialize)]
+pub struct ReactionTally {
+    pub emoji: String,
+    pub count: i32,
+    /// Whether the user the summary was built for reacted with this emoji.
+    pub mine: bool,
+}
+
+/// The full set of reaction tallies for one target, scoped to its room. This is
+/// the read model returned by the reactions endpoints and broadcast over
+/// WebSocket so clients can replace a target's reactions in place.
+#[derive(Debug, Clone, Serialize)]
+pub struct ReactionSummary {
+    pub room_id: RoomId,
+    pub target_kind: ReactionTargetKind,
+    pub target_id: Uuid,
+    pub reactions: Vec<ReactionTally>,
 }
 
 /// A named, titled rich-text document scoped to a room. The `body` is plain

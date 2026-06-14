@@ -28,6 +28,7 @@ pub fn router() -> Router<AppState> {
             "/api/rooms/{id}/members/{user_id}",
             axum::routing::delete(remove_member),
         )
+        .route("/api/rooms/{id}/presence", get(list_presence))
         .route("/api/rooms/{id}/livekit-token", post(livekit_token))
 }
 
@@ -242,6 +243,65 @@ async fn remove_member(
     ctx.ensure(&state, Action::ManageMembers).await?;
     db::members::remove(&state.db, id, target).await?;
     Ok(Json(serde_json::json!({ "ok": true })))
+}
+
+/// One currently-connected user in the admin presence view: identity, effective
+/// role, client IP, and best-effort geolocation. `ip` and `location` are only
+/// ever populated on this admin-gated endpoint — they are never part of the
+/// public `presence` WebSocket broadcast.
+#[derive(Serialize)]
+struct PresenceEntry {
+    user_id: domain::UserId,
+    display_name: String,
+    role: Role,
+    /// Client IP captured at WS connect, or `null` if unknown.
+    ip: Option<String>,
+    /// "City, Country" resolved from the IP, or `null` (private network / lookup
+    /// failed / IP unknown).
+    location: Option<String>,
+}
+
+/// List the room's currently-online users with their IP and geolocation.
+///
+/// RBAC: gated on [`Action::ManageMembers`] (admin / super-admin) — IP and
+/// geolocation are sensitive and must never reach a non-admin caller. A denial
+/// returns `403` before any presence data is read.
+async fn list_presence(
+    State(state): State<AppState>,
+    CurrentUser(user): CurrentUser,
+    Path(id): Path<RoomId>,
+) -> AppResult<Json<Vec<PresenceEntry>>> {
+    let ctx = RoomContext::load(&state, &user, id).await?;
+    ctx.ensure(&state, Action::ManageMembers).await?;
+
+    // Present user IDs, their recorded IPs, and their roster (name + role).
+    let present = state.cache.presence_list(id).await?;
+    let uuids: Vec<uuid::Uuid> = present.iter().map(domain::UserId::as_uuid).collect();
+    let roster = db::members::present_roster(&state.db, id, &uuids).await?;
+    let ips = state.cache.presence_ips(id).await?;
+
+    // Resolve every IP best-effort and concurrently. The resolver caches per IP,
+    // so repeated viewers and shared addresses cost at most one API call each.
+    let entries = futures_util::future::join_all(roster.into_iter().map(|entry| {
+        let ip = ips.get(&entry.user_id).cloned();
+        let geo = state.geo.clone();
+        async move {
+            let location = match ip.as_deref() {
+                Some(ip) => geo.locate(ip).await,
+                None => None,
+            };
+            PresenceEntry {
+                user_id: entry.user_id,
+                display_name: entry.display_name,
+                role: entry.role,
+                ip,
+                location,
+            }
+        }
+    }))
+    .await;
+
+    Ok(Json(entries))
 }
 
 #[derive(Serialize)]

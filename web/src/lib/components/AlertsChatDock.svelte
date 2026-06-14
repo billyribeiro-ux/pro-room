@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ChatChannel, PresentUser } from '$lib/types';
+	import type { ChatChannel, PresentUser, ReactionTally, ReactionTarget } from '$lib/types';
 	import AlertFeed, { type AlertItem } from './AlertFeed.svelte';
 	import ChatPanel, { type ChatItem } from './ChatPanel.svelte';
 	import { DotsSixIcon } from 'phosphor-svelte';
@@ -9,6 +9,10 @@
 		messages: ChatItem[];
 		channel: ChatChannel;
 		present: PresentUser[];
+		/** Aggregated reactions keyed `${target_kind}:${target_id}`. */
+		reactions?: Record<string, ReactionTally[]>;
+		canReact?: boolean;
+		onReact?: (targetKind: ReactionTarget, targetId: string, emoji: string) => void;
 		canPostAlert: boolean;
 		canPostMessage: boolean;
 		onPostAlert: (symbol: string, side: string, note: string) => Promise<void>;
@@ -20,6 +24,9 @@
 		messages,
 		channel,
 		present,
+		reactions = {},
+		canReact = false,
+		onReact,
 		canPostAlert,
 		canPostMessage,
 		onPostAlert,
@@ -87,7 +94,15 @@
 
 <div class="dock" class:dragging {@attach bindColumn} style="--alerts-fr: {alertsFraction};">
 	<div class="alerts-pane">
-		<AlertFeed {alerts} {present} canPost={canPostAlert} onPost={onPostAlert} />
+		<AlertFeed
+			{alerts}
+			{present}
+			{reactions}
+			{canReact}
+			{onReact}
+			canPost={canPostAlert}
+			onPost={onPostAlert}
+		/>
 	</div>
 
 	<div
@@ -106,6 +121,9 @@
 			{messages}
 			{present}
 			{channel}
+			{reactions}
+			{canReact}
+			{onReact}
 			canPost={canPostMessage}
 			onPost={onPostMessage}
 			{onChannel}

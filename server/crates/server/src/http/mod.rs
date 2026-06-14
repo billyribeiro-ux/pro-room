@@ -7,6 +7,7 @@ pub mod messages;
 pub mod notes;
 pub mod polls;
 pub mod questions;
+pub mod reactions;
 pub mod rooms;
 pub mod users;
 pub mod ws;
@@ -32,6 +33,7 @@ pub fn router(state: AppState) -> Router {
         .merge(notes::router())
         .merge(polls::router())
         .merge(questions::router())
+        .merge(reactions::router())
         .merge(users::router())
         .merge(ws::router())
         .layer(TraceLayer::new_for_http())

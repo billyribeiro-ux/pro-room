@@ -14,15 +14,19 @@
 	--text: #ffffff;
 	--text-dim: #9fc4dd;
 	--accent: #45a2ff;
-	--accent-hover: #3a8fe6;
+	/* The reference pairs the bright accent #45a2ff with a darker link/header blue
+	   #0a6db1 (used for hovers, panel headers, usernames, active borders). */
+	--accent-hover: #0a6db1;
 	--positive: #92d528;
 	--negative: #bb352a;
-	--warn: #f0b90b;
-	/* Message chrome (consumed by alert/chat rows + theme customizer preview). */
-	--username-color: #cfe6ff;
-	--ticker-color: #45a2ff;
-	--msg-font-size: 14px;
-	--radius: 10px;
+	--warn: #f39c12;
+	/* Message chrome (consumed by alert/chat rows + theme customizer preview).
+	   Usernames/tickers render on the WHITE message panel, so they use the darker
+	   room blue #0a6db1 (the brighter #45a2ff is reserved for autolinked URLs). */
+	--username-color: #0a6db1;
+	--ticker-color: #0a6db1;
+	--msg-font-size: 13px;
+	--radius: 6px;
 	/* App font — Open Sans is the reference's effective app font; Lato fallback. */
 	--font-sans:
 		'Open Sans', 'Lato', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica,

@@ -4,6 +4,7 @@ use anyhow::Context as _;
 use domain::{Role, RoomId, UserId};
 use serde::Serialize;
 use sqlx::PgPool;
+use uuid::Uuid;
 
 /// The authorization-relevant facts about a (room, user) pair.
 pub struct Membership {
@@ -116,6 +117,77 @@ pub async fn list(pool: &PgPool, room_id: RoomId) -> anyhow::Result<Vec<MemberVi
                 display_name: r.display_name,
                 role: r.role.parse().context("parse role")?,
                 joined_at: r.joined_at,
+            })
+        })
+        .collect()
+}
+
+/// Display name plus effective role for one present user, for the admin presence
+/// roster. Uses the runtime `query_as` API (like the polls/reactions repos): the
+/// offline `.sqlx` cache is generated against a live database not available here,
+/// so a freshly added `query!` macro would fail to compile offline.
+#[derive(sqlx::FromRow)]
+struct RosterRow {
+    id: Uuid,
+    display_name: String,
+    /// The user's account-wide role (always present).
+    global_role: String,
+    /// The per-room role from `room_members`, or NULL if the present user is not
+    /// an explicit member (e.g. a super admin viewing any room).
+    room_role: Option<String>,
+}
+
+/// A present user's identity and effective role, for the admin presence view.
+pub struct RosterEntry {
+    pub user_id: UserId,
+    pub display_name: String,
+    pub role: Role,
+}
+
+/// Resolve display name + effective role for a set of present user IDs in a room.
+/// The effective role mirrors `Subject::effective_role`: a super admin is always
+/// super admin; otherwise the per-room role wins, falling back to the global
+/// role when the user has no membership row.
+pub async fn present_roster(
+    pool: &PgPool,
+    room_id: RoomId,
+    user_ids: &[Uuid],
+) -> anyhow::Result<Vec<RosterEntry>> {
+    if user_ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    let rows: Vec<RosterRow> = sqlx::query_as(
+        "SELECT u.id, \
+                u.display_name, \
+                u.global_role::text AS global_role, \
+                m.role::text AS room_role \
+         FROM users u \
+         LEFT JOIN room_members m ON m.user_id = u.id AND m.room_id = $2 \
+         WHERE u.id = ANY($1)",
+    )
+    .bind(user_ids)
+    .bind(room_id.as_uuid())
+    .fetch_all(pool)
+    .await
+    .context("load present roster")?;
+
+    rows.into_iter()
+        .map(|r| {
+            let global_role: Role = r.global_role.parse().context("parse global role")?;
+            let room_role = r
+                .room_role
+                .map(|s| s.parse::<Role>())
+                .transpose()
+                .context("parse room role")?;
+            let role = if global_role == Role::SuperAdmin {
+                Role::SuperAdmin
+            } else {
+                room_role.unwrap_or(global_role)
+            };
+            Ok(RosterEntry {
+                user_id: UserId::from_uuid(r.id),
+                display_name: r.display_name,
+                role,
             })
         })
         .collect()

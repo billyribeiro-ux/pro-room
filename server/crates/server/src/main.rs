@@ -9,6 +9,7 @@ mod config;
 mod crypto;
 mod db;
 mod error;
+mod geo;
 mod http;
 mod livekit;
 mod realtime;
@@ -39,14 +40,24 @@ async fn main() -> anyhow::Result<()> {
     let hub = RealtimeHub::new(cache.clone());
     hub.start().await.context("starting realtime hub")?;
 
-    let state = AppState::new(config, db, cache, hub);
+    let geo = geo::GeoResolver::new();
+
+    let state = AppState::new(config, db, cache, hub, geo);
     let app = http::router(state);
 
     let listener = tokio::net::TcpListener::bind(&bind_addr)
         .await
         .with_context(|| format!("binding {bind_addr}"))?;
     tracing::info!(%bind_addr, "pro-room server listening");
-    axum::serve(listener, app).await.context("server error")?;
+    // `into_make_service_with_connect_info` makes the peer `SocketAddr` available
+    // to handlers via `ConnectInfo` — used as the fallback client-IP source when
+    // no forwarding header is present (direct connections in local/dev).
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
+    )
+    .await
+    .context("server error")?;
     Ok(())
 }
 

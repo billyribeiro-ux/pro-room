@@ -59,3 +59,4 @@ typed_id!(FileId);
 typed_id!(QuestionId);
 typed_id!(PollId);
 typed_id!(PollOptionId);
+typed_id!(ReactionId);

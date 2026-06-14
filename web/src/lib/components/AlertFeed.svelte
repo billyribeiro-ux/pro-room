@@ -1,6 +1,9 @@
 <script lang="ts">
-	import type { Alert, PresentUser } from '$lib/types';
-	import { parseMessage, formatStamp, dayKey, formatDayLabel } from '$lib/message';
+	import type { Alert, PresentUser, ReactionTally, ReactionTarget } from '$lib/types';
+	import { formatStamp, dayKey, formatDayLabel } from '$lib/message';
+	import MessageBody from './MessageBody.svelte';
+	import ReactionBar from './ReactionBar.svelte';
+	import PostAlertModal from './modals/PostAlertModal.svelte';
 	import AlertQaModal from './AlertQaModal.svelte';
 	import UserInfoModal from './modals/UserInfoModal.svelte';
 	import AdvancedSearchModal from './modals/AdvancedSearchModal.svelte';
@@ -10,6 +13,7 @@
 	import {
 		BellIcon,
 		MagnifyingGlassIcon,
+		PlusCircleIcon,
 		GearIcon,
 		CaretDownIcon,
 		DotsThreeVerticalIcon,
@@ -41,8 +45,21 @@
 		onPost: (symbol: string, side: string, note: string) => Promise<void>;
 		/** Optional: open the Q&A thread for an alert (inert when omitted). */
 		onOpenQa?: (alert: AlertItem) => void;
+		/** Aggregated reactions keyed `${target_kind}:${target_id}`. */
+		reactions?: Record<string, ReactionTally[]>;
+		canReact?: boolean;
+		onReact?: (targetKind: ReactionTarget, targetId: string, emoji: string) => void;
 	}
-	let { alerts, present = [], canPost, onPost, onOpenQa }: Props = $props();
+	let {
+		alerts,
+		present = [],
+		canPost,
+		onPost,
+		onOpenQa,
+		reactions = {},
+		canReact = false,
+		onReact
+	}: Props = $props();
 
 	let symbol = $state('');
 	let side = $state('buy');
@@ -62,6 +79,7 @@
 	// and the two alert-settings modals it opens.
 	let searchOpen = $state(false);
 	let settingsOpen = $state(false);
+	let postAlertOpen = $state(false);
 	let filterOpen = $state(false);
 	let scheduledOpen = $state(false);
 	// The alert whose delivery report is open (admin), or null.
@@ -144,6 +162,14 @@
 	<header>
 		<div class="title"><BellIcon size={17} weight="fill" /> Alerts</div>
 		<div class="actions">
+			{#if canPost}
+				<button
+					type="button"
+					aria-label="Post an alert"
+					title="Post Alert"
+					onclick={() => (postAlertOpen = true)}><PlusCircleIcon size={18} weight="fill" /></button
+				>
+			{/if}
 			<button type="button" aria-label="Search alerts" onclick={() => (searchOpen = true)}
 				><MagnifyingGlassIcon size={16} weight="bold" /></button
 			>
@@ -259,18 +285,18 @@
 					<time class="created-at">{formatStamp(a.created_at)}</time>
 				</div>
 
-				<p class="body">
-					{#each parseMessage(bodyText(a)) as seg, si (si)}{#if seg.kind === 'ticker'}<span
-								class="ticker">{seg.value}</span
-							>{:else if seg.kind === 'link'}<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- external user-supplied URL, not an internal route --><a
-								href={seg.href}
-								target="_blank"
-								rel="noopener noreferrer">{seg.value}</a
-							>{:else}{seg.value}{/if}{/each}
-				</p>
+				<p class="body"><MessageBody text={bodyText(a)} /></p>
 
 				{#if a.image_url}
 					<img class="alert-img" src={a.image_url} alt="" />
+				{/if}
+
+				{#if onReact}
+					<ReactionBar
+						reactions={reactions[`alert:${a.id}`] ?? []}
+						{canReact}
+						onToggle={(emoji) => onReact?.('alert', a.id, emoji)}
+					/>
 				{/if}
 			</li>
 		{:else}
@@ -301,6 +327,7 @@
 <AdvancedSearchModal open={searchOpen} onClose={() => (searchOpen = false)} />
 <AlertFilterModal open={filterOpen} onClose={() => (filterOpen = false)} />
 <ScheduledAlertsModal open={scheduledOpen} onClose={() => (scheduledOpen = false)} />
+<PostAlertModal open={postAlertOpen} onClose={() => (postAlertOpen = false)} />
 <AlertSendReportModal
 	open={reportAlert !== null}
 	alertId={reportAlert?.id}
@@ -324,7 +351,7 @@
 		justify-content: space-between;
 		gap: 0.5rem;
 		padding: 0.55rem 0.85rem;
-		background: #1f86d6;
+		background: #0a6db1;
 		color: #ffffff;
 		flex-shrink: 0;
 	}
@@ -488,7 +515,7 @@
 		gap: 0.15rem;
 		background: #eef4fb;
 		border: 1px solid #cfe0f5;
-		color: #1f86d6;
+		color: #0a6db1;
 		font-size: 10px;
 		line-height: 1;
 		padding: 1px 3px;
@@ -507,29 +534,20 @@
 
 	.created-at {
 		margin-left: auto;
-		font-weight: 700;
+		font-weight: 600;
 		font-size: 0.74rem;
-		color: #444b57;
+		color: #a8a8a8;
 		white-space: nowrap;
 		flex-shrink: 0;
 	}
 
 	.body {
 		margin: 0.35rem 0 0;
-		color: #1f2430;
+		color: #676767;
 		line-height: 1.45;
 		word-break: break-word;
 		white-space: pre-wrap;
 		font-size: var(--msg-font-size);
-	}
-	.ticker {
-		color: var(--ticker-color);
-		font-weight: 700;
-	}
-	.body a {
-		color: var(--ptr-link-color, #45a2ff);
-		text-decoration: underline;
-		word-break: break-all;
 	}
 	.alert-img {
 		display: block;
@@ -565,7 +583,7 @@
 		min-width: 0;
 	}
 	form button {
-		background: #1f86d6;
+		background: #0a6db1;
 		color: #fff;
 		border: none;
 		border-radius: 7px;
@@ -574,7 +592,7 @@
 		cursor: pointer;
 	}
 	form button:hover {
-		background: #1a73ba;
+		background: #095a93;
 	}
 	form button:disabled {
 		opacity: 0.6;

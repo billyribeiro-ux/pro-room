@@ -27,6 +27,11 @@ struct CreateAlertBody {
     symbol: String,
     side: String,
     note: Option<String>,
+    /// Whether to also tweet this alert. Stored as intent; X delivery not wired.
+    post_to_x: Option<bool>,
+    /// Whether to suppress the push notification. Stored as intent; push
+    /// delivery not wired.
+    no_push: Option<bool>,
 }
 
 async fn create(
@@ -57,7 +62,24 @@ async fn create(
         .map(str::trim)
         .filter(|s| !s.is_empty());
 
-    let alert = db::alerts::create(&state.db, id, user.user_id, &symbol, &side, note).await?;
+    // Delivery-intent flags from the Post Alert modal. Default to false when the
+    // client omits them (older clients / non-trade announcements).
+    // TODO: wire X/push delivery — for now the flags are only persisted so the
+    // author's intent is captured.
+    let post_to_x = body.post_to_x.unwrap_or(false);
+    let no_push = body.no_push.unwrap_or(false);
+
+    let alert = db::alerts::create(
+        &state.db,
+        id,
+        user.user_id,
+        &symbol,
+        &side,
+        note,
+        post_to_x,
+        no_push,
+    )
+    .await?;
     let event = RoomEvent::Alert {
         alert: alert.clone(),
         author_name: user.display_name.clone(),

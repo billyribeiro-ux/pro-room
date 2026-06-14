@@ -30,12 +30,21 @@
 	let urlText = $state('');
 	let imageUrl = $state('');
 
-	// Footer options (presentational local state).
+	// Footer options — match the reference Post Alert modal's checkboxes.
 	let keepOpen = $state(false);
+	let postToX = $state(false);
+	let dontPush = $state(false);
 	let nonTradeAlert = $state(false);
+	let legalDisclosure = $state(false);
 
 	let posting = $state(false);
+	let uploading = $state(false);
 	let error = $state<string | null>(null);
+
+	// Appended when "Add Legal Disclosure?" is checked (the "not financial
+	// advice" disclaimer the reference room attaches to alerts).
+	const DISCLOSURE =
+		'\n\n— Not financial advice. For educational and informational purposes only; trade at your own risk.';
 
 	/** The text that becomes the alert note for the active tab. */
 	function composeNote(): string {
@@ -60,18 +69,47 @@
 		onClose();
 	}
 
+	/** Upload a selected image to the room's files store, then use its URL. */
+	async function onUpload(e: Event) {
+		const file = (e.currentTarget as HTMLInputElement).files?.[0];
+		if (!file) return;
+		uploading = true;
+		error = null;
+		try {
+			const form = new FormData();
+			form.append('file', file);
+			const uploaded = await api.post<{ url: string }>(`/api/rooms/${roomId}/files`, form);
+			imageUrl = uploaded.url;
+		} catch (err) {
+			error = err instanceof ApiError ? err.message : 'Image upload failed';
+		} finally {
+			uploading = false;
+		}
+	}
+
 	async function post() {
-		const note = composeNote();
+		let note = composeNote();
 		if (!note) {
 			error = 'Enter alert content before posting.';
 			return;
 		}
+		if (legalDisclosure) note += DISCLOSURE;
 		error = null;
 		posting = true;
 		try {
-			// Mirror the existing alert payload shape used by the room page:
-			// `{ symbol?, side?, note }`. This modal posts a free-form note only.
-			const created = await api.post(`/api/rooms/${roomId}/alerts`, { note });
+			// Reference alerts are free-form text. Our backend stores symbol+side+note,
+			// so derive a symbol from the first $cashtag (fallback "ALERT") and a side
+			// from the non-trade flag. The note carries the full composed body. The
+			// tweet/push flags mirror the reference and are sent best-effort (the server
+			// consumes `note`; tweet/push handling is a server-side follow-up).
+			const symbolMatch = note.match(/\$([A-Za-z]{1,6})/);
+			const created = await api.post(`/api/rooms/${roomId}/alerts`, {
+				symbol: symbolMatch ? symbolMatch[1].toUpperCase() : 'ALERT',
+				side: nonTradeAlert ? 'nta' : 'buy',
+				note,
+				post_to_x: postToX,
+				no_push: dontPush
+			});
 			onPosted?.(created);
 			reset();
 			if (!keepOpen) onClose();
@@ -138,12 +176,17 @@
 			</label>
 		{:else}
 			<label class="field">
-				<span class="label">Image URL</span>
+				<span class="label">Image or Video Link to show</span>
 				<input type="url" bind:value={imageUrl} placeholder="https://example.com/chart.png" />
 			</label>
-			<button type="button" class="upload" disabled>
-				<UploadSimpleIcon size={15} /> Upload image (coming soon)
-			</button>
+			<label class="upload">
+				<UploadSimpleIcon size={15} />
+				{uploading ? 'Uploading…' : 'Click to select images to upload'}
+				<input type="file" accept="image/*" onchange={onUpload} disabled={uploading} hidden />
+			</label>
+			{#if imageUrl}
+				<img class="preview" src={imageUrl} alt="Alert attachment preview" />
+			{/if}
 		{/if}
 
 		{#if error}<p class="err" role="alert">{error}</p>{/if}
@@ -152,15 +195,22 @@
 	{#snippet footer()}
 		<div class="checks">
 			<label class="check">
-				<input type="checkbox" bind:checked={keepOpen} />
-				Keep open
+				<input type="checkbox" bind:checked={keepOpen} /> Keep alert window open?
 			</label>
 			<label class="check">
-				<input type="checkbox" bind:checked={nonTradeAlert} />
-				Non-trade alert
+				<input type="checkbox" bind:checked={postToX} /> Post on X? (tweet)
+			</label>
+			<label class="check">
+				<input type="checkbox" bind:checked={dontPush} /> Don't send to push notification?
+			</label>
+			<label class="check">
+				<input type="checkbox" bind:checked={nonTradeAlert} /> Non-trade alert? (Different Sound)
+			</label>
+			<label class="check">
+				<input type="checkbox" bind:checked={legalDisclosure} /> Add Legal Disclosure?
 			</label>
 		</div>
-		<button type="button" class="primary" onclick={post} disabled={posting}>
+		<button type="button" class="primary" onclick={post} disabled={posting || uploading}>
 			<PaperPlaneTiltIcon size={14} weight="fill" />
 			{posting ? 'Posting…' : 'Post Alert'}
 		</button>
@@ -242,10 +292,18 @@
 		padding: 0.45rem 0.7rem;
 		font-size: 0.82rem;
 		font-weight: 600;
+		cursor: pointer;
 	}
-	.upload:disabled {
-		opacity: 0.65;
-		cursor: not-allowed;
+	.upload:hover {
+		border-color: var(--accent);
+		color: var(--text);
+	}
+	.preview {
+		display: block;
+		max-width: 100%;
+		max-height: 180px;
+		border-radius: var(--radius);
+		border: 1px solid var(--border);
 	}
 	.err {
 		margin: 0;

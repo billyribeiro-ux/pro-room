@@ -1,6 +1,14 @@
 <script lang="ts">
-	import type { Message, ChatChannel, PresentUser } from '$lib/types';
-	import { parseMessage, formatStamp, dayKey, formatDayLabel } from '$lib/message';
+	import type {
+		Message,
+		ChatChannel,
+		PresentUser,
+		ReactionTally,
+		ReactionTarget
+	} from '$lib/types';
+	import { formatStamp, dayKey, formatDayLabel } from '$lib/message';
+	import MessageBody from './MessageBody.svelte';
+	import ReactionBar from './ReactionBar.svelte';
 	import UserInfoModal from './modals/UserInfoModal.svelte';
 	import {
 		ChatCircleIcon,
@@ -29,8 +37,22 @@
 		canPost: boolean;
 		onPost: (body: string) => Promise<void>;
 		onChannel: (channel: ChatChannel) => void;
+		/** Aggregated reactions keyed `${target_kind}:${target_id}`. */
+		reactions?: Record<string, ReactionTally[]>;
+		canReact?: boolean;
+		onReact?: (targetKind: ReactionTarget, targetId: string, emoji: string) => void;
 	}
-	let { messages, channel, present = [], canPost, onPost, onChannel }: Props = $props();
+	let {
+		messages,
+		channel,
+		present = [],
+		canPost,
+		onPost,
+		onChannel,
+		reactions = {},
+		canReact = false,
+		onReact
+	}: Props = $props();
 
 	let body = $state('');
 	let sending = $state(false);
@@ -196,15 +218,15 @@
 					<time class="created-at">{formatStamp(m.created_at)}</time>
 				</div>
 
-				<p class="body">
-					{#each parseMessage(m.body) as seg, si (si)}{#if seg.kind === 'ticker'}<span
-								class="ticker">{seg.value}</span
-							>{:else if seg.kind === 'link'}<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- external user-supplied URL, not an internal route --><a
-								href={seg.href}
-								target="_blank"
-								rel="noopener noreferrer">{seg.value}</a
-							>{:else}{seg.value}{/if}{/each}
-				</p>
+				<p class="body"><MessageBody text={m.body} /></p>
+
+				{#if onReact}
+					<ReactionBar
+						reactions={reactions[`message:${m.id}`] ?? []}
+						{canReact}
+						onToggle={(emoji) => onReact?.('message', m.id, emoji)}
+					/>
+				{/if}
 			</li>
 		{:else}
 			<li class="empty">No messages yet.</li>
@@ -260,7 +282,7 @@
 		align-items: center;
 		gap: 0.6rem;
 		padding: 0.5rem 0.85rem;
-		background: #1f86d6;
+		background: #0a6db1;
 		color: #ffffff;
 		flex-shrink: 0;
 	}
@@ -430,29 +452,20 @@
 
 	.created-at {
 		margin-left: auto;
-		font-weight: 700;
+		font-weight: 600;
 		font-size: 0.74rem;
-		color: #444b57;
+		color: #a8a8a8;
 		white-space: nowrap;
 		flex-shrink: 0;
 	}
 
 	.body {
 		margin: 0.35rem 0 0;
-		color: #1f2430;
+		color: #676767;
 		line-height: 1.45;
 		word-break: break-word;
 		white-space: pre-wrap;
 		font-size: var(--msg-font-size);
-	}
-	.ticker {
-		color: var(--ticker-color);
-		font-weight: 700;
-	}
-	.body a {
-		color: var(--ptr-link-color, #45a2ff);
-		text-decoration: underline;
-		word-break: break-all;
 	}
 	form {
 		display: flex;
@@ -495,7 +508,7 @@
 		justify-content: center;
 		background: transparent;
 		border: none;
-		color: #7b8190;
+		color: #aaaaaa;
 		cursor: pointer;
 		padding: 0.25rem;
 		border-radius: 6px;
@@ -509,7 +522,7 @@
 		letter-spacing: 0.02em;
 	}
 	.send {
-		background: #1f86d6;
+		background: #0a6db1;
 		color: #fff;
 		border: none;
 		border-radius: 999px;
@@ -520,7 +533,7 @@
 		flex-shrink: 0;
 	}
 	.send:hover {
-		background: #1a73ba;
+		background: #095a93;
 	}
 	.send:disabled {
 		opacity: 0.6;

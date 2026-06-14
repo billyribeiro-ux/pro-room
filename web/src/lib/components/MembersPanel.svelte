@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { api, ApiError } from '$lib/api';
 	import { onMount } from 'svelte';
-	import type { MemberView, Role } from '$lib/types';
-	import { XIcon, UserPlusIcon, TrashIcon } from 'phosphor-svelte';
+	import type { MemberView, PresenceEntry, Role } from '$lib/types';
+	import { XIcon, UserPlusIcon, TrashIcon, MapPinIcon, GlobeSimpleIcon } from 'phosphor-svelte';
 
 	interface Props {
 		roomId: string;
@@ -11,6 +11,8 @@
 	let { roomId, onClose }: Props = $props();
 
 	let members = $state<MemberView[]>([]);
+	// Online members with admin-only IP + geo-location (GET /presence).
+	let online = $state<PresenceEntry[]>([]);
 	let email = $state('');
 	let role = $state<Role>('member');
 	let error = $state<string | null>(null);
@@ -21,6 +23,13 @@
 			members = await api.get<MemberView[]>(`/api/rooms/${roomId}/members`);
 		} catch (err) {
 			error = err instanceof ApiError ? err.message : 'Failed to load members';
+		}
+		// Online presence (name / location / IP) — admin-only; ignore failures so
+		// the members list still renders if the caller lacks the presence scope.
+		try {
+			online = await api.get<PresenceEntry[]>(`/api/rooms/${roomId}/presence`);
+		} catch {
+			online = [];
 		}
 	}
 
@@ -60,6 +69,31 @@
 		</header>
 
 		{#if error}<p class="error">{error}</p>{/if}
+
+		{#if online.length}
+			<section class="online">
+				<h3 class="section-title">
+					<span class="dot" aria-hidden="true"></span>
+					Online now <span class="count">{online.length}</span>
+				</h3>
+				<ul class="online-list">
+					{#each online as u (u.user_id)}
+						<li class="online-row">
+							<div class="info">
+								<span class="name">{u.display_name}</span>
+								<span class="meta">
+									<MapPinIcon size={12} />
+									{u.location ?? 'Local network'}
+									<GlobeSimpleIcon size={12} />
+									<span class="ip">{u.ip ?? '—'}</span>
+								</span>
+							</div>
+							<span class="role">{u.role.replace('_', ' ')}</span>
+						</li>
+					{/each}
+				</ul>
+			</section>
+		{/if}
 
 		<form onsubmit={add}>
 			<input type="email" placeholder="member@email.com" bind:value={email} required />
@@ -127,6 +161,57 @@
 		border-radius: 8px;
 		padding: 0.3rem;
 		display: inline-flex;
+	}
+	.online {
+		margin-bottom: 1rem;
+	}
+	.section-title {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		margin: 0 0 0.5rem;
+		font-size: 0.8rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+		color: var(--text-dim);
+	}
+	.dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: var(--positive);
+	}
+	.count {
+		color: var(--text);
+	}
+	.online-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+	}
+	.online-row {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		background: var(--bg-elev-2);
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		padding: 0.45rem 0.65rem;
+	}
+	.meta {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
+		flex-wrap: wrap;
+		font-size: 0.72rem;
+		color: var(--text-dim);
+	}
+	.meta .ip {
+		font-variant-numeric: tabular-nums;
 	}
 	form {
 		display: flex;

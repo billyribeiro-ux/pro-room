@@ -1,5 +1,6 @@
 import {
 	LocalTrackPublication,
+	Participant,
 	RemoteTrack,
 	Room,
 	RoomEvent,
@@ -23,8 +24,17 @@ export interface SharePublisher {
  */
 export class ScreenShareRoom {
 	publishers = $state<SharePublisher[]>([]);
+	/** Presenter camera feeds (local + remote), rendered in the webcam strip. */
+	cameraPublishers = $state<SharePublisher[]>([]);
 	connected = $state(false);
 	publishing = $state(false);
+	cameraPublishing = $state(false);
+	/** Whether this user is publishing their microphone. */
+	micPublishing = $state(false);
+	/** Whether the published mic is currently muted (still published). */
+	micMuted = $state(false);
+	/** Identities of participants currently speaking (includes local). */
+	activeSpeakers = $state<string[]>([]);
 	error = $state<string | null>(null);
 
 	#room: Room | null = null;
@@ -52,6 +62,12 @@ export class ScreenShareRoom {
 			.on(RoomEvent.LocalTrackUnpublished, () => this.#refresh())
 			.on(RoomEvent.ParticipantConnected, () => this.#refresh())
 			.on(RoomEvent.ParticipantDisconnected, () => this.#refresh())
+			.on(RoomEvent.ActiveSpeakersChanged, (speakers: Participant[]) => {
+				// LiveKit includes the local participant when it's speaking.
+				this.activeSpeakers = speakers
+					.filter((s) => s.audioLevel > 0 || s.isSpeaking)
+					.map((s) => s.identity);
+			})
 			.on(RoomEvent.Disconnected, () => {
 				this.connected = false;
 				this.#refresh();
@@ -82,22 +98,85 @@ export class ScreenShareRoom {
 		this.#refresh();
 	}
 
+	/** Start publishing this user's camera (admins/super admins only). */
+	async startCamera(): Promise<void> {
+		if (!this.#room) return;
+		try {
+			await this.#room.localParticipant.setCameraEnabled(true);
+			this.cameraPublishing = true;
+			this.#refresh();
+		} catch (e) {
+			this.error = e instanceof Error ? e.message : 'failed to start camera';
+		}
+	}
+
+	async stopCamera(): Promise<void> {
+		if (!this.#room) return;
+		await this.#room.localParticipant.setCameraEnabled(false);
+		this.cameraPublishing = false;
+		this.#refresh();
+	}
+
+	/** Start publishing this user's microphone (admins/super admins only). */
+	async startMic(): Promise<void> {
+		if (!this.#room) return;
+		try {
+			await this.#room.localParticipant.setMicrophoneEnabled(true);
+			this.micPublishing = true;
+		} catch (e) {
+			this.error = e instanceof Error ? e.message : 'failed to start microphone';
+		}
+	}
+
+	async stopMic(): Promise<void> {
+		if (!this.#room) return;
+		await this.#room.localParticipant.setMicrophoneEnabled(false);
+		this.micPublishing = false;
+		this.micMuted = false;
+	}
+
+	/** Mute/unmute the published mic without unpublishing it. No-op if unpublished. */
+	async toggleMicMute(): Promise<void> {
+		if (!this.#room) return;
+		const pub = this.#room.localParticipant.getTrackPublication(Track.Source.Microphone);
+		if (!pub) return;
+		if (this.micMuted) {
+			await pub.unmute();
+			this.micMuted = false;
+		} else {
+			await pub.mute();
+			this.micMuted = true;
+		}
+	}
+
+	/** Whether the given participant identity is currently speaking. */
+	isSpeaking(identity: string): boolean {
+		return this.activeSpeakers.includes(identity);
+	}
+
 	async disconnect(): Promise<void> {
 		await this.#room?.disconnect();
 		this.#room = null;
 		this.connected = false;
 		this.publishing = false;
+		this.cameraPublishing = false;
+		this.micPublishing = false;
+		this.micMuted = false;
+		this.activeSpeakers = [];
 		this.publishers = [];
+		this.cameraPublishers = [];
 	}
 
-	/** Recompute the list of screen-share publishers from current room state. */
+	/** Recompute the screen-share and camera publisher lists from room state. */
 	#refresh(): void {
 		const room = this.#room;
 		if (!room) {
 			this.publishers = [];
+			this.cameraPublishers = [];
 			return;
 		}
-		const found: SharePublisher[] = [];
+		const screens: SharePublisher[] = [];
+		const cams: SharePublisher[] = [];
 
 		const collect = (
 			pubs: Iterable<TrackPublication>,
@@ -106,8 +185,12 @@ export class ScreenShareRoom {
 			isLocal: boolean
 		) => {
 			for (const pub of pubs) {
-				if (pub.source === Track.Source.ScreenShare && pub.track) {
-					found.push({ identity, name: name || identity, isLocal, track: pub.track });
+				if (!pub.track) continue;
+				const entry = { identity, name: name || identity, isLocal, track: pub.track };
+				if (pub.source === Track.Source.ScreenShare) {
+					screens.push(entry);
+				} else if (pub.source === Track.Source.Camera) {
+					cams.push(entry);
 				}
 			}
 		};
@@ -127,7 +210,8 @@ export class ScreenShareRoom {
 				false
 			);
 		}
-		this.publishers = found;
+		this.publishers = screens;
+		this.cameraPublishers = cams;
 	}
 }
 

@@ -3,6 +3,7 @@
 
 use crate::cache::Cache;
 use crate::config::Config;
+use crate::geo::GeoResolver;
 use crate::realtime::RealtimeHub;
 use sqlx::PgPool;
 use std::sync::Arc;
@@ -13,15 +14,23 @@ pub struct AppState {
     pub db: PgPool,
     pub cache: Cache,
     pub hub: RealtimeHub,
+    pub geo: GeoResolver,
 }
 
 impl AppState {
-    pub fn new(config: Config, db: PgPool, cache: Cache, hub: RealtimeHub) -> Self {
+    pub fn new(
+        config: Config,
+        db: PgPool,
+        cache: Cache,
+        hub: RealtimeHub,
+        geo: GeoResolver,
+    ) -> Self {
         Self {
             config: Arc::new(config),
             db,
             cache,
             hub,
+            geo,
         }
     }
 }

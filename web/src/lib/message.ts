@@ -7,10 +7,26 @@
  * in isolation.
  */
 
-/** One parsed piece of a message body. */
+/** The discriminant tags a parsed segment can carry. */
+export type SegmentKind = 'text' | 'ticker' | 'mention' | 'link';
+
+/**
+ * One parsed piece of a message body.
+ *
+ * - `text`    — a plain run that carries no styling.
+ * - `ticker`  — a `$CASHTAG` (e.g. `$SPX`); `value` keeps the leading `$`.
+ * - `mention` — an `@username` (e.g. `@jane_doe`); `value` keeps the leading
+ *               `@`, and `handle` is the bare username without it.
+ * - `link`    — a bare http/https URL; `href` is the navigable target and
+ *               `value` is the visible label (identical to `href` here).
+ *
+ * The concatenation of every segment's `value` equals the original input, so
+ * callers can render each node safely without ever reaching for `{@html}`.
+ */
 export type Segment =
 	| { kind: 'text'; value: string }
 	| { kind: 'ticker'; value: string }
+	| { kind: 'mention'; value: string; handle: string }
 	| { kind: 'link'; href: string; value: string };
 
 // Bare http/https URLs. Trailing punctuation is trimmed back into a text
@@ -18,16 +34,20 @@ export type Segment =
 const URL_RE = /https?:\/\/[^\s]+/g;
 // Cashtags like $SPX, $AAOI — 1-6 uppercase letters, word-boundary terminated.
 const TICKER_RE = /\$[A-Z]{1,6}\b/g;
+// Mentions like @jane, @jane_doe, @trader-1 — a leading `@` (only when it
+// starts a word, so emails like a@b.com don't match) followed by 1-30 chars
+// from the username alphabet [A-Za-z0-9_-].
+const MENTION_RE = /(^|[^\w@])@([A-Za-z0-9_-]{1,30})/g;
 // Punctuation we never want hanging off the end of an auto-linked URL.
 const TRAILING_PUNCT_RE = /[.,;:!?)\]}'"]+$/;
 
 type Match = { start: number; end: number; seg: Segment };
 
 /**
- * Split `body` into ordered text / ticker / link segments. Original spacing
- * and ordering are preserved; the concatenation of every segment `value`
- * equals the input string. URLs win over tickers when ranges would overlap
- * (a `$` inside a URL stays part of the link).
+ * Split `body` into ordered text / ticker / mention / link segments. Original
+ * spacing and ordering are preserved; the concatenation of every segment
+ * `value` equals the input string. URLs win over tickers and mentions when
+ * ranges would overlap (a `$` or `@` inside a URL stays part of the link).
  */
 export function parseMessage(body: string): Segment[] {
 	if (!body) return [];
@@ -56,6 +76,19 @@ export function parseMessage(body: string): Segment[] {
 		matches.push({ start, end, seg: { kind: 'ticker', value: m[0] } });
 	}
 
+	for (const m of body.matchAll(MENTION_RE)) {
+		const handle = m[2];
+		// m[1] is the leading boundary char (or empty at string start); the
+		// `@handle` token begins after it, so offset the index past the prefix.
+		const start = (m.index ?? 0) + m[1].length;
+		const value = `@${handle}`;
+		const end = start + value.length;
+		// Skip a mention that falls inside an already-claimed URL or ticker range.
+		const overlaps = matches.some((x) => start < x.end && end > x.start);
+		if (overlaps) continue;
+		matches.push({ start, end, seg: { kind: 'mention', value, handle } });
+	}
+
 	matches.sort((a, b) => a.start - b.start);
 
 	const out: Segment[] = [];
@@ -72,6 +105,20 @@ export function parseMessage(body: string): Segment[] {
 		out.push({ kind: 'text', value: body.slice(cursor) });
 	}
 	return out;
+}
+
+/**
+ * Whole-message heuristic: does this body read as a question? Used by callers
+ * to apply question styling to the entire row (parsing stays per-segment).
+ *
+ * Simple and intentionally cheap: true when the trimmed text ends in a `?`
+ * (ignoring trailing closing punctuation/quotes like `?)` or `?"`).
+ */
+export function isQuestion(text: string): boolean {
+	if (!text) return false;
+	// Strip trailing whitespace and closing wrappers, then test the last char.
+	const trimmed = text.replace(/[\s)\]}'"»”]+$/, '');
+	return trimmed.endsWith('?');
 }
 
 /**

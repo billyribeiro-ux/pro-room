@@ -7,13 +7,16 @@ use crate::authorization::RoomContext;
 use crate::error::AppResult;
 use crate::realtime::event::{PresentUser, RoomEvent};
 use crate::state::AppState;
+use crate::util;
 use axum::Router;
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
-use axum::extract::{Path, State};
+use axum::extract::{ConnectInfo, Path, State};
+use axum::http::HeaderMap;
 use axum::response::Response;
 use axum::routing::get;
 use domain::{Action, RoomId, UserId};
 use futures_util::{SinkExt, StreamExt};
+use std::net::SocketAddr;
 
 pub fn router() -> Router<AppState> {
     Router::new().route("/api/rooms/{id}/ws", get(upgrade))
@@ -23,22 +26,37 @@ async fn upgrade(
     State(state): State<AppState>,
     CurrentUser(user): CurrentUser,
     Path(id): Path<RoomId>,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
     ws: WebSocketUpgrade,
 ) -> AppResult<Response> {
     // Enforce room access before upgrading; a denial returns a normal HTTP error.
     let ctx = RoomContext::load(&state, &user, id).await?;
     ctx.ensure(&state, Action::SubscribeScreen).await?;
 
+    // Capture the client IP from the upgrade request (proxy-forwarded header
+    // preferred, direct peer as fallback). It is stored on the presence entry
+    // for the admin view only — never broadcast to room members.
+    let ip = util::client_ip(&headers, Some(peer));
     let user_id = user.user_id;
-    Ok(ws.on_upgrade(move |socket| room_socket(state, socket, id, user_id)))
+    Ok(ws.on_upgrade(move |socket| room_socket(state, socket, id, user_id, ip)))
 }
 
-async fn room_socket(state: AppState, socket: WebSocket, room: RoomId, user: UserId) {
+async fn room_socket(
+    state: AppState,
+    socket: WebSocket,
+    room: RoomId,
+    user: UserId,
+    ip: Option<String>,
+) {
     let (mut sink, mut stream) = socket.split();
     let mut rx = state.hub.subscribe(room);
 
-    // Announce presence on join.
+    // Announce presence on join, and record the client IP for the admin view.
     let _ = state.cache.presence_touch(room, user).await;
+    if let Some(ip) = ip.as_deref() {
+        let _ = state.cache.presence_set_ip(room, user, ip).await;
+    }
     publish_presence(&state, room).await;
 
     loop {
@@ -64,8 +82,9 @@ async fn room_socket(state: AppState, socket: WebSocket, room: RoomId, user: Use
         }
     }
 
-    // Departure: drop presence and notify the room.
+    // Departure: drop presence (and the recorded IP) and notify the room.
     let _ = state.cache.presence_remove(room, user).await;
+    let _ = state.cache.presence_remove_ip(room, user).await;
     publish_presence(&state, room).await;
 }
 

@@ -117,10 +117,39 @@ export interface LiveKitToken {
 	can_publish: boolean;
 }
 
+/** Aggregated reactions for one target (message or alert). */
+export interface ReactionTally {
+	emoji: string;
+	count: number;
+	mine: boolean;
+}
+export type ReactionTarget = 'message' | 'alert';
+export interface ReactionSummary {
+	room_id: string;
+	target_kind: ReactionTarget;
+	target_id: string;
+	reactions: ReactionTally[];
+}
+
+/** Presenter media-for-all broadcast (SoundCloud / YouTube to the whole room). */
+export type MediaKind = 'soundcloud' | 'youtube' | 'stop';
+
+/** One online member as seen by an admin (GET /rooms/{id}/presence). Admin-only:
+ * the public `presence` WS broadcast never carries ip/location. */
+export interface PresenceEntry {
+	user_id: string;
+	display_name: string;
+	role: Role;
+	ip: string | null;
+	location: string | null;
+}
+
 // Realtime events pushed over the room WebSocket (discriminated by `type`).
 export type RoomEvent =
 	| { type: 'alert'; alert: Alert; author_name: string }
 	| { type: 'chat'; message: Message; author_name: string }
 	| { type: 'presence'; users: PresentUser[] }
 	| { type: 'live'; is_live: boolean }
-	| { type: 'poll'; poll: PollDetail };
+	| { type: 'poll'; poll: PollDetail }
+	| { type: 'reaction'; reaction: ReactionSummary }
+	| { type: 'media'; kind: MediaKind; url?: string };

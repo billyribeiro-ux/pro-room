@@ -23,9 +23,15 @@
 	import ConnectionOverlay from '$lib/components/ConnectionOverlay.svelte';
 	import MobileAppInfoModal from '$lib/components/modals/MobileAppInfoModal.svelte';
 	import Split from '$lib/components/Split.svelte';
+	import MediaPlayer from '$lib/components/MediaPlayer.svelte';
+	import MediaForAllModal from '$lib/components/modals/MediaForAllModal.svelte';
 	import { privateChat, closePrivateChat } from '$lib/privateChat.svelte';
 	import { layout } from '$lib/stores/layout.svelte';
 	import { listPolls, type PollDetail } from '$lib/poll';
+	import { toggleReaction } from '$lib/reactions';
+	import { broadcastMedia } from '$lib/media';
+	import { playSound } from '$lib/sound.svelte';
+	import type { ReactionTally, ReactionTarget } from '$lib/types';
 	import {
 		BroadcastIcon,
 		MonitorPlayIcon,
@@ -33,7 +39,13 @@
 		GearIcon,
 		ArrowLeftIcon,
 		ChartBarIcon,
-		RecordIcon
+		RecordIcon,
+		VideoCameraIcon,
+		VideoCameraSlashIcon,
+		MicrophoneIcon,
+		MicrophoneSlashIcon,
+		MusicNotesIcon,
+		ClosedCaptioningIcon
 	} from 'phosphor-svelte';
 
 	// Always present for the /rooms/[id] route.
@@ -57,6 +69,15 @@
 	let showCreatePoll = $state(false);
 	let showRecPreview = $state(false);
 	let showMobileInfo = $state(false);
+	let showMediaModal = $state(false);
+	let captionsOn = $state(false);
+	let mediaVolume = $state(70);
+	// Presenter media-for-all (SoundCloud/YouTube) currently playing for the room.
+	let currentMedia = $state<{ kind: 'soundcloud' | 'youtube'; url: string } | null>(null);
+	// Aggregated reactions per target, keyed `${kind}:${id}`. `mine` is recomputed
+	// from our own local set so another user's reaction event can't flip our pill.
+	let reactionsByTarget = $state<Record<string, ReactionTally[]>>({});
+	const myReactions = new Map<string, Set<string>>();
 
 	const screen = new ScreenShareRoom();
 	// $state so the template reacts both to the socket being created in onMount
@@ -93,6 +114,54 @@
 						: 58
 	);
 
+	// Map LiveKit camera publishers (local + remote) to the webcam strip's shape.
+	// WebcamHolder is LiveKit-agnostic, so hand it the raw MediaStreamTrack.
+	const webcamPublishers = $derived(
+		screen.cameraPublishers.map((p) => ({
+			id: p.identity,
+			name: p.name,
+			isLocal: p.isLocal,
+			track: p.track.mediaStreamTrack
+		}))
+	);
+
+	// "Is speaking" indicator: LiveKit reports speaking identities (= user_id);
+	// map the first present one to its roster display name for the top nav.
+	const speakingName = $derived.by(() => {
+		const id = screen.activeSpeakers.find((i) => present.some((u) => u.user_id === i));
+		return id ? (present.find((u) => u.user_id === id)?.display_name ?? null) : null;
+	});
+
+	// Toggle an emoji reaction on a message/alert. The POST response's `mine` is
+	// authoritative for us, so we rebuild our local set from it.
+	async function onReact(targetKind: ReactionTarget, targetId: string, emoji: string) {
+		const key = `${targetKind}:${targetId}`;
+		try {
+			const summary = await toggleReaction(roomId, targetKind, targetId, emoji);
+			myReactions.set(key, new Set(summary.reactions.filter((t) => t.mine).map((t) => t.emoji)));
+			reactionsByTarget = { ...reactionsByTarget, [key]: summary.reactions };
+		} catch (err) {
+			error = err instanceof ApiError ? err.message : 'Could not react';
+		}
+	}
+
+	async function playMedia(kind: 'soundcloud' | 'youtube', url: string) {
+		currentMedia = { kind, url };
+		try {
+			await broadcastMedia(roomId, kind, url);
+		} catch (err) {
+			error = err instanceof ApiError ? err.message : 'Could not start media';
+		}
+	}
+	async function stopMedia() {
+		currentMedia = null;
+		try {
+			await broadcastMedia(roomId, 'stop');
+		} catch {
+			/* stop is best-effort */
+		}
+	}
+
 	// Insert a new poll or replace an existing one in place (keyed by id) so a
 	// vote/close update never duplicates, and a closed poll keeps showing its
 	// final tallies until the next full load.
@@ -106,6 +175,8 @@
 		switch (ev.type) {
 			case 'alert':
 				alerts = [{ ...ev.alert, author_name: ev.author_name }, ...alerts].slice(0, 100);
+				// DND-aware chime (suppressed by the matching Do-Not-Disturb flag).
+				playSound('alert');
 				break;
 			case 'chat': {
 				const item = { ...ev.message, author_name: ev.author_name };
@@ -114,6 +185,7 @@
 				} else {
 					mainMessages = [...mainMessages, item].slice(-100);
 				}
+				playSound('chat');
 				break;
 			}
 			case 'presence':
@@ -124,6 +196,19 @@
 				break;
 			case 'poll':
 				upsertPoll(ev.poll);
+				break;
+			case 'reaction': {
+				const r = ev.reaction;
+				const key = `${r.target_kind}:${r.target_id}`;
+				const mineSet = myReactions.get(key);
+				reactionsByTarget = {
+					...reactionsByTarget,
+					[key]: r.reactions.map((t) => ({ ...t, mine: mineSet?.has(t.emoji) ?? false }))
+				};
+				break;
+			}
+			case 'media':
+				currentMedia = ev.kind === 'stop' ? null : { kind: ev.kind, url: ev.url ?? '' };
 				break;
 		}
 	}
@@ -214,6 +299,7 @@
 	<RoomTopNav
 		roomName={detail.room.name}
 		userCount={present.length}
+		speaker={speakingName}
 		onToggleSidebar={() => (sidebarOpen = !sidebarOpen)}
 		onMobileInfo={() => (showMobileInfo = true)}
 		onReload={() => location.reload()}
@@ -283,6 +369,22 @@
 	/>
 
 	<MobileAppInfoModal open={showMobileInfo} onClose={() => (showMobileInfo = false)} />
+
+	<MediaForAllModal
+		open={showMediaModal}
+		onClose={() => (showMediaModal = false)}
+		onPlay={playMedia}
+		onStop={stopMedia}
+	/>
+
+	{#if currentMedia}
+		<aside class="media-float" aria-label="Now playing">
+			<MediaPlayer media={currentMedia} volume={mediaVolume} onVolume={(v) => (mediaVolume = v)} />
+			{#if caps?.can_manage_room}
+				<button class="media-stop" type="button" onclick={stopMedia}>Stop for everyone</button>
+			{/if}
+		</aside>
+	{/if}
 {:else}
 	<p class="dim">Loading room…</p>
 {/if}
@@ -298,6 +400,42 @@
 				<MonitorPlayIcon size={16} /> Share screen
 			</button>
 		{/if}
+		{#if screen.cameraPublishing}
+			<button class="ctrl stop" onclick={() => screen.stopCamera()}>
+				<VideoCameraSlashIcon size={16} /> Stop camera
+			</button>
+		{:else}
+			<button class="ctrl" onclick={() => screen.startCamera()} disabled={!screen.connected}>
+				<VideoCameraIcon size={16} /> Camera
+			</button>
+		{/if}
+		{#if screen.micPublishing}
+			<button
+				class="ctrl"
+				class:stop={!screen.micMuted}
+				onclick={() => screen.toggleMicMute()}
+				title={screen.micMuted ? 'Unmute microphone' : 'Mute microphone'}
+			>
+				{#if screen.micMuted}
+					<MicrophoneSlashIcon size={16} /> Unmute
+				{:else}
+					<MicrophoneIcon size={16} weight="fill" /> Mute
+				{/if}
+			</button>
+			<button class="ctrl" onclick={() => screen.stopMic()} title="Stop microphone">
+				<MicrophoneSlashIcon size={16} /> Stop mic
+			</button>
+		{:else}
+			<button class="ctrl" onclick={() => screen.startMic()} disabled={!screen.connected}>
+				<MicrophoneIcon size={16} /> Mic
+			</button>
+		{/if}
+		<button class="ctrl" class:live-on={captionsOn} onclick={() => (captionsOn = !captionsOn)}>
+			<ClosedCaptioningIcon size={16} weight={captionsOn ? 'fill' : 'regular'} /> CC
+		</button>
+		<button class="ctrl" onclick={() => (showMediaModal = true)}>
+			<MusicNotesIcon size={16} /> Music
+		</button>
 	{/if}
 	{#if caps?.can_post_alert}
 		<button class="ctrl" onclick={() => (showCreatePoll = true)}>
@@ -330,6 +468,9 @@
 		{messages}
 		{present}
 		{channel}
+		reactions={reactionsByTarget}
+		canReact={caps?.can_post_message ?? false}
+		{onReact}
 		canPostAlert={caps?.can_post_alert ?? false}
 		canPostMessage={caps?.can_post_message ?? false}
 		onPostAlert={postAlert}
@@ -344,6 +485,9 @@
 		canManage={caps?.can_manage_room ?? false}
 		publishers={screen.publishers}
 		connected={screen.connected}
+		{webcamPublishers}
+		onWebcamClose={() => screen.stopCamera()}
+		captionsActive={captionsOn}
 		actions={stageActions}
 	/>
 {/snippet}
@@ -414,6 +558,31 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.6rem;
+	}
+	.media-float {
+		position: fixed;
+		left: 1rem;
+		bottom: 1rem;
+		z-index: 55;
+		width: min(360px, calc(100vw - 2rem));
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+		padding: 0.5rem;
+		background: var(--bg-elev-2);
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+	}
+	.media-stop {
+		align-self: flex-end;
+		background: transparent;
+		border: 1px solid var(--negative);
+		color: var(--negative);
+		border-radius: var(--radius);
+		padding: 0.3rem 0.6rem;
+		font-size: 0.78rem;
+		font-weight: 600;
 	}
 	.notice {
 		background: color-mix(in srgb, var(--warn) 12%, transparent);

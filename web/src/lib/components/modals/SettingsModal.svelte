@@ -1,6 +1,12 @@
 <script lang="ts">
 	import { theme, type ThemeTokenKey, type ThemeMode } from '$lib/stores/theme.svelte';
-	import { layout, setLayoutPosition, setPmLogsRight, type LayoutPosition } from '$lib/stores/layout.svelte';
+	import {
+		layout,
+		setLayoutPosition,
+		setPmLogsRight,
+		type LayoutPosition
+	} from '$lib/stores/layout.svelte';
+	import { dnd, setDnd } from '$lib/stores/dnd.svelte';
 	import Modal from '../Modal.svelte';
 	import {
 		PaletteIcon,
@@ -76,9 +82,12 @@
 	// (The theme mode, layout, and color/size controls above drive real
 	// reactive stores instead.)
 
-	// App tab — Do not disturb. Defaults mirror the reference app.
+	// App/Alert/Chat "Do not disturb" — these checkboxes are "sound/popup ON"
+	// (checked = enabled), so they're the INVERSE of the `dnd` store flags
+	// (where true = suppressed). Initialised from the persisted store, and a
+	// sync effect below pushes changes back (inverted) so they take real effect.
 	let appDnd = $state({
-		dontDisturb: false,
+		dontDisturb: dnd.app,
 		startRecordingSound: true,
 		stopRecordingSound: true,
 		reactionsResponse: true,
@@ -90,11 +99,11 @@
 	// Alert tab.
 	let alertTextMode = $state<'regular' | 'compact'>('regular');
 	let alertDnd = $state({
-		alertQaPopup: true,
-		alertSound: true,
-		qaSound: true,
+		alertQaPopup: !dnd.alertPopup,
+		alertSound: !dnd.alert,
+		qaSound: !dnd.qa,
 		qaReactionsSound: true,
-		nonTradeAlertSound: true
+		nonTradeAlertSound: !dnd.nonTradeAlert
 	});
 	let alertLongerPopup = $state(false);
 
@@ -102,10 +111,25 @@
 	let chatTextMode = $state<'regular' | 'compact'>('regular');
 	let chatSmallerImagePreview = $state(true);
 	let chatDnd = $state({
-		gif: true,
-		badges: true,
-		chatPmPopup: false,
-		chatSound: true
+		gif: !dnd.chatGif,
+		badges: !dnd.chatBadges,
+		chatPmPopup: !dnd.chatPopup,
+		chatSound: !dnd.chat
+	});
+
+	// Push the "sound on" toggles into the `dnd` store (inverted → "suppressed"),
+	// so the room's playSound() actually honours them. The master "Don't Disturb"
+	// maps straight through (checked = suppress all).
+	$effect(() => {
+		setDnd('app', appDnd.dontDisturb);
+		setDnd('alert', !alertDnd.alertSound);
+		setDnd('alertPopup', !alertDnd.alertQaPopup);
+		setDnd('qa', !alertDnd.qaSound);
+		setDnd('nonTradeAlert', !alertDnd.nonTradeAlertSound);
+		setDnd('chat', !chatDnd.chatSound);
+		setDnd('chatGif', !chatDnd.gif);
+		setDnd('chatBadges', !chatDnd.badges);
+		setDnd('chatPopup', !chatDnd.chatPmPopup);
 	});
 	let chatExtraColumn = $state(false);
 	let chatAlwaysScrollBottom = $state(false);
@@ -291,7 +315,12 @@
 			</button>
 		</div>
 	{:else if tab === 'alert'}
-		<div class="panel" role="tabpanel" id="settings-panel-alert" aria-labelledby="settings-tab-alert">
+		<div
+			class="panel"
+			role="tabpanel"
+			id="settings-panel-alert"
+			aria-labelledby="settings-tab-alert"
+		>
 			<!-- Text Mode -->
 			<div class="section-head">
 				<FileIcon size={16} />

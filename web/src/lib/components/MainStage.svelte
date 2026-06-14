@@ -6,12 +6,14 @@
 	import NotesPanel from './NotesPanel.svelte';
 	import FilesPanel from './FilesPanel.svelte';
 	import WebcamHolder from './WebcamHolder.svelte';
+	import CaptionsOverlay from './CaptionsOverlay.svelte';
 
 	/** Presenter camera feeds; matches WebcamHolder's Publisher shape. */
 	interface WebcamPublisher {
 		id: string;
 		name?: string;
 		track?: MediaStreamTrack | null;
+		isLocal?: boolean;
 	}
 
 	interface Props {
@@ -21,10 +23,13 @@
 		connected: boolean;
 		/**
 		 * Presenter camera feeds, rendered as a strip above the tabs (matches the
-		 * reference's `app-webcam-holder` placement). Empty until camera publishing
-		 * is wired, so the strip stays hidden rather than showing an empty band.
+		 * reference's `app-webcam-holder` placement). Hidden when empty.
 		 */
 		webcamPublishers?: WebcamPublisher[];
+		/** Turn off the local user's camera (the × on their own tile). */
+		onWebcamClose?: (id: string) => void;
+		/** When true, the live speech-recognition captions overlay is shown. */
+		captionsActive?: boolean;
 		/** Room controls rendered on the right of the tab bar (share / go-live / poll / members). */
 		actions?: Snippet;
 	}
@@ -34,6 +39,8 @@
 		publishers,
 		connected,
 		webcamPublishers = [],
+		onWebcamClose,
+		captionsActive = false,
 		actions
 	}: Props = $props();
 
@@ -44,7 +51,7 @@
 <div class="main-stage">
 	{#if webcamPublishers.length > 0}
 		<div class="webcam-strip">
-			<WebcamHolder publishers={webcamPublishers} />
+			<WebcamHolder publishers={webcamPublishers} onClose={onWebcamClose} />
 		</div>
 	{/if}
 
@@ -90,6 +97,7 @@
 		{:else}
 			<FilesPanel {roomId} {canManage} />
 		{/if}
+		<CaptionsOverlay active={captionsActive} />
 	</div>
 </div>
 
@@ -145,9 +153,11 @@
 	.tabbar button.active {
 		color: #ffffff;
 		background: var(--accent);
-		border-color: var(--accent);
+		/* Reference pairs the bright-blue active tab with the darker room-blue border. */
+		border-color: var(--accent-hover);
 	}
 	.panel {
+		position: relative;
 		flex: 1;
 		min-height: 0;
 		min-width: 0;

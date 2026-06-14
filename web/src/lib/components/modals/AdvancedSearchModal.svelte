@@ -2,90 +2,127 @@
 	import Modal from '../Modal.svelte';
 	import { MagnifyingGlassIcon } from 'phosphor-svelte';
 
+	export interface SearchCriteria {
+		term: string;
+		nonTrade: boolean;
+		archives: boolean;
+		startDate: string;
+		endDate: string;
+		trader: string;
+		room: string;
+	}
+
+	interface Option {
+		value: string;
+		label: string;
+	}
+
 	interface Props {
 		open: boolean;
 		onClose: () => void;
+		/** Trader options for the "--Select Traders--" dropdown. */
+		traders?: Option[];
+		/** Room options for the "--Select Rooms--" dropdown. */
+		rooms?: Option[];
+		/** Called with the assembled criteria when the user runs a search. */
+		onSearch?: (criteria: SearchCriteria) => void;
 	}
-	let { open, onClose }: Props = $props();
+	let { open, onClose, traders = [], rooms = [], onSearch }: Props = $props();
 
-	// Local presentational state — no backend wired.
-	let traders = $state<string[]>([]);
-	let rooms = $state<string[]>([]);
 	let term = $state('');
-	let nonTradeAlert = $state(false);
-	let includeArchives = $state(false);
-	let startAt = $state('');
-	let endAt = $state('');
-	let searched = $state(false);
+	let nonTrade = $state(false);
+	let archives = $state(false);
+	let startDate = $state('');
+	let endDate = $state('');
+	let trader = $state('');
+	let room = $state('');
 
-	function search() {
-		// Presentational only: flip to the "no results" empty state.
-		searched = true;
+	const formId = $props.id();
+
+	function search(e: SubmitEvent) {
+		e.preventDefault();
+		onSearch?.({
+			term: term.trim(),
+			nonTrade,
+			archives,
+			startDate,
+			endDate,
+			trader,
+			room
+		});
 	}
 </script>
 
-<Modal {open} {onClose} title="Alerts Advanced Search">
-	<div class="grid">
-		<div class="field">
-			<label class="label" for="adv-traders">Select Traders</label>
-			<select id="adv-traders" multiple bind:value={traders} size="3">
-				<option disabled>No traders available</option>
-			</select>
-		</div>
-		<div class="field">
-			<label class="label" for="adv-rooms">Select Rooms</label>
-			<select id="adv-rooms" multiple bind:value={rooms} size="3">
-				<option disabled>No rooms available</option>
-			</select>
-		</div>
-	</div>
+{#snippet footer()}
+	<button class="btn ghost" type="button" onclick={onClose}>Close</button>
+	<button class="btn primary" type="submit" form={formId}>
+		<MagnifyingGlassIcon size={14} weight="bold" /> Search
+	</button>
+{/snippet}
 
-	<div class="field">
-		<label class="label" for="adv-term">Search term</label>
-		<input id="adv-term" type="text" bind:value={term} placeholder="e.g. $SPX, breakout, trim" />
-	</div>
-
-	<div class="checks">
-		<label class="check">
-			<input type="checkbox" bind:checked={nonTradeAlert} />
-			Non-Trade Alert
-		</label>
-		<label class="check">
-			<input type="checkbox" bind:checked={includeArchives} />
-			Include archives
-		</label>
-	</div>
-
-	<div class="grid">
+<Modal {open} {onClose} title="Alerts Advanced Search" {footer}>
+	<form id={formId} class="form" onsubmit={search}>
 		<div class="field">
-			<label class="label" for="adv-start">Start</label>
-			<input id="adv-start" type="datetime-local" bind:value={startAt} />
+			<label class="label" for="{formId}-term">Search term</label>
+			<input
+				id="{formId}-term"
+				type="text"
+				bind:value={term}
+				placeholder="e.g. $SPX, breakout, trim"
+			/>
 		</div>
-		<div class="field">
-			<label class="label" for="adv-end">End</label>
-			<input id="adv-end" type="datetime-local" bind:value={endAt} />
-		</div>
-	</div>
 
-	<div class="results">
-		{#if searched}
-			<div class="empty">
-				<MagnifyingGlassIcon size={22} />
-				<p>No results.</p>
+		<div class="checks">
+			<label class="check">
+				<input type="checkbox" bind:checked={nonTrade} />
+				Non Trade Alert
+			</label>
+			<label class="check">
+				<input type="checkbox" bind:checked={archives} />
+				Also search archives?
+			</label>
+		</div>
+
+		<div class="grid">
+			<div class="field">
+				<label class="label" for="{formId}-start">Start Date</label>
+				<input id="{formId}-start" type="datetime-local" bind:value={startDate} />
 			</div>
-		{:else}
-			<p class="hint">Set your filters and run a search.</p>
-		{/if}
-	</div>
+			<div class="field">
+				<label class="label" for="{formId}-end">End Date</label>
+				<input id="{formId}-end" type="datetime-local" bind:value={endDate} />
+			</div>
+		</div>
 
-	{#snippet footer()}
-		<button type="button" class="primary" onclick={search}>
-			<MagnifyingGlassIcon size={14} weight="bold" /> Search
-		</button>
-	{/snippet}
+		<div class="grid">
+			<div class="field">
+				<label class="label" for="{formId}-trader">Traders</label>
+				<select id="{formId}-trader" bind:value={trader}>
+					<option value="">--Select Traders--</option>
+					{#each traders as t (t.value)}
+						<option value={t.value}>{t.label}</option>
+					{/each}
+				</select>
+			</div>
+			<div class="field">
+				<label class="label" for="{formId}-room">Rooms</label>
+				<select id="{formId}-room" bind:value={room}>
+					<option value="">--Select Rooms--</option>
+					{#each rooms as r (r.value)}
+						<option value={r.value}>{r.label}</option>
+					{/each}
+				</select>
+			</div>
+		</div>
+	</form>
 </Modal>
 
 <style>
+	.form {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
 	.grid {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
@@ -96,11 +133,6 @@
 		flex-direction: column;
 		gap: 0.3rem;
 		min-width: 0;
-	}
-	.field + .field,
-	.grid + .field,
-	.checks + .grid {
-		margin-top: 0.75rem;
 	}
 	.label {
 		font-size: 0.78rem;
@@ -129,7 +161,6 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.4rem 1rem;
-		margin-top: 0.75rem;
 	}
 	.check {
 		display: inline-flex;
@@ -139,41 +170,33 @@
 		font-weight: 600;
 		color: var(--text-dim);
 	}
-	.results {
-		margin-top: 0.9rem;
-		border: 1px solid var(--border);
-		border-radius: var(--radius);
-		min-height: 90px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-	.empty {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 0.35rem;
-		color: var(--text-dim);
-	}
-	.empty p,
-	.hint {
-		margin: 0;
-		font-size: 0.84rem;
-		color: var(--text-dim);
-	}
-	.primary {
+	.btn {
 		display: inline-flex;
 		align-items: center;
+		justify-content: center;
 		gap: 0.4rem;
-		background: var(--accent);
-		color: #fff;
-		border: none;
 		border-radius: var(--radius);
 		padding: 0.45rem 0.95rem;
 		font-size: 0.85rem;
 		font-weight: 700;
+		border: 1px solid var(--border);
 	}
-	.primary:hover {
+	.btn.ghost {
+		background: transparent;
+		color: var(--text-dim);
+		font-weight: 600;
+	}
+	.btn.ghost:hover {
+		color: var(--text);
+		border-color: var(--accent);
+	}
+	.btn.primary {
+		background: var(--accent);
+		color: #fff;
+		border-color: var(--accent);
+	}
+	.btn.primary:hover {
 		background: var(--accent-hover);
+		border-color: var(--accent-hover);
 	}
 </style>

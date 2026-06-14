@@ -7,6 +7,8 @@
 		id: string;
 		name?: string;
 		track?: MediaStreamTrack | null;
+		/** True for the local user's own camera — only that tile shows the × (stop). */
+		isLocal?: boolean;
 	}
 
 	interface Props {
@@ -51,14 +53,14 @@
 
 				<div class="overlay">
 					<span class="name" title={publisher.name ?? 'Presenter'}>
-						{publisher.name ?? 'Presenter'}
+						{publisher.name ?? 'Presenter'}{publisher.isLocal ? ' (you)' : ''}
 					</span>
-					{#if onClose}
+					{#if onClose && publisher.isLocal}
 						<button
 							class="close"
 							type="button"
-							aria-label={`Close ${publisher.name ?? 'presenter'} camera`}
-							title="Close"
+							aria-label="Turn off your camera"
+							title="Turn off camera"
 							onclick={() => onClose?.(publisher.id)}
 						>
 							<XIcon size={14} weight="bold" />

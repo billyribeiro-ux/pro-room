@@ -188,7 +188,8 @@
 		align-items: center;
 		gap: 0.6rem;
 		padding: 0 0.75rem;
-		background: var(--bg-elev);
+		/* Reference --navbar-bg is the darkest navy (#0c2434), not the elevated surface. */
+		background: var(--bg);
 		border-bottom: 1px solid var(--border);
 		color: var(--text);
 	}
