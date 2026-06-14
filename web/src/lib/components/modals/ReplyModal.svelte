@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Modal from '../Modal.svelte';
-	import { SmileyIcon, ImageIcon, PaperPlaneTiltIcon } from 'phosphor-svelte';
+	import Icon from '../Icon.svelte';
 
 	interface Props {
 		open: boolean;
@@ -36,14 +36,14 @@
 	{#snippet footer()}
 		<div class="tools">
 			<button type="button" class="tool" aria-label="Insert emoji">
-				<SmileyIcon size={16} />
+				<Icon name="smile" />
 			</button>
 			<button type="button" class="tool" aria-label="Attach image">
-				<ImageIcon size={16} />
+				<Icon name="image" />
 			</button>
 		</div>
 		<button type="button" class="primary" onclick={send} disabled={!canSend}>
-			<PaperPlaneTiltIcon size={14} weight="fill" /> Send
+			<Icon name="paper-plane" size={14} /> Send
 		</button>
 	{/snippet}
 </Modal>

@@ -4,12 +4,7 @@
 	import { API_URL } from '$lib/config';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import {
-		GoogleLogoIcon,
-		GithubLogoIcon,
-		EnvelopeSimpleIcon,
-		ChartLineUpIcon
-	} from 'phosphor-svelte';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let email = $state('');
 	let password = $state('');
@@ -53,7 +48,7 @@
 <div class="shell">
 	<div class="card">
 		<div class="head">
-			<ChartLineUpIcon size={28} weight="bold" />
+			<Icon name="chart-line" size={28} />
 			<h1>Sign in</h1>
 		</div>
 
@@ -75,17 +70,17 @@
 		</form>
 
 		<button class="ghost" onclick={sendMagicLink}>
-			<EnvelopeSimpleIcon size={18} /> Email me a magic link
+			<Icon name="envelope" size={18} /> Email me a magic link
 		</button>
 
 		<div class="divider"><span>or</span></div>
 
 		<div class="oauth">
 			<button onclick={() => oauth('google')}
-				><GoogleLogoIcon size={18} weight="bold" /> Google</button
+				><Icon name="google" size={18} family="brands" /> Google</button
 			>
 			<button onclick={() => oauth('github')}
-				><GithubLogoIcon size={18} weight="bold" /> GitHub</button
+				><Icon name="github" size={18} family="brands" /> GitHub</button
 			>
 		</div>
 
@@ -113,7 +108,8 @@
 		gap: 0.6rem;
 		margin-bottom: 1.25rem;
 	}
-	.head :global(svg) {
+	.head :global(svg),
+	.head :global(i) {
 		color: var(--accent);
 	}
 	h1 {

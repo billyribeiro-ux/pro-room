@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { SmileyIcon } from 'phosphor-svelte';
+	import Icon from './Icon.svelte';
 	import type { Attachment } from 'svelte/attachments';
 
 	/** A single aggregated reaction for one emoji on a message. */
@@ -100,7 +100,7 @@
 					aria-expanded={pickerOpen}
 					onclick={togglePicker}
 				>
-					<SmileyIcon size={15} weight="bold" />
+					<Icon name="smile" size={15} />
 				</button>
 
 				{#if pickerOpen}

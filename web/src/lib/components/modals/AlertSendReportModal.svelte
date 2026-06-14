@@ -1,12 +1,5 @@
 <script lang="ts">
-	import {
-		PaperPlaneTiltIcon,
-		UsersIcon,
-		CheckCircleIcon,
-		BellRingingIcon,
-		EnvelopeOpenIcon,
-		InfoIcon
-	} from 'phosphor-svelte';
+	import Icon from '../Icon.svelte';
 	import Modal from '../Modal.svelte';
 
 	interface Stats {
@@ -37,19 +30,21 @@
 	type Metric = {
 		key: keyof Stats;
 		label: string;
-		icon: typeof PaperPlaneTiltIcon;
+		icon: string;
 		tone: 'neutral' | 'positive';
 	};
 
 	const metrics: Metric[] = [
-		{ key: 'recipients', label: 'Recipients', icon: UsersIcon, tone: 'neutral' },
-		{ key: 'delivered', label: 'Delivered', icon: CheckCircleIcon, tone: 'positive' },
-		{ key: 'push', label: 'Push sent', icon: BellRingingIcon, tone: 'neutral' },
-		{ key: 'opened', label: 'Opened', icon: EnvelopeOpenIcon, tone: 'positive' }
+		{ key: 'recipients', label: 'Recipients', icon: 'users', tone: 'neutral' },
+		{ key: 'delivered', label: 'Delivered', icon: 'check-circle', tone: 'positive' },
+		{ key: 'push', label: 'Push sent', icon: 'bell', tone: 'neutral' },
+		{ key: 'opened', label: 'Opened', icon: 'envelope-open', tone: 'positive' }
 	];
 
 	const numberFormat = new Intl.NumberFormat();
-	const formatted = $derived(metrics.map((m) => ({ ...m, value: numberFormat.format(stats[m.key]) })));
+	const formatted = $derived(
+		metrics.map((m) => ({ ...m, value: numberFormat.format(stats[m.key]) }))
+	);
 </script>
 
 {#snippet footer()}
@@ -58,7 +53,7 @@
 
 <Modal {open} {onClose} {title} {footer}>
 	<div class="summary">
-		<PaperPlaneTiltIcon size={20} />
+		<Icon name="paper-plane" size={20} />
 		<p>Delivery report for this alert across in-app, push, and email channels.</p>
 	</div>
 
@@ -66,7 +61,7 @@
 		{#each formatted as metric (metric.key)}
 			<li class="card {metric.tone}">
 				<span class="icon" aria-hidden="true">
-					<metric.icon size={18} />
+					<Icon name={metric.icon} size={18} />
 				</span>
 				<span class="value">{metric.value}</span>
 				<span class="label">{metric.label}</span>
@@ -75,7 +70,7 @@
 	</ul>
 
 	<p class="note">
-		<InfoIcon size={15} />
+		<Icon name="info-circle" size={15} />
 		<span>Showing placeholder figures — live delivery data wires in later.</span>
 	</p>
 </Modal>
@@ -87,7 +82,8 @@
 		gap: 0.6rem;
 		color: var(--text-dim);
 	}
-	.summary :global(svg) {
+	.summary :global(svg),
+	.summary :global(i) {
 		color: var(--accent);
 		flex: 0 0 auto;
 		margin-top: 0.15rem;
@@ -138,7 +134,8 @@
 		font-size: 0.8rem;
 		color: var(--text-dim);
 	}
-	.note :global(svg) {
+	.note :global(svg),
+	.note :global(i) {
 		flex: 0 0 auto;
 		color: var(--accent);
 	}

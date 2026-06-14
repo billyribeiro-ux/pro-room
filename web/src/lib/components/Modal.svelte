@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { XIcon } from 'phosphor-svelte';
+	import Icon from './Icon.svelte';
 
 	interface Props {
 		open: boolean;
@@ -56,7 +56,7 @@
 					aria-label="Close dialog"
 					title="Close"
 				>
-					<XIcon size={18} />
+					<Icon name="times" size={18} />
 				</button>
 			</header>
 

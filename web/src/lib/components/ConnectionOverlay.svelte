@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
-	import { CheckCircleIcon, WarningIcon, CircleNotchIcon } from 'phosphor-svelte';
+	import Icon from './Icon.svelte';
 
 	interface Props {
 		/** Whether the realtime socket is currently connected. */
@@ -44,13 +44,13 @@
 <div class="overlay" aria-live="polite">
 	{#if down}
 		<div class="banner down" role="status" transition:fade={{ duration: 150 }}>
-			<span class="spin"><CircleNotchIcon size={16} weight="bold" /></span>
-			<WarningIcon size={16} weight="fill" />
+			<span class="spin"><Icon name="circle-notch" /></span>
+			<Icon name="exclamation-triangle" />
 			<span class="label">Reconnecting…</span>
 		</div>
 	{:else if showConnected}
 		<div class="banner up" role="status" transition:fade={{ duration: 200 }}>
-			<CheckCircleIcon size={16} weight="fill" />
+			<Icon name="check-circle" />
 			<span class="label">Connected</span>
 		</div>
 	{/if}

@@ -10,19 +10,7 @@
 	import MessageBody from './MessageBody.svelte';
 	import ReactionBar from './ReactionBar.svelte';
 	import UserInfoModal from './modals/UserInfoModal.svelte';
-	import {
-		ChatCircleIcon,
-		MagnifyingGlassIcon,
-		GearIcon,
-		CaretDownIcon,
-		SmileyIcon,
-		ImageIcon,
-		DotsThreeVerticalIcon,
-		UserIcon,
-		ArrowBendUpLeftIcon,
-		CopyIcon,
-		TrashIcon
-	} from 'phosphor-svelte';
+	import Icon from './Icon.svelte';
 
 	export type ChatItem = Message & {
 		author_name?: string;
@@ -147,7 +135,7 @@
 
 <section class="panel">
 	<header>
-		<div class="lead"><ChatCircleIcon size={17} weight="fill" /></div>
+		<div class="lead"><Icon name="comment" size={17} /></div>
 		<div class="tabs" role="tablist" aria-label="Chat channels">
 			<button
 				type="button"
@@ -165,11 +153,9 @@
 			>
 		</div>
 		<div class="actions">
-			<button type="button" aria-label="Search chat"
-				><MagnifyingGlassIcon size={16} weight="bold" /></button
-			>
+			<button type="button" aria-label="Search chat"><Icon name="search" /></button>
 			<button type="button" class="gear" aria-label="Chat settings">
-				<GearIcon size={16} weight="fill" /><CaretDownIcon size={10} weight="bold" />
+				<Icon name="cog" /><Icon name="caret-down" size={10} />
 			</button>
 		</div>
 	</header>
@@ -194,18 +180,18 @@
 							aria-expanded={openMenuId === m.id}
 							onclick={() => toggleMenu(m.id)}
 						>
-							<DotsThreeVerticalIcon size={18} weight="bold" />
+							<Icon name="ellipsis-v" size={18} />
 						</button>
 						{#if openMenuId === m.id}
 							<div class="menu" role="menu">
 								<button type="button" role="menuitem" onclick={() => openUserInfo(m)}>
-									<UserIcon size={14} weight="fill" /> User Info
+									<Icon name="user" size={14} /> User Info
 								</button>
 								<button type="button" role="menuitem" onclick={() => mention(m)}>
-									<ArrowBendUpLeftIcon size={14} weight="bold" /> Mention
+									<Icon name="reply" size={14} /> Mention
 								</button>
 								<button type="button" role="menuitem" onclick={() => copyBody(m)}>
-									<CopyIcon size={14} weight="bold" /> Copy
+									<Icon name="copy" size={14} /> Copy
 								</button>
 								{#if canManage && onDelete}
 									<button
@@ -217,7 +203,7 @@
 											openMenuId = null;
 										}}
 									>
-										<TrashIcon size={14} weight="bold" /> Delete
+										<Icon name="trash-alt" size={14} /> Delete
 									</button>
 								{/if}
 							</div>
@@ -264,12 +250,9 @@
 					oninput={autogrow}
 					onkeydown={onComposerKeydown}
 				></textarea>
-				<button type="button" class="ic" aria-label="Emoji"
-					><SmileyIcon size={18} weight="fill" /></button
-				>
-				<button type="button" class="ic" aria-label="Image"
-					><ImageIcon size={18} weight="fill" /></button
-				>
+				<button type="button" class="ic" aria-label="Emoji"><Icon name="smile" size={18} /></button>
+				<button type="button" class="ic" aria-label="Image"><Icon name="image" size={18} /></button>
+
 				<button type="button" class="ic gif" aria-label="GIF">GIF</button>
 			</div>
 			<button type="submit" class="send" disabled={sending}>Send</button>
@@ -452,6 +435,10 @@
 		width: 36px;
 		height: 36px;
 		flex-shrink: 0;
+		/* Round avatars (reference --rosterImg-border-radius: 50%); crop image
+		   avatars so the gravatar is a circle, not a square. */
+		border-radius: 50%;
+		object-fit: cover;
 	}
 	.avatar {
 		display: inline-flex;

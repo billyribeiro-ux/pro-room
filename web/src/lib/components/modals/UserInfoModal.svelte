@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Modal from '../Modal.svelte';
-	import { AtIcon, ChatCircleIcon, UserPlusIcon, BellSlashIcon } from 'phosphor-svelte';
+	import Icon from '../Icon.svelte';
 	import { openPrivateChat } from '$lib/privateChat.svelte';
 
 	interface User {
@@ -35,7 +35,7 @@
 
 	{#snippet footer()}
 		<button type="button" class="action" aria-label="Mention this user">
-			<AtIcon size={15} /> @Mention
+			<Icon name="at" size={15} /> @Mention
 		</button>
 		<button
 			type="button"
@@ -46,13 +46,13 @@
 				onClose();
 			}}
 		>
-			<ChatCircleIcon size={15} /> Private Chat
+			<Icon name="comment" size={15} /> Private Chat
 		</button>
 		<button type="button" class="action" aria-label="Follow this user">
-			<UserPlusIcon size={15} /> Follow
+			<Icon name="user-plus" size={15} /> Follow
 		</button>
 		<button type="button" class="action" aria-label="Mute this user">
-			<BellSlashIcon size={15} /> Mute
+			<Icon name="bell-slash" size={15} /> Mute
 		</button>
 		<button type="button" class="close-btn" onclick={onClose}>Close</button>
 	{/snippet}

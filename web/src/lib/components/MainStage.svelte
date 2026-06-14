@@ -1,14 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import type { SharePublisher } from '$lib/livekit.svelte';
-	import {
-		MonitorIcon,
-		MicrophoneStageIcon,
-		WaveformIcon,
-		NotePencilIcon,
-		FolderIcon,
-		LockKeyIcon
-	} from 'phosphor-svelte';
+	import Icon from './Icon.svelte';
 	import ScreenStage from './ScreenStage.svelte';
 	import NotesPanel from './NotesPanel.svelte';
 	import FilesPanel from './FilesPanel.svelte';
@@ -76,11 +69,11 @@
 	// chosen tab. Derived (not an $effect) so it can never fight the user's click.
 	const activeTab = $derived<Tab>(locked ? 'screens' : tab);
 
-	const TABS: { id: Tab; label: string; icon: typeof MonitorIcon }[] = [
-		{ id: 'screens', label: 'Screens', icon: MonitorIcon },
-		{ id: 'streams', label: 'Streams', icon: MicrophoneStageIcon },
-		{ id: 'notes', label: 'Notes', icon: NotePencilIcon },
-		{ id: 'files', label: 'Files', icon: FolderIcon }
+	const TABS: { id: Tab; label: string; icon: string }[] = [
+		{ id: 'screens', label: 'Screens', icon: 'desktop' },
+		{ id: 'streams', label: 'Streams', icon: 'podcast' },
+		{ id: 'notes', label: 'Notes', icon: 'edit' },
+		{ id: 'files', label: 'Files', icon: 'folder' }
 	];
 </script>
 
@@ -93,7 +86,6 @@
 
 	<div class="tabbar" role="tablist" aria-label="Room panels">
 		{#each TABS as t (t.id)}
-			{@const Icon = t.icon}
 			<button
 				type="button"
 				role="tab"
@@ -102,14 +94,14 @@
 				disabled={locked && t.id !== 'screens'}
 				onclick={() => (tab = t.id)}
 			>
-				<Icon size={18} weight={activeTab === t.id ? 'fill' : 'regular'} />
+				<Icon name={t.icon} size={18} />
 				{t.label}
 			</button>
 		{/each}
 
 		{#if locked}
 			<span class="locked-pill" title="The presenter has locked the screen">
-				<LockKeyIcon size={14} weight="fill" /> Screen locked
+				<Icon name="lock" size={14} /> Screen locked
 			</span>
 		{/if}
 
@@ -128,7 +120,7 @@
 						{#each speakers as s (s.id)}
 							<li class="stream-row">
 								<span class="speaking-dot" aria-hidden="true"></span>
-								<WaveformIcon size={18} weight="bold" />
+								<Icon name="wave-square" size={18} />
 								<span class="stream-name">{s.name}</span>
 								<span class="stream-tag">on air</span>
 							</li>
@@ -136,7 +128,7 @@
 					</ul>
 				{:else}
 					<div class="stream-empty">
-						<MicrophoneStageIcon size={30} />
+						<Icon name="podcast" size={30} />
 						<p>No audio streams right now</p>
 						<span>Presenters speaking on mic appear here live.</span>
 					</div>
@@ -280,7 +272,8 @@
 		border-radius: var(--radius);
 		color: var(--text);
 	}
-	.stream-row :global(svg) {
+	.stream-row :global(svg),
+	.stream-row :global(i) {
 		color: var(--accent);
 		flex: 0 0 auto;
 	}
@@ -334,7 +327,8 @@
 		text-align: center;
 		color: var(--text-dim);
 	}
-	.stream-empty :global(svg) {
+	.stream-empty :global(svg),
+	.stream-empty :global(i) {
 		color: var(--text-dim);
 		opacity: 0.7;
 	}

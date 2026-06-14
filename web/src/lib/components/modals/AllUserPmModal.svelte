@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { EnvelopeSimpleIcon } from 'phosphor-svelte';
+	import Icon from '../Icon.svelte';
 	import Modal from '../Modal.svelte';
 
 	interface PmThread {
@@ -29,7 +29,7 @@
 <Modal {open} {onClose} title="All private messages" {footer}>
 	{#if threads.length === 0}
 		<div class="empty">
-			<EnvelopeSimpleIcon size={28} />
+			<Icon name="envelope" size={28} />
 			<p>No private messages.</p>
 		</div>
 	{:else}
@@ -57,7 +57,8 @@
 		padding: 1.5rem 0.5rem;
 		color: var(--text-dim);
 	}
-	.empty :global(svg) {
+	.empty :global(svg),
+	.empty :global(i) {
 		color: var(--text-dim);
 		opacity: 0.7;
 	}

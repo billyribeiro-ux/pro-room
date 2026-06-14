@@ -6,15 +6,7 @@
 	import { confirmDialog, promptDialog } from '$lib/dialog.svelte';
 	import RichTextEditorModal from './modals/RichTextEditorModal.svelte';
 	import type { Note } from '$lib/types';
-	import {
-		DownloadSimpleIcon,
-		PlusIcon,
-		PencilSimpleIcon,
-		TrashIcon,
-		CaretLeftIcon,
-		CaretRightIcon,
-		HouseIcon
-	} from 'phosphor-svelte';
+	import Icon from './Icon.svelte';
 
 	interface Props {
 		roomId: string;
@@ -177,13 +169,13 @@
 				class:active={selected?.id === n.id}
 				onclick={() => select(n.id)}
 			>
-				{#if i === 0}<HouseIcon size={13} weight="fill" />{/if}
+				{#if i === 0}<Icon name="home" size={13} />{/if}
 				{n.title}
 			</button>
 		{/each}
 		{#if canManage}
 			<button type="button" class="new" onclick={createNote} disabled={busy}>
-				<PlusIcon size={13} weight="bold" /> New note
+				<Icon name="plus" size={13} /> New note
 			</button>
 		{/if}
 	</div>
@@ -202,7 +194,7 @@
 						disabled={busy || selectedIndex <= 0}
 						aria-label="Move left"
 					>
-						<CaretLeftIcon size={16} />
+						<Icon name="caret-left" />
 					</button>
 					<button
 						type="button"
@@ -211,20 +203,20 @@
 						disabled={busy || selectedIndex >= notes.length - 1}
 						aria-label="Move right"
 					>
-						<CaretRightIcon size={16} />
+						<Icon name="caret-right" />
 					</button>
 					<button type="button" class="ic" onclick={() => (editorOpen = true)} aria-label="Edit">
-						<PencilSimpleIcon size={16} />
+						<Icon name="pencil-alt" />
 					</button>
 					<button type="button" class="ic" onclick={() => rename(selected)} aria-label="Rename">
-						<PencilSimpleIcon size={16} weight="bold" />
+						<Icon name="pencil-alt" />
 					</button>
 					<button type="button" class="ic del" onclick={() => remove(selected)} aria-label="Delete">
-						<TrashIcon size={16} />
+						<Icon name="trash-alt" />
 					</button>
 				{/if}
 				<button type="button" class="download" onclick={() => download(selected)}>
-					<DownloadSimpleIcon size={15} weight="bold" /> Download
+					<Icon name="download" size={15} /> Download
 				</button>
 			</div>
 		</div>

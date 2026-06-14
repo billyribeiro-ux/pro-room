@@ -1,17 +1,6 @@
 <script lang="ts">
 	import { API_URL } from '$lib/config';
-	import {
-		ArrowsOutIcon,
-		ArrowsInIcon,
-		XIcon,
-		RecordIcon,
-		StopIcon,
-		DownloadSimpleIcon,
-		UploadSimpleIcon,
-		ArrowCounterClockwiseIcon,
-		TrashIcon,
-		CheckCircleIcon
-	} from 'phosphor-svelte';
+	import Icon from './Icon.svelte';
 
 	interface Props {
 		open: boolean;
@@ -160,10 +149,13 @@
 					onclick={() => (expanded = !expanded)}
 					aria-label={expanded ? 'Shrink' : 'Expand'}
 				>
-					{#if expanded}<ArrowsInIcon size={14} />{:else}<ArrowsOutIcon size={14} />{/if}
+					{#if expanded}<Icon name="compress-alt" size={14} />{:else}<Icon
+							name="expand-alt"
+							size={14}
+						/>{/if}
 				</button>
 				<button type="button" class="ic" onclick={close} aria-label="Close">
-					<XIcon size={14} />
+					<Icon name="times" size={14} />
 				</button>
 			</div>
 		</header>
@@ -175,7 +167,7 @@
 				<span class="elapsed">{mmss(elapsed)}</span>
 			{:else if recordedBlob}
 				<div class="review">
-					<CheckCircleIcon size={26} weight="fill" />
+					<Icon name="check-circle" size={26} />
 					<p>Recorded {mmss(recordedSecs)}</p>
 				</div>
 			{:else}
@@ -186,28 +178,28 @@
 		<footer class="foot">
 			{#if recording}
 				<button type="button" class="rec-btn stop" onclick={stop}>
-					<StopIcon size={14} weight="fill" /> Stop
+					<Icon name="stop" size={14} /> Stop
 				</button>
 			{:else if recordedBlob}
 				{#if saved}
-					<span class="saved"><CheckCircleIcon size={14} weight="fill" /> Saved to room files</span>
+					<span class="saved"><Icon name="check-circle" size={14} /> Saved to room files</span>
 				{/if}
 				<button type="button" class="mini" onclick={download} title="Download to your computer">
-					<DownloadSimpleIcon size={14} /> Download
+					<Icon name="download" size={14} /> Download
 				</button>
 				<button type="button" class="mini" onclick={saveToRoom} disabled={saving || saved}>
-					<UploadSimpleIcon size={14} />
+					<Icon name="upload" size={14} />
 					{saving ? 'Saving…' : 'Save to room'}
 				</button>
 				<button type="button" class="mini" onclick={start} title="Record again">
-					<ArrowCounterClockwiseIcon size={14} />
+					<Icon name="undo-alt" size={14} />
 				</button>
 				<button type="button" class="mini danger" onclick={discard} title="Discard">
-					<TrashIcon size={14} />
+					<Icon name="trash-alt" size={14} />
 				</button>
 			{:else}
 				<button type="button" class="rec-btn" onclick={start}>
-					<RecordIcon size={14} weight="fill" /> Start recording
+					<Icon name="dot-circle" size={14} /> Start recording
 				</button>
 			{/if}
 		</footer>

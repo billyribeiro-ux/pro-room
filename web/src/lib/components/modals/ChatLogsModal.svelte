@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ChatTextIcon, ArrowsClockwiseIcon } from 'phosphor-svelte';
+	import Icon from '../Icon.svelte';
 	import Modal from '../Modal.svelte';
 
 	interface Props {
@@ -15,13 +15,13 @@
 <Modal {open} {onClose} title="Chat Logs">
 	<div class="toolbar">
 		<button class="reload" type="button" disabled>
-			<ArrowsClockwiseIcon size={14} /> Reload Log List
+			<Icon name="sync-alt" size={14} /> Reload Log List
 		</button>
 	</div>
 
 	{#if logs.length === 0}
 		<div class="empty">
-			<ChatTextIcon size={28} />
+			<Icon name="comment-alt" size={28} />
 			<p>No logs yet.</p>
 		</div>
 	{:else}
@@ -67,7 +67,8 @@
 		padding: 1.5rem 0.5rem;
 		color: var(--text-dim);
 	}
-	.empty :global(svg) {
+	.empty :global(svg),
+	.empty :global(i) {
 		color: var(--text-dim);
 		opacity: 0.7;
 	}

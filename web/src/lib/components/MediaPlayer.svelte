@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { SpeakerHighIcon } from 'phosphor-svelte';
+	import Icon from './Icon.svelte';
 
 	interface Props {
 		/** The currently-playing media for everyone, or null when nothing is playing. */
@@ -143,7 +143,7 @@
 
 		<div class="volume">
 			<label for="{uid}-vol" class="vol-label">
-				<SpeakerHighIcon size={16} />
+				<Icon name="volume-up" />
 				<span>Background Volume</span>
 			</label>
 			<input
@@ -219,7 +219,8 @@
 		font-weight: 600;
 		white-space: nowrap;
 	}
-	.vol-label :global(svg) {
+	.vol-label :global(svg),
+	.vol-label :global(i) {
 		color: var(--accent);
 		flex: 0 0 auto;
 	}

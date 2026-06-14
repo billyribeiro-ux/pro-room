@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { MusicNotesIcon, PlayIcon, StopIcon, WarningCircleIcon } from 'phosphor-svelte';
+	import Icon from '../Icon.svelte';
 	import Modal from '../Modal.svelte';
 
 	type MediaKind = 'soundcloud' | 'youtube' | 'mp3' | 'video';
@@ -121,16 +121,16 @@
 
 {#snippet footer()}
 	<button class="btn ghost" type="button" onclick={stop}>
-		<StopIcon size={14} /> Stop for everyone
+		<Icon name="stop" size={14} /> Stop for everyone
 	</button>
 	<button class="btn primary" type="button" onclick={play}>
-		<PlayIcon size={14} /> Play for everyone
+		<Icon name="play" size={14} /> Play for everyone
 	</button>
 {/snippet}
 
 <Modal {open} {onClose} title="Play music for all" {footer}>
 	<div class="intro">
-		<MusicNotesIcon size={20} />
+		<Icon name="music" size={20} />
 		<p>Paste a SoundCloud, YouTube, MP3, or video link to play it for everyone in the room.</p>
 	</div>
 
@@ -157,7 +157,7 @@
 
 	{#if error}
 		<p class="error" id="media-error" role="alert">
-			<WarningCircleIcon size={14} />
+			<Icon name="exclamation-circle" size={14} />
 			{error}
 		</p>
 	{/if}
@@ -170,7 +170,8 @@
 		gap: 0.6rem;
 		color: var(--text-dim);
 	}
-	.intro :global(svg) {
+	.intro :global(svg),
+	.intro :global(i) {
 		color: var(--accent);
 		flex: 0 0 auto;
 		margin-top: 0.15rem;
@@ -221,7 +222,8 @@
 		font-size: 0.82rem;
 		color: var(--negative);
 	}
-	.error :global(svg) {
+	.error :global(svg),
+	.error :global(i) {
 		flex: 0 0 auto;
 	}
 	.btn {

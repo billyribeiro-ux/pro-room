@@ -4,7 +4,7 @@
 	import { createPoll, type PollDetail } from '$lib/poll';
 	import { validatePollCreate } from '$lib/schemas';
 	import Modal from './Modal.svelte';
-	import { PlusIcon, TrashIcon, PaperPlaneTiltIcon } from 'phosphor-svelte';
+	import Icon from './Icon.svelte';
 
 	interface Props {
 		open: boolean;
@@ -89,7 +89,7 @@
 {#snippet footer()}
 	<button class="btn ghost" type="button" onclick={onClose} disabled={sending}>Cancel</button>
 	<button class="btn primary" type="button" onclick={submit} disabled={sending}>
-		<PaperPlaneTiltIcon size={14} weight="fill" />
+		<Icon name="paper-plane" size={14} />
 		{sending ? 'Sending…' : 'Send'}
 	</button>
 {/snippet}
@@ -136,7 +136,7 @@
 						aria-label={`Remove option ${i + 1}`}
 						title="Remove option"
 					>
-						<TrashIcon size={16} />
+						<Icon name="trash-alt" />
 					</button>
 				</div>
 			{/each}
@@ -146,7 +146,7 @@
 				onclick={addOption}
 				disabled={options.length >= MAX_OPTIONS}
 			>
-				<PlusIcon size={14} weight="bold" /> Add option
+				<Icon name="plus" size={14} /> Add option
 			</button>
 		</fieldset>
 

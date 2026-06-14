@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { PlugIcon, CopyIcon } from 'phosphor-svelte';
+	import Icon from '../Icon.svelte';
 	import Modal from '../Modal.svelte';
 
 	interface Props {
@@ -68,14 +68,14 @@
 		{running ? 'Testing…' : 'Start Test'}
 	</button>
 	<button class="btn ghost" type="button" onclick={copyResults}>
-		<CopyIcon size={14} /> Copy Results
+		<Icon name="copy" size={14} /> Copy Results
 	</button>
 	<button class="btn ghost" type="button" onclick={onClose}>Close</button>
 {/snippet}
 
 <Modal {open} {onClose} title="Connectivity Check" {footer}>
 	<div class="intro">
-		<PlugIcon size={20} />
+		<Icon name="plug" size={20} />
 		<p>Run a quick connectivity check to confirm the room can reach our media servers.</p>
 	</div>
 
@@ -97,7 +97,8 @@
 		gap: 0.6rem;
 		color: var(--text-dim);
 	}
-	.intro :global(svg) {
+	.intro :global(svg),
+	.intro :global(i) {
 		color: var(--accent);
 		flex: 0 0 auto;
 		margin-top: 0.15rem;

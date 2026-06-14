@@ -1,13 +1,5 @@
 <script lang="ts">
-	import {
-		LockKeyIcon,
-		MonitorIcon,
-		SpeakerSlashIcon,
-		BroomIcon,
-		UserSwitchIcon,
-		SignOutIcon,
-		ShieldCheckIcon
-	} from 'phosphor-svelte';
+	import Icon from '../Icon.svelte';
 	import Modal from '../Modal.svelte';
 	import { confirmDialog } from '$lib/dialog.svelte';
 	import { page } from '$app/state';
@@ -132,7 +124,8 @@
 		key: string;
 		label: string;
 		hint: string;
-		icon: typeof LockKeyIcon;
+		/** Font Awesome glyph name (without the `fa-` prefix). */
+		icon: string;
 		run: () => void;
 		danger?: boolean;
 	}
@@ -142,7 +135,7 @@
 			key: 'lock-session',
 			label: 'Lock session & kick users',
 			hint: 'Lock the room and remove all non-admin members.',
-			icon: LockKeyIcon,
+			icon: 'lock',
 			run: lockSession,
 			danger: true
 		},
@@ -150,21 +143,21 @@
 			key: 'lock-screen',
 			label: 'Lock this screen',
 			hint: 'Hold every viewer on the current screen share.',
-			icon: MonitorIcon,
+			icon: 'desktop',
 			run: lockScreen
 		},
 		{
 			key: 'mute-all',
 			label: 'Mute / unmute all',
 			hint: "Toggle every non-admin's chat composer off or on.",
-			icon: SpeakerSlashIcon,
+			icon: 'volume-mute',
 			run: muteAll
 		},
 		{
 			key: 'clear-chat',
 			label: 'Clear chat',
 			hint: 'Remove every message from the room chat log.',
-			icon: BroomIcon,
+			icon: 'broom',
 			run: clearChat,
 			danger: true
 		},
@@ -172,7 +165,7 @@
 			key: 'kick-duplicates',
 			label: 'Kick all duplicate sessions',
 			hint: 'Drop ghost connections, keeping each user once.',
-			icon: UserSwitchIcon,
+			icon: 'exchange-alt',
 			run: kickDuplicates,
 			danger: true
 		},
@@ -180,7 +173,7 @@
 			key: 'end-session',
 			label: 'Unlock room',
 			hint: 'Re-open a locked room so anyone can join again.',
-			icon: SignOutIcon,
+			icon: 'sign-out-alt',
 			run: endSession
 		}
 	];
@@ -192,7 +185,7 @@
 
 <Modal {open} {onClose} title="Session Control" {footer}>
 	<div class="intro">
-		<ShieldCheckIcon size={20} />
+		<Icon name="shield-alt" size={20} />
 		<p>Host controls for this session. Actions apply to everyone in the room.</p>
 	</div>
 
@@ -200,11 +193,10 @@
 
 	<ul class="actions">
 		{#each actions as action (action.key)}
-			{@const Icon = action.icon}
 			<li>
 				<button class="action" class:danger={action.danger} type="button" onclick={action.run}>
 					<span class="action-icon" aria-hidden="true">
-						<Icon size={18} />
+						<Icon name={action.icon} size={18} />
 					</span>
 					<span class="action-text">
 						<span class="action-label">{action.label}</span>
@@ -223,7 +215,8 @@
 		gap: 0.6rem;
 		color: var(--text-dim);
 	}
-	.intro :global(svg) {
+	.intro :global(svg),
+	.intro :global(i) {
 		color: var(--accent);
 		flex: 0 0 auto;
 		margin-top: 0.15rem;

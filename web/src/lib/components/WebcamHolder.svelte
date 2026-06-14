@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { XIcon } from 'phosphor-svelte';
+	import Icon from './Icon.svelte';
 	import type { Attachment } from 'svelte/attachments';
 
 	/** A single presenter publishing a camera feed. */
@@ -63,7 +63,7 @@
 							title="Turn off camera"
 							onclick={() => onClose?.(publisher.id)}
 						>
-							<XIcon size={14} weight="bold" />
+							<Icon name="times" size={14} />
 						</button>
 					{/if}
 				</div>

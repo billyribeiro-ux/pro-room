@@ -2,7 +2,7 @@
 	import type { ChatChannel, PresentUser, ReactionTally, ReactionTarget } from '$lib/types';
 	import AlertFeed, { type AlertItem } from './AlertFeed.svelte';
 	import ChatPanel, { type ChatItem } from './ChatPanel.svelte';
-	import { DotsSixIcon } from 'phosphor-svelte';
+	import Icon from './Icon.svelte';
 
 	interface Props {
 		alerts: AlertItem[];
@@ -122,7 +122,7 @@
 		onpointerdown={startHeightDrag}
 		ondblclick={resetHeight}
 	>
-		<span class="hgrab"><DotsSixIcon size={16} weight="bold" /></span>
+		<span class="hgrab"><Icon name="grip-vertical" /></span>
 	</div>
 
 	<div class="chat-pane">

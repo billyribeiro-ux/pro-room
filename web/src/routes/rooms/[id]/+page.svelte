@@ -33,21 +33,7 @@
 	import { deleteAlert, deleteMessage } from '$lib/admin';
 	import { playSound } from '$lib/sound.svelte';
 	import type { ReactionTally, ReactionTarget, MediaKind } from '$lib/types';
-	import {
-		BroadcastIcon,
-		MonitorPlayIcon,
-		StopCircleIcon,
-		GearIcon,
-		ArrowLeftIcon,
-		ChartBarIcon,
-		RecordIcon,
-		VideoCameraIcon,
-		VideoCameraSlashIcon,
-		MicrophoneIcon,
-		MicrophoneSlashIcon,
-		MusicNotesIcon,
-		ClosedCaptioningIcon
-	} from 'phosphor-svelte';
+	import Icon from '$lib/components/Icon.svelte';
 
 	// Always present for the /rooms/[id] route.
 	const roomId = page.params.id as string;
@@ -340,7 +326,7 @@
 
 {#if error}
 	<div class="banner">
-		<a href={resolve('/rooms')}><ArrowLeftIcon size={16} /> Rooms</a> <span>{error}</span>
+		<a href={resolve('/rooms')}><Icon name="arrow-left" /> Rooms</a> <span>{error}</span>
 	</div>
 {:else if detail}
 	<RoomTopNav
@@ -440,20 +426,20 @@
 	{#if caps?.can_publish_screen && !screenDisabled}
 		{#if screen.publishing}
 			<button class="ctrl stop" onclick={() => screen.stopSharing()}>
-				<StopCircleIcon size={16} weight="fill" /> Stop sharing
+				<Icon name="stop-circle" /> Stop sharing
 			</button>
 		{:else}
 			<button class="ctrl" onclick={() => screen.startSharing()} disabled={!screen.connected}>
-				<MonitorPlayIcon size={16} /> Share screen
+				<Icon name="desktop" /> Share screen
 			</button>
 		{/if}
 		{#if screen.cameraPublishing}
 			<button class="ctrl stop" onclick={() => screen.stopCamera()}>
-				<VideoCameraSlashIcon size={16} /> Stop camera
+				<Icon name="video-slash" /> Stop camera
 			</button>
 		{:else}
 			<button class="ctrl" onclick={() => screen.startCamera()} disabled={!screen.connected}>
-				<VideoCameraIcon size={16} /> Camera
+				<Icon name="video" /> Camera
 			</button>
 		{/if}
 		{#if screen.micPublishing}
@@ -464,45 +450,45 @@
 				title={screen.micMuted ? 'Unmute microphone' : 'Mute microphone'}
 			>
 				{#if screen.micMuted}
-					<MicrophoneSlashIcon size={16} /> Unmute
+					<Icon name="microphone-slash" /> Unmute
 				{:else}
-					<MicrophoneIcon size={16} weight="fill" /> Mute
+					<Icon name="microphone" /> Mute
 				{/if}
 			</button>
 			<button class="ctrl" onclick={() => screen.stopMic()} title="Stop microphone">
-				<MicrophoneSlashIcon size={16} /> Stop mic
+				<Icon name="microphone-slash" /> Stop mic
 			</button>
 		{:else}
 			<button class="ctrl" onclick={() => screen.startMic()} disabled={!screen.connected}>
-				<MicrophoneIcon size={16} /> Mic
+				<Icon name="microphone" /> Mic
 			</button>
 		{/if}
 		<button class="ctrl" class:live-on={captionsOn} onclick={() => (captionsOn = !captionsOn)}>
-			<ClosedCaptioningIcon size={16} weight={captionsOn ? 'fill' : 'regular'} /> CC
+			<Icon name="closed-captioning" /> CC
 		</button>
 		<button class="ctrl" onclick={() => (showMediaModal = true)}>
-			<MusicNotesIcon size={16} /> Music
+			<Icon name="music" /> Music
 		</button>
 	{/if}
 	{#if caps?.can_post_alert}
 		<button class="ctrl" onclick={() => (showCreatePoll = true)}>
-			<ChartBarIcon size={16} /> New poll
+			<Icon name="chart-bar" /> New poll
 		</button>
 	{/if}
 	{#if caps?.can_manage_room}
 		<button class="ctrl" onclick={() => (showRecPreview = true)}>
-			<RecordIcon size={16} weight="fill" /> Record
+			<Icon name="dot-circle" /> Record
 		</button>
 	{/if}
 	{#if caps?.can_manage_room}
 		<button class="ctrl" class:live-on={detail?.room.is_live} onclick={toggleLive}>
-			<BroadcastIcon size={16} weight={detail?.room.is_live ? 'fill' : 'regular'} />
+			<Icon name="broadcast-tower" />
 			{detail?.room.is_live ? 'End broadcast' : 'Go live'}
 		</button>
 	{/if}
 	{#if caps?.can_manage_members}
 		<button class="ctrl" onclick={() => (showMembers = !showMembers)}>
-			<GearIcon size={16} /> Members
+			<Icon name="cog" /> Members
 		</button>
 	{/if}
 {/snippet}

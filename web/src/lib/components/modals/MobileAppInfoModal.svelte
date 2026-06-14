@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { AppleLogoIcon, GooglePlayLogoIcon } from 'phosphor-svelte';
+	import Icon from '../Icon.svelte';
 	import Modal from '../Modal.svelte';
 
 	interface Props {
@@ -20,12 +20,12 @@
 			target="_blank"
 			rel="noopener noreferrer"
 		>
-			<AppleLogoIcon size={28} weight="fill" />
+			<Icon name="apple" size={28} family="brands" />
 			<span class="txt"><small>Download on the</small><strong>App Store</strong></span>
 		</a>
 		<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
 		<a class="badge" href="https://play.google.com/store" target="_blank" rel="noopener noreferrer">
-			<GooglePlayLogoIcon size={26} weight="fill" />
+			<Icon name="google-play" size={26} family="brands" />
 			<span class="txt"><small>Get it on</small><strong>Google Play</strong></span>
 		</a>
 	</div>
@@ -56,7 +56,8 @@
 	.badge:hover {
 		border-color: var(--accent);
 	}
-	.badge :global(svg) {
+	.badge :global(svg),
+	.badge :global(i) {
 		flex: 0 0 auto;
 	}
 	.txt {

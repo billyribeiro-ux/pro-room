@@ -10,23 +10,7 @@
 	import AlertFilterModal from './modals/AlertFilterModal.svelte';
 	import ScheduledAlertsModal from './modals/ScheduledAlertsModal.svelte';
 	import AlertSendReportModal from './modals/AlertSendReportModal.svelte';
-	import {
-		BellIcon,
-		MagnifyingGlassIcon,
-		PlusCircleIcon,
-		GearIcon,
-		CaretDownIcon,
-		DotsThreeVerticalIcon,
-		QuestionIcon,
-		CheckCircleIcon,
-		UserIcon,
-		ArrowBendUpLeftIcon,
-		CopyIcon,
-		FunnelSimpleIcon,
-		ClockIcon,
-		ChartBarIcon,
-		TrashIcon
-	} from 'phosphor-svelte';
+	import Icon from './Icon.svelte';
 
 	export type AlertItem = Alert & {
 		author_name?: string;
@@ -166,18 +150,18 @@
 
 <section class="panel">
 	<header>
-		<div class="title"><BellIcon size={17} weight="fill" /> Alerts</div>
+		<div class="title"><Icon name="bell" size={17} /> Alerts</div>
 		<div class="actions">
 			{#if canPost}
 				<button
 					type="button"
 					aria-label="Post an alert"
 					title="Post Alert"
-					onclick={() => (postAlertOpen = true)}><PlusCircleIcon size={18} weight="fill" /></button
+					onclick={() => (postAlertOpen = true)}><Icon name="plus-circle" size={18} /></button
 				>
 			{/if}
 			<button type="button" aria-label="Search alerts" onclick={() => (searchOpen = true)}
-				><MagnifyingGlassIcon size={16} weight="bold" /></button
+				><Icon name="search" /></button
 			>
 			<div class="settings-menu">
 				<button
@@ -188,7 +172,7 @@
 					aria-expanded={settingsOpen}
 					onclick={() => (settingsOpen = !settingsOpen)}
 				>
-					<GearIcon size={16} weight="fill" /><CaretDownIcon size={10} weight="bold" />
+					<Icon name="cog" /><Icon name="caret-down" size={10} />
 				</button>
 				{#if settingsOpen}
 					<div class="menu settings-dropdown" role="menu">
@@ -200,7 +184,7 @@
 								filterOpen = true;
 							}}
 						>
-							<FunnelSimpleIcon size={14} /> Filter alerts
+							<Icon name="filter" size={14} /> Filter alerts
 						</button>
 						<button
 							type="button"
@@ -210,7 +194,7 @@
 								scheduledOpen = true;
 							}}
 						>
-							<ClockIcon size={14} /> Scheduled alerts
+							<Icon name="clock" size={14} /> Scheduled alerts
 						</button>
 					</div>
 				{/if}
@@ -238,18 +222,18 @@
 							aria-expanded={openMenuId === a.id}
 							onclick={() => toggleMenu(a.id)}
 						>
-							<DotsThreeVerticalIcon size={18} weight="bold" />
+							<Icon name="ellipsis-v" size={18} />
 						</button>
 						{#if openMenuId === a.id}
 							<div class="menu" role="menu">
 								<button type="button" role="menuitem" onclick={() => openUserInfo(a)}>
-									<UserIcon size={14} weight="fill" /> User Info
+									<Icon name="user" size={14} /> User Info
 								</button>
 								<button type="button" role="menuitem" onclick={() => mention(a)}>
-									<ArrowBendUpLeftIcon size={14} weight="bold" /> Mention
+									<Icon name="reply" size={14} /> Mention
 								</button>
 								<button type="button" role="menuitem" onclick={() => copyBody(a)}>
-									<CopyIcon size={14} weight="bold" /> Copy
+									<Icon name="copy" size={14} /> Copy
 								</button>
 								{#if canPost}
 									<button
@@ -260,7 +244,7 @@
 											openMenuId = null;
 										}}
 									>
-										<ChartBarIcon size={14} weight="bold" /> Delivery report
+										<Icon name="chart-bar" size={14} /> Delivery report
 									</button>
 								{/if}
 								{#if canManage && onDelete}
@@ -273,7 +257,7 @@
 											openMenuId = null;
 										}}
 									>
-										<TrashIcon size={14} weight="bold" /> Delete
+										<Icon name="trash-alt" size={14} /> Delete
 									</button>
 								{/if}
 							</div>
@@ -293,9 +277,9 @@
 					{#if (a.question_count ?? 0) > 0 || a.answered}
 						<button type="button" class="alert-qa" onclick={() => openQa(a)}>
 							{#if (a.question_count ?? 0) > 0}<span class="qa-count">({a.question_count})</span
-								>{/if}<QuestionIcon size={11} weight="fill" />{#if a.answered}<CheckCircleIcon
+								>{/if}<Icon name="question-circle" size={11} />{#if a.answered}<Icon
+									name="check-circle"
 									size={11}
-									weight="fill"
 									class="qa-check"
 								/>{/if}
 						</button>
@@ -511,6 +495,10 @@
 		width: 36px;
 		height: 36px;
 		flex-shrink: 0;
+		/* Round avatars (reference --rosterImg-border-radius: 50%); crop image
+		   avatars so the gravatar is a circle, not a square. */
+		border-radius: 50%;
+		object-fit: cover;
 	}
 	.avatar {
 		display: inline-flex;

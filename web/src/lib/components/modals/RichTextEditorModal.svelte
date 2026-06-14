@@ -1,13 +1,7 @@
 <script lang="ts">
 	import type { Attachment } from 'svelte/attachments';
 	import DOMPurify from 'dompurify';
-	import {
-		TextBIcon,
-		TextItalicIcon,
-		TextUnderlineIcon,
-		ListBulletsIcon,
-		LinkIcon
-	} from 'phosphor-svelte';
+	import Icon from '../Icon.svelte';
 	import Modal from '../Modal.svelte';
 
 	interface Props {
@@ -120,16 +114,16 @@
 
 	type ToolButton = {
 		label: string;
-		icon: typeof TextBIcon;
+		icon: string;
 		action: () => void;
 	};
 
 	const tools: ToolButton[] = [
-		{ label: 'Bold', icon: TextBIcon, action: () => exec('bold') },
-		{ label: 'Italic', icon: TextItalicIcon, action: () => exec('italic') },
-		{ label: 'Underline', icon: TextUnderlineIcon, action: () => exec('underline') },
-		{ label: 'Bullet list', icon: ListBulletsIcon, action: () => exec('insertUnorderedList') },
-		{ label: 'Link', icon: LinkIcon, action: openLinkComposer }
+		{ label: 'Bold', icon: 'bold', action: () => exec('bold') },
+		{ label: 'Italic', icon: 'italic', action: () => exec('italic') },
+		{ label: 'Underline', icon: 'underline', action: () => exec('underline') },
+		{ label: 'Bullet list', icon: 'list-ul', action: () => exec('insertUnorderedList') },
+		{ label: 'Link', icon: 'link', action: openLinkComposer }
 	];
 </script>
 
@@ -142,7 +136,6 @@
 	<div class="rte">
 		<div class="toolbar" role="toolbar" aria-label="Text formatting" aria-controls="rte-editor">
 			{#each tools as tool (tool.label)}
-				{@const Icon = tool.icon}
 				<button
 					class="tool"
 					type="button"
@@ -151,7 +144,7 @@
 					onmousedown={(e) => e.preventDefault()}
 					onclick={tool.action}
 				>
-					<Icon size={16} />
+					<Icon name={tool.icon} />
 				</button>
 			{/each}
 		</div>

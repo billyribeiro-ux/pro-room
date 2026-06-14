@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { theme, type ThemeTokenKey } from '$lib/stores/theme.svelte';
 	import { parseHexColor } from '$lib/schemas';
-	import { PaletteIcon, ArrowCounterClockwiseIcon, TextAaIcon } from 'phosphor-svelte';
+	import Icon from '$lib/components/Icon.svelte';
 
 	type Field = { key: ThemeTokenKey; label: string };
 
@@ -65,7 +65,7 @@
 
 <div class="page">
 	<header class="head">
-		<PaletteIcon size={26} weight="bold" />
+		<Icon name="palette" size={26} />
 		<div>
 			<h1>Appearance</h1>
 			<p>
@@ -125,7 +125,7 @@
 	<section class="block">
 		<h2>Message text size</h2>
 		<div class="size-row">
-			<TextAaIcon size={18} />
+			<Icon name="font" size={18} />
 			<input
 				type="range"
 				min="10"
@@ -161,7 +161,7 @@
 
 	<section class="block">
 		<button class="reset" type="button" onclick={reset}>
-			<ArrowCounterClockwiseIcon size={18} /> Reset to defaults
+			<Icon name="undo-alt" size={18} /> Reset to defaults
 		</button>
 	</section>
 </div>
@@ -178,7 +178,8 @@
 		align-items: flex-start;
 		gap: 0.75rem;
 	}
-	.head :global(svg) {
+	.head :global(svg),
+	.head :global(i) {
 		color: var(--accent);
 		margin-top: 0.2rem;
 	}

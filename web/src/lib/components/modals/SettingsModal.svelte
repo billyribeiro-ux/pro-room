@@ -8,20 +8,7 @@
 	} from '$lib/stores/layout.svelte';
 	import { dnd, setDnd } from '$lib/stores/dnd.svelte';
 	import Modal from '../Modal.svelte';
-	import {
-		PaletteIcon,
-		ColumnsIcon,
-		WrenchIcon,
-		BellSlashIcon,
-		BellIcon,
-		DesktopIcon,
-		ClosedCaptioningIcon,
-		UserIcon,
-		FileIcon,
-		FunnelIcon,
-		ArrowCounterClockwiseIcon,
-		FloppyDiskIcon
-	} from 'phosphor-svelte';
+	import Icon from '../Icon.svelte';
 
 	interface Props {
 		open: boolean;
@@ -167,7 +154,7 @@
 		<div class="panel" role="tabpanel" id="settings-panel-app" aria-labelledby="settings-tab-app">
 			<!-- Choose Color Theme -->
 			<div class="section-head">
-				<PaletteIcon size={16} />
+				<Icon name="palette" />
 				<span>Choose Color Theme</span>
 			</div>
 			<div class="radios" role="radiogroup" aria-label="Color theme">
@@ -195,7 +182,7 @@
 
 			<!-- Room Layout -->
 			<div class="section-head spaced">
-				<ColumnsIcon size={16} />
+				<Icon name="columns" />
 				<span>Room Layout</span>
 			</div>
 			<div class="radios" role="radiogroup" aria-label="Room layout">
@@ -223,7 +210,7 @@
 
 			<!-- Colors & Size -->
 			<div class="section-head spaced">
-				<WrenchIcon size={16} />
+				<Icon name="wrench" />
 				<span>Colors &amp; Size</span>
 			</div>
 			<ul class="colors">
@@ -254,16 +241,16 @@
 			</div>
 			<div class="cs-actions">
 				<button class="btn ghost" type="button" onclick={() => theme.reset()}>
-					<ArrowCounterClockwiseIcon size={15} /> Reset
+					<Icon name="undo-alt" size={15} /> Reset
 				</button>
 				<button class="btn primary" type="button" onclick={() => theme.apply()}>
-					<FloppyDiskIcon size={15} /> Save changes
+					<Icon name="save" size={15} /> Save changes
 				</button>
 			</div>
 
 			<!-- Do not disturb -->
 			<div class="section-head spaced">
-				<BellSlashIcon size={16} />
+				<Icon name="bell-slash" />
 				<span>Do not disturb</span>
 			</div>
 			<div class="checks">
@@ -291,7 +278,7 @@
 
 			<!-- Disable/Enable Video -->
 			<div class="section-head spaced">
-				<DesktopIcon size={16} />
+				<Icon name="desktop" />
 				<span>Disable/Enable Video</span>
 			</div>
 			<label class="check">
@@ -301,7 +288,7 @@
 
 			<!-- Show Closed Captions Overlay -->
 			<div class="section-head spaced">
-				<ClosedCaptioningIcon size={16} />
+				<Icon name="closed-captioning" />
 				<span>Show Closed Captions Overlay</span>
 			</div>
 			<label class="check">
@@ -311,7 +298,7 @@
 
 			<!-- Edit my Info and Avatar — wiring deferred to integration phase. -->
 			<button class="btn warn-btn" type="button" onclick={() => onEditProfile?.()}>
-				<UserIcon size={15} /> Edit my Info and Avatar
+				<Icon name="user" size={15} /> Edit my Info and Avatar
 			</button>
 		</div>
 	{:else if tab === 'alert'}
@@ -323,7 +310,7 @@
 		>
 			<!-- Text Mode -->
 			<div class="section-head">
-				<FileIcon size={16} />
+				<Icon name="file" />
 				<span>Text Mode</span>
 			</div>
 			<div class="radios" role="radiogroup" aria-label="Alert text mode">
@@ -339,7 +326,7 @@
 
 			<!-- Do not disturb -->
 			<div class="section-head spaced">
-				<BellSlashIcon size={16} />
+				<Icon name="bell-slash" />
 				<span>Do not disturb</span>
 			</div>
 			<div class="checks">
@@ -367,7 +354,7 @@
 
 			<!-- Alert popup -->
 			<div class="section-head spaced">
-				<BellIcon size={16} />
+				<Icon name="bell" />
 				<span>Alert popup</span>
 			</div>
 			<label class="check">
@@ -376,14 +363,14 @@
 			</label>
 			<!-- Filter out alerts — integration phase points this at AlertFilterModal. -->
 			<button class="btn ghost wide" type="button" onclick={() => onFilterAlerts?.()}>
-				<FunnelIcon size={15} /> Filter out alerts
+				<Icon name="filter" size={15} /> Filter out alerts
 			</button>
 		</div>
 	{:else}
 		<div class="panel" role="tabpanel" id="settings-panel-chat" aria-labelledby="settings-tab-chat">
 			<!-- Text Mode -->
 			<div class="section-head">
-				<FileIcon size={16} />
+				<Icon name="file" />
 				<span>Text Mode</span>
 			</div>
 			<div class="radios" role="radiogroup" aria-label="Chat text mode">
@@ -399,7 +386,7 @@
 
 			<!-- Image Preview -->
 			<div class="section-head spaced">
-				<FileIcon size={16} />
+				<Icon name="file" />
 				<span>Image Preview</span>
 			</div>
 			<label class="check">
@@ -409,7 +396,7 @@
 
 			<!-- Do not disturb -->
 			<div class="section-head spaced">
-				<BellSlashIcon size={16} />
+				<Icon name="bell-slash" />
 				<span>Do not disturb</span>
 			</div>
 			<div class="checks">
@@ -433,7 +420,7 @@
 
 			<!-- Extra chat column -->
 			<div class="section-head spaced">
-				<ColumnsIcon size={16} />
+				<Icon name="columns" />
 				<span>Extra chat column</span>
 			</div>
 			<label class="check">
@@ -443,7 +430,7 @@
 
 			<!-- Always Scroll To Bottom -->
 			<div class="section-head spaced">
-				<FileIcon size={16} />
+				<Icon name="file" />
 				<span>Always Scroll To Bottom</span>
 			</div>
 			<label class="check">
@@ -453,7 +440,7 @@
 
 			<!-- Reduce Chatlog Memory -->
 			<div class="section-head spaced">
-				<FileIcon size={16} />
+				<Icon name="file" />
 				<span>Reduce Chatlog Memory</span>
 			</div>
 			<div class="checks">
@@ -518,7 +505,8 @@
 	.section-head.spaced {
 		margin-top: 1.25rem;
 	}
-	.section-head :global(svg) {
+	.section-head :global(svg),
+	.section-head :global(i) {
 		color: var(--accent);
 		flex: 0 0 auto;
 	}

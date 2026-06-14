@@ -2,15 +2,7 @@
 	import { page } from '$app/state';
 	import { api, ApiError } from '$lib/api';
 	import Modal from '../Modal.svelte';
-	import {
-		TextTIcon,
-		LinkSimpleIcon,
-		ImageIcon,
-		GifIcon,
-		VideoIcon,
-		UploadSimpleIcon,
-		PaperPlaneTiltIcon
-	} from 'phosphor-svelte';
+	import Icon from '../Icon.svelte';
 
 	interface Props {
 		open: boolean;
@@ -150,7 +142,7 @@
 			aria-selected={tab === 'text'}
 			onclick={() => (tab = 'text')}
 		>
-			<TextTIcon size={15} /> Text Alert
+			<Icon name="font" size={15} /> Text Alert
 		</button>
 		<button
 			type="button"
@@ -160,7 +152,7 @@
 			aria-selected={tab === 'url'}
 			onclick={() => (tab = 'url')}
 		>
-			<LinkSimpleIcon size={15} /> Text Url
+			<Icon name="link" size={15} /> Text Url
 		</button>
 		<button
 			type="button"
@@ -170,7 +162,7 @@
 			aria-selected={tab === 'image'}
 			onclick={() => (tab = 'image')}
 		>
-			<ImageIcon size={15} /> Image
+			<Icon name="image" size={15} /> Image
 		</button>
 		<button
 			type="button"
@@ -180,7 +172,7 @@
 			aria-selected={tab === 'gif'}
 			onclick={() => (tab = 'gif')}
 		>
-			<GifIcon size={15} /> GIF
+			<Icon name="image" size={15} /> GIF
 		</button>
 		<button
 			type="button"
@@ -190,7 +182,7 @@
 			aria-selected={tab === 'video'}
 			onclick={() => (tab = 'video')}
 		>
-			<VideoIcon size={15} /> Video
+			<Icon name="video" size={15} /> Video
 		</button>
 	</div>
 
@@ -219,7 +211,7 @@
 				<input type="url" bind:value={imageUrl} placeholder="https://example.com/chart.png" />
 			</label>
 			<label class="upload">
-				<UploadSimpleIcon size={15} />
+				<Icon name="upload" size={15} />
 				{uploading ? 'Uploading…' : 'Click to select images to upload'}
 				<input type="file" accept="image/*" onchange={onUpload} disabled={uploading} hidden />
 			</label>
@@ -263,7 +255,7 @@
 			</label>
 		</div>
 		<button type="button" class="primary" onclick={post} disabled={posting || uploading}>
-			<PaperPlaneTiltIcon size={14} weight="fill" />
+			<Icon name="paper-plane" size={14} />
 			{posting ? 'Posting…' : 'Post Alert'}
 		</button>
 	{/snippet}

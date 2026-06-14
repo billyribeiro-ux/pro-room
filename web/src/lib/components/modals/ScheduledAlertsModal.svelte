@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Modal from '../Modal.svelte';
-	import { ClockIcon, PaperPlaneTiltIcon, XIcon } from 'phosphor-svelte';
+	import Icon from '../Icon.svelte';
 
 	export interface ScheduledAlert {
 		id: string;
@@ -73,7 +73,7 @@
 				<input id="{formId}-when" type="datetime-local" bind:value={sendAt} />
 			</div>
 			<button class="btn primary" type="submit" disabled={!canSchedule}>
-				<PaperPlaneTiltIcon size={14} weight="bold" /> Schedule
+				<Icon name="paper-plane" size={14} /> Schedule
 			</button>
 		</div>
 	</form>
@@ -82,7 +82,7 @@
 
 	{#if scheduled.length === 0}
 		<div class="empty">
-			<ClockIcon size={22} />
+			<Icon name="clock" size={22} />
 			<p>No scheduled alerts yet.</p>
 		</div>
 	{:else}
@@ -92,7 +92,7 @@
 					<span class="item-text">
 						<span class="item-alert">{alert.text}</span>
 						<span class="item-when">
-							<ClockIcon size={13} />
+							<Icon name="clock" size={13} />
 							{formatSendAt(alert.sendAt)}
 						</span>
 					</span>
@@ -103,7 +103,7 @@
 						aria-label="Delete scheduled alert"
 						title="Delete"
 					>
-						<XIcon size={15} />
+						<Icon name="times" size={15} />
 					</button>
 				</li>
 			{/each}
@@ -171,7 +171,8 @@
 		padding: 1.25rem 0;
 		text-align: center;
 	}
-	.empty :global(svg) {
+	.empty :global(svg),
+	.empty :global(i) {
 		opacity: 0.7;
 	}
 	.empty p {

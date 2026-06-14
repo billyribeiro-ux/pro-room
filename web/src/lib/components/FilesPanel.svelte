@@ -4,13 +4,7 @@
 	import { confirmDialog } from '$lib/dialog.svelte';
 	import { onMount } from 'svelte';
 	import type { RoomFile, FileCategory } from '$lib/types';
-	import {
-		DownloadSimpleIcon,
-		MagnifyingGlassIcon,
-		ArrowClockwiseIcon,
-		UploadSimpleIcon,
-		TrashIcon
-	} from 'phosphor-svelte';
+	import Icon from './Icon.svelte';
 
 	interface Props {
 		roomId: string;
@@ -174,11 +168,11 @@
 
 		<div class="tools">
 			<div class="search">
-				<MagnifyingGlassIcon size={15} />
+				<Icon name="search" size={15} />
 				<input placeholder="Search files…" bind:value={query} />
 			</div>
 			<button type="button" class="ic" onclick={load} disabled={busy} aria-label="Refresh">
-				<ArrowClockwiseIcon size={16} />
+				<Icon name="redo-alt" />
 			</button>
 			{#if canManage}
 				<button
@@ -187,7 +181,7 @@
 					onclick={() => fileInput?.click()}
 					disabled={uploading}
 				>
-					<UploadSimpleIcon size={15} weight="bold" />
+					<Icon name="upload" size={15} />
 					{uploading ? 'Uploading…' : 'Upload'}
 				</button>
 				<input class="hidden-input" type="file" bind:this={fileInput} onchange={onUpload} />
@@ -220,7 +214,7 @@
 						<td class="num">{formatDate(f.created_at)}</td>
 						<td class="act">
 							<button type="button" class="download" onclick={() => download(f)}>
-								<DownloadSimpleIcon size={14} weight="bold" /> Download
+								<Icon name="download" size={14} /> Download
 							</button>
 							{#if canManage}
 								<button
@@ -230,7 +224,7 @@
 									aria-label="Delete"
 									disabled={busy}
 								>
-									<TrashIcon size={15} />
+									<Icon name="trash-alt" size={15} />
 								</button>
 							{/if}
 						</td>

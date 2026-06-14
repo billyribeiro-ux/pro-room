@@ -3,7 +3,7 @@
 	import { ApiError } from '$lib/api';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { ChartLineUpIcon } from 'phosphor-svelte';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let displayName = $state('');
 	let email = $state('');
@@ -29,7 +29,7 @@
 <div class="shell">
 	<div class="card">
 		<div class="head">
-			<ChartLineUpIcon size={28} weight="bold" />
+			<Icon name="chart-line" size={28} />
 			<h1>Create account</h1>
 		</div>
 
@@ -83,7 +83,8 @@
 		gap: 0.6rem;
 		margin-bottom: 1.25rem;
 	}
-	.head :global(svg) {
+	.head :global(svg),
+	.head :global(i) {
 		color: var(--accent);
 	}
 	h1 {

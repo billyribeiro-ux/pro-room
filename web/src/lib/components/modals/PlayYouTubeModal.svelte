@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { YoutubeLogoIcon } from 'phosphor-svelte';
+	import Icon from '../Icon.svelte';
 	import Modal from '../Modal.svelte';
 
 	interface Props {
@@ -51,7 +51,7 @@
 
 <Modal {open} onClose={close} title="Play YouTube Video" {footer}>
 	<div class="intro">
-		<YoutubeLogoIcon size={20} weight="fill" />
+		<Icon name="youtube" size={20} family="brands" />
 		<p>Broadcast a YouTube video to everyone in the room.</p>
 	</div>
 
@@ -82,7 +82,8 @@
 		gap: 0.6rem;
 		color: var(--text-dim);
 	}
-	.intro :global(svg) {
+	.intro :global(svg),
+	.intro :global(i) {
 		color: var(--accent);
 		flex: 0 0 auto;
 		margin-top: 0.15rem;

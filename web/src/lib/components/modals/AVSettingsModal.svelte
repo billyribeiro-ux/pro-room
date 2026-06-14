@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import Modal from '../Modal.svelte';
-	import { DesktopIcon, SpeakerHighIcon, MicrophoneIcon, VideoCameraIcon } from 'phosphor-svelte';
+	import Icon from '../Icon.svelte';
 
 	interface Props {
 		open: boolean;
@@ -158,12 +158,12 @@
 		<div id="av-panel-user" role="tabpanel" aria-labelledby="av-tab-user" class="panel">
 			<label class="check">
 				<input type="checkbox" bind:checked={disableVideo} />
-				<DesktopIcon size={15} />
+				<Icon name="desktop" size={15} />
 				<span>Disable Video <span class="saves-bandwidth">(saves bandwidth)</span></span>
 			</label>
 
 			<div class="field">
-				<label class="label" for="av-speaker"><SpeakerHighIcon size={15} /> Speakers</label>
+				<label class="label" for="av-speaker"><Icon name="volume-up" size={15} /> Speakers</label>
 				<div class="row">
 					<select id="av-speaker" bind:value={selectedSpeaker}>
 						{#if speakers.length === 0}
@@ -180,7 +180,7 @@
 						onclick={testSpeaker}
 						aria-label="Play a test tone on the selected speakers"
 					>
-						<SpeakerHighIcon size={15} /> Test
+						<Icon name="volume-up" size={15} /> Test
 					</button>
 				</div>
 			</div>
@@ -188,7 +188,9 @@
 	{:else}
 		<div id="av-panel-presenter" role="tabpanel" aria-labelledby="av-tab-presenter" class="panel">
 			<div class="field">
-				<label class="label" for="av-mic"><MicrophoneIcon size={15} /> Audio device (input):</label>
+				<label class="label" for="av-mic"
+					><Icon name="microphone" size={15} /> Audio device (input):</label
+				>
 				<select id="av-mic" bind:value={selectedMic}>
 					{#if mics.length === 0}
 						<option value="">No microphones detected</option>
@@ -201,7 +203,8 @@
 			</div>
 
 			<div class="field">
-				<label class="label" for="av-camera"><VideoCameraIcon size={15} /> Video device (input):</label
+				<label class="label" for="av-camera"
+					><Icon name="video" size={15} /> Video device (input):</label
 				>
 				<select id="av-camera" bind:value={selectedCamera}>
 					{#if cameras.length === 0}

@@ -3,7 +3,7 @@
 	import { ApiError } from '$lib/api';
 	import { votePoll, closePoll, type PollDetail } from '$lib/poll';
 	import { parseMessage } from '$lib/message';
-	import { CheckCircleIcon, LockSimpleIcon } from 'phosphor-svelte';
+	import Icon from './Icon.svelte';
 
 	interface Props {
 		poll: PollDetail;
@@ -82,7 +82,7 @@
 					>{:else}{seg.value}{/if}{/each}
 		</h3>
 		{#if isClosed}
-			<span class="badge closed"><LockSimpleIcon size={12} weight="fill" /> Closed</span>
+			<span class="badge closed"><Icon name="lock" size={12} /> Closed</span>
 		{/if}
 	</header>
 
@@ -102,7 +102,7 @@
 					<span class="bar" style:width={`${share}%`} aria-hidden="true"></span>
 					<span class="row">
 						<span class="opt-label">
-							{#if chosen}<CheckCircleIcon size={14} weight="fill" />{/if}
+							{#if chosen}<Icon name="check-circle" size={14} />{/if}
 							{#each parseMessage(option.label) as seg, si (si)}{#if seg.kind === 'ticker'}<span
 										class="ticker">{seg.value}</span
 									>{:else if seg.kind === 'link'}<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- external user-supplied URL, not an internal route --><a
@@ -248,7 +248,8 @@
 		word-break: break-word;
 		min-width: 0;
 	}
-	.opt-label :global(svg) {
+	.opt-label :global(svg),
+	.opt-label :global(i) {
 		color: var(--positive);
 		flex: 0 0 auto;
 	}

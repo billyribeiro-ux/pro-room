@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Modal from '../Modal.svelte';
-	import { FunnelSimpleIcon } from 'phosphor-svelte';
+	import Icon from '../Icon.svelte';
 
 	interface Props {
 		open: boolean;
@@ -19,7 +19,7 @@
 
 	<div class="list" class:dim={!onlyThesePeople}>
 		<div class="empty">
-			<FunnelSimpleIcon size={22} />
+			<Icon name="filter" size={22} />
 			<p>No people selected yet.</p>
 		</div>
 	</div>

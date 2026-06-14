@@ -1,14 +1,5 @@
 <script lang="ts">
-	import {
-		ListIcon,
-		UsersIcon,
-		DeviceMobileIcon,
-		SpeakerHighIcon,
-		SpeakerSlashIcon,
-		ArrowsClockwiseIcon,
-		ClosedCaptioningIcon,
-		XIcon
-	} from 'phosphor-svelte';
+	import Icon from './Icon.svelte';
 
 	interface Props {
 		/** Room display name shown in the brand slot. Integration phase passes the real room name. */
@@ -60,11 +51,11 @@
 		aria-label="Toggle sidebar"
 		title="Toggle sidebar"
 	>
-		<ListIcon size={18} />
+		<Icon name="list" size={18} />
 	</button>
 
 	<span class="users" title="Users connected">
-		<UsersIcon size={16} />
+		<Icon name="users" />
 		<span class="count">{userCount}</span>
 	</span>
 
@@ -74,7 +65,7 @@
 		aria-label="Launch in mobile app"
 		title="Launch in mobile app"
 	>
-		<DeviceMobileIcon size={16} />
+		<Icon name="mobile-alt" />
 	</button>
 
 	<span class="brand">{roomName}</span>
@@ -98,9 +89,9 @@
 			title="Volume settings"
 		>
 			{#if muted}
-				<SpeakerSlashIcon size={16} />
+				<Icon name="volume-mute" />
 			{:else}
-				<SpeakerHighIcon size={16} />
+				<Icon name="volume-up" />
 			{/if}
 		</button>
 
@@ -114,7 +105,7 @@
 						aria-label="Close volume settings"
 						title="Close"
 					>
-						<XIcon size={14} />
+						<Icon name="times" size={14} />
 					</button>
 				</div>
 
@@ -159,7 +150,7 @@
 							bind:checked={subtitles}
 							aria-label="Show Speech Recognition Overlay"
 						/>
-						<ClosedCaptioningIcon size={14} />
+						<Icon name="closed-captioning" size={14} />
 						Subtitles <span class="status">{subtitles ? 'on' : 'off'}</span>
 					</label>
 					<label>
@@ -172,7 +163,7 @@
 	</div>
 
 	<button class="icon-btn" onclick={onReload} aria-label="Reload" title="Reload">
-		<ArrowsClockwiseIcon size={16} />
+		<Icon name="sync-alt" />
 	</button>
 </nav>
 

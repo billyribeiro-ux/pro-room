@@ -7,6 +7,8 @@
 	import '@fontsource/open-sans/600.css';
 	import '@fontsource/open-sans/700.css';
 	import '@fontsource/open-sans/400-italic.css';
+	// Font Awesome 5 Free — the reference app's exact icon set (used via <Icon>).
+	import '@fortawesome/fontawesome-free/css/all.min.css';
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import Nav from '$lib/components/Nav.svelte';

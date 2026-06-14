@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Modal from '../Modal.svelte';
-	import { MagnifyingGlassIcon } from 'phosphor-svelte';
+	import Icon from '../Icon.svelte';
 
 	export interface SearchCriteria {
 		term: string;
@@ -56,7 +56,7 @@
 {#snippet footer()}
 	<button class="btn ghost" type="button" onclick={onClose}>Close</button>
 	<button class="btn primary" type="submit" form={formId}>
-		<MagnifyingGlassIcon size={14} weight="bold" /> Search
+		<Icon name="search" size={14} /> Search
 	</button>
 {/snippet}
 

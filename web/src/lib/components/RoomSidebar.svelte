@@ -1,27 +1,6 @@
 <script lang="ts">
 	import type { PresentUser } from '$lib/types';
-	import {
-		DeviceMobileIcon,
-		PlugIcon,
-		GearIcon,
-		ArchiveIcon,
-		BellIcon,
-		ChatCircleIcon,
-		ClosedCaptioningIcon,
-		SpeakerSlashIcon,
-		UserCheckIcon,
-		UsersIcon,
-		SortAscendingIcon,
-		MagnifyingGlassIcon,
-		ArrowsClockwiseIcon,
-		XIcon,
-		ShieldStarIcon,
-		YoutubeLogoIcon,
-		SlidersHorizontalIcon,
-		BugIcon,
-		EnvelopeIcon,
-		VideoCameraIcon
-	} from 'phosphor-svelte';
+	import Icon from './Icon.svelte';
 	import MobileAppInfoModal from './modals/MobileAppInfoModal.svelte';
 	import ConnectivityCheckModal from './modals/ConnectivityCheckModal.svelte';
 	import AVSettingsModal from './modals/AVSettingsModal.svelte';
@@ -70,7 +49,7 @@
 			</div>
 			{#if onClose}
 				<button class="close" onclick={onClose} aria-label="Close sidebar" title="Close sidebar">
-					<XIcon size={16} />
+					<Icon name="times" />
 				</button>
 			{/if}
 		</div>
@@ -82,7 +61,7 @@
 				title="Mobile App Info"
 				onclick={() => (mobileAppOpen = true)}
 			>
-				<DeviceMobileIcon size={16} /><span>Mobile App Info</span>
+				<Icon name="mobile-alt" /><span>Mobile App Info</span>
 			</button>
 
 			<button
@@ -91,7 +70,7 @@
 				title="Connectivity Check"
 				onclick={() => (connectivityOpen = true)}
 			>
-				<PlugIcon size={16} /><span>Connectivity Check</span>
+				<Icon name="plug" /><span>Connectivity Check</span>
 			</button>
 
 			<button
@@ -100,7 +79,7 @@
 				title="Audio/Video Settings"
 				onclick={() => (avSettingsOpen = true)}
 			>
-				<VideoCameraIcon size={16} /><span>Audio/Video Settings</span>
+				<Icon name="video" /><span>Audio/Video Settings</span>
 			</button>
 
 			<button
@@ -109,18 +88,18 @@
 				title="General Settings"
 				onclick={() => (settingsOpen = true)}
 			>
-				<GearIcon size={16} /><span>General Settings</span>
+				<Icon name="cog" /><span>General Settings</span>
 			</button>
 
 			<div class="group">
-				<span class="group-head"><ArchiveIcon size={16} /> Archives</span>
+				<span class="group-head"><Icon name="archive" /> Archives</span>
 				<button
 					class="sub-item"
 					aria-label="Alert Logs"
 					title="Alert Logs"
 					onclick={() => (alertLogsOpen = true)}
 				>
-					<BellIcon size={14} /><span>Alert Logs</span>
+					<Icon name="bell" size={14} /><span>Alert Logs</span>
 				</button>
 				<button
 					class="sub-item"
@@ -128,7 +107,7 @@
 					title="Chat Logs"
 					onclick={() => (chatLogsOpen = true)}
 				>
-					<ChatCircleIcon size={14} /><span>Chat Logs</span>
+					<Icon name="comment" size={14} /><span>Chat Logs</span>
 				</button>
 				<button
 					class="sub-item"
@@ -136,7 +115,7 @@
 					title="Transcript History"
 					disabled
 				>
-					<ClosedCaptioningIcon size={14} /><span>Transcript History</span>
+					<Icon name="closed-captioning" size={14} /><span>Transcript History</span>
 				</button>
 			</div>
 
@@ -146,7 +125,7 @@
 				title="Manage Muted Users"
 				onclick={() => (mutedUsersOpen = true)}
 			>
-				<SpeakerSlashIcon size={16} /><span>Manage Muted Users</span>
+				<Icon name="volume-mute" /><span>Manage Muted Users</span>
 			</button>
 
 			<button
@@ -155,19 +134,19 @@
 				title="Manage Followed Users"
 				onclick={() => (followedUsersOpen = true)}
 			>
-				<UserCheckIcon size={16} /><span>Manage Followed Users</span>
+				<Icon name="user-check" /><span>Manage Followed Users</span>
 			</button>
 
 			{#if canManage}
 				<div class="group">
-					<span class="group-head"><ShieldStarIcon size={16} /> Admin</span>
+					<span class="group-head"><Icon name="shield-alt" /> Admin</span>
 					<button
 						class="sub-item"
 						aria-label="All Private Messages"
 						title="All Private Messages"
 						onclick={() => (allPmOpen = true)}
 					>
-						<EnvelopeIcon size={14} /><span>All Private Messages</span>
+						<Icon name="envelope" size={14} /><span>All Private Messages</span>
 					</button>
 					<button
 						class="sub-item"
@@ -175,7 +154,7 @@
 						title="Play YouTube Video"
 						onclick={() => (playYoutubeOpen = true)}
 					>
-						<YoutubeLogoIcon size={14} /><span>Play YouTube Video</span>
+						<Icon name="youtube" family="brands" size={14} /><span>Play YouTube Video</span>
 					</button>
 					<button
 						class="sub-item"
@@ -183,7 +162,7 @@
 						title="Session Control"
 						onclick={() => (sessionControlOpen = true)}
 					>
-						<SlidersHorizontalIcon size={14} /><span>Session Control</span>
+						<Icon name="sliders-h" size={14} /><span>Session Control</span>
 					</button>
 					<button
 						class="sub-item"
@@ -191,7 +170,7 @@
 						title="Debug Log"
 						onclick={() => (debugLogOpen = true)}
 					>
-						<BugIcon size={14} /><span>Debug Log</span>
+						<Icon name="bug" size={14} /><span>Debug Log</span>
 					</button>
 				</div>
 			{/if}
@@ -200,17 +179,17 @@
 		<div class="roster">
 			<div class="roster-head">
 				<span class="roster-title">
-					<UsersIcon size={16} /> Users: <span class="roster-count">{present.length}</span>
+					<Icon name="users" /> Users: <span class="roster-count">{present.length}</span>
 				</span>
 				<span class="roster-actions">
 					<button class="mini" aria-label="Sort users" title="Sort users" disabled>
-						<SortAscendingIcon size={14} />
+						<Icon name="sort-amount-down-alt" size={14} />
 					</button>
 					<button class="mini" aria-label="Search users" title="Search users" disabled>
-						<MagnifyingGlassIcon size={14} />
+						<Icon name="search" size={14} />
 					</button>
 					<button class="mini" aria-label="Reload users" title="Reload users" disabled>
-						<ArrowsClockwiseIcon size={14} />
+						<Icon name="sync-alt" size={14} />
 					</button>
 				</span>
 			</div>

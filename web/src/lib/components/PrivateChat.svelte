@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { tick } from 'svelte';
-	import { ChatsCircleIcon, GearIcon, XIcon, SmileyIcon, ImageIcon } from 'phosphor-svelte';
+	import Icon from './Icon.svelte';
 
 	interface Peer {
 		display_name?: string;
@@ -71,14 +71,14 @@
 {#if open}
 	<section class="priv-chat" aria-label={`Private chat with ${peerName}`}>
 		<header>
-			<span class="lead" aria-hidden="true"><ChatsCircleIcon size={17} weight="fill" /></span>
+			<span class="lead" aria-hidden="true"><Icon name="comments" size={17} /></span>
 			<span class="peer">{peerName}</span>
 			<div class="actions">
 				<button type="button" aria-label="Chat settings">
-					<GearIcon size={16} weight="fill" />
+					<Icon name="cog" />
 				</button>
 				<button type="button" aria-label="Close private chat" onclick={onClose}>
-					<XIcon size={16} weight="bold" />
+					<Icon name="times" />
 				</button>
 			</div>
 		</header>
@@ -106,10 +106,10 @@
 					onkeydown={onComposerKeydown}
 				></textarea>
 				<button type="button" class="ic" aria-label="Emoji">
-					<SmileyIcon size={18} weight="fill" />
+					<Icon name="smile" size={18} />
 				</button>
 				<button type="button" class="ic" aria-label="Image">
-					<ImageIcon size={18} weight="fill" />
+					<Icon name="image" size={18} />
 				</button>
 			</div>
 			<button type="submit" class="send" disabled={!body.trim()}>Send</button>

@@ -2,7 +2,7 @@
 	import { api, ApiError } from '$lib/api';
 	import { onMount } from 'svelte';
 	import type { MemberView, PresenceEntry, Role } from '$lib/types';
-	import { XIcon, UserPlusIcon, TrashIcon, MapPinIcon, GlobeSimpleIcon } from 'phosphor-svelte';
+	import Icon from './Icon.svelte';
 
 	interface Props {
 		roomId: string;
@@ -65,7 +65,9 @@
 	<aside class="drawer" onclick={(e) => e.stopPropagation()}>
 		<header>
 			<h2>Members</h2>
-			<button class="close" onclick={onClose} aria-label="Close"><XIcon size={18} /></button>
+			<button class="close" onclick={onClose} aria-label="Close"
+				><Icon name="times" size={18} /></button
+			>
 		</header>
 
 		{#if error}<p class="error">{error}</p>{/if}
@@ -82,9 +84,9 @@
 							<div class="info">
 								<span class="name">{u.display_name}</span>
 								<span class="meta">
-									<MapPinIcon size={12} />
+									<Icon name="map-marker-alt" size={12} />
 									{u.location ?? 'Local network'}
-									<GlobeSimpleIcon size={12} />
+									<Icon name="globe" size={12} />
 									<span class="ip">{u.ip ?? '—'}</span>
 								</span>
 							</div>
@@ -103,7 +105,7 @@
 				<option value="super_admin">Super admin</option>
 			</select>
 			<button class="add" type="submit" disabled={busy}>
-				<UserPlusIcon size={16} /> Add
+				<Icon name="user-plus" /> Add
 			</button>
 		</form>
 
@@ -116,7 +118,7 @@
 					</div>
 					<span class="role">{m.role.replace('_', ' ')}</span>
 					<button class="del" onclick={() => remove(m.user_id)} aria-label="Remove">
-						<TrashIcon size={15} />
+						<Icon name="trash-alt" size={15} />
 					</button>
 				</li>
 			{:else}

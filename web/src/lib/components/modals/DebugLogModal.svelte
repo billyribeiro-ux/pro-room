@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { CopyIcon, CheckIcon } from 'phosphor-svelte';
+	import Icon from '../Icon.svelte';
 	import Modal from '../Modal.svelte';
 
 	interface Props {
@@ -35,9 +35,9 @@
 {#snippet footer()}
 	<button class="btn ghost" type="button" onclick={copyLog} disabled={!hasLog}>
 		{#if copied}
-			<CheckIcon size={14} weight="bold" /> Copied
+			<Icon name="check" size={14} /> Copied
 		{:else}
-			<CopyIcon size={14} /> Copy
+			<Icon name="copy" size={14} /> Copy
 		{/if}
 	</button>
 	<button class="btn primary" type="button" onclick={onClose}>Close</button>

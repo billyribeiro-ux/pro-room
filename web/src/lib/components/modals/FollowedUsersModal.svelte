@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { UsersThreeIcon } from 'phosphor-svelte';
+	import Icon from '../Icon.svelte';
 	import Modal from '../Modal.svelte';
 
 	interface Props {
@@ -15,7 +15,7 @@
 
 <Modal {open} {onClose} title="Followed Users" {footer}>
 	<div class="empty">
-		<UsersThreeIcon size={28} />
+		<Icon name="users" size={28} />
 		<p>You don't have any followed users.</p>
 	</div>
 </Modal>
@@ -29,7 +29,8 @@
 		padding: 1.5rem 0.5rem;
 		color: var(--text-dim);
 	}
-	.empty :global(svg) {
+	.empty :global(svg),
+	.empty :global(i) {
 		color: var(--text-dim);
 		opacity: 0.7;
 	}
