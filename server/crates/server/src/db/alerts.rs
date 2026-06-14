@@ -123,6 +123,21 @@ pub async fn create(
     Ok(row.into())
 }
 
+/// Delete a single alert, scoped to its room. Returns `true` if a row was
+/// deleted, `false` if no alert with that id exists in the room (so the handler
+/// can map a miss to `404`). Room-scoping prevents deleting another room's alert
+/// by guessing its id. Uses the runtime API to match this module's convention.
+pub async fn delete_one(pool: &PgPool, room_id: RoomId, alert_id: AlertId) -> anyhow::Result<bool> {
+    let affected = sqlx::query("DELETE FROM alerts WHERE id = $1 AND room_id = $2")
+        .bind(alert_id.as_uuid())
+        .bind(room_id.as_uuid())
+        .execute(pool)
+        .await
+        .context("delete alert")?
+        .rows_affected();
+    Ok(affected > 0)
+}
+
 pub async fn list_recent(
     pool: &PgPool,
     room_id: RoomId,

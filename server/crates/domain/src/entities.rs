@@ -90,6 +90,9 @@ pub struct Room {
     pub owner_id: UserId,
     pub visibility: RoomVisibility,
     pub is_live: bool,
+    /// Admin moderation lock. When `true`, non-admins are blocked from
+    /// (re)joining the room; admins and super admins are always allowed in.
+    pub locked: bool,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
 }

@@ -24,7 +24,8 @@
 		CopyIcon,
 		FunnelSimpleIcon,
 		ClockIcon,
-		ChartBarIcon
+		ChartBarIcon,
+		TrashIcon
 	} from 'phosphor-svelte';
 
 	export type AlertItem = Alert & {
@@ -49,6 +50,9 @@
 		reactions?: Record<string, ReactionTally[]>;
 		canReact?: boolean;
 		onReact?: (targetKind: ReactionTarget, targetId: string, emoji: string) => void;
+		/** Admin: delete any alert (shown in the row menu). */
+		canManage?: boolean;
+		onDelete?: (id: string) => void;
 	}
 	let {
 		alerts,
@@ -58,7 +62,9 @@
 		onOpenQa,
 		reactions = {},
 		canReact = false,
-		onReact
+		onReact,
+		canManage = false,
+		onDelete
 	}: Props = $props();
 
 	let symbol = $state('');
@@ -255,6 +261,19 @@
 										}}
 									>
 										<ChartBarIcon size={14} weight="bold" /> Delivery report
+									</button>
+								{/if}
+								{#if canManage && onDelete}
+									<button
+										type="button"
+										role="menuitem"
+										class="danger"
+										onclick={() => {
+											onDelete?.(a.id);
+											openMenuId = null;
+										}}
+									>
+										<TrashIcon size={14} weight="bold" /> Delete
 									</button>
 								{/if}
 							</div>
@@ -481,6 +500,9 @@
 	}
 	.menu button:hover {
 		background: #f0f4fb;
+	}
+	.menu button.danger {
+		color: var(--negative, #bb352a);
 	}
 
 	.avatar,

@@ -20,7 +20,8 @@
 		DotsThreeVerticalIcon,
 		UserIcon,
 		ArrowBendUpLeftIcon,
-		CopyIcon
+		CopyIcon,
+		TrashIcon
 	} from 'phosphor-svelte';
 
 	export type ChatItem = Message & {
@@ -41,6 +42,9 @@
 		reactions?: Record<string, ReactionTally[]>;
 		canReact?: boolean;
 		onReact?: (targetKind: ReactionTarget, targetId: string, emoji: string) => void;
+		/** Admin: delete any message (shown in the row menu). */
+		canManage?: boolean;
+		onDelete?: (id: string) => void;
 	}
 	let {
 		messages,
@@ -51,7 +55,9 @@
 		onChannel,
 		reactions = {},
 		canReact = false,
-		onReact
+		onReact,
+		canManage = false,
+		onDelete
 	}: Props = $props();
 
 	let body = $state('');
@@ -201,6 +207,19 @@
 								<button type="button" role="menuitem" onclick={() => copyBody(m)}>
 									<CopyIcon size={14} weight="bold" /> Copy
 								</button>
+								{#if canManage && onDelete}
+									<button
+										type="button"
+										role="menuitem"
+										class="danger"
+										onclick={() => {
+											onDelete?.(m.id);
+											openMenuId = null;
+										}}
+									>
+										<TrashIcon size={14} weight="bold" /> Delete
+									</button>
+								{/if}
 							</div>
 						{/if}
 					</div>
@@ -422,6 +441,9 @@
 	}
 	.menu button:hover {
 		background: #f0f4fb;
+	}
+	.menu button.danger {
+		color: var(--negative, #bb352a);
 	}
 
 	.avatar,

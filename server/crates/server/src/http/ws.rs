@@ -4,7 +4,8 @@
 
 use crate::auth::session::CurrentUser;
 use crate::authorization::RoomContext;
-use crate::error::AppResult;
+use crate::error::{AppError, AppResult};
+use crate::http::admin;
 use crate::realtime::event::{PresentUser, RoomEvent};
 use crate::state::AppState;
 use crate::util;
@@ -14,7 +15,7 @@ use axum::extract::{ConnectInfo, Path, State};
 use axum::http::HeaderMap;
 use axum::response::Response;
 use axum::routing::get;
-use domain::{Action, RoomId, UserId};
+use domain::{Action, Role, RoomId, UserId};
 use futures_util::{SinkExt, StreamExt};
 use std::net::SocketAddr;
 
@@ -33,6 +34,22 @@ async fn upgrade(
     // Enforce room access before upgrading; a denial returns a normal HTTP error.
     let ctx = RoomContext::load(&state, &user, id).await?;
     ctx.ensure(&state, Action::SubscribeScreen).await?;
+
+    // Locked-room join gate: while a room is locked, only admins / super admins
+    // may (re)join. Non-admins are rejected here, before the socket upgrades, so
+    // an admin's lock command actually keeps members out. The caller's effective
+    // role mirrors `Subject::effective_role`: super admin always wins, else the
+    // per-room membership role, else the global role.
+    if ctx.room.locked {
+        let role = if user.global_role == Role::SuperAdmin {
+            Role::SuperAdmin
+        } else {
+            ctx.membership.as_ref().map_or(user.global_role, |m| m.role)
+        };
+        if !admin::may_enter_locked(role) {
+            return Err(AppError::Forbidden("room is locked"));
+        }
+    }
 
     // Capture the client IP from the upgrade request (proxy-forwarded header
     // preferred, direct peer as fallback). It is stored on the presence entry

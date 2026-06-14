@@ -62,6 +62,25 @@ pub async fn remove(pool: &PgPool, room_id: RoomId, user_id: UserId) -> anyhow::
     Ok(())
 }
 
+/// Remove a membership if one exists, without erroring when it doesn't. Used by
+/// the kick command: a present user may have no explicit `room_members` row (a
+/// public-room visitor, or an admin who never joined as a member), and kicking
+/// them should still succeed (the row delete is a no-op; presence removal +
+/// broadcast do the rest).
+pub async fn remove_if_present(
+    pool: &PgPool,
+    room_id: RoomId,
+    user_id: UserId,
+) -> anyhow::Result<()> {
+    sqlx::query("DELETE FROM room_members WHERE room_id = $1 AND user_id = $2")
+        .bind(room_id.as_uuid())
+        .bind(user_id.as_uuid())
+        .execute(pool)
+        .await
+        .context("remove member if present")?;
+    Ok(())
+}
+
 /// Fetch the authorization facts for a (room, user) pair, if a membership exists.
 pub async fn get(
     pool: &PgPool,
@@ -120,6 +139,49 @@ pub async fn list(pool: &PgPool, room_id: RoomId) -> anyhow::Result<Vec<MemberVi
             })
         })
         .collect()
+}
+
+/// The effective role of a user in a room, mirroring `Subject::effective_role`:
+/// a super admin is always super admin; otherwise the per-room membership role
+/// wins, falling back to the user's global role when they have no membership row
+/// (e.g. an admin viewing a room they aren't an explicit member of). Returns
+/// `None` if the user does not exist. Used by the kick command to refuse kicking
+/// a fellow admin / super admin.
+pub async fn effective_role(
+    pool: &PgPool,
+    room_id: RoomId,
+    user_id: UserId,
+) -> anyhow::Result<Option<Role>> {
+    let row: Option<RosterRow> = sqlx::query_as(
+        "SELECT u.id, \
+                u.display_name, \
+                u.global_role::text AS global_role, \
+                m.role::text AS room_role \
+         FROM users u \
+         LEFT JOIN room_members m ON m.user_id = u.id AND m.room_id = $2 \
+         WHERE u.id = $1",
+    )
+    .bind(user_id.as_uuid())
+    .bind(room_id.as_uuid())
+    .fetch_optional(pool)
+    .await
+    .context("load effective role")?;
+
+    row.map(|r| {
+        let global_role: Role = r.global_role.parse().context("parse global role")?;
+        let room_role = r
+            .room_role
+            .map(|s| s.parse::<Role>())
+            .transpose()
+            .context("parse room role")?;
+        let role = if global_role == Role::SuperAdmin {
+            Role::SuperAdmin
+        } else {
+            room_role.unwrap_or(global_role)
+        };
+        Ok(role)
+    })
+    .transpose()
 }
 
 /// Display name plus effective role for one present user, for the admin presence

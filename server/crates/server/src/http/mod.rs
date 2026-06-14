@@ -1,5 +1,6 @@
 //! HTTP surface: router assembly, middleware (CORS, tracing), and route modules.
 
+pub mod admin;
 pub mod alerts;
 pub mod auth;
 pub mod files;
@@ -27,6 +28,7 @@ pub fn router(state: AppState) -> Router {
         .route("/health", get(health))
         .merge(auth::router())
         .merge(rooms::router())
+        .merge(admin::router())
         .merge(alerts::router())
         .merge(files::router())
         .merge(messages::router())

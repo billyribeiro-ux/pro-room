@@ -50,6 +50,37 @@ pub async fn create(
     })
 }
 
+/// Delete a single message, scoped to its room. Returns `true` if a row was
+/// deleted, `false` if no message with that id exists in the room (so the
+/// handler can map a miss to `404`). Room-scoping prevents deleting another
+/// room's message by guessing its id.
+pub async fn delete_one(
+    pool: &PgPool,
+    room_id: RoomId,
+    message_id: MessageId,
+) -> anyhow::Result<bool> {
+    let affected = sqlx::query("DELETE FROM messages WHERE id = $1 AND room_id = $2")
+        .bind(message_id.as_uuid())
+        .bind(room_id.as_uuid())
+        .execute(pool)
+        .await
+        .context("delete message")?
+        .rows_affected();
+    Ok(affected > 0)
+}
+
+/// Delete every chat message in a room across all channels. Used by the admin
+/// "clear chat" command; returns the number of rows removed.
+pub async fn clear_room(pool: &PgPool, room_id: RoomId) -> anyhow::Result<u64> {
+    let affected = sqlx::query("DELETE FROM messages WHERE room_id = $1")
+        .bind(room_id.as_uuid())
+        .execute(pool)
+        .await
+        .context("clear room messages")?
+        .rows_affected();
+    Ok(affected)
+}
+
 pub async fn list_recent(
     pool: &PgPool,
     room_id: RoomId,

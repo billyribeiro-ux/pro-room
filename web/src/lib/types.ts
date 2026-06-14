@@ -152,4 +152,11 @@ export type RoomEvent =
 	| { type: 'live'; is_live: boolean }
 	| { type: 'poll'; poll: PollDetail }
 	| { type: 'reaction'; reaction: ReactionSummary }
-	| { type: 'media'; kind: MediaKind; url?: string };
+	| { type: 'media'; kind: MediaKind; url?: string }
+	// Admin moderation broadcasts.
+	| { type: 'kicked'; user_id: string; message?: string }
+	| { type: 'mute_all'; muted: boolean }
+	| { type: 'chat_cleared' }
+	| { type: 'room_locked'; locked: boolean }
+	| { type: 'message_deleted'; id: string }
+	| { type: 'alert_deleted'; id: string };

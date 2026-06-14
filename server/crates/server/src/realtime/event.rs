@@ -1,8 +1,8 @@
 //! Events broadcast to a room's connected clients over WebSocket. These are
 //! serialized to JSON both for Redis fan-out and for delivery to browsers.
 
-use domain::UserId;
 use domain::entities::{Alert, Message, PollDetail, ReactionSummary};
+use domain::{AlertId, MessageId, UserId};
 use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize)]
@@ -31,6 +31,32 @@ pub enum RoomEvent {
     /// Ephemeral: not persisted, so members joining later won't see it until the
     /// next broadcast.
     Media(MediaBroadcast),
+    /// An admin kicked a user from the room. The named user has been removed from
+    /// membership and presence server-side; on receiving this every client checks
+    /// whether `user_id` is itself and, if so, leaves the room (showing the
+    /// optional `message`). Other clients use it to drop that user from rosters.
+    Kicked {
+        user_id: UserId,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        message: Option<String>,
+    },
+    /// An admin toggled "mute all non-admins". Ephemeral (no DB state): non-admin
+    /// clients disable their chat composer while `muted` is `true`. Admins ignore
+    /// it. Members joining later won't see it until the next toggle.
+    MuteAll { muted: bool },
+    /// An admin cleared the room's chat. Every client empties its local chat
+    /// history for both channels.
+    ChatCleared {},
+    /// An admin locked or unlocked the room. While `locked` is `true`, the join
+    /// path rejects non-admins; existing non-admin connections are left in place.
+    /// Clients surface a locked indicator.
+    RoomLocked { locked: bool },
+    /// An admin deleted a single chat message. Clients remove the message with
+    /// this `id` from their local history.
+    MessageDeleted { id: MessageId },
+    /// An admin deleted a single alert. Clients remove the alert with this `id`
+    /// from their local feed.
+    AlertDeleted { id: AlertId },
 }
 
 /// The payload of a [`RoomEvent::Media`] event: the kind of media and, unless

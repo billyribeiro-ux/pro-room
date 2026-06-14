@@ -10,55 +10,60 @@
 	} from 'phosphor-svelte';
 	import Modal from '../Modal.svelte';
 	import { confirmDialog } from '$lib/dialog.svelte';
+	import { page } from '$app/state';
+	import { ApiError } from '$lib/api';
+	import { lockRoom, muteAll as muteAllApi, clearChat as clearChatApi } from '$lib/admin';
 
 	interface Props {
 		open: boolean;
 		onClose: () => void;
-		/** Lock the room and remove every non-admin member. */
-		onLockSession?: () => void;
 		/** Lock all viewers to the screen share that is currently on stage. */
 		onLockScreen?: () => void;
-		/** Mute every member's chat/audio at once. */
-		onMuteAll?: () => void;
-		/** Clear the shared room chat log for everyone. */
-		onClearChat?: () => void;
 		/** Disconnect any duplicate/ghost sessions for connected users. */
 		onKickDuplicates?: () => void;
 		/** End the session / stop the broadcast for everyone. */
 		onEndSession?: () => void;
 	}
-	let {
-		open,
-		onClose,
-		onLockSession,
-		onLockScreen,
-		onMuteAll,
-		onClearChat,
-		onKickDuplicates,
-		onEndSession
-	}: Props = $props();
+	let { open, onClose, onLockScreen, onKickDuplicates, onEndSession }: Props = $props();
+
+	const roomId = page.params.id as string;
+	let muted = $state(false);
+	let error = $state<string | null>(null);
 
 	// Non-destructive actions fire straight through to the (optional) callback.
 	function lockScreen() {
 		onLockScreen?.();
 	}
 
-	function muteAll() {
-		onMuteAll?.();
+	// Mute / unmute all non-admins — toggles the room-wide mute broadcast.
+	async function muteAll() {
+		error = null;
+		try {
+			muted = !muted;
+			await muteAllApi(roomId, muted);
+		} catch (err) {
+			muted = !muted;
+			error = err instanceof ApiError ? err.message : 'Could not mute all';
+		}
 	}
 
 	// Destructive actions confirm first via the styled dialog primitive
-	// (house rule: never window.confirm). Each callback is a no-op until the
-	// lead wires the real room realtime command.
+	// (house rule: never window.confirm).
 	async function lockSession() {
 		const ok = await confirmDialog({
 			title: 'Lock session',
 			message:
-				'Lock this room and remove everyone who is not an admin? Non-admins will be kicked and unable to rejoin until you unlock.',
-			confirmLabel: 'Lock & kick',
+				'Lock this room so non-admins cannot join? Admins are always allowed; existing members stay until they leave.',
+			confirmLabel: 'Lock room',
 			danger: true
 		});
-		if (ok) onLockSession?.();
+		if (!ok) return;
+		error = null;
+		try {
+			await lockRoom(roomId, true);
+		} catch (err) {
+			error = err instanceof ApiError ? err.message : 'Could not lock the room';
+		}
 	}
 
 	async function clearChat() {
@@ -68,7 +73,13 @@
 			confirmLabel: 'Clear chat',
 			danger: true
 		});
-		if (ok) onClearChat?.();
+		if (!ok) return;
+		error = null;
+		try {
+			await clearChatApi(roomId);
+		} catch (err) {
+			error = err instanceof ApiError ? err.message : 'Could not clear chat';
+		}
 	}
 
 	async function kickDuplicates() {
@@ -84,13 +95,20 @@
 
 	async function endSession() {
 		const ok = await confirmDialog({
-			title: 'End session',
+			title: 'Unlock & end',
 			message:
-				'End the session and stop the broadcast for everyone in the room? Members will be returned to the lobby.',
-			confirmLabel: 'End session',
-			danger: true
+				'Unlock the room (allow everyone to join again)? Use this to reopen a locked session.',
+			confirmLabel: 'Unlock room',
+			danger: false
 		});
-		if (ok) onEndSession?.();
+		if (!ok) return;
+		error = null;
+		try {
+			await lockRoom(roomId, false);
+		} catch (err) {
+			error = err instanceof ApiError ? err.message : 'Could not unlock the room';
+		}
+		onEndSession?.();
 	}
 
 	interface Action {
@@ -120,8 +138,8 @@
 		},
 		{
 			key: 'mute-all',
-			label: 'Mute all',
-			hint: "Mute every member's chat and audio.",
+			label: 'Mute / unmute all',
+			hint: "Toggle every non-admin's chat composer off or on.",
 			icon: SpeakerSlashIcon,
 			run: muteAll
 		},
@@ -143,11 +161,10 @@
 		},
 		{
 			key: 'end-session',
-			label: 'End session / End broadcast',
-			hint: 'Stop the broadcast and close the room for everyone.',
+			label: 'Unlock room',
+			hint: 'Re-open a locked room so anyone can join again.',
 			icon: SignOutIcon,
-			run: endSession,
-			danger: true
+			run: endSession
 		}
 	];
 </script>
@@ -162,16 +179,13 @@
 		<p>Host controls for this session. Actions apply to everyone in the room.</p>
 	</div>
 
+	{#if error}<p class="error" role="alert">{error}</p>{/if}
+
 	<ul class="actions">
 		{#each actions as action (action.key)}
 			{@const Icon = action.icon}
 			<li>
-				<button
-					class="action"
-					class:danger={action.danger}
-					type="button"
-					onclick={action.run}
-				>
+				<button class="action" class:danger={action.danger} type="button" onclick={action.run}>
 					<span class="action-icon" aria-hidden="true">
 						<Icon size={18} />
 					</span>
@@ -199,6 +213,11 @@
 	}
 	.intro p {
 		margin: 0;
+	}
+	.error {
+		margin: 0.75rem 0 0;
+		color: var(--negative);
+		font-size: 0.82rem;
 	}
 	.actions {
 		list-style: none;

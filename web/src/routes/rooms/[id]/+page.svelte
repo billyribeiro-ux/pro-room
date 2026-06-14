@@ -30,6 +30,7 @@
 	import { listPolls, type PollDetail } from '$lib/poll';
 	import { toggleReaction } from '$lib/reactions';
 	import { broadcastMedia } from '$lib/media';
+	import { deleteAlert, deleteMessage } from '$lib/admin';
 	import { playSound } from '$lib/sound.svelte';
 	import type { ReactionTally, ReactionTarget } from '$lib/types';
 	import {
@@ -71,6 +72,8 @@
 	let showMobileInfo = $state(false);
 	let showMediaModal = $state(false);
 	let captionsOn = $state(false);
+	// Admin "mute all" broadcast — disables the chat composer for non-admins.
+	let mutedAll = $state(false);
 	let mediaVolume = $state(70);
 	// Presenter media-for-all (SoundCloud/YouTube) currently playing for the room.
 	let currentMedia = $state<{ kind: 'soundcloud' | 'youtube'; url: string } | null>(null);
@@ -86,6 +89,10 @@
 
 	const caps = $derived(detail?.capabilities);
 	const messages = $derived(channel === 'main' ? mainMessages : offTopicMessages);
+	// "Mute all" silences non-admins; admins can always post.
+	const canChat = $derived(
+		(caps?.can_post_message ?? false) && !(mutedAll && !(caps?.can_manage_room ?? false))
+	);
 
 	// Room layout (from the General Settings "Room Layout" radios). The reference
 	// uses a resizable angular-split: alerts+chat ≈ ⅓, presentation ≈ ⅔. We map
@@ -209,6 +216,26 @@
 			}
 			case 'media':
 				currentMedia = ev.kind === 'stop' ? null : { kind: ev.kind, url: ev.url ?? '' };
+				break;
+			case 'mute_all':
+				mutedAll = ev.muted;
+				break;
+			case 'chat_cleared':
+				mainMessages = [];
+				offTopicMessages = [];
+				break;
+			case 'message_deleted':
+				mainMessages = mainMessages.filter((m) => m.id !== ev.id);
+				offTopicMessages = offTopicMessages.filter((m) => m.id !== ev.id);
+				break;
+			case 'alert_deleted':
+				alerts = alerts.filter((a) => a.id !== ev.id);
+				break;
+			case 'kicked':
+				present = present.filter((u) => u.user_id !== ev.user_id);
+				break;
+			case 'room_locked':
+				// Enforced server-side at join; no client-visible change needed here.
 				break;
 		}
 	}
@@ -471,8 +498,11 @@
 		reactions={reactionsByTarget}
 		canReact={caps?.can_post_message ?? false}
 		{onReact}
+		canManage={caps?.can_manage_room ?? false}
+		onDeleteAlert={(id) => deleteAlert(roomId, id)}
+		onDeleteMessage={(id) => deleteMessage(roomId, id)}
 		canPostAlert={caps?.can_post_alert ?? false}
-		canPostMessage={caps?.can_post_message ?? false}
+		canPostMessage={canChat}
 		onPostAlert={postAlert}
 		onPostMessage={postMessage}
 		onChannel={selectChannel}

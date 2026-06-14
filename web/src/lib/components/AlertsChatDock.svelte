@@ -13,6 +13,10 @@
 		reactions?: Record<string, ReactionTally[]>;
 		canReact?: boolean;
 		onReact?: (targetKind: ReactionTarget, targetId: string, emoji: string) => void;
+		/** Admin: delete any alert/message (shown in the row menu when canManage). */
+		canManage?: boolean;
+		onDeleteAlert?: (id: string) => void;
+		onDeleteMessage?: (id: string) => void;
 		canPostAlert: boolean;
 		canPostMessage: boolean;
 		onPostAlert: (symbol: string, side: string, note: string) => Promise<void>;
@@ -27,6 +31,9 @@
 		reactions = {},
 		canReact = false,
 		onReact,
+		canManage = false,
+		onDeleteAlert,
+		onDeleteMessage,
 		canPostAlert,
 		canPostMessage,
 		onPostAlert,
@@ -100,6 +107,8 @@
 			{reactions}
 			{canReact}
 			{onReact}
+			{canManage}
+			onDelete={onDeleteAlert}
 			canPost={canPostAlert}
 			onPost={onPostAlert}
 		/>
@@ -124,6 +133,8 @@
 			{reactions}
 			{canReact}
 			{onReact}
+			{canManage}
+			onDelete={onDeleteMessage}
 			canPost={canPostMessage}
 			onPost={onPostMessage}
 			{onChannel}
