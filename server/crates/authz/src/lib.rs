@@ -78,29 +78,32 @@ mod tests {
     }
 
     #[test]
-    fn only_admins_post_alerts_and_only_when_live() {
+    fn admins_and_supers_post_alerts_regardless_of_live() {
         let owner = UserId::from_uuid(uuid_const(2));
         let live = Resource::Room(room(owner, RoomStatus::Live));
+        let idle = Resource::Room(room(owner, RoomStatus::Idle));
 
-        // Member: denied by RBAC.
+        // Member: denied by RBAC (lacks AlertCreate).
         let (m, ctx) = subject(Role::Member, Some(Role::Member), true);
         assert!(!authorize(&m, Action::PostAlert, &live, &ctx).is_allowed());
 
-        // Admin in a live room they belong to: allowed.
+        // Admin member: allowed whether the room is live OR idle (any admin/super
+        // can post alerts — the old live gate was a chicken-and-egg bug).
         let (a, ctx) = subject(Role::Member, Some(Role::Admin), true);
         assert!(authorize(&a, Action::PostAlert, &live, &ctx).is_allowed());
+        assert!(authorize(&a, Action::PostAlert, &idle, &ctx).is_allowed());
 
-        // Admin but room is idle: denied by ABAC.
-        let idle = Resource::Room(room(owner, RoomStatus::Idle));
-        assert!(!authorize(&a, Action::PostAlert, &idle, &ctx).is_allowed());
+        // Global admin who is not a member of this room: denied (must belong).
+        let (outside_admin, ctx) = subject(Role::Admin, None, false);
+        assert!(!authorize(&outside_admin, Action::PostAlert, &idle, &ctx).is_allowed());
 
-        // Super admin always allowed in a live room.
-        let (sa, ctx) = subject(Role::SuperAdmin, None, true);
-        assert!(authorize(&sa, Action::PostAlert, &live, &ctx).is_allowed());
+        // Super admin: allowed even when idle and not a member.
+        let (sa, ctx) = subject(Role::SuperAdmin, None, false);
+        assert!(authorize(&sa, Action::PostAlert, &idle, &ctx).is_allowed());
     }
 
     #[test]
-    fn publishing_screen_requires_admin_membership_and_live_room() {
+    fn publishing_screen_requires_admin_membership() {
         let owner = UserId::from_uuid(uuid_const(2));
         let live = Resource::Room(room(owner, RoomStatus::Live));
 
@@ -108,13 +111,33 @@ mod tests {
         let (a, ctx) = subject(Role::Member, Some(Role::Admin), false);
         assert!(!authorize(&a, Action::PublishScreen, &live, &ctx).is_allowed());
 
-        // Admin member of a live room: allowed (multiple admins can each share).
+        // Admin member: allowed (multiple admins can each share).
         let (a, ctx) = subject(Role::Member, Some(Role::Admin), true);
         assert!(authorize(&a, Action::PublishScreen, &live, &ctx).is_allowed());
 
         // Member: denied by RBAC regardless of membership.
         let (m, ctx) = subject(Role::Member, Some(Role::Member), true);
         assert!(!authorize(&m, Action::PublishScreen, &live, &ctx).is_allowed());
+    }
+
+    #[test]
+    fn admins_and_supers_present_in_idle_room() {
+        // Regression (presenter toolbar): posting alerts and publishing screen are
+        // NOT gated on the room being live. Super admins bypass membership too;
+        // a non-super admin must be a member. The controls must not disappear just
+        // because the room is idle.
+        let owner = UserId::from_uuid(uuid_const(2));
+        let idle = Resource::Room(room(owner, RoomStatus::Idle));
+
+        // Super admin, not even a member, in an idle room: allowed.
+        let (sa, ctx) = subject(Role::SuperAdmin, None, false);
+        assert!(authorize(&sa, Action::PostAlert, &idle, &ctx).is_allowed());
+        assert!(authorize(&sa, Action::PublishScreen, &idle, &ctx).is_allowed());
+
+        // Admin MEMBER in an idle room: also allowed (the live gate was a bug).
+        let (admin, ctx) = subject(Role::Member, Some(Role::Admin), true);
+        assert!(authorize(&admin, Action::PostAlert, &idle, &ctx).is_allowed());
+        assert!(authorize(&admin, Action::PublishScreen, &idle, &ctx).is_allowed());
     }
 
     #[test]

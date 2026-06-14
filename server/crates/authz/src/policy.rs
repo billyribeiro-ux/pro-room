@@ -37,32 +37,31 @@ fn require_room(resource: &Resource) -> Result<&RoomResource, Decision> {
     }
 }
 
+// Posting alerts and publishing screen are presenter actions. RBAC has already
+// restricted them to admins and super admins (members lack AlertCreate /
+// ScreenPublish), so any caller reaching this policy is at least an admin. They
+// may present whether or not the room is currently live — gating the people who
+// start the broadcast on `live` is a chicken-and-egg. Super admins additionally
+// bypass room membership.
 fn post_alert(subject: &Subject, resource: &Resource, ctx: &Context) -> Decision {
-    let room = match require_room(resource) {
-        Ok(room) => room,
-        Err(d) => return d,
-    };
-    if is_super(subject) {
-        return live_or_deny(room);
-    }
-    if !ctx.is_room_member {
-        return Decision::deny("policy: not a member of the room");
-    }
-    live_or_deny(room)
+    present_action(subject, resource, ctx)
 }
 
 fn publish_screen(subject: &Subject, resource: &Resource, ctx: &Context) -> Decision {
-    let room = match require_room(resource) {
-        Ok(room) => room,
-        Err(d) => return d,
-    };
-    if is_super(subject) {
-        return live_or_deny(room);
+    present_action(subject, resource, ctx)
+}
+
+/// Shared gate for the presenter actions (post alert, publish screen): an
+/// admin/super-admin (already enforced by RBAC) may act regardless of live
+/// status; a non-super admin must be a member of the room.
+fn present_action(subject: &Subject, resource: &Resource, ctx: &Context) -> Decision {
+    if !matches!(resource, Resource::Room(_)) {
+        return Decision::deny("policy: expected a room resource");
     }
-    if !ctx.is_room_member {
-        return Decision::deny("policy: not a member of the room");
+    if is_super(subject) || ctx.is_room_member {
+        return Decision::Allow;
     }
-    live_or_deny(room)
+    Decision::deny("policy: not a member of the room")
 }
 
 /// Read/subscribe/join: super admins always; otherwise members, plus anyone in
@@ -121,10 +120,3 @@ fn manage_members(subject: &Subject, resource: &Resource) -> Decision {
     manage_room(subject, resource)
 }
 
-fn live_or_deny(room: &RoomResource) -> Decision {
-    if room.status == RoomStatus::Live {
-        Decision::Allow
-    } else {
-        Decision::deny("policy: room is not live")
-    }
-}
