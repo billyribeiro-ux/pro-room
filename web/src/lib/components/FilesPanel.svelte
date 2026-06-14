@@ -172,7 +172,7 @@
 				<input placeholder="Search files…" bind:value={query} />
 			</div>
 			<button type="button" class="ic" onclick={load} disabled={busy} aria-label="Refresh">
-				<Icon name="redo-alt" />
+				<Icon name="sync" />
 			</button>
 			{#if canManage}
 				<button
@@ -247,39 +247,52 @@
 		flex-direction: column;
 		height: 100%;
 		min-height: 0;
-		background: #ffffff;
-		color: #1f2430;
+		/* Reference Files pane is the dark navy presenter surface (#0f2e43). */
+		background: #0f2e43;
+		color: #ffffff;
 	}
 	.subtabs {
 		display: flex;
+		/* position:relative so .tools can be pulled out of the centered flow below. */
+		position: relative;
 		align-items: center;
+		/* Reference .files-tabs: justify-content:center — Files / Images / Sounds are
+		   ALWAYS centered on the full width; the search/refresh/upload tools are taken
+		   out of the flow (absolute, right) so they never shift the three tabs. */
+		justify-content: center;
 		flex-wrap: wrap;
 		gap: 0.35rem;
 		padding: 0.6rem 0.85rem;
-		background: #eef1f6;
-		border-bottom: 1px solid #dfe2ea;
+		/* .files-tabs background: var(--notes-tabs-bg) = #0c2434 */
+		background: #0c2434;
+		border-bottom: 1px solid transparent;
 		flex-shrink: 0;
 	}
 	.subtabs > button {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.4rem;
-		background: #ffffff;
-		border: 1px solid #d3d7e0;
-		color: #4b5160;
-		font-size: 0.82rem;
+		background: transparent;
+		/* Hover border reserves 1px so the active/hover swap doesn't shift layout. */
+		border: 1px solid transparent;
+		/* .files-tabs .nav-link: color #fff; font-size 12px; padding 5px 10px; margin 5px */
+		color: #ffffff;
+		font-size: 12px;
 		font-weight: 600;
-		padding: 0.3rem 0.7rem;
-		border-radius: 999px;
+		padding: 5px 10px;
+		margin: 5px;
+		border-radius: 3px;
 		cursor: pointer;
 	}
 	.subtabs > button.active {
-		background: #1f86d6;
-		border-color: #1f86d6;
+		/* .files-tabs .nav-link.active: bg var(--tab-active-bg) #45a2ff; radius 3px; color #fff */
+		background: #45a2ff;
+		border-color: transparent;
 		color: #ffffff;
 	}
 	.subtabs > button:hover:not(.active) {
-		border-color: #1f86d6;
+		/* hover: 1px solid var(--tabs-border-color) #0a6db1; radius 3px */
+		border-color: #0a6db1;
 	}
 	.badge {
 		display: inline-flex;
@@ -289,50 +302,60 @@
 		height: 1.1rem;
 		padding: 0 0.3rem;
 		border-radius: 999px;
-		/* Red count pill — matches the reference's `bg-danger` files badge. */
+		/* Red count pill — matches the reference's `bg-danger` files badge.
+		   .files-badge positioning: margin-top -9px; margin-left 3px. */
 		background: #dc3545;
 		color: #ffffff;
 		font-size: 0.7rem;
 		font-weight: 700;
+		margin-top: -9px;
+		margin-left: 3px;
 	}
 	.tools {
 		display: flex;
 		align-items: center;
 		gap: 0.4rem;
-		margin-left: auto;
+		/* Out of the centered flow so the three category tabs stay truly centered. */
+		position: absolute;
+		right: 0.85rem;
+		top: 50%;
+		transform: translateY(-50%);
 	}
 	.search {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.3rem;
-		background: #ffffff;
-		border: 1px solid #d3d7e0;
-		border-radius: 999px;
+		background: #0f2e43;
+		border: 1px solid #0a6db1;
+		border-radius: 6px;
 		padding: 0.2rem 0.6rem;
-		color: #7b8190;
+		color: #9fc4dd;
 	}
 	.search input {
 		border: none;
 		outline: none;
 		background: transparent;
-		font-size: 0.82rem;
-		color: #1f2430;
+		/* .files-search .form-control: font-size 12px */
+		font-size: 12px;
+		color: #ffffff;
 		width: 9rem;
 	}
 	.ic {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		background: #ffffff;
-		border: 1px solid #d3d7e0;
-		color: #6b7180;
+		background: #0f2e43;
+		border: 1px solid #0a6db1;
+		/* --reload-icon-color: #45a2ff */
+		color: #45a2ff;
 		border-radius: 6px;
-		padding: 0.35rem;
+		/* .files-options button: padding 5px */
+		padding: 5px;
 		cursor: pointer;
 	}
 	.ic:hover:not(:disabled) {
-		border-color: #1f86d6;
-		color: #1f86d6;
+		border-color: #45a2ff;
+		color: #45a2ff;
 	}
 	.ic:disabled {
 		opacity: 0.5;
@@ -342,17 +365,19 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.35rem;
-		background: #1f86d6;
+		/* --tab-active-bg / accent #45a2ff */
+		background: #45a2ff;
 		border: none;
 		color: #ffffff;
 		border-radius: 6px;
-		padding: 0.35rem 0.7rem;
-		font-size: 0.8rem;
+		/* .files-options button: padding 5px; font-size 12px */
+		padding: 5px 10px;
+		font-size: 12px;
 		font-weight: 700;
 		cursor: pointer;
 	}
 	.upload:hover:not(:disabled) {
-		background: #1a73ba;
+		background: #0a6db1;
 	}
 	.upload:disabled {
 		opacity: 0.6;
@@ -369,32 +394,34 @@
 	table {
 		width: 100%;
 		border-collapse: collapse;
-		font-size: 0.85rem;
+		/* .fileName/.fileSize/etc all render at 12px in the reference. */
+		font-size: 12px;
 	}
 	thead th {
 		position: sticky;
 		top: 0;
-		background: #f7f8fa;
+		background: #0c2434;
 		text-align: left;
 		font-size: 0.72rem;
 		text-transform: uppercase;
 		letter-spacing: 0.03em;
-		color: #8a909c;
+		color: #9fc4dd;
 		padding: 0.5rem 0.85rem;
-		border-bottom: 1px solid #e3e5ec;
+		border-bottom: 1px solid #1a4f74;
 	}
 	th.num,
 	td.num {
 		text-align: right;
 		white-space: nowrap;
-		color: #5a6170;
+		/* .st-fileSize: color var(--file-size-color) = #b2b2b2 */
+		color: #b2b2b2;
 	}
 	tbody tr:nth-child(even) {
-		background: #f7f8fa;
+		background: rgba(255, 255, 255, 0.03);
 	}
 	tbody td {
 		padding: 0.5rem 0.85rem;
-		border-bottom: 1px solid #eceef3;
+		border-bottom: 1px solid #1a4f74;
 		vertical-align: middle;
 	}
 	td.name {
@@ -420,33 +447,37 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.3rem;
-		background: #16a34a;
+		/* a.st-fileDownload: bg var(--file-download-bg) #92d528; color var(--tabs-color) #fff;
+		   font-size 12px; .fileDownload width 120px. */
+		justify-content: center;
+		background: #92d528;
 		border: none;
 		color: #ffffff;
 		border-radius: 6px;
 		padding: 0.3rem 0.6rem;
-		font-size: 0.76rem;
+		width: 120px;
+		font-size: 12px;
 		font-weight: 700;
 		cursor: pointer;
 	}
 	.download:hover {
-		background: #138a3e;
+		opacity: 0.85;
 	}
 	.del {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		background: transparent;
-		border: 1px solid #d3d7e0;
-		color: #6b7180;
+		/* --file-delete-bg: #bb352a */
+		background: #bb352a;
+		border: 1px solid transparent;
+		color: #ffffff;
 		border-radius: 6px;
 		padding: 0.3rem;
 		margin-left: 0.4rem;
 		cursor: pointer;
 	}
 	.del:hover:not(:disabled) {
-		border-color: #ea3943;
-		color: #ea3943;
+		opacity: 0.85;
 	}
 	.del:disabled {
 		opacity: 0.5;
@@ -454,14 +485,14 @@
 	}
 	.empty {
 		text-align: center;
-		color: #8a909c;
+		color: #9fc4dd;
 		padding: 2rem;
 	}
 	.error {
 		margin: 0;
 		padding: 0.5rem 0.85rem;
-		background: #fdecec;
-		color: #c0292f;
-		font-size: 0.82rem;
+		background: rgba(187, 53, 42, 0.15);
+		color: #ff6b61;
+		font-size: 12px;
 	}
 </style>

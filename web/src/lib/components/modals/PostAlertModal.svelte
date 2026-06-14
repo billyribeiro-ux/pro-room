@@ -172,7 +172,7 @@
 			aria-selected={tab === 'gif'}
 			onclick={() => (tab = 'gif')}
 		>
-			<Icon name="image" size={15} /> GIF
+			<Icon name="smile" family="regular" size={15} /> GIF
 		</button>
 		<button
 			type="button"

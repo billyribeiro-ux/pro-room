@@ -9,13 +9,20 @@
 		initial?: number;
 		/** Minimum size (%) either pane may shrink to. */
 		min?: number;
+		/**
+		 * When > 0, dragging the gutter within this many pixels of either edge
+		 * collapses that pane to 0 (and the other to full) — matches the reference
+		 * where dragging the alerts/chat column hard against the stage closes it.
+		 * 0 disables collapsing.
+		 */
+		collapsePx?: number;
 		/** Pane A content (left / top). */
 		a: Snippet;
 		/** Pane B content (right / bottom). */
 		b: Snippet;
 	}
 
-	let { direction = 'horizontal', initial = 50, min = 15, a, b }: Props = $props();
+	let { direction = 'horizontal', initial = 50, min = 15, collapsePx = 0, a, b }: Props = $props();
 
 	const clampMin = $derived(Math.min(Math.max(min, 0), 50));
 	const isHorizontal = $derived(direction === 'horizontal');
@@ -41,6 +48,12 @@
 		const total = isHorizontal ? rect.width : rect.height;
 		if (total <= 0) return split;
 		const offset = isHorizontal ? clientX - rect.left : clientY - rect.top;
+		// Collapse a pane entirely when the gutter is dragged within `collapsePx`
+		// of an edge (the reference closes the alerts/chat column past a threshold).
+		if (collapsePx > 0) {
+			if (offset <= collapsePx) return 0;
+			if (offset >= total - collapsePx) return 100;
+		}
 		return clamp((offset / total) * 100);
 	}
 
@@ -178,17 +191,23 @@
 		outline-offset: -2px;
 	}
 
-	/* Subtle grip in the centre of the gutter. */
+	/* Exact reference grip: angular-split `as-split-gutter-icon` — a centered PNG
+	   of three light-grey dots oriented along the gutter. Same data-URIs the
+	   reference ships: vertical dots for a col-resize gutter, horizontal dots for
+	   a row-resize gutter. */
 	.grip {
-		background: rgba(255, 255, 255, 0.55);
-		border-radius: 999px;
+		background-position: 50% 50%;
+		background-repeat: no-repeat;
+		pointer-events: none;
 	}
 	.split:not(.vertical) > .gutter .grip {
-		width: 2px;
-		height: 26px;
+		width: 5px;
+		height: 30px;
+		background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
 	}
 	.split.vertical > .gutter .grip {
-		width: 26px;
-		height: 2px;
+		width: 30px;
+		height: 5px;
+		background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAFCAMAAABl/6zIAAAABlBMVEUAAADMzMzIT8AyAAAAAXRSTlMAQObYZgAAABRJREFUeAFjYGRkwIMJSeMHlBkOABP7AEGzSuPKAAAAAElFTkSuQmCC');
 	}
 </style>

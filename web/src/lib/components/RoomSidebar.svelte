@@ -43,135 +43,159 @@
 <aside class="sidebar" class:closed={!open} aria-hidden={!open}>
 	<div class="sidebar-inner">
 		<div class="powered">
-			<div class="powered-text">
-				<span class="powered-by">Powered by Revolution Trading Room</span>
-				<span class="version">v0.0.1</span>
-			</div>
 			{#if onClose}
 				<button class="close" onclick={onClose} aria-label="Close sidebar" title="Close sidebar">
 					<Icon name="times" />
 				</button>
 			{/if}
+			<p class="powered-by">
+				Powered by:
+				<a class="ptr-website-link" href="https://www.protradingroom.com" target="_blank" rel="noopener noreferrer">ProTradingRoom.com</a>
+			</p>
+			<p class="version">Version: v0.0.1</p>
+			<p class="powered-cta">
+				<button
+					class="app-info-btn"
+					aria-label="Mobile App Info"
+					title="Mobile App Info"
+					onclick={() => (mobileAppOpen = true)}
+				>
+					Mobile App Info
+				</button>
+			</p>
 		</div>
 
+		<hr class="sep" />
+
+		<p class="caps">
+			Chat <Icon name="check" size={14} /><span class="cap-media">Media <Icon name="check" size={14} /></span>
+		</p>
+
 		<nav class="menu">
-			<button
-				class="item"
-				aria-label="Mobile App Info"
-				title="Mobile App Info"
-				onclick={() => (mobileAppOpen = true)}
-			>
-				<Icon name="mobile-alt" /><span>Mobile App Info</span>
-			</button>
-
-			<button
-				class="item"
-				aria-label="Connectivity Check"
-				title="Connectivity Check"
-				onclick={() => (connectivityOpen = true)}
-			>
-				<Icon name="plug" /><span>Connectivity Check</span>
-			</button>
-
-			<button
-				class="item"
-				aria-label="Audio/Video Settings"
-				title="Audio/Video Settings"
-				onclick={() => (avSettingsOpen = true)}
-			>
-				<Icon name="video" /><span>Audio/Video Settings</span>
-			</button>
-
-			<button
-				class="item"
-				aria-label="General Settings"
-				title="General Settings"
-				onclick={() => (settingsOpen = true)}
-			>
-				<Icon name="cog" /><span>General Settings</span>
-			</button>
-
-			<div class="group">
-				<span class="group-head"><Icon name="archive" /> Archives</span>
+			<div class="nav-item">
 				<button
-					class="sub-item"
-					aria-label="Alert Logs"
-					title="Alert Logs"
-					onclick={() => (alertLogsOpen = true)}
+					class="item"
+					aria-label="Connectivity Check"
+					title="Connectivity Check"
+					onclick={() => (connectivityOpen = true)}
 				>
-					<Icon name="bell" size={14} /><span>Alert Logs</span>
-				</button>
-				<button
-					class="sub-item"
-					aria-label="Chat Logs"
-					title="Chat Logs"
-					onclick={() => (chatLogsOpen = true)}
-				>
-					<Icon name="comment" size={14} /><span>Chat Logs</span>
-				</button>
-				<button
-					class="sub-item"
-					aria-label="Transcript History"
-					title="Transcript History"
-					disabled
-				>
-					<Icon name="closed-captioning" size={14} /><span>Transcript History</span>
+					<Icon name="network-wired" size={14} /><span class="label">Connectivity Check</span>
 				</button>
 			</div>
 
-			<button
-				class="item"
-				aria-label="Manage Muted Users"
-				title="Manage Muted Users"
-				onclick={() => (mutedUsersOpen = true)}
-			>
-				<Icon name="volume-mute" /><span>Manage Muted Users</span>
-			</button>
+			<div class="nav-item">
+				<button
+					class="item"
+					aria-label="Audio/Video Settings"
+					title="Audio/Video Settings"
+					onclick={() => (avSettingsOpen = true)}
+				>
+					<Icon name="video" size={14} /><span class="label">Audio/Video Settings</span>
+				</button>
+			</div>
 
-			<button
-				class="item"
-				aria-label="Manage Followed Users"
-				title="Manage Followed Users"
-				onclick={() => (followedUsersOpen = true)}
-			>
-				<Icon name="user-check" /><span>Manage Followed Users</span>
-			</button>
+			<div class="nav-item">
+				<button
+					class="item"
+					aria-label="General Settings"
+					title="General Settings"
+					onclick={() => (settingsOpen = true)}
+				>
+					<Icon name="cogs" size={14} /><span class="label">General Settings</span>
+				</button>
+			</div>
+
+			<div class="nav-item">
+				<div class="group">
+					<button
+						class="item"
+						aria-label="Archives"
+						title="Archives"
+						onclick={() => (alertLogsOpen = true)}
+					>
+						<Icon name="archive" size={14} /><span class="label">Archives</span>
+					</button>
+					<button
+						class="sub-item"
+						aria-label="Alert Logs"
+						title="Alert Logs"
+						onclick={() => (alertLogsOpen = true)}
+					>
+						<Icon name="bell" size={14} /><span class="label">Alert Logs</span>
+					</button>
+					<button
+						class="sub-item"
+						aria-label="Chat Logs"
+						title="Chat Logs"
+						onclick={() => (chatLogsOpen = true)}
+					>
+						<Icon name="comment" size={14} /><span class="label">Chat Logs</span>
+					</button>
+					<button class="sub-item" aria-label="Transcript History" title="Transcript History" disabled>
+						<Icon name="closed-captioning" size={14} /><span class="label">Transcript History</span>
+					</button>
+				</div>
+			</div>
+
+			<div class="nav-item">
+				<button
+					class="item item-ps"
+					aria-label="Manage Muted Users"
+					title="Manage Muted Users"
+					onclick={() => (mutedUsersOpen = true)}
+				>
+					<Icon name="comments" size={14} /><span class="label">Manage Muted Users</span>
+				</button>
+			</div>
+
+			<div class="nav-item">
+				<button
+					class="item item-ps"
+					aria-label="Manage Followed Users"
+					title="Manage Followed Users"
+					onclick={() => (followedUsersOpen = true)}
+				>
+					<Icon name="users" size={14} /><span class="label">Manage Followed Users</span>
+				</button>
+			</div>
 
 			{#if canManage}
-				<div class="group">
-					<span class="group-head"><Icon name="shield-alt" /> Admin</span>
-					<button
-						class="sub-item"
-						aria-label="All Private Messages"
-						title="All Private Messages"
-						onclick={() => (allPmOpen = true)}
-					>
-						<Icon name="envelope" size={14} /><span>All Private Messages</span>
-					</button>
-					<button
-						class="sub-item"
-						aria-label="Play YouTube Video"
-						title="Play YouTube Video"
-						onclick={() => (playYoutubeOpen = true)}
-					>
-						<Icon name="youtube" family="brands" size={14} /><span>Play YouTube Video</span>
-					</button>
-					<button
-						class="sub-item"
-						aria-label="Session Control"
-						title="Session Control"
-						onclick={() => (sessionControlOpen = true)}
-					>
-						<Icon name="sliders-h" size={14} /><span>Session Control</span>
-					</button>
-					<button
-						class="sub-item"
-						aria-label="Debug Log"
-						title="Debug Log"
-						onclick={() => (debugLogOpen = true)}
-					>
-						<Icon name="bug" size={14} /><span>Debug Log</span>
-					</button>
+				<div class="nav-item">
+					<div class="group">
+						<span class="group-head"><Icon name="shield-alt" size={14} /> Admin</span>
+						<button
+							class="sub-item"
+							aria-label="All Private Messages"
+							title="All Private Messages"
+							onclick={() => (allPmOpen = true)}
+						>
+							<Icon name="envelope" size={14} /><span class="label">All Private Messages</span>
+						</button>
+						<button
+							class="sub-item"
+							aria-label="Play YouTube Video"
+							title="Play YouTube Video"
+							onclick={() => (playYoutubeOpen = true)}
+						>
+							<Icon name="youtube" family="brands" size={14} /><span class="label">Play YouTube Video</span>
+						</button>
+						<button
+							class="sub-item"
+							aria-label="Session Control"
+							title="Session Control"
+							onclick={() => (sessionControlOpen = true)}
+						>
+							<Icon name="sliders-h" size={14} /><span class="label">Session Control</span>
+						</button>
+						<button
+							class="sub-item"
+							aria-label="Debug Log"
+							title="Debug Log"
+							onclick={() => (debugLogOpen = true)}
+						>
+							<Icon name="bug" size={14} /><span class="label">Debug Log</span>
+						</button>
+					</div>
 				</div>
 			{/if}
 		</nav>
@@ -179,17 +203,21 @@
 		<div class="roster">
 			<div class="roster-head">
 				<span class="roster-title">
-					<Icon name="users" /> Users: <span class="roster-count">{present.length}</span>
+					<Icon name="user" size={14} /> <span class="label">Users:</span>
+					<span class="roster-count">{present.length}</span>
 				</span>
 				<span class="roster-actions">
-					<button class="mini" aria-label="Sort users" title="Sort users" disabled>
-						<Icon name="sort-amount-down-alt" size={14} />
+					<button class="mini mini-cog" aria-label="User options" title="User options" disabled>
+						<Icon name="cog" size={14} />
 					</button>
-					<button class="mini" aria-label="Search users" title="Search users" disabled>
+					<button class="mini mini-reload" aria-label="Reload users" title="Reload users" disabled>
+						<Icon name="sync" size={14} />
+					</button>
+					<button class="mini mini-sort" aria-label="Sort users" title="Sort users" disabled>
+						<Icon name="sort-alpha-down" size={14} />
+					</button>
+					<button class="mini mini-search" aria-label="Search users" title="Search users" disabled>
 						<Icon name="search" size={14} />
-					</button>
-					<button class="mini" aria-label="Reload users" title="Reload users" disabled>
-						<Icon name="sync-alt" size={14} />
 					</button>
 				</span>
 			</div>
@@ -246,25 +274,23 @@
 		width: 250px;
 		height: 100%;
 		color: #676767;
+		/* Reference .navbar-nav.small: 14px base. */
+		font-size: 14px;
 		display: flex;
 		flex-direction: column;
 		overflow-y: auto;
 	}
+
+	/* Powered block — reference li.nav-item.text-center, padding 5px 2px. */
 	.powered {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 0.5rem;
-		padding: 0.85rem 0.9rem;
-		border-bottom: 1px solid var(--border);
-	}
-	.powered-text {
-		display: flex;
-		flex-direction: column;
-		gap: 0.15rem;
-		min-width: 0;
+		position: relative;
+		padding: 5px 2px;
+		text-align: center;
 	}
 	.close {
+		position: absolute;
+		top: 4px;
+		right: 4px;
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
@@ -274,42 +300,112 @@
 		border-radius: 4px;
 		padding: 0.25rem;
 		line-height: 0;
-		flex: 0 0 auto;
 	}
 	.close:hover {
 		color: var(--text);
 		border-color: var(--accent);
 	}
+	/* Reference p (Powered by:): margin-bottom 8px, no padding, 14px/400/lh21. */
 	.powered-by {
-		font-size: 0.8rem;
-		font-weight: 700;
+		margin: 0 0 8px;
+		padding: 0;
+		font-size: 14px;
+		font-weight: 400;
+		line-height: 21px;
+		color: #676767;
 	}
+	/* Reference a.ptr-website-link: #45a2ff, margin 0 5px, always underlined. */
+	.ptr-website-link {
+		color: #45a2ff;
+		margin: 0 5px;
+		text-decoration: underline;
+	}
+	/* Reference p (Version): margin-bottom 8px, no padding. */
 	.version {
-		font-size: 0.7rem;
-		color: var(--text-dim);
+		margin: 0 0 8px;
+		padding: 0;
+		font-size: 14px;
+		font-weight: 400;
+		line-height: 21px;
+		color: #676767;
 	}
+	/* Reference p (button wrapper): margin-bottom 8px, no padding. */
+	.powered-cta {
+		margin: 0 0 8px;
+		padding: 0;
+	}
+	/* Reference button.btn.btn-sm.btn-secondary: bg #6c757d, color #fff,
+	   padding 4px 8px, radius 4px, 14px. */
+	.app-info-btn {
+		display: inline-block;
+		padding: 4px 8px;
+		font-size: 14px;
+		font-weight: 400;
+		line-height: 1.5;
+		color: #ffffff;
+		background-color: #6c757d;
+		border: 1px solid #6c757d;
+		border-radius: 4px;
+		cursor: pointer;
+	}
+	.app-info-btn:hover {
+		background-color: #5c636a;
+		border-color: #565e64;
+	}
+
+	/* Reference hr: margin 5px 0, border-top 1px solid #676767 (246px wide). */
+	.sep {
+		margin: 5px 0;
+		border: none;
+		border-top: 1px solid #676767;
+	}
+
+	/* Reference p (Chat/Media ticks): margin-bottom 8px, no padding, centered. */
+	.caps {
+		margin: 0 0 8px;
+		padding: 0;
+		text-align: center;
+		font-size: 14px;
+		font-weight: 400;
+		line-height: 21px;
+		color: #676767;
+	}
+	/* Reference Media span: no margin (spacing is the inter-word whitespace). */
+	.cap-media {
+		margin-left: 4px;
+	}
+	.caps :global(i) {
+		margin-left: 4px;
+	}
+
 	.menu {
 		display: flex;
 		flex-direction: column;
-		padding: 0.5rem;
-		gap: 0.2rem;
-		border-bottom: 1px solid var(--border);
 	}
+	/* Reference li.nav-item: padding 5px 2px. */
+	.nav-item {
+		padding: 5px 2px;
+	}
+	/* Reference a.nav-link.sidebar-item: padding 8px 0, margin 0 5px, 14px,
+	   weight 700, color #676767, full-width (236px inside 250). */
 	.item {
 		display: flex;
 		align-items: center;
-		gap: 0.55rem;
-		width: 100%;
+		width: auto;
 		text-align: left;
 		background: transparent;
 		border: none;
 		color: #676767;
 		border-radius: 0;
-		/* Reference .sidebar-item: padding 8px 0, margin 0 5px. */
 		padding: 8px 0;
 		margin: 0 5px;
 		font-size: 14px;
 		font-weight: 700;
+		cursor: pointer;
+	}
+	/* Reference a.nav-link.sidebar-item.ps-1: padding-left 4px. */
+	.item-ps {
+		padding-left: 4px;
 	}
 	.item:hover:not(:disabled) {
 		background: #e9ecef;
@@ -319,10 +415,13 @@
 		opacity: 0.6;
 		cursor: not-allowed;
 	}
+	/* Reference span.pl-2 (icon→label gap): padding-left 8px. */
+	.label {
+		padding-left: 8px;
+	}
 	.group {
 		display: flex;
 		flex-direction: column;
-		gap: 0.15rem;
 	}
 	.group-head {
 		display: flex;
@@ -337,8 +436,7 @@
 	.sub-item {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
-		width: 100%;
+		width: auto;
 		text-align: left;
 		background: transparent;
 		border: none;
@@ -347,6 +445,7 @@
 		padding: 8px 0.6rem 8px 1.4rem;
 		font-size: 14px;
 		font-weight: 700;
+		cursor: pointer;
 	}
 	.sub-item:hover:not(:disabled) {
 		background: #e9ecef;
@@ -356,47 +455,77 @@
 		opacity: 0.6;
 		cursor: not-allowed;
 	}
+
+	/* Roster — reference li.nav-item.d-flex.flex-column, padding 5px 2px. */
 	.roster {
 		display: flex;
 		flex-direction: column;
 		min-height: 0;
-		padding: 0.5rem;
+		padding: 5px 2px;
 	}
+	/* Reference a.nav-link.active-room-users: row with title + toolbar,
+	   padding-bottom 8px, margin 0 5px. */
 	.roster-head {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: 0.3rem 0.4rem 0.5rem;
+		padding: 0 0 8px;
+		margin: 0 5px;
 	}
 	.roster-title {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.4rem;
-		font-size: 0.875rem;
+		font-size: 14px;
 		font-weight: 700;
-		color: var(--text-dim);
+		color: #676767;
 	}
 	.roster-count {
 		font-weight: 700;
-		color: var(--text);
+		color: #676767;
+		padding-left: 4px;
 	}
 	.roster-actions {
 		display: inline-flex;
-		gap: 0.25rem;
+		align-items: center;
 	}
+	/* Reference roster toolbar buttons: padding 3px 6px, 26x27, radius 4px. */
 	.mini {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		background: transparent;
-		border: 1px solid var(--border);
-		color: var(--text-dim);
+		padding: 3px 6px;
+		margin-left: 4px;
+		border: none;
 		border-radius: 4px;
-		padding: 0.25rem;
 		line-height: 0;
+		cursor: pointer;
+	}
+	/* The reference cog is a plain `fas fa-cog` glyph inside the users-btns
+	   div with no captured colored-button background — its exact bg/color is
+	   not in the evidence, so this styling is unverified (flagged). */
+	.mini-cog {
+		background: #212529;
+		color: #ffffff;
+	}
+	/* Reference reload btn-default: bg #f4f4f4, icon #45a2ff. */
+	.mini-reload {
+		background: #f4f4f4;
+		color: #45a2ff;
+	}
+	/* Reference sort btn-secondary: bg #6c757d, icon #fff. */
+	.mini-sort {
+		background: #6c757d;
+		color: #ffffff;
+	}
+	/* Reference search btn-default: bg #45a2ff, icon #f4f4f4, margin-left 0
+	   (leftmost float-right button in the reference toolbar). */
+	.mini-search {
+		background: #45a2ff;
+		color: #f4f4f4;
+		margin-left: 0;
 	}
 	.mini:disabled {
-		opacity: 0.5;
+		opacity: 0.65;
 		cursor: not-allowed;
 	}
 	.roster-list {

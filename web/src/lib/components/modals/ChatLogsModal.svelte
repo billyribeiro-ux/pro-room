@@ -15,7 +15,7 @@
 <Modal {open} {onClose} title="Chat Logs">
 	<div class="toolbar">
 		<button class="reload" type="button" disabled>
-			<Icon name="sync-alt" size={14} /> Reload Log List
+			<Icon name="sync" size={14} /> Reload Log List
 		</button>
 	</div>
 

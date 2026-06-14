@@ -298,7 +298,7 @@
 
 			<!-- Edit my Info and Avatar — wiring deferred to integration phase. -->
 			<button class="btn warn-btn" type="button" onclick={() => onEditProfile?.()}>
-				<Icon name="user" size={15} /> Edit my Info and Avatar
+				<Icon name="user-tie" size={15} /> Edit my Info and Avatar
 			</button>
 		</div>
 	{:else if tab === 'alert'}

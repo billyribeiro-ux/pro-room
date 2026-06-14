@@ -339,6 +339,7 @@
 		onToggleSidebar={() => (sidebarOpen = !sidebarOpen)}
 		onMobileInfo={() => (showMobileInfo = true)}
 		onReload={() => location.reload()}
+		actions={stageActions}
 	/>
 
 	<!-- Surfaces the realtime socket state: green "Connected" flash on reconnect,
@@ -363,7 +364,7 @@
 
 			<div class="layout">
 				{#key `${layout.position}:${narrow.current}`}
-					<Split direction={splitDir} initial={splitInitial} min={12}>
+					<Split direction={splitDir} initial={splitInitial} min={12} collapsePx={100}>
 						{#snippet a()}
 							{#if dockFirst}{@render dockPane()}{:else}{@render stagePane()}{/if}
 						{/snippet}
@@ -425,24 +426,27 @@
 	<p class="dim">Loading room…</p>
 {/if}
 
+<!-- Presenter broadcast controls — icon-only with tooltips (title/aria-label),
+     rendered in the RIGHT cluster of the main nav. New poll is NOT here; it lives
+     in the Alerts section (header + bottom). -->
 {#snippet stageActions()}
 	{#if caps?.can_publish_screen && !screenDisabled}
 		{#if screen.publishing}
-			<button class="ctrl stop" onclick={() => screen.stopSharing()}>
-				<Icon name="stop-circle" /> Stop sharing
+			<button class="ctrl stop" onclick={() => screen.stopSharing()} title="Stop sharing" aria-label="Stop sharing">
+				<Icon name="stop-circle" />
 			</button>
 		{:else}
-			<button class="ctrl" onclick={() => screen.startSharing()} disabled={!screen.connected}>
-				<Icon name="desktop" /> Share screen
+			<button class="ctrl" onclick={() => screen.startSharing()} disabled={!screen.connected} title="Share screen" aria-label="Share screen">
+				<Icon name="desktop" />
 			</button>
 		{/if}
 		{#if screen.cameraPublishing}
-			<button class="ctrl stop" onclick={() => screen.stopCamera()}>
-				<Icon name="video-slash" /> Stop camera
+			<button class="ctrl stop" onclick={() => screen.stopCamera()} title="Stop camera" aria-label="Stop camera">
+				<Icon name="video-slash" />
 			</button>
 		{:else}
-			<button class="ctrl" onclick={() => screen.startCamera()} disabled={!screen.connected}>
-				<Icon name="video" /> Camera
+			<button class="ctrl" onclick={() => screen.startCamera()} disabled={!screen.connected} title="Camera" aria-label="Camera">
+				<Icon name="video" />
 			</button>
 		{/if}
 		{#if screen.micPublishing}
@@ -451,47 +455,44 @@
 				class:stop={!screen.micMuted}
 				onclick={() => screen.toggleMicMute()}
 				title={screen.micMuted ? 'Unmute microphone' : 'Mute microphone'}
+				aria-label={screen.micMuted ? 'Unmute microphone' : 'Mute microphone'}
 			>
-				{#if screen.micMuted}
-					<Icon name="microphone-slash" /> Unmute
-				{:else}
-					<Icon name="microphone" /> Mute
-				{/if}
+				<Icon name={screen.micMuted ? 'microphone-slash' : 'microphone'} />
 			</button>
-			<button class="ctrl" onclick={() => screen.stopMic()} title="Stop microphone">
-				<Icon name="microphone-slash" /> Stop mic
+			<button class="ctrl" onclick={() => screen.stopMic()} title="Stop microphone" aria-label="Stop microphone">
+				<Icon name="microphone-slash" />
 			</button>
 		{:else}
-			<button class="ctrl" onclick={() => screen.startMic()} disabled={!screen.connected}>
-				<Icon name="microphone" /> Mic
+			<button class="ctrl" onclick={() => screen.startMic()} disabled={!screen.connected} title="Microphone" aria-label="Microphone">
+				<Icon name="microphone" />
 			</button>
 		{/if}
-		<button class="ctrl" class:live-on={captionsOn} onclick={() => (captionsOn = !captionsOn)}>
-			<Icon name="closed-captioning" /> CC
+		<button class="ctrl" class:live-on={captionsOn} onclick={() => (captionsOn = !captionsOn)} title="Captions (CC)" aria-label="Captions">
+			<Icon name="closed-captioning" />
 		</button>
-		<button class="ctrl" onclick={() => (showMediaModal = true)}>
-			<Icon name="music" /> Music
-		</button>
-	{/if}
-	{#if caps?.can_post_alert}
-		<button class="ctrl" onclick={() => (showCreatePoll = true)}>
-			<Icon name="chart-bar" /> New poll
+		<button class="ctrl" onclick={() => (showMediaModal = true)} title="Music" aria-label="Music">
+			<Icon name="music" />
 		</button>
 	{/if}
 	{#if caps?.can_manage_room}
-		<button class="ctrl" onclick={() => (showRecPreview = true)}>
-			<Icon name="dot-circle" /> Record
+		<button class="ctrl" onclick={() => (showRecPreview = true)} title="Record" aria-label="Record">
+			<Icon name="dot-circle" />
 		</button>
 	{/if}
 	{#if caps?.can_manage_room}
-		<button class="ctrl" class:live-on={detail?.room.is_live} onclick={toggleLive}>
+		<button
+			class="ctrl"
+			class:live-on={detail?.room.is_live}
+			onclick={toggleLive}
+			title={detail?.room.is_live ? 'End broadcast' : 'Go live'}
+			aria-label={detail?.room.is_live ? 'End broadcast' : 'Go live'}
+		>
 			<Icon name="broadcast-tower" />
-			{detail?.room.is_live ? 'End broadcast' : 'Go live'}
 		</button>
 	{/if}
 	{#if caps?.can_manage_members}
-		<button class="ctrl" onclick={() => (showMembers = !showMembers)}>
-			<Icon name="cog" /> Members
+		<button class="ctrl" onclick={() => (showMembers = !showMembers)} title="Members" aria-label="Members">
+			<Icon name="cog" />
 		</button>
 	{/if}
 {/snippet}
@@ -529,7 +530,6 @@
 		captionsActive={captionsOn}
 		{speakers}
 		{screenLocked}
-		actions={stageActions}
 	/>
 {/snippet}
 

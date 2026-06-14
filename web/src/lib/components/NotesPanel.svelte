@@ -169,13 +169,17 @@
 				class:active={selected?.id === n.id}
 				onclick={() => select(n.id)}
 			>
-				{#if i === 0}<Icon name="home" size={13} />{/if}
+				{#if i === 0}<Icon name="home" size={12} />{:else}<Icon
+						name="pen"
+						size={12}
+						class="mx-1"
+					/>{/if}
 				{n.title}
 			</button>
 		{/each}
 		{#if canManage}
 			<button type="button" class="new" onclick={createNote} disabled={busy}>
-				<Icon name="plus" size={13} /> New note
+				<Icon name="plus" size={12} /> New note
 			</button>
 		{/if}
 	</div>
@@ -206,7 +210,7 @@
 						<Icon name="caret-right" />
 					</button>
 					<button type="button" class="ic" onclick={() => (editorOpen = true)} aria-label="Edit">
-						<Icon name="pencil-alt" />
+						<Icon name="pen" />
 					</button>
 					<button type="button" class="ic" onclick={() => rename(selected)} aria-label="Rename">
 						<Icon name="pencil-alt" />
@@ -251,37 +255,40 @@
 	.subtabs {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.35rem;
-		padding: 0.6rem 0.85rem;
-		background: #eef1f6;
-		border-bottom: 1px solid #dfe2ea;
+		align-items: center;
+		justify-content: center;
+		background: #0c2434;
+		border-top: 1px solid #0a6db1;
 		flex-shrink: 0;
 	}
 	.subtabs button {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.3rem;
-		background: #ffffff;
-		border: 1px solid #d3d7e0;
-		color: #4b5160;
-		font-size: 0.82rem;
-		font-weight: 600;
-		padding: 0.3rem 0.7rem;
-		border-radius: 999px;
+		background: transparent;
+		border: 1px solid transparent;
+		color: #ffffff;
+		font-size: 12px;
+		line-height: 12px;
+		font-weight: 300;
+		padding: 0.5rem;
+		margin: 5px;
+		border-radius: 3px;
 		cursor: pointer;
 	}
 	.subtabs button.active {
-		background: #1f86d6;
-		border-color: #1f86d6;
+		background: #45a2ff;
+		border-color: transparent;
 		color: #ffffff;
 	}
 	.subtabs button:hover:not(.active) {
-		border-color: #1f86d6;
+		border: 1px solid #0a6db1;
+		border-radius: 3px;
 	}
 	.subtabs .new {
-		color: #16a34a;
-		border-color: #b7e2c5;
-		background: #f0fbf4;
+		color: #ffffff;
+		border-color: transparent;
+		background: transparent;
 	}
 	.subtabs button:disabled {
 		opacity: 0.5;
@@ -339,10 +346,10 @@
 		font-weight: 700;
 		color: #ffffff;
 		cursor: pointer;
-		background: #16a34a;
+		background: #92d528;
 	}
 	.download:hover {
-		background: #138a3e;
+		color: #212529;
 	}
 	.body {
 		flex: 1;
@@ -360,7 +367,7 @@
 		min-height: 0.6em;
 	}
 	.rendered :global(a) {
-		color: #1f86d6;
+		color: #45a2ff;
 		text-decoration: underline;
 	}
 	.rendered :global(ul),

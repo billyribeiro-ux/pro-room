@@ -150,7 +150,7 @@
 
 <section class="panel">
 	<header>
-		<div class="title"><Icon name="bell" size={17} /> Alerts</div>
+		<div class="title"><Icon name="bell" size={20} /> Alerts</div>
 		<div class="actions">
 			{#if canPost}
 				<button
@@ -309,13 +309,13 @@
 
 	{#if canPost}
 		<form onsubmit={submit}>
-			<input class="sym" placeholder="Symbol" bind:value={symbol} required />
-			<select bind:value={side} aria-label="Side">
+			<input id="alert-symbol" name="symbol" class="sym" placeholder="Symbol" bind:value={symbol} required />
+			<select id="alert-side" name="side" bind:value={side} aria-label="Side">
 				<option value="buy">Buy</option>
 				<option value="sell">Sell</option>
 				<option value="watch">Watch</option>
 			</select>
-			<input class="note" placeholder="Note (optional)" bind:value={note} />
+			<input id="alert-note" name="note" class="note" placeholder="Note (optional)" bind:value={note} />
 			<button type="submit" disabled={posting}>Post</button>
 		</form>
 	{/if}
@@ -364,9 +364,12 @@
 	.title {
 		display: flex;
 		align-items: center;
-		gap: 0.45rem;
-		font-weight: 600;
-		font-size: 0.95rem;
+		/* Reference .navbar-brand bell (me-1) sits 4px from the "Alerts" text. */
+		gap: 4px;
+		/* Reference a.navbar-brand: 20px / weight 300 / line-height 30px. */
+		font-weight: 300;
+		font-size: 20px;
+		line-height: 30px;
 	}
 	.actions {
 		display: flex;

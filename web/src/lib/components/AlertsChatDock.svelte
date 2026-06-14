@@ -2,7 +2,6 @@
 	import type { ChatChannel, PresentUser, ReactionTally, ReactionTarget } from '$lib/types';
 	import AlertFeed, { type AlertItem } from './AlertFeed.svelte';
 	import ChatPanel, { type ChatItem } from './ChatPanel.svelte';
-	import Icon from './Icon.svelte';
 
 	interface Props {
 		alerts: AlertItem[];
@@ -122,7 +121,7 @@
 		onpointerdown={startHeightDrag}
 		ondblclick={resetHeight}
 	>
-		<span class="hgrab"><Icon name="grip-vertical" /></span>
+		<span class="hgrab" aria-hidden="true"></span>
 	</div>
 
 	<div class="chat-pane">
@@ -186,10 +185,14 @@
 		user-select: none;
 	}
 	.hgrab {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		color: rgba(255, 255, 255, 0.55);
+		/* Exact reference grip: angular-split `as-split-gutter-icon` — a centered
+		   30x5 PNG of three light-grey dots, HORIZONTAL for this row-resize gutter.
+		   Same data-URI the reference ships (not a Font Awesome glyph). */
+		width: 100%;
+		height: 100%;
+		background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAFCAMAAABl/6zIAAAABlBMVEUAAADMzMzIT8AyAAAAAXRSTlMAQObYZgAAABRJREFUeAFjYGRkwIMJSeMHlBkOABP7AEGzSuPKAAAAAElFTkSuQmCC');
+		background-position: 50% 50%;
+		background-repeat: no-repeat;
 		pointer-events: none;
 	}
 	.hsplit:hover {

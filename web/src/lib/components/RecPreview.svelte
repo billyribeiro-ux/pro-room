@@ -149,8 +149,8 @@
 					onclick={() => (expanded = !expanded)}
 					aria-label={expanded ? 'Shrink' : 'Expand'}
 				>
-					{#if expanded}<Icon name="compress-alt" size={14} />{:else}<Icon
-							name="expand-alt"
+					{#if expanded}<Icon name="window-minimize" size={14} />{:else}<Icon
+							name="window-maximize"
 							size={14}
 						/>{/if}
 				</button>

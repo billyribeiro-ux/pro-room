@@ -90,15 +90,18 @@
 		align-items: center;
 		justify-content: space-between;
 		padding: 0.5rem 0.75rem;
-		background: var(--bg-elev);
-		border-bottom: 1px solid var(--border);
+		/* .screens-tabs background: var(--notes-tabs-bg) = #0c2434; flat border (transparent). */
+		background: #0c2434;
+		border-bottom: 1px solid transparent;
 	}
 	.count {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.35rem;
-		font-size: 0.8rem;
-		color: var(--text-dim);
+		/* .screens-tabs .nav-link: color var(--tabs-color) #fff; font-size 12px; line-height 12px. */
+		font-size: 12px;
+		line-height: 12px;
+		color: #ffffff;
 	}
 	.toggle {
 		display: flex;
@@ -107,15 +110,22 @@
 	.toggle button {
 		display: inline-flex;
 		background: transparent;
-		border: 1px solid var(--border);
-		color: var(--text-dim);
-		border-radius: 6px;
-		padding: 0.3rem;
+		/* Reserve 1px transparent border to match hover (1px solid #0a6db1) without shift. */
+		border: 1px solid transparent;
+		/* .screens-tabs .nav-link: color #fff; padding 4px; radius 3px. */
+		color: #ffffff;
+		border-radius: 3px;
+		padding: 4px;
+	}
+	.toggle button:hover:not(.active):not(:disabled) {
+		/* hover: 1px solid var(--tabs-border-color) #0a6db1; radius 3px */
+		border-color: #0a6db1;
 	}
 	.toggle button.active {
+		/* .screens-tabs .nav-link.active: bg var(--tab-active-bg) #45a2ff; radius 3px; color #fff. */
 		color: #fff;
-		border-color: var(--accent);
-		background: var(--accent);
+		border-color: transparent;
+		background: #45a2ff;
 	}
 	.toggle button:disabled {
 		opacity: 0.4;
@@ -125,6 +135,8 @@
 		flex: 1;
 		display: grid;
 		place-items: center;
+		/* .presentation-box background: var(--presenter-area-bg) = #0f2e43 */
+		background: #0f2e43;
 		color: var(--text-dim);
 		font-size: 0.9rem;
 		padding: 2rem;

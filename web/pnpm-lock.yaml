@@ -12,8 +12,8 @@ importers:
         specifier: ^5.2.7
         version: 5.2.7
       '@fortawesome/fontawesome-free':
-        specifier: 5.15.4
-        version: 5.15.4
+        specifier: 5.8.1
+        version: 5.8.1
       dompurify:
         specifier: ^3.4.10
         version: 3.4.10
@@ -306,8 +306,8 @@ packages:
   '@fontsource/open-sans@5.2.7':
     resolution: {integrity: sha512-8yfgDYjE5O0vmTPdrcjV35y4yMnctsokmi9gN49Gcsr0sjzkMkR97AnKDe6OqZh2SFkYlR28fxOvi21bYEgMSw==}
 
-  '@fortawesome/fontawesome-free@5.15.4':
-    resolution: {integrity: sha512-eYm8vijH/hpzr/6/1CJ/V/Eb1xQFW2nnUKArb3z+yUWv7HTwj6M7SP957oMjfZjAHU6qpoNc2wQvIxBLWYa/Jg==}
+  '@fortawesome/fontawesome-free@5.8.1':
+    resolution: {integrity: sha512-GJtx6e55qLEOy2gPOsok2lohjpdWNGrYGtQx0FFT/++K4SYx+Z8LlPHdQBaFzKEwH5IbBB4fNgb//uyZjgYXoA==}
     engines: {node: '>=6'}
 
   '@humanfs/core@0.19.2':
@@ -1983,7 +1983,7 @@ snapshots:
 
   '@fontsource/open-sans@5.2.7': {}
 
-  '@fortawesome/fontawesome-free@5.15.4': {}
+  '@fortawesome/fontawesome-free@5.8.1': {}
 
   '@humanfs/core@0.19.2':
     dependencies:

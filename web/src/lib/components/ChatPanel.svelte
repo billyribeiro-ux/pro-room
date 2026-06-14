@@ -135,7 +135,7 @@
 
 <section class="panel">
 	<header>
-		<div class="lead"><Icon name="comment" size={17} /></div>
+		<div class="lead"><Icon name="comment" size={16} /></div>
 		<div class="tabs" role="tablist" aria-label="Chat channels">
 			<button
 				type="button"
@@ -153,9 +153,9 @@
 			>
 		</div>
 		<div class="actions">
-			<button type="button" aria-label="Search chat"><Icon name="search" /></button>
+			<button type="button" aria-label="Search chat"><Icon name="search" size={16} /></button>
 			<button type="button" class="gear" aria-label="Chat settings">
-				<Icon name="cog" /><Icon name="caret-down" size={10} />
+				<Icon name="cog" size={16} /><Icon name="caret-down" size={10} />
 			</button>
 		</div>
 	</header>
@@ -242,6 +242,8 @@
 		<form onsubmit={onSubmit}>
 			<div class="pill">
 				<textarea
+					id="chat-composer"
+					name="message"
 					bind:this={textareaEl}
 					bind:value={body}
 					rows="1"
@@ -296,25 +298,41 @@
 	}
 	.tabs {
 		display: flex;
-		gap: 0.3rem;
-		margin: 0 auto;
+		/* Reference ul.nav-tabs has gap:normal; inter-tab spacing comes from each
+		   tab link's margin-right:5px (see .tabs button), not a flex gap. */
+		gap: 0;
+		/* Reference chat tab bar (ul.nav-tabs.flex-grow-1.justify-content-center):
+		   fills the width between the lead icon and the actions, centers the tabs,
+		   and carries the 1px accent UNDERLINE — captured border-bottom is
+		   rgb(69,162,255) = #45a2ff (the accent; within one red-unit of the
+		   eyedropped #46A2FF, visually identical). */
+		flex: 1;
+		justify-content: center;
+		border-bottom: 1px solid var(--accent, #45a2ff);
 	}
 	.tabs button {
 		background: transparent;
-		border: none;
-		/* Reference chat tabs: 12px, inactive weight 300, white; top-only 6px radius. */
+		/* Reference chat tabs (a.nav-link): a 1px border box kept transparent until
+		   active (so active/inactive share the same box size), 12px, weight 700 for
+		   BOTH active and inactive (per the captured computed styles — not 300),
+		   white, top-only 6px radius, padding 8px 5px 5px. */
+		border: 1px solid transparent;
 		color: #ffffff;
 		font-size: 12px;
-		font-weight: 300;
+		font-weight: 700;
 		padding: 8px 5px 5px;
+		/* Reference a.nav-link carries margin-right:5px (the only inter-tab spacing). */
+		margin-right: 5px;
 		border-radius: 6px 6px 0 0;
 		cursor: pointer;
 	}
 	.tabs button.active {
-		/* Reference active tab: accent blue (#45a2ff), weight 700. */
+		/* Reference active tab (a.nav-link.active): accent-blue fill + 1px accent
+		   border on ALL sides, so its bottom edge merges seamlessly into the tab-bar
+		   underline (the folder-tab effect). */
 		background: var(--accent, #45a2ff);
+		border-color: var(--accent, #45a2ff);
 		color: #ffffff;
-		font-weight: 700;
 	}
 	.tabs button:hover:not(.active) {
 		color: #ffffff;
@@ -322,7 +340,10 @@
 	.actions {
 		display: flex;
 		align-items: center;
-		gap: 0.35rem;
+		/* Reference ul.nav.ml-auto.align-items-center has gap:normal; the gap between
+		   the search icon (li.mx-1 → margin-right 4px) and the cog (li.ml-2 →
+		   margin-left 8px) sums to 12px. */
+		gap: 12px;
 	}
 	.actions button {
 		display: inline-flex;
@@ -523,7 +544,8 @@
 		border: none;
 		outline: none;
 		background: transparent;
-		color: #1f2430;
+		/* Reference --lightTheme-textarea-color. */
+		color: #676767;
 		font-size: 0.85rem;
 		padding: 0.35rem 0.25rem;
 		resize: none;
@@ -538,13 +560,15 @@
 		justify-content: center;
 		background: transparent;
 		border: none;
-		color: #aaaaaa;
+		/* Reference --textarea-holder-btns-color. */
+		color: #676767;
 		cursor: pointer;
 		padding: 0.25rem;
 		border-radius: 6px;
 	}
 	.ic:hover {
-		color: #2f80c8;
+		/* Reference --textarea-holder-btns-hover-color. */
+		color: #0a6db1;
 	}
 	.gif {
 		font-size: 0.72rem;

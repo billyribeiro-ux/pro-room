@@ -1,5 +1,4 @@
 <script lang="ts">
-	import type { Snippet } from 'svelte';
 	import type { SharePublisher } from '$lib/livekit.svelte';
 	import Icon from './Icon.svelte';
 	import ScreenStage from './ScreenStage.svelte';
@@ -16,7 +15,7 @@
 		isLocal?: boolean;
 	}
 
-	/** One live audio stream (a present user speaking on mic) for the Streams tab. */
+	/** One live audio stream (a present user speaking on mic). */
 	interface Speaker {
 		id: string;
 		name: string;
@@ -36,7 +35,10 @@
 		onWebcamClose?: (id: string) => void;
 		/** When true, the live speech-recognition captions overlay is shown. */
 		captionsActive?: boolean;
-		/** Present users currently speaking on mic — listed live in the Streams tab. */
+		/**
+		 * Present users currently speaking on mic. Accepted for API compatibility;
+		 * the reference room has no Streams tab so it is not rendered here.
+		 */
 		speakers?: Speaker[];
 		/**
 		 * Presenter "lock this screen": while true, non-admin viewers are held on
@@ -44,8 +46,6 @@
 		 * never held, so they can keep working the room while it's locked.
 		 */
 		screenLocked?: boolean;
-		/** Room controls rendered on the right of the tab bar (share / go-live / poll / members). */
-		actions?: Snippet;
 	}
 	let {
 		roomId,
@@ -56,11 +56,10 @@
 		onWebcamClose,
 		captionsActive = false,
 		speakers = [],
-		screenLocked = false,
-		actions
+		screenLocked = false
 	}: Props = $props();
 
-	type Tab = 'screens' | 'streams' | 'notes' | 'files';
+	type Tab = 'screens' | 'notes' | 'files';
 	let tab = $state<Tab>('screens');
 
 	// Non-admins are held on Screens while the presenter has locked the screen.
@@ -71,7 +70,6 @@
 
 	const TABS: { id: Tab; label: string; icon: string }[] = [
 		{ id: 'screens', label: 'Screens', icon: 'desktop' },
-		{ id: 'streams', label: 'Streams', icon: 'podcast' },
 		{ id: 'notes', label: 'Notes', icon: 'edit' },
 		{ id: 'files', label: 'Files', icon: 'folder' }
 	];
@@ -94,7 +92,7 @@
 				disabled={locked && t.id !== 'screens'}
 				onclick={() => (tab = t.id)}
 			>
-				<Icon name={t.icon} size={18} />
+				<Icon name={t.icon} size={12} />
 				{t.label}
 			</button>
 		{/each}
@@ -104,36 +102,11 @@
 				<Icon name="lock" size={14} /> Screen locked
 			</span>
 		{/if}
-
-		{#if actions}
-			<div class="stage-actions">{@render actions()}</div>
-		{/if}
 	</div>
 
 	<div class="panel">
 		{#if activeTab === 'screens'}
 			<ScreenStage {publishers} {connected} />
-		{:else if activeTab === 'streams'}
-			<div class="streams">
-				{#if speakers.length > 0}
-					<ul class="stream-list">
-						{#each speakers as s (s.id)}
-							<li class="stream-row">
-								<span class="speaking-dot" aria-hidden="true"></span>
-								<Icon name="wave-square" size={18} />
-								<span class="stream-name">{s.name}</span>
-								<span class="stream-tag">on air</span>
-							</li>
-						{/each}
-					</ul>
-				{:else}
-					<div class="stream-empty">
-						<Icon name="podcast" size={30} />
-						<p>No audio streams right now</p>
-						<span>Presenters speaking on mic appear here live.</span>
-					</div>
-				{/if}
-			</div>
 		{:else if activeTab === 'notes'}
 			<NotesPanel {roomId} {canManage} />
 		{:else}
@@ -163,65 +136,72 @@
 	}
 	.tabbar {
 		display: flex;
+		/* Reference .mainTabset: align-items:center; justify-content:center. */
 		align-items: center;
-		gap: 0.25rem;
-		padding: 0.4rem 0.5rem;
+		justify-content: center;
+		gap: 0;
+		padding: 0;
+		/* Reference presentation surface (#mainTabs sits on .presentation-box,
+		   computed bg rgb(15,46,67) = --bg-elev #0f2e43; #mainTabs itself is
+		   transparent). */
 		background: var(--bg-elev);
-		border-bottom: 1px solid var(--border);
-		flex-shrink: 0;
-		/* Tabs + presenter controls can exceed the pane width; scroll the row
-		   instead of clipping the right-most buttons (Members / Go live / …). */
-		overflow-x: auto;
-		overflow-y: hidden;
-		scrollbar-width: thin;
-	}
-	.tabbar::-webkit-scrollbar {
-		height: 6px;
-	}
-	.tabbar::-webkit-scrollbar-thumb {
-		background: var(--border);
-		border-radius: 3px;
-	}
-	.stage-actions {
-		margin-left: auto;
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
+		/* Reference #mainTabs computed border-bottom: 1px solid transparent
+		   (.mainTabset border-color:transparent overrides .nav-tabs). */
+		border-bottom: 1px solid transparent;
 		flex-shrink: 0;
 	}
 	.tabbar button {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.4rem;
+		/* Reference label span sits 4px after the icon (span.ml-1 margin-left:4px);
+		   no flex gap on the link itself. */
+		gap: 4px;
 		background: transparent;
+		/* Reference idle .nav-link: transparent 1px border on all sides. */
 		border: 1px solid transparent;
-		color: #cccccc;
+		/* Reference idle main-tab computed text is rgb(204,204,204) = #ccc. */
+		color: #ccc;
 		font-size: 12px;
 		font-weight: 300;
-		padding: 0.45rem 0.85rem;
-		/* Reference presentation tabs are top-rounded folder tabs (6px top corners,
-		   square bottom) — not flat, not full pills. */
+		line-height: 12px;
+		/* Reference idle .nav-link: 8px padding all sides, 5px margins all sides. */
+		padding: 8px;
+		margin: 5px;
+		/* Reference idle presentation tabs are top-rounded folder tabs
+		   (6px top corners, square bottom). */
 		border-radius: 6px 6px 0 0;
 		cursor: pointer;
 		flex-shrink: 0;
 		white-space: nowrap;
 	}
 	.tabbar button:hover:not(.active):not(:disabled) {
-		color: var(--text);
-		background: var(--bg-elev-2);
+		/* Reference .mainTabset .nav-link:hover: 1px #0a6db1 border, radius 3px,
+		   no background change. */
+		border: 1px solid var(--accent-hover);
+		border-radius: 3px;
 	}
 	.tabbar button:disabled {
 		opacity: 0.4;
 		cursor: not-allowed;
 	}
 	.tabbar button.active {
-		color: #ffffff;
-		background: var(--accent);
-		/* Reference active tab: bold (700), bright-blue (#45a2ff) border, same
-		   top-rounded shape as the idle tabs. */
-		font-weight: 700;
-		border-radius: 6px 6px 0 0;
-		border-color: var(--accent);
+		/* Reference active main-tab (#notes-tab.active): color #fff. */
+		color: var(--text);
+		/* Reference active main-tab: bg rgb(12,36,52) = --bg #0c2434 (notes-tabs-bg,
+		   the navbar dark, NOT the accent), font-weight 300. */
+		background: var(--bg);
+		font-weight: 300;
+		/* Reference active tab: 3px 3px 0 0 top-rounded folder shape. */
+		border-radius: 3px 3px 0 0;
+		/* Reference active tab: 1px #0a6db1 border top/right/left; bottom removed
+		   (border-bottom-width 0) so the tab merges into the pane below. */
+		border-color: var(--accent-hover);
+		border-bottom-width: 0;
+		/* Extra bottom padding (8px → 15px) drops the tab over the pane edge,
+		   matching the reference active-tab rect (37px tall vs 31px idle). */
+		padding-bottom: 15px;
+		/* Reference active tab pulls 1px down into the pane. */
+		margin-bottom: -1px;
 	}
 	.locked-pill {
 		display: inline-flex;
@@ -249,100 +229,5 @@
 	.panel > :global(*) {
 		flex: 1;
 		min-height: 0;
-	}
-
-	/* Streams tab */
-	.streams {
-		display: flex;
-		flex-direction: column;
-		min-height: 0;
-		overflow: auto;
-		padding: 0.75rem;
-	}
-	.stream-list {
-		list-style: none;
-		margin: 0;
-		padding: 0;
-		display: flex;
-		flex-direction: column;
-		gap: 0.4rem;
-	}
-	.stream-row {
-		display: flex;
-		align-items: center;
-		gap: 0.6rem;
-		padding: 0.55rem 0.7rem;
-		background: var(--bg-elev-2);
-		border: 1px solid var(--border);
-		border-radius: var(--radius);
-		color: var(--text);
-	}
-	.stream-row :global(svg),
-	.stream-row :global(i) {
-		color: var(--accent);
-		flex: 0 0 auto;
-	}
-	.speaking-dot {
-		width: 8px;
-		height: 8px;
-		border-radius: 50%;
-		background: var(--positive);
-		flex: 0 0 auto;
-		box-shadow: 0 0 0 0 color-mix(in srgb, var(--positive) 70%, transparent);
-		animation: speaking-pulse 1.4s ease-out infinite;
-	}
-	@keyframes speaking-pulse {
-		0% {
-			box-shadow: 0 0 0 0 color-mix(in srgb, var(--positive) 60%, transparent);
-		}
-		70% {
-			box-shadow: 0 0 0 7px color-mix(in srgb, var(--positive) 0%, transparent);
-		}
-		100% {
-			box-shadow: 0 0 0 0 color-mix(in srgb, var(--positive) 0%, transparent);
-		}
-	}
-	@media (prefers-reduced-motion: reduce) {
-		.speaking-dot {
-			animation: none;
-		}
-	}
-	.stream-name {
-		font-weight: 600;
-		flex: 1;
-		min-width: 0;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-	.stream-tag {
-		font-size: 0.72rem;
-		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 0.04em;
-		color: var(--positive);
-		flex: 0 0 auto;
-	}
-	.stream-empty {
-		margin: auto;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 0.35rem;
-		text-align: center;
-		color: var(--text-dim);
-	}
-	.stream-empty :global(svg),
-	.stream-empty :global(i) {
-		color: var(--text-dim);
-		opacity: 0.7;
-	}
-	.stream-empty p {
-		margin: 0;
-		font-weight: 600;
-		color: var(--text);
-	}
-	.stream-empty span {
-		font-size: 0.82rem;
 	}
 </style>
