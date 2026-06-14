@@ -386,7 +386,8 @@
 		justify-content: center;
 		background: transparent;
 		border: none;
-		color: #9aa1b0;
+		/* Reference .msgMenu uses the username blue (#0a6db1), not grey. */
+		color: var(--username-color);
 		cursor: pointer;
 		padding: 0.1rem;
 		border-radius: 6px;
@@ -465,6 +466,8 @@
 		margin-left: auto;
 		font-weight: 600;
 		font-size: 12px;
+		/* Reference timestamps are italic (.created-at font-style: italic). */
+		font-style: italic;
 		color: #a8a8a8;
 		white-space: nowrap;
 		flex-shrink: 0;
