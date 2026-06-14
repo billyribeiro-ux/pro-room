@@ -102,15 +102,18 @@
 		narrow.current ? true : layout.position === 'left' || layout.position === 'top'
 	);
 	const splitInitial = $derived(
+		// Measured from the live reference at desktop width: the alerts/chat column
+		// is ~28.5% (290px of 1017) and the presentation area ~70.4% (716px). Pane A
+		// is the dock for left/top and the stage for right/bottom.
 		narrow.current
 			? 45
 			: layout.position === 'left'
-				? 33.5
+				? 28.5
 				: layout.position === 'top'
-					? 42
+					? 40
 					: layout.position === 'right'
-						? 66.5
-						: 58
+						? 70.5
+						: 60
 	);
 
 	// Map LiveKit camera publishers (local + remote) to the webcam strip's shape.

@@ -23,6 +23,10 @@
 	let { children } = $props();
 
 	const PUBLIC_PREFIXES = ['/login', '/register', '/auth/magic'];
+	// The room (/rooms/<id>) is a full-bleed app shell — it must NOT inherit the
+	// global padded/centered <main> wrapper, or the resizable split can't span the
+	// full viewport (the reference room is edge-to-edge). The /rooms list keeps it.
+	const fullBleed = $derived(page.url.pathname.startsWith('/rooms/'));
 	let booted = $state(false);
 
 	onMount(async () => {
@@ -46,8 +50,12 @@
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
-<Nav />
-<main>
+<!-- The room has its own RoomTopNav; the global Nav would double-stack and push
+     the shell down (page scroll). Hide it on the full-bleed room route. -->
+{#if !fullBleed}
+	<Nav />
+{/if}
+<main class:full={fullBleed}>
 	{#if booted}
 		{@render children()}
 	{:else}
@@ -62,6 +70,16 @@
 		max-width: 1400px;
 		margin: 0 auto;
 		padding: 1.25rem;
+	}
+	/* Full-bleed room shell: edge-to-edge, no max-width cap, so the split spans the
+	   full viewport like the reference. overflow:hidden establishes a block
+	   formatting context so the room-body's margin-top (clearing the fixed nav)
+	   stays contained instead of collapsing through and pushing the shell down. */
+	main.full {
+		max-width: none;
+		margin: 0;
+		padding: 0;
+		overflow: hidden;
 	}
 	.loading {
 		color: var(--text-dim);
