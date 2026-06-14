@@ -23,3 +23,7 @@ Thumbs.db
 # 1:1 clone. Kept locally for discovery; never committed (tens of MB, not source).
 /files/
 /important-doc.html
+
+# local redis dev artifact
+dump.rdb
+*.rdb
