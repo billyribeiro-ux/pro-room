@@ -1,0 +1,776 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Deep Visual Hard Evidence: Original App vs Repo</title>
+	<style>
+		:root { color-scheme: dark; }
+		body { margin: 0; background: #071a27; color: #e8f2f8; font-family: Arial, sans-serif; font-size: 14px; line-height: 1.45; }
+		header.hero { padding: 24px 28px; background: #0b2638; border-bottom: 1px solid #1e5875; }
+		h1, h2, h3, p { margin: 0; }
+		h1 { font-size: 24px; }
+		h2 { font-size: 18px; }
+		h3 { font-size: 13px; color: #b7d9ea; text-transform: uppercase; }
+		code { color: #bde8ff; background: #0a2231; border: 1px solid #1d536f; border-radius: 3px; padding: 1px 4px; }
+		.wrap { padding: 18px 20px 36px; }
+		.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 14px; }
+		.stat { background: #0e3045; border: 1px solid #1f5a78; border-radius: 6px; padding: 10px; }
+		.stat strong { display: block; font-size: 22px; color: #fff; }
+		.notice { margin-top: 14px; padding: 10px 12px; border: 1px solid #7e6420; background: #2b250f; color: #ffe49a; border-radius: 6px; }
+		.mapping, .fragment, .capture { border: 1px solid #1f5a78; background: #0b283b; border-radius: 6px; padding: 12px; margin: 14px 0; }
+		.mapping > header { display: flex; justify-content: space-between; gap: 14px; align-items: baseline; border-bottom: 1px solid #19485f; padding-bottom: 8px; margin-bottom: 10px; }
+		.confidence { color: #ffe49a; font-size: 12px; text-align: right; max-width: 460px; }
+		.versions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+		.versions > div { background: #071f2e; border: 1px solid #164158; border-radius: 5px; padding: 10px; min-height: 86px; }
+		.versions p { margin-top: 6px; }
+		.evidence-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+		.mini-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+		.mini { margin: 0; border: 1px solid #1b536f; background: #061b28; border-radius: 4px; overflow: hidden; }
+		.mini img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; object-position: top left; background: #082131; }
+		.mini figcaption, .shot figcaption { padding: 5px 7px; color: #b7d9ea; font-size: 11px; }
+		.missing { min-height: 120px; display: grid; place-items: center; color: #ffe49a; background: #0b2c42; border: 1px dashed #2b789f; border-radius: 4px; }
+		.code-paths { margin-top: 10px; color: #cbe3ef; }
+		.section-title { margin: 28px 0 10px; padding-bottom: 6px; border-bottom: 1px solid #27617f; }
+		.fragment { display: grid; grid-template-columns: 420px 1fr; gap: 12px; }
+		.fragment > img { width: 420px; height: 290px; object-fit: cover; object-position: top left; border: 1px solid #1e5875; background: #082131; }
+		.fragment h3 { font-size: 15px; text-transform: none; color: #fff; }
+		.fragment p { margin-top: 7px; }
+		.chip { display: inline-block; margin: 2px 3px 2px 0; padding: 1px 5px; border-radius: 3px; background: #123c55; border: 1px solid #245d7b; color: #dff5ff; font-size: 11px; }
+		.current-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+		.shot { margin: 0; border: 1px solid #1f5a78; background: #0b283b; border-radius: 6px; overflow: hidden; }
+		.shot img { width: 100%; display: block; aspect-ratio: 16 / 9; object-fit: cover; object-position: top left; }
+		.capture { display: grid; grid-template-columns: 520px 1fr; gap: 12px; align-items: start; }
+		.capture img { width: 520px; border: 1px solid #1e5875; background: #082131; }
+		@media (max-width: 1000px) {
+			.stats, .versions, .evidence-grid, .fragment, .capture, .current-grid { grid-template-columns: 1fr; }
+			.fragment > img, .capture img { width: 100%; height: auto; }
+		}
+	</style>
+</head>
+<body>
+	<header class="hero">
+		<h1>Deep Visual Hard Evidence: Original App vs Repo</h1>
+		<p>Generated 2026-06-14T23:42:59.640Z from raw saved HTML fragments, harvested original CSS, capture JSON, existing repo screenshots, and repo source paths.</p>
+		<div class="stats">
+			<div class="stat"><strong>52</strong>original HTML fragments rendered</div>
+			<div class="stat"><strong>21</strong>named repo screenshots indexed</div>
+			<div class="stat"><strong>4</strong>fresh failure screenshots indexed</div>
+			<div class="stat"><strong>4</strong>capture geometry files rendered</div>
+			<div class="stat"><strong>13</strong>version comparison sections</div>
+		</div>
+		<div class="notice">Original visuals are rendered from saved HTML fragments plus the harvested original CSS, not a new live original-app browser session. Current repo screenshots include the named e2e screenshot artifacts plus Playwright failure screenshots from the latest run when present. Cards with no current screenshot are source/code-evidence only until fresh role-specific screenshots are captured. Hidden modals/fragments are force-shown for inspection; that is marked as inspection rendering, not native runtime state.</div>
+	</header>
+	<main class="wrap">
+		<h2 class="section-title">Section List: Correct Version vs Our Version</h2>
+		<section class="mapping">
+				<header>
+					<h2>Room Shell / Full Layout</h2>
+					<span class="confidence">Strong for section existence and broad layout; exact parity must be validated live after code changes.</span>
+				</header>
+				<div class="versions">
+					<div><h3>Correct Version</h3><p>Angular room shell uses top fixed Bootstrap nav, left room sidebar, angular-split/as-split areas, alerts/chat pane, and presentation area in one dense work UI.</p></div>
+					<div><h3>Our Version</h3><p>Svelte room shell exists and has the same broad regions, but current screenshots/code use custom CSS/grid/button markup instead of the reference Bootstrap/as-split DOM.</p></div>
+				</div>
+				<div class="evidence-grid">
+					<div><h3>Original Visual Evidence</h3><div class="mini-grid"><figure class="mini"><img src="original-fragments/file-1.html.png" alt="file-1.html"><figcaption>file-1.html</figcaption></figure><figure class="mini"><img src="original-fragments/file2.html.png" alt="file2.html"><figcaption>file2.html</figcaption></figure><figure class="mini"><img src="original-fragments/file3.html.png" alt="file3.html"><figcaption>file3.html</figcaption></figure><figure class="mini"><img src="original-fragments/file4.html.png" alt="file4.html"><figcaption>file4.html</figcaption></figure><figure class="mini"><img src="original-fragments/file6.html.png" alt="file6.html"><figcaption>file6.html</figcaption></figure><figure class="mini"><img src="original-fragments/important-doc.html.png" alt="important-doc.html"><figcaption>important-doc.html</figcaption></figure><figure class="mini"><img src="original-fragments/as-splitter.html.png" alt="as-splitter.html"><figcaption>as-splitter.html</figcaption></figure></div></div>
+					<div><h3>Repo Visual Evidence</h3><div class="mini-grid"><figure class="mini"><img src="../../../web/e2e/screenshots/01-room-loaded.png" alt="01-room-loaded.png"><figcaption>01-room-loaded.png</figcaption></figure></div></div>
+				</div>
+				<p class="code-paths"><strong>Repo paths:</strong> <code>web/src/routes/rooms/+page.svelte</code> <code>web/src/lib/components/RoomTopNav.svelte</code> <code>web/src/lib/components/RoomSidebar.svelte</code> <code>web/src/lib/components/AlertsChatDock.svelte</code> <code>web/src/lib/components/MainStage.svelte</code></p>
+			</section><section class="mapping">
+				<header>
+					<h2>Top Navbar / Volume / Reload</h2>
+					<span class="confidence">Strong for original structure from isolated nav fragments and capture JSON; current visual is from existing repo screenshot, not fresh live run.</span>
+				</header>
+				<div class="versions">
+					<div><h3>Correct Version</h3><p>Bootstrap navbar with mainAppNav, hamburger/sidebar menu, user/mobile indicators, dropdownVolume, volume slider, sound toggles, and fa-sync reload nav item.</p></div>
+					<div><h3>Our Version</h3><p>RoomTopNav component exists, but evidence points to a custom topbar implementation and likely different dropdown/nav-link/button structure.</p></div>
+				</div>
+				<div class="evidence-grid">
+					<div><h3>Original Visual Evidence</h3><div class="mini-grid"><figure class="mini"><img src="original-fragments/file5.html.png" alt="file5.html"><figcaption>file5.html</figcaption></figure><figure class="mini"><img src="original-fragments/navbar.html.png" alt="navbar.html"><figcaption>navbar.html</figcaption></figure><figure class="mini"><img src="original-fragments/navbars-room.html.png" alt="navbars-room.html"><figcaption>navbars-room.html</figcaption></figure><figure class="mini"><img src="original-fragments/dropdownstart.html.png" alt="dropdownstart.html"><figcaption>dropdownstart.html</figcaption></figure><figure class="mini"><img src="original-fragments/dropdownvolume.html.png" alt="dropdownvolume.html"><figcaption>dropdownvolume.html</figcaption></figure><figure class="mini"><img src="original-fragments/navfile.html.png" alt="navfile.html"><figcaption>navfile.html</figcaption></figure><figure class="mini"><img src="original-fragments/reload.html.png" alt="reload.html"><figcaption>reload.html</figcaption></figure></div></div>
+					<div><h3>Repo Visual Evidence</h3><div class="mini-grid"><figure class="mini"><img src="../../../web/e2e/screenshots/01-room-loaded.png" alt="01-room-loaded.png"><figcaption>01-room-loaded.png</figcaption></figure></div></div>
+				</div>
+				<p class="code-paths"><strong>Repo paths:</strong> <code>web/src/lib/components/RoomTopNav.svelte</code> <code>web/src/lib/components/Nav.svelte</code></p>
+			</section><section class="mapping">
+				<header>
+					<h2>Sidebar / Roster / Admin Controls</h2>
+					<span class="confidence">Medium: original evidence is strong, current-state parity needs fresh role-specific screenshots.</span>
+				</header>
+				<div class="versions">
+					<div><h3>Correct Version</h3><p>Reference sidebar is Bootstrap nav list with Mobile App Info, Connectivity Check, General Settings, Archives, muted/followed users, active room users, sort/search/user option buttons, and role-gated controls.</p></div>
+					<div><h3>Our Version</h3><p>Sidebar/member panel exists, but evidence needs live admin/presenter/member captures for exact gated controls and roster geometry.</p></div>
+				</div>
+				<div class="evidence-grid">
+					<div><h3>Original Visual Evidence</h3><div class="mini-grid"><figure class="mini"><img src="original-fragments/file4.html.png" alt="file4.html"><figcaption>file4.html</figcaption></figure><figure class="mini"><img src="original-fragments/important-doc.html.png" alt="important-doc.html"><figcaption>important-doc.html</figcaption></figure><figure class="mini"><img src="original-fragments/odds-and-ends.html.png" alt="odds-and-ends.html"><figcaption>odds-and-ends.html</figcaption></figure></div></div>
+					<div><h3>Repo Visual Evidence</h3><div class="mini-grid"><figure class="mini"><img src="../../../web/e2e/screenshots/21-members-online.png" alt="21-members-online.png"><figcaption>21-members-online.png</figcaption></figure></div></div>
+				</div>
+				<p class="code-paths"><strong>Repo paths:</strong> <code>web/src/lib/components/RoomSidebar.svelte</code> <code>web/src/lib/components/MembersPanel.svelte</code></p>
+			</section><section class="mapping">
+				<header>
+					<h2>Presentation Tabs / Screens / Streams / Notes / Files</h2>
+					<span class="confidence">Strong for original tab markup; medium for repo because screenshots may be stale.</span>
+				</header>
+				<div class="versions">
+					<div><h3>Correct Version</h3><p>Bootstrap nav-tabs list with Screens, hidden Streams in some captures, Notes with noteChangeIndicator/edit icon, Files with folder icon, and note sub-tabs including home/pen badges.</p></div>
+					<div><h3>Our Version</h3><p>Existing repo screenshots include Streams/Notes/Files states, but source inspection previously showed some tab assumptions were stale. This must be checked against current code before calling it fixed.</p></div>
+				</div>
+				<div class="evidence-grid">
+					<div><h3>Original Visual Evidence</h3><div class="mini-grid"><figure class="mini"><img src="original-fragments/subnavbar.html.png" alt="subnavbar.html"><figcaption>subnavbar.html</figcaption></figure><figure class="mini"><img src="original-fragments/mixednavs.html.png" alt="mixednavs.html"><figcaption>mixednavs.html</figcaption></figure><figure class="mini"><img src="original-fragments/afterwebcamholder.html.png" alt="afterwebcamholder.html"><figcaption>afterwebcamholder.html</figcaption></figure><figure class="mini"><img src="original-fragments/file6.html.png" alt="file6.html"><figcaption>file6.html</figcaption></figure></div></div>
+					<div><h3>Repo Visual Evidence</h3><div class="mini-grid"><figure class="mini"><img src="../../../web/e2e/screenshots/02-tab-streams.png" alt="02-tab-streams.png"><figcaption>02-tab-streams.png</figcaption></figure><figure class="mini"><img src="../../../web/e2e/screenshots/03-tab-notes.png" alt="03-tab-notes.png"><figcaption>03-tab-notes.png</figcaption></figure><figure class="mini"><img src="../../../web/e2e/screenshots/04-tab-files.png" alt="04-tab-files.png"><figcaption>04-tab-files.png</figcaption></figure></div></div>
+				</div>
+				<p class="code-paths"><strong>Repo paths:</strong> <code>web/src/lib/components/MainStage.svelte</code> <code>web/src/lib/components/ScreenStage.svelte</code> <code>web/src/lib/components/NotesPanel.svelte</code> <code>web/src/lib/components/FilesPanel.svelte</code></p>
+			</section><section class="mapping">
+				<header>
+					<h2>Alerts Panel / Alert Rows / Posting Flow</h2>
+					<span class="confidence">Strong for correct flow; current parity depends on code read/live screenshot.</span>
+				</header>
+				<div class="versions">
+					<div><h3>Correct Version</h3><p>Reference alerts feed is read-only for rows; posting is routed through Post Alert modal. Rows use dense Bootstrap message bubbles, QA/reaction/menu affordances, and row menu actions.</p></div>
+					<div><h3>Our Version</h3><p>Our screenshots show Post Alert flow and row menu, but code must be checked for any leftover inline composer or non-reference row/menu chrome.</p></div>
+				</div>
+				<div class="evidence-grid">
+					<div><h3>Original Visual Evidence</h3><div class="mini-grid"><figure class="mini"><img src="original-fragments/file2.html.png" alt="file2.html"><figcaption>file2.html</figcaption></figure><figure class="mini"><img src="original-fragments/file6.html.png" alt="file6.html"><figcaption>file6.html</figcaption></figure><figure class="mini"><img src="original-fragments/as-splitter.html.png" alt="as-splitter.html"><figcaption>as-splitter.html</figcaption></figure></div></div>
+					<div><h3>Repo Visual Evidence</h3><div class="mini-grid"><figure class="mini"><img src="../../../web/e2e/screenshots/05-alert-modal.png" alt="05-alert-modal.png"><figcaption>05-alert-modal.png</figcaption></figure><figure class="mini"><img src="../../../web/e2e/screenshots/06-alert-modal-filled.png" alt="06-alert-modal-filled.png"><figcaption>06-alert-modal-filled.png</figcaption></figure><figure class="mini"><img src="../../../web/e2e/screenshots/07-alert-posted.png" alt="07-alert-posted.png"><figcaption>07-alert-posted.png</figcaption></figure><figure class="mini"><img src="../../../web/e2e/screenshots/08-alert-row-menu.png" alt="08-alert-row-menu.png"><figcaption>08-alert-row-menu.png</figcaption></figure></div></div>
+				</div>
+				<p class="code-paths"><strong>Repo paths:</strong> <code>web/src/lib/components/AlertFeed.svelte</code> <code>web/src/lib/components/PostAlertModal.svelte</code></p>
+			</section><section class="mapping">
+				<header>
+					<h2>Post Alert Modal</h2>
+					<span class="confidence">Strong.</span>
+				</header>
+				<div class="versions">
+					<div><h3>Correct Version</h3><p>Bootstrap modal #alert-modal with Text Alert, Text Url, combined Image / GIF / Video tab, textarea, URL input group, upload label/drop zone, footer checkboxes, green Post Alert.</p></div>
+					<div><h3>Our Version</h3><p>Current screenshot shows a Post Alert modal, but first-pass evidence was too narrow; the deeper card compares the original single saved modal directly against current screenshot and component path.</p></div>
+				</div>
+				<div class="evidence-grid">
+					<div><h3>Original Visual Evidence</h3><div class="mini-grid"><figure class="mini"><img src="original-fragments/file12.html.png" alt="file12.html"><figcaption>file12.html</figcaption></figure></div></div>
+					<div><h3>Repo Visual Evidence</h3><div class="mini-grid"><figure class="mini"><img src="../../../web/e2e/screenshots/05-alert-modal.png" alt="05-alert-modal.png"><figcaption>05-alert-modal.png</figcaption></figure><figure class="mini"><img src="../../../web/e2e/screenshots/06-alert-modal-filled.png" alt="06-alert-modal-filled.png"><figcaption>06-alert-modal-filled.png</figcaption></figure></div></div>
+				</div>
+				<p class="code-paths"><strong>Repo paths:</strong> <code>web/src/lib/components/PostAlertModal.svelte</code></p>
+			</section><section class="mapping">
+				<header>
+					<h2>Poll Window / Poll Panel</h2>
+					<span class="confidence">Strong for original, medium for current screenshot freshness.</span>
+				</header>
+				<div class="versions">
+					<div><h3>Correct Version</h3><p>Reference is a floating draggable poll panel with titlebar controls, Create New Poll and Pre-Canned Polls tabs, step labels, Add Choice, Save To Canned, and Send Poll.</p></div>
+					<div><h3>Our Version</h3><p>Current screenshot shows a poll create surface; compare carefully for floating titlebar chrome, canned tab, and Save To Canned before calling it matched.</p></div>
+				</div>
+				<div class="evidence-grid">
+					<div><h3>Original Visual Evidence</h3><div class="mini-grid"><figure class="mini"><img src="original-fragments/file13.html.png" alt="file13.html"><figcaption>file13.html</figcaption></figure><figure class="mini"><img src="original-fragments/odds-and-ends.html.png" alt="odds-and-ends.html"><figcaption>odds-and-ends.html</figcaption></figure></div></div>
+					<div><h3>Repo Visual Evidence</h3><div class="mini-grid"><figure class="mini"><img src="../../../web/e2e/screenshots/13-poll-modal.png" alt="13-poll-modal.png"><figcaption>13-poll-modal.png</figcaption></figure><figure class="mini"><img src="../../../web/e2e/screenshots/14-poll-created.png" alt="14-poll-created.png"><figcaption>14-poll-created.png</figcaption></figure><figure class="mini"><img src="../../../web/e2e/screenshots/15-poll-voted.png" alt="15-poll-voted.png"><figcaption>15-poll-voted.png</figcaption></figure><figure class="mini"><img src="../../../web/e2e/screenshots/16-poll-closed.png" alt="16-poll-closed.png"><figcaption>16-poll-closed.png</figcaption></figure></div></div>
+				</div>
+				<p class="code-paths"><strong>Repo paths:</strong> <code>web/src/lib/components/PollModal.svelte</code> <code>web/src/lib/components/PollPanel.svelte</code></p>
+			</section><section class="mapping">
+				<header>
+					<h2>User Settings Modal</h2>
+					<span class="confidence">Strong original, weak current visual until captured.</span>
+				</header>
+				<div class="versions">
+					<div><h3>Correct Version</h3><p>Bootstrap modal #user-settings-modal with App Settings, Alert Settings, Chat Settings tabs, radio/checkbox groups for color theme, layout, chat color mode, sound toggles, and chat text size number input.</p></div>
+					<div><h3>Our Version</h3><p>No current repo screenshot artifact found for this modal. Must use code inspection or generate fresh screenshot before visual parity claim.</p></div>
+				</div>
+				<div class="evidence-grid">
+					<div><h3>Original Visual Evidence</h3><div class="mini-grid"><figure class="mini"><img src="original-fragments/appusersettingsmodal.html.png" alt="appusersettingsmodal.html"><figcaption>appusersettingsmodal.html</figcaption></figure><figure class="mini"><img src="original-fragments/file9.html.png" alt="file9.html"><figcaption>file9.html</figcaption></figure></div></div>
+					<div><h3>Repo Visual Evidence</h3><div class="mini-grid"><p class="missing">No repo screenshot artifact found yet.</p></div></div>
+				</div>
+				<p class="code-paths"><strong>Repo paths:</strong> <code>web/src/lib/components/modals/SettingsModal.svelte</code> <code>web/src/lib/components/RoomSidebar.svelte</code></p>
+			</section><section class="mapping">
+				<header>
+					<h2>Audio/Video Settings Modal</h2>
+					<span class="confidence">Strong original, weak current visual until captured.</span>
+				</header>
+				<div class="versions">
+					<div><h3>Correct Version</h3><p>Bootstrap AV settings modal with User Settings and Presenter Settings tabs, speaker output selector/test, presenter mic/cam selectors, and Save/Close footer.</p></div>
+					<div><h3>Our Version</h3><p>No current repo screenshot artifact found. Current implementation needs visual capture for exact tab/nav/form/footer parity.</p></div>
+				</div>
+				<div class="evidence-grid">
+					<div><h3>Original Visual Evidence</h3><div class="mini-grid"><figure class="mini"><img src="original-fragments/avsettingsmodal.html.png" alt="avsettingsmodal.html"><figcaption>avsettingsmodal.html</figcaption></figure><figure class="mini"><img src="original-fragments/avsettingsmodal1.html.png" alt="avsettingsmodal1.html"><figcaption>avsettingsmodal1.html</figcaption></figure><figure class="mini"><img src="original-fragments/file10.html.png" alt="file10.html"><figcaption>file10.html</figcaption></figure></div></div>
+					<div><h3>Repo Visual Evidence</h3><div class="mini-grid"><p class="missing">No repo screenshot artifact found yet.</p></div></div>
+				</div>
+				<p class="code-paths"><strong>Repo paths:</strong> <code>web/src/lib/components/modals/AVSettingsModal.svelte</code></p>
+			</section><section class="mapping">
+				<header>
+					<h2>Advanced Search / Alert Filter / Scheduled Alerts</h2>
+					<span class="confidence">Strong original, weak current visual until captured.</span>
+				</header>
+				<div class="versions">
+					<div><h3>Correct Version</h3><p>Reference uses Bootstrap modal chrome. Advanced Search has title Rooms refresh button, dropdown-menu multi-selects, text search, checkbox filters, datetime fields. Scheduled Alerts is modal-xl table Date/Time, Sender, Alert, Repeat, Actions.</p></div>
+					<div><h3>Our Version</h3><p>No local screenshot artifact for these surfaces; existing docs say these are high-risk until visual capture confirms dropdown/table structure.</p></div>
+				</div>
+				<div class="evidence-grid">
+					<div><h3>Original Visual Evidence</h3><div class="mini-grid"><figure class="mini"><img src="original-fragments/file25.html.png" alt="file25.html"><figcaption>file25.html</figcaption></figure><figure class="mini"><img src="original-fragments/file28.html.png" alt="file28.html"><figcaption>file28.html</figcaption></figure><figure class="mini"><img src="original-fragments/file29.html.png" alt="file29.html"><figcaption>file29.html</figcaption></figure></div></div>
+					<div><h3>Repo Visual Evidence</h3><div class="mini-grid"><p class="missing">No repo screenshot artifact found yet.</p></div></div>
+				</div>
+				<p class="code-paths"><strong>Repo paths:</strong> <code>web/src/lib/components/modals/AdvancedSearchModal.svelte</code> <code>web/src/lib/components/modals/AlertFilterModal.svelte</code> <code>web/src/lib/components/modals/ScheduledAlertsModal.svelte</code></p>
+			</section><section class="mapping">
+				<header>
+					<h2>Session / Logs / Reports Admin Modals</h2>
+					<span class="confidence">Medium: original modal shells are strong; some bodies are async/empty in captures.</span>
+				</header>
+				<div class="versions">
+					<div><h3>Correct Version</h3><p>Reference admin modals use Bootstrap modal hierarchy, title-specific ids, modal headers/footers, list groups/tables/loading states, and role-gated visibility.</p></div>
+					<div><h3>Our Version</h3><p>Session screenshots exist; logs/reports/all-PM need fresh current visual capture before claiming exact match.</p></div>
+				</div>
+				<div class="evidence-grid">
+					<div><h3>Original Visual Evidence</h3><div class="mini-grid"><figure class="mini"><img src="original-fragments/file11.html.png" alt="file11.html"><figcaption>file11.html</figcaption></figure><figure class="mini"><img src="original-fragments/file14.html.png" alt="file14.html"><figcaption>file14.html</figcaption></figure><figure class="mini"><img src="original-fragments/file15.html.png" alt="file15.html"><figcaption>file15.html</figcaption></figure><figure class="mini"><img src="original-fragments/file16.html.png" alt="file16.html"><figcaption>file16.html</figcaption></figure><figure class="mini"><img src="original-fragments/file26.html.png" alt="file26.html"><figcaption>file26.html</figcaption></figure><figure class="mini"><img src="original-fragments/file27.html.png" alt="file27.html"><figcaption>file27.html</figcaption></figure></div></div>
+					<div><h3>Repo Visual Evidence</h3><div class="mini-grid"><figure class="mini"><img src="../../../web/e2e/screenshots/19-session-control.png" alt="19-session-control.png"><figcaption>19-session-control.png</figcaption></figure><figure class="mini"><img src="../../../web/e2e/screenshots/20-confirm-clear-chat.png" alt="20-confirm-clear-chat.png"><figcaption>20-confirm-clear-chat.png</figcaption></figure></div></div>
+				</div>
+				<p class="code-paths"><strong>Repo paths:</strong> <code>web/src/lib/components/modals/SessionControlModal.svelte</code> <code>web/src/lib/components/modals/DebugLogModal.svelte</code> <code>web/src/lib/components/modals/ChatLogsModal.svelte</code> <code>web/src/lib/components/modals/AlertLogsModal.svelte</code> <code>web/src/lib/components/modals/AlertSendReportModal.svelte</code> <code>web/src/lib/components/modals/AllUserPmModal.svelte</code></p>
+			</section><section class="mapping">
+				<header>
+					<h2>Chat / Private Chat / Reply / QA</h2>
+					<span class="confidence">Medium.</span>
+				</header>
+				<div class="versions">
+					<div><h3>Correct Version</h3><p>Reference chat/PM/reply surfaces use dense Bootstrap message rows, textareas with image/GIF/emoji affordances, private chat docked panel, followed/muted user modals, and Q&amp;A modal shell.</p></div>
+					<div><h3>Our Version</h3><p>Current chat screenshots cover basic chat/reactions only; private/reply/QA/followed/muted need dedicated current visuals.</p></div>
+				</div>
+				<div class="evidence-grid">
+					<div><h3>Original Visual Evidence</h3><div class="mini-grid"><figure class="mini"><img src="original-fragments/file18.html.png" alt="file18.html"><figcaption>file18.html</figcaption></figure><figure class="mini"><img src="original-fragments/file19.html.png" alt="file19.html"><figcaption>file19.html</figcaption></figure><figure class="mini"><img src="original-fragments/file20.html.png" alt="file20.html"><figcaption>file20.html</figcaption></figure><figure class="mini"><img src="original-fragments/file21.html.png" alt="file21.html"><figcaption>file21.html</figcaption></figure><figure class="mini"><img src="original-fragments/file24.html.png" alt="file24.html"><figcaption>file24.html</figcaption></figure><figure class="mini"><img src="original-fragments/file32.html.png" alt="file32.html"><figcaption>file32.html</figcaption></figure></div></div>
+					<div><h3>Repo Visual Evidence</h3><div class="mini-grid"><figure class="mini"><img src="../../../web/e2e/screenshots/09-chat-main.png" alt="09-chat-main.png"><figcaption>09-chat-main.png</figcaption></figure><figure class="mini"><img src="../../../web/e2e/screenshots/10-chat-offtopic.png" alt="10-chat-offtopic.png"><figcaption>10-chat-offtopic.png</figcaption></figure><figure class="mini"><img src="../../../web/e2e/screenshots/11-reaction-picker.png" alt="11-reaction-picker.png"><figcaption>11-reaction-picker.png</figcaption></figure><figure class="mini"><img src="../../../web/e2e/screenshots/12-reaction-added.png" alt="12-reaction-added.png"><figcaption>12-reaction-added.png</figcaption></figure></div></div>
+				</div>
+				<p class="code-paths"><strong>Repo paths:</strong> <code>web/src/lib/components/ChatPanel.svelte</code> <code>web/src/lib/components/PrivateChat.svelte</code> <code>web/src/lib/components/modals/ReplyModal.svelte</code> <code>web/src/lib/components/modals/AlertQaModal.svelte</code> <code>web/src/lib/components/modals/MutedUsersModal.svelte</code> <code>web/src/lib/components/modals/FollowedUsersModal.svelte</code></p>
+			</section><section class="mapping">
+				<header>
+					<h2>Media / YouTube / Mobile App / Screen Share / Recording</h2>
+					<span class="confidence">Medium.</span>
+				</header>
+				<div class="versions">
+					<div><h3>Correct Version</h3><p>Reference includes Play YouTube For All modal, mobile app modal with store badges, draggable/resizable screen-share and rec preview cards, WebRTC troubleshooter rows, rich text editor shell, toast container, and hidden webcam audio sink.</p></div>
+					<div><h3>Our Version</h3><p>Some media screenshots exist; screen-share/recording/toast/audio sink/mobile/settings require current visual or code evidence before exact parity claims.</p></div>
+				</div>
+				<div class="evidence-grid">
+					<div><h3>Original Visual Evidence</h3><div class="mini-grid"><figure class="mini"><img src="original-fragments/file8.html.png" alt="file8.html"><figcaption>file8.html</figcaption></figure><figure class="mini"><img src="original-fragments/file17.html.png" alt="file17.html"><figcaption>file17.html</figcaption></figure><figure class="mini"><img src="original-fragments/file22.html.png" alt="file22.html"><figcaption>file22.html</figcaption></figure><figure class="mini"><img src="original-fragments/file23.html.png" alt="file23.html"><figcaption>file23.html</figcaption></figure><figure class="mini"><img src="original-fragments/file30.html.png" alt="file30.html"><figcaption>file30.html</figcaption></figure><figure class="mini"><img src="original-fragments/file31.html.png" alt="file31.html"><figcaption>file31.html</figcaption></figure><figure class="mini"><img src="original-fragments/file33.html.png" alt="file33.html"><figcaption>file33.html</figcaption></figure><figure class="mini"><img src="original-fragments/file34.html.png" alt="file34.html"><figcaption>file34.html</figcaption></figure><figure class="mini"><img src="original-fragments/webcamholder.html.png" alt="webcamholder.html"><figcaption>webcamholder.html</figcaption></figure><figure class="mini"><img src="original-fragments/afterwebcamholder.html.png" alt="afterwebcamholder.html"><figcaption>afterwebcamholder.html</figcaption></figure></div></div>
+					<div><h3>Repo Visual Evidence</h3><div class="mini-grid"><figure class="mini"><img src="../../../web/e2e/screenshots/17-media-modal.png" alt="17-media-modal.png"><figcaption>17-media-modal.png</figcaption></figure><figure class="mini"><img src="../../../web/e2e/screenshots/18-media-playing.png" alt="18-media-playing.png"><figcaption>18-media-playing.png</figcaption></figure></div></div>
+				</div>
+				<p class="code-paths"><strong>Repo paths:</strong> <code>web/src/lib/components/MediaPlayer.svelte</code> <code>web/src/lib/components/WebcamHolder.svelte</code> <code>web/src/lib/components/modals/MediaForAllModal.svelte</code> <code>web/src/lib/components/modals/MobileAppInfoModal.svelte</code> <code>web/src/lib/components/modals/ConnectivityCheckModal.svelte</code> <code>web/src/lib/components/modals/RichTextEditorModal.svelte</code> <code>web/src/lib/components/RecPreview.svelte</code></p>
+			</section>
+		<h2 class="section-title">Original Fragment Atlas: Every Saved HTML File</h2>
+		<article class="fragment">
+			<img src="original-fragments/afterwebcamholder.html.png" alt="afterwebcamholder.html">
+			<div>
+				<h3>afterwebcamholder.html</h3>
+				<p><strong>SHA:</strong> <code>13a6f559dfaf287f</code> · <strong>Size:</strong> 3.9 KB · <strong>Audited gaps:</strong> 8 (2 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-presenter-cams</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">none</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">noteChangeIndicator</span><span class="chip">notes-tab</span><span class="chip">screens-tab</span><span class="chip">webcamVideo-</span><span class="chip">webcamsHolder-</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">none</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/appusersettingsmodal.html.png" alt="appusersettingsmodal.html">
+			<div>
+				<h3>appusersettingsmodal.html</h3>
+				<p><strong>SHA:</strong> <code>430c1096f7ce5e53</code> · <strong>Size:</strong> 63.7 KB · <strong>Audited gaps:</strong> 25 (0 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-user-settings-modal</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">alert-compact-mode</span><span class="chip">alert-donot-disturb</span><span class="chip">alert-popup-donot-disturb</span><span class="chip">alert-regular-mode</span><span class="chip">alertDoNotDisturb</span><span class="chip">alertPopup</span><span class="chip">alertTextMode</span><span class="chip">chat-alerts-bottom</span><span class="chip">chat-alerts-left</span><span class="chip">chat-alerts-right</span><span class="chip">chat-alerts-top</span><span class="chip">longer-alert-popup</span><span class="chip">non-trade-alert</span><span class="chip">user-alert-settings</span><span class="chip">user-alert-settings-tab</span><span class="chip">user-app-settings</span><span class="chip">user-app-settings-tab</span><span class="chip">user-chat-settings</span><span class="chip">user-chat-settings-tab</span><span class="chip">user-settings-modal</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">alert-compact-mode</span><span class="chip">alert-donot-disturb</span><span class="chip">alert-popup-donot-disturb</span><span class="chip">alert-regular-mode</span><span class="chip">alertDoNotDisturb</span><span class="chip">alertPopup</span><span class="chip">alertTextMode</span><span class="chip">alwaysScrollToBottom</span><span class="chip">app-dark-theme</span><span class="chip">app-disable-video</span><span class="chip">app-donot-disturb</span><span class="chip">app-light-theme</span><span class="chip">app-reactions-popup</span><span class="chip">app-reactions-popup-qa</span><span class="chip">app-reactions-sound-qa</span><span class="chip">app-recording-start-sound</span><span class="chip">app-recording-stop-sound</span><span class="chip">app-speech-reco-overlay</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">Reset Save changes</span><span class="chip">Edit my Info and Avatar</span><span class="chip">Filter out alerts Text Mode: Regular Mode Compact Mode Image Preview: Smaller image preview on Do not disturb: Gif on Ba</span><span class="chip">input #app-light-theme type=radio name=app-color-theme</span><span class="chip">input #app-dark-theme type=radio name=app-color-theme</span><span class="chip">input #chat-alerts-left type=radio name=roomLayoutOptions</span><span class="chip">input #chat-alerts-top type=radio name=roomLayoutOptions</span><span class="chip">input #chat-alerts-right type=radio name=roomLayoutOptions</span><span class="chip">input #chat-alerts-bottom type=radio name=roomLayoutOptions</span><span class="chip">input #pm-window-layout type=checkbox name=pm-window-layout</span><span class="chip">input #chat-text-color type=color name=chat-text-color</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/as-splitter.html.png" alt="as-splitter.html">
+			<div>
+				<h3>as-splitter.html</h3>
+				<p><strong>SHA:</strong> <code>8cff6c0cb8da970f</code> · <strong>Size:</strong> 937.0 KB · <strong>Audited gaps:</strong> 18 (3 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-alerts</span><span class="chip">app-chat</span><span class="chip">app-note</span><span class="chip">app-presentationarea</span><span class="chip">app-presenter-cams</span><span class="chip">app-roomscroller</span><span class="chip">app-st-message</span><span class="chip">app-webcam-holder</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">none</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">652765a0e494735aa53574ba</span><span class="chip">652765a0e494735aa53574ba-tab</span><span class="chip">665874b2692d34204762bb73</span><span class="chip">665874b2692d34204762bb73-tab</span><span class="chip">68385e5f7568b13c34072e13</span><span class="chip">68385e5f7568b13c34072e13-tab</span><span class="chip">6879121b8f9c6824f6f03266</span><span class="chip">6879121b8f9c6824f6f03266-tab</span><span class="chip">68ac8cdb207a2a2927a27775</span><span class="chip">68ac8cdb207a2a2927a27775-tab</span><span class="chip">6953c35f88f24e0dd42a1218</span><span class="chip">6953c35f88f24e0dd42a1218-tab</span><span class="chip">basic-addon1</span><span class="chip">chatScrollViewParentAlerts</span><span class="chip">docs-internal-guid-2b81aed8-7fff-5e6b-3df4-740ad0bc32f3</span><span class="chip">docs-internal-guid-3cf97d5e-7fff-6ae2-e3ed-e28c1f11416e</span><span class="chip">docs-internal-guid-4071bd07-7fff-f7a7-3707-c62db945bdd1</span><span class="chip">docs-internal-guid-7a7c6d17-7fff-2242-234c-f86e7d095ba4</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">textarea #textAreaTxt name=txt-area &quot;Type your message here..&quot;</span><span class="chip">input type=text &quot;Search files...&quot;</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/avsettingsmodal.html.png" alt="avsettingsmodal.html">
+			<div>
+				<h3>avsettingsmodal.html</h3>
+				<p><strong>SHA:</strong> <code>9e631bc4577e009f</code> · <strong>Size:</strong> 10.0 KB · <strong>Audited gaps:</strong> 12 (2 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">none</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">av-settings-modal</span><span class="chip">presenter-audio-video-settings</span><span class="chip">user-audio-video-settings</span><span class="chip">user-audio-video-settings-tab</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">audio-deviceList</span><span class="chip">av-settings-modal</span><span class="chip">presenter-audio-video-settings</span><span class="chip">speakers-device</span><span class="chip">user-audio-video-settings</span><span class="chip">user-audio-video-settings-tab</span><span class="chip">userSettingsTab</span><span class="chip">userSettingsTabContent</span><span class="chip">video-deviceList</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">Test</span><span class="chip">Change Devices</span><span class="chip">Save Close</span><span class="chip">select #speakers-device</span><span class="chip">select #audio-deviceList</span><span class="chip">select #video-deviceList</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/avsettingsmodal1.html.png" alt="avsettingsmodal1.html">
+			<div>
+				<h3>avsettingsmodal1.html</h3>
+				<p><strong>SHA:</strong> <code>edf8be065dbea227</code> · <strong>Size:</strong> 10.9 KB · <strong>Audited gaps:</strong> 12 (2 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-av-settings-modal</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">av-settings-modal</span><span class="chip">presenter-audio-video-settings</span><span class="chip">user-audio-video-settings</span><span class="chip">user-audio-video-settings-tab</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">audio-deviceList</span><span class="chip">av-settings-modal</span><span class="chip">presenter-audio-video-settings</span><span class="chip">speakers-device</span><span class="chip">user-audio-video-settings</span><span class="chip">user-audio-video-settings-tab</span><span class="chip">userSettingsTab</span><span class="chip">userSettingsTabContent</span><span class="chip">video-deviceList</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">Test</span><span class="chip">Change Devices</span><span class="chip">Save Close</span><span class="chip">select #speakers-device</span><span class="chip">select #audio-deviceList</span><span class="chip">select #video-deviceList</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/connected.html.png" alt="connected.html">
+			<div>
+				<h3>connected.html</h3>
+				<p><strong>SHA:</strong> <code>e609a4760a04467b</code> · <strong>Size:</strong> 186 B · <strong>Audited gaps:</strong> 7 (2 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">none</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">none</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">connectedMsg</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">none</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/dropdownstart.html.png" alt="dropdownstart.html">
+			<div>
+				<h3>dropdownstart.html</h3>
+				<p><strong>SHA:</strong> <code>b955c74c729df11a</code> · <strong>Size:</strong> 6.0 KB · <strong>Audited gaps:</strong> 15 (4 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">none</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">alert-donot-disturb</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">alert-donot-disturb</span><span class="chip">app-donot-disturb</span><span class="chip">chat-donot-disturb</span><span class="chip">dropdownVolume</span><span class="chip">non-trade-donot-disturb</span><span class="chip">presentation-subtitles</span><span class="chip">qa-donot-disturb</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">input type=range</span><span class="chip">input #alert-donot-disturb type=checkbox name=alert-donot-disturb</span><span class="chip">input #qa-donot-disturb type=checkbox name=qa-donot-disturb</span><span class="chip">input #non-trade-donot-disturb type=checkbox name=non-trade-donot-disturb</span><span class="chip">input #chat-donot-disturb type=checkbox name=chat-donot-disturb</span><span class="chip">input #presentation-subtitles type=checkbox name=presentation-subtitles</span><span class="chip">input #app-donot-disturb type=checkbox name=app-donot-disturb</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/dropdownvolume.html.png" alt="dropdownvolume.html">
+			<div>
+				<h3>dropdownvolume.html</h3>
+				<p><strong>SHA:</strong> <code>f1e6d4f3cbfa3426</code> · <strong>Size:</strong> 5.0 KB · <strong>Audited gaps:</strong> 12 (0 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">none</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">alert-donot-disturb</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">alert-donot-disturb</span><span class="chip">app-donot-disturb</span><span class="chip">chat-donot-disturb</span><span class="chip">non-trade-donot-disturb</span><span class="chip">presentation-subtitles</span><span class="chip">qa-donot-disturb</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">input type=range</span><span class="chip">input #alert-donot-disturb type=checkbox name=alert-donot-disturb</span><span class="chip">input #qa-donot-disturb type=checkbox name=qa-donot-disturb</span><span class="chip">input #non-trade-donot-disturb type=checkbox name=non-trade-donot-disturb</span><span class="chip">input #chat-donot-disturb type=checkbox name=chat-donot-disturb</span><span class="chip">input #presentation-subtitles type=checkbox name=presentation-subtitles</span><span class="chip">input #app-donot-disturb type=checkbox name=app-donot-disturb</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file-1.html.png" alt="file-1.html">
+			<div>
+				<h3>file-1.html</h3>
+				<p><strong>SHA:</strong> <code>0d3ebe334166c6ca</code> · <strong>Size:</strong> 169.6 KB · <strong>Audited gaps:</strong> 23 (1 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">none</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">none</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">dynamic-favicon</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">Download Image</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file2.html.png" alt="file2.html">
+			<div>
+				<h3>file2.html</h3>
+				<p><strong>SHA:</strong> <code>602c321d14e4f511</code> · <strong>Size:</strong> 5.6 MB · <strong>Audited gaps:</strong> 20 (0 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-alert-filter-modal</span><span class="chip">app-alert-logs-modal</span><span class="chip">app-alert-qa-modal</span><span class="chip">app-alert-send-report-modal</span><span class="chip">app-alerts</span><span class="chip">app-alerts-advanced-search</span><span class="chip">app-all-user-pmmodal</span><span class="chip">app-av-settings-modal</span><span class="chip">app-chat</span><span class="chip">app-chat-logs-modal</span><span class="chip">app-debug-log-modal</span><span class="chip">app-followed-users-modal</span><span class="chip">app-mobile-app-info-modal</span><span class="chip">app-muted-users-modal</span><span class="chip">app-note</span><span class="chip">app-play-youtube-modal</span><span class="chip">app-poll-modal</span><span class="chip">app-post-alert-modal</span><span class="chip">app-presentationarea</span><span class="chip">app-presenter-cams</span><span class="chip">app-privchat</span><span class="chip">app-rec-preview</span><span class="chip">app-reply-modal</span><span class="chip">app-rich-text-editor</span><span class="chip">app-room</span><span class="chip">app-room-roster</span><span class="chip">app-roomscroller</span><span class="chip">app-root</span><span class="chip">app-scheduled-alerts-modal</span><span class="chip">app-screenshare-preview</span><span class="chip">app-session-control-modal</span><span class="chip">app-st-message</span><span class="chip">app-user-info-modal</span><span class="chip">app-user-settings-modal</span><span class="chip">app-webcam-holder</span><span class="chip">app-webrtc-troubleshooter</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">alert-compact-mode</span><span class="chip">alert-donot-disturb</span><span class="chip">alert-filter-modal</span><span class="chip">alert-legal-disclosure-label</span><span class="chip">alert-modal</span><span class="chip">alert-non-trade-label</span><span class="chip">alert-popup-donot-disturb</span><span class="chip">alert-push-label</span><span class="chip">alert-regular-mode</span><span class="chip">alert-send-report-modal</span><span class="chip">alertDoNotDisturb</span><span class="chip">alertPopup</span><span class="chip">alertQALabel</span><span class="chip">alertQAModal</span><span class="chip">alertTextMode</span><span class="chip">alerts-advanced-search-modal</span><span class="chip">alerts-logs-modal</span><span class="chip">all-user-pm-modal</span><span class="chip">anonymous-poll</span><span class="chip">av-settings-modal</span><span class="chip">chat-alerts-bottom</span><span class="chip">chat-alerts-left</span><span class="chip">chat-alerts-right</span><span class="chip">chat-alerts-top</span><span class="chip">chat-logs-modal</span><span class="chip">debug-log-modal</span><span class="chip">debugLogModalTxt</span><span class="chip">followedUsersModal</span><span class="chip">followedUsersModalLabel</span><span class="chip">longer-alert-popup</span><span class="chip">mobileAppInfoModal</span><span class="chip">mutedUsersModal</span><span class="chip">mutedUsersModalLabel</span><span class="chip">non-trade-alert</span><span class="chip">play-youtube-modal</span><span class="chip">pollChoiceTxt</span><span class="chip">pollModalCompHolder</span><span class="chip">pollPanelTitlebar</span><span class="chip">pollQuestionTxt</span><span class="chip">post-alert</span><span class="chip">presenter-audio-video-settings</span><span class="chip">replyModal</span><span class="chip">rteLabel</span><span class="chip">rteModal</span><span class="chip">scheduledAlertsModal</span><span class="chip">scheduledAlertsModalLabel</span><span class="chip">search-term-input</span><span class="chip">sendpoll</span><span class="chip">sendpolltab</span><span class="chip">session-control</span><span class="chip">session-control-modal</span><span class="chip">show-alerts</span><span class="chip">user-alert-settings</span><span class="chip">user-alert-settings-tab</span><span class="chip">user-app-settings</span><span class="chip">user-app-settings-tab</span><span class="chip">user-audio-video-settings</span><span class="chip">user-audio-video-settings-tab</span><span class="chip">user-chat-settings</span><span class="chip">user-chat-settings-tab</span><span class="chip">user-modal</span><span class="chip">user-settings-modal</span><span class="chip">webrtc-troubleshooter-modal</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">652765a0e494735aa53574ba</span><span class="chip">652765a0e494735aa53574ba-tab</span><span class="chip">665874b2692d34204762bb73</span><span class="chip">665874b2692d34204762bb73-tab</span><span class="chip">68385e5f7568b13c34072e13</span><span class="chip">68385e5f7568b13c34072e13-tab</span><span class="chip">6879121b8f9c6824f6f03266</span><span class="chip">6879121b8f9c6824f6f03266-tab</span><span class="chip">68ac8cdb207a2a2927a27775</span><span class="chip">68ac8cdb207a2a2927a27775-tab</span><span class="chip">6953c35f88f24e0dd42a1218</span><span class="chip">6953c35f88f24e0dd42a1218-tab</span><span class="chip">addon-img</span><span class="chip">addon-url</span><span class="chip">alert-compact-mode</span><span class="chip">alert-donot-disturb</span><span class="chip">alert-filter-modal</span><span class="chip">alert-legal-disclosure-label</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">Mobile App Info Chat Media Connectivity Check General Settings Archives Alert Logs Chat Logs Transcript History Manage M</span><span class="chip">Mute Alert sound on QA sound on NTA sound on Chat sound on Subtitles on Don't Disturb Reload Alerts ⠇ User Info Mention </span><span class="chip">@Mention Private Chat Follow Mute Close</span><span class="chip">Close</span><span class="chip">Reset Save changes</span><span class="chip">Edit my Info and Avatar</span><span class="chip">Filter out alerts Text Mode: Regular Mode Compact Mode Image Preview: Smaller image preview on Do not disturb: Gif on Ba</span><span class="chip">Test</span><span class="chip">input type=range</span><span class="chip">input #alert-donot-disturb type=checkbox name=alert-donot-disturb</span><span class="chip">input #qa-donot-disturb type=checkbox name=qa-donot-disturb</span><span class="chip">input #non-trade-donot-disturb type=checkbox name=non-trade-donot-disturb</span><span class="chip">input #chat-donot-disturb type=checkbox name=chat-donot-disturb</span><span class="chip">input #presentation-subtitles type=checkbox name=presentation-subtitles</span><span class="chip">input #app-donot-disturb type=checkbox name=app-donot-disturb</span><span class="chip">textarea #textAreaTxt name=txt-area &quot;Type your message here..&quot;</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file3.html.png" alt="file3.html">
+			<div>
+				<h3>file3.html</h3>
+				<p><strong>SHA:</strong> <code>2cbc4f965e8b7582</code> · <strong>Size:</strong> 5.3 MB · <strong>Audited gaps:</strong> 22 (4 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-alert-filter-modal</span><span class="chip">app-alert-logs-modal</span><span class="chip">app-alert-qa-modal</span><span class="chip">app-alert-send-report-modal</span><span class="chip">app-alerts</span><span class="chip">app-alerts-advanced-search</span><span class="chip">app-all-user-pmmodal</span><span class="chip">app-av-settings-modal</span><span class="chip">app-chat</span><span class="chip">app-chat-logs-modal</span><span class="chip">app-debug-log-modal</span><span class="chip">app-followed-users-modal</span><span class="chip">app-mobile-app-info-modal</span><span class="chip">app-muted-users-modal</span><span class="chip">app-note</span><span class="chip">app-play-youtube-modal</span><span class="chip">app-poll-modal</span><span class="chip">app-post-alert-modal</span><span class="chip">app-presentationarea</span><span class="chip">app-presenter-cams</span><span class="chip">app-privchat</span><span class="chip">app-rec-preview</span><span class="chip">app-reply-modal</span><span class="chip">app-rich-text-editor</span><span class="chip">app-room</span><span class="chip">app-room-roster</span><span class="chip">app-roomscroller</span><span class="chip">app-root</span><span class="chip">app-scheduled-alerts-modal</span><span class="chip">app-screenshare-preview</span><span class="chip">app-session-control-modal</span><span class="chip">app-st-message</span><span class="chip">app-user-info-modal</span><span class="chip">app-user-settings-modal</span><span class="chip">app-webcam-holder</span><span class="chip">app-webrtc-troubleshooter</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">alert-compact-mode</span><span class="chip">alert-donot-disturb</span><span class="chip">alert-filter-modal</span><span class="chip">alert-legal-disclosure-label</span><span class="chip">alert-modal</span><span class="chip">alert-non-trade-label</span><span class="chip">alert-popup-donot-disturb</span><span class="chip">alert-push-label</span><span class="chip">alert-regular-mode</span><span class="chip">alert-send-report-modal</span><span class="chip">alertDoNotDisturb</span><span class="chip">alertPopup</span><span class="chip">alertQALabel</span><span class="chip">alertQAModal</span><span class="chip">alertTextMode</span><span class="chip">alerts-advanced-search-modal</span><span class="chip">alerts-logs-modal</span><span class="chip">all-user-pm-modal</span><span class="chip">anonymous-poll</span><span class="chip">av-settings-modal</span><span class="chip">chat-alerts-bottom</span><span class="chip">chat-alerts-left</span><span class="chip">chat-alerts-right</span><span class="chip">chat-alerts-top</span><span class="chip">chat-logs-modal</span><span class="chip">debug-log-modal</span><span class="chip">debugLogModalTxt</span><span class="chip">followedUsersModal</span><span class="chip">followedUsersModalLabel</span><span class="chip">longer-alert-popup</span><span class="chip">mobileAppInfoModal</span><span class="chip">mutedUsersModal</span><span class="chip">mutedUsersModalLabel</span><span class="chip">non-trade-alert</span><span class="chip">play-youtube-modal</span><span class="chip">pollChoiceTxt</span><span class="chip">pollModalCompHolder</span><span class="chip">pollPanelTitlebar</span><span class="chip">pollQuestionTxt</span><span class="chip">post-alert</span><span class="chip">presenter-audio-video-settings</span><span class="chip">replyModal</span><span class="chip">rteLabel</span><span class="chip">rteModal</span><span class="chip">scheduledAlertsModal</span><span class="chip">scheduledAlertsModalLabel</span><span class="chip">search-term-input</span><span class="chip">sendpoll</span><span class="chip">sendpolltab</span><span class="chip">session-control</span><span class="chip">session-control-modal</span><span class="chip">show-alerts</span><span class="chip">user-alert-settings</span><span class="chip">user-alert-settings-tab</span><span class="chip">user-app-settings</span><span class="chip">user-app-settings-tab</span><span class="chip">user-audio-video-settings</span><span class="chip">user-audio-video-settings-tab</span><span class="chip">user-chat-settings</span><span class="chip">user-chat-settings-tab</span><span class="chip">user-modal</span><span class="chip">user-settings-modal</span><span class="chip">webrtc-troubleshooter-modal</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">652765a0e494735aa53574ba</span><span class="chip">652765a0e494735aa53574ba-tab</span><span class="chip">665874b2692d34204762bb73</span><span class="chip">665874b2692d34204762bb73-tab</span><span class="chip">68385e5f7568b13c34072e13</span><span class="chip">68385e5f7568b13c34072e13-tab</span><span class="chip">6879121b8f9c6824f6f03266</span><span class="chip">6879121b8f9c6824f6f03266-tab</span><span class="chip">68ac8cdb207a2a2927a27775</span><span class="chip">68ac8cdb207a2a2927a27775-tab</span><span class="chip">6953c35f88f24e0dd42a1218</span><span class="chip">6953c35f88f24e0dd42a1218-tab</span><span class="chip">addon-img</span><span class="chip">addon-url</span><span class="chip">alert-compact-mode</span><span class="chip">alert-donot-disturb</span><span class="chip">alert-filter-modal</span><span class="chip">alert-legal-disclosure-label</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">Mobile App Info Chat Media Connectivity Check General Settings Archives Alert Logs Chat Logs Transcript History Manage M</span><span class="chip">Mute Alert sound on QA sound on NTA sound on Chat sound on Subtitles on Don't Disturb Reload Alerts ⠇ User Info Mention </span><span class="chip">@Mention Private Chat Follow Mute Close</span><span class="chip">Close</span><span class="chip">Reset Save changes</span><span class="chip">Edit my Info and Avatar</span><span class="chip">Filter out alerts Text Mode: Regular Mode Compact Mode Image Preview: Smaller image preview on Do not disturb: Gif on Ba</span><span class="chip">Test</span><span class="chip">input type=range</span><span class="chip">input #alert-donot-disturb type=checkbox name=alert-donot-disturb</span><span class="chip">input #qa-donot-disturb type=checkbox name=qa-donot-disturb</span><span class="chip">input #non-trade-donot-disturb type=checkbox name=non-trade-donot-disturb</span><span class="chip">input #chat-donot-disturb type=checkbox name=chat-donot-disturb</span><span class="chip">input #presentation-subtitles type=checkbox name=presentation-subtitles</span><span class="chip">input #app-donot-disturb type=checkbox name=app-donot-disturb</span><span class="chip">textarea #textAreaTxt name=txt-area &quot;Type your message here..&quot;</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file4.html.png" alt="file4.html">
+			<div>
+				<h3>file4.html</h3>
+				<p><strong>SHA:</strong> <code>e9497226a41f4a87</code> · <strong>Size:</strong> 4.8 MB · <strong>Audited gaps:</strong> 13 (4 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-alert-filter-modal</span><span class="chip">app-alert-logs-modal</span><span class="chip">app-alert-qa-modal</span><span class="chip">app-alert-send-report-modal</span><span class="chip">app-alerts</span><span class="chip">app-alerts-advanced-search</span><span class="chip">app-all-user-pmmodal</span><span class="chip">app-av-settings-modal</span><span class="chip">app-chat</span><span class="chip">app-chat-logs-modal</span><span class="chip">app-debug-log-modal</span><span class="chip">app-followed-users-modal</span><span class="chip">app-mobile-app-info-modal</span><span class="chip">app-muted-users-modal</span><span class="chip">app-note</span><span class="chip">app-play-youtube-modal</span><span class="chip">app-poll-modal</span><span class="chip">app-post-alert-modal</span><span class="chip">app-presentationarea</span><span class="chip">app-presenter-cams</span><span class="chip">app-privchat</span><span class="chip">app-rec-preview</span><span class="chip">app-reply-modal</span><span class="chip">app-rich-text-editor</span><span class="chip">app-room</span><span class="chip">app-room-roster</span><span class="chip">app-roomscroller</span><span class="chip">app-scheduled-alerts-modal</span><span class="chip">app-screenshare-preview</span><span class="chip">app-session-control-modal</span><span class="chip">app-st-message</span><span class="chip">app-user-info-modal</span><span class="chip">app-user-settings-modal</span><span class="chip">app-webcam-holder</span><span class="chip">app-webrtc-troubleshooter</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">alert-compact-mode</span><span class="chip">alert-donot-disturb</span><span class="chip">alert-filter-modal</span><span class="chip">alert-legal-disclosure-label</span><span class="chip">alert-modal</span><span class="chip">alert-non-trade-label</span><span class="chip">alert-popup-donot-disturb</span><span class="chip">alert-push-label</span><span class="chip">alert-regular-mode</span><span class="chip">alert-send-report-modal</span><span class="chip">alertDoNotDisturb</span><span class="chip">alertPopup</span><span class="chip">alertQALabel</span><span class="chip">alertQAModal</span><span class="chip">alertTextMode</span><span class="chip">alerts-advanced-search-modal</span><span class="chip">alerts-logs-modal</span><span class="chip">all-user-pm-modal</span><span class="chip">anonymous-poll</span><span class="chip">av-settings-modal</span><span class="chip">chat-alerts-bottom</span><span class="chip">chat-alerts-left</span><span class="chip">chat-alerts-right</span><span class="chip">chat-alerts-top</span><span class="chip">chat-logs-modal</span><span class="chip">debug-log-modal</span><span class="chip">debugLogModalTxt</span><span class="chip">followedUsersModal</span><span class="chip">followedUsersModalLabel</span><span class="chip">longer-alert-popup</span><span class="chip">mobileAppInfoModal</span><span class="chip">mutedUsersModal</span><span class="chip">mutedUsersModalLabel</span><span class="chip">non-trade-alert</span><span class="chip">play-youtube-modal</span><span class="chip">pollChoiceTxt</span><span class="chip">pollModalCompHolder</span><span class="chip">pollPanelTitlebar</span><span class="chip">pollQuestionTxt</span><span class="chip">post-alert</span><span class="chip">presenter-audio-video-settings</span><span class="chip">replyModal</span><span class="chip">rteLabel</span><span class="chip">rteModal</span><span class="chip">scheduledAlertsModal</span><span class="chip">scheduledAlertsModalLabel</span><span class="chip">search-term-input</span><span class="chip">sendpoll</span><span class="chip">sendpolltab</span><span class="chip">session-control</span><span class="chip">session-control-modal</span><span class="chip">show-alerts</span><span class="chip">user-alert-settings</span><span class="chip">user-alert-settings-tab</span><span class="chip">user-app-settings</span><span class="chip">user-app-settings-tab</span><span class="chip">user-audio-video-settings</span><span class="chip">user-audio-video-settings-tab</span><span class="chip">user-chat-settings</span><span class="chip">user-chat-settings-tab</span><span class="chip">user-modal</span><span class="chip">user-settings-modal</span><span class="chip">webrtc-troubleshooter-modal</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">652765a0e494735aa53574ba</span><span class="chip">652765a0e494735aa53574ba-tab</span><span class="chip">665874b2692d34204762bb73</span><span class="chip">665874b2692d34204762bb73-tab</span><span class="chip">68385e5f7568b13c34072e13</span><span class="chip">68385e5f7568b13c34072e13-tab</span><span class="chip">6879121b8f9c6824f6f03266</span><span class="chip">6879121b8f9c6824f6f03266-tab</span><span class="chip">68ac8cdb207a2a2927a27775</span><span class="chip">68ac8cdb207a2a2927a27775-tab</span><span class="chip">6953c35f88f24e0dd42a1218</span><span class="chip">6953c35f88f24e0dd42a1218-tab</span><span class="chip">addon-img</span><span class="chip">addon-url</span><span class="chip">alert-compact-mode</span><span class="chip">alert-donot-disturb</span><span class="chip">alert-filter-modal</span><span class="chip">alert-legal-disclosure-label</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">Mobile App Info Chat Media Connectivity Check General Settings Archives Alert Logs Chat Logs Transcript History Manage M</span><span class="chip">Mute Alert sound on QA sound on NTA sound on Chat sound on Subtitles on Don't Disturb Reload Alerts ⠇ User Info Mention </span><span class="chip">@Mention Private Chat Follow Mute Close</span><span class="chip">Close</span><span class="chip">Reset Save changes</span><span class="chip">Edit my Info and Avatar</span><span class="chip">Filter out alerts Text Mode: Regular Mode Compact Mode Image Preview: Smaller image preview on Do not disturb: Gif on Ba</span><span class="chip">Test</span><span class="chip">input type=range</span><span class="chip">input #alert-donot-disturb type=checkbox name=alert-donot-disturb</span><span class="chip">input #qa-donot-disturb type=checkbox name=qa-donot-disturb</span><span class="chip">input #non-trade-donot-disturb type=checkbox name=non-trade-donot-disturb</span><span class="chip">input #chat-donot-disturb type=checkbox name=chat-donot-disturb</span><span class="chip">input #presentation-subtitles type=checkbox name=presentation-subtitles</span><span class="chip">input #app-donot-disturb type=checkbox name=app-donot-disturb</span><span class="chip">textarea #textAreaTxt name=txt-area &quot;Type your message here..&quot;</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file5.html.png" alt="file5.html">
+			<div>
+				<h3>file5.html</h3>
+				<p><strong>SHA:</strong> <code>5c637f62f3e13de9</code> · <strong>Size:</strong> 10.9 KB · <strong>Audited gaps:</strong> 17 (2 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">none</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">alert-donot-disturb</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">alert-donot-disturb</span><span class="chip">app-donot-disturb</span><span class="chip">chat-donot-disturb</span><span class="chip">cssLogo</span><span class="chip">dropdownVolume</span><span class="chip">navbarsRoom</span><span class="chip">non-trade-donot-disturb</span><span class="chip">presentation-subtitles</span><span class="chip">qa-donot-disturb</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">input type=range</span><span class="chip">input #alert-donot-disturb type=checkbox name=alert-donot-disturb</span><span class="chip">input #qa-donot-disturb type=checkbox name=qa-donot-disturb</span><span class="chip">input #non-trade-donot-disturb type=checkbox name=non-trade-donot-disturb</span><span class="chip">input #chat-donot-disturb type=checkbox name=chat-donot-disturb</span><span class="chip">input #presentation-subtitles type=checkbox name=presentation-subtitles</span><span class="chip">input #app-donot-disturb type=checkbox name=app-donot-disturb</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file6.html.png" alt="file6.html">
+			<div>
+				<h3>file6.html</h3>
+				<p><strong>SHA:</strong> <code>7b7ba73f3d03af13</code> · <strong>Size:</strong> 938.6 KB · <strong>Audited gaps:</strong> 21 (7 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-alerts</span><span class="chip">app-chat</span><span class="chip">app-note</span><span class="chip">app-presentationarea</span><span class="chip">app-presenter-cams</span><span class="chip">app-roomscroller</span><span class="chip">app-st-message</span><span class="chip">app-webcam-holder</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">none</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">652765a0e494735aa53574ba</span><span class="chip">652765a0e494735aa53574ba-tab</span><span class="chip">665874b2692d34204762bb73</span><span class="chip">665874b2692d34204762bb73-tab</span><span class="chip">68385e5f7568b13c34072e13</span><span class="chip">68385e5f7568b13c34072e13-tab</span><span class="chip">6879121b8f9c6824f6f03266</span><span class="chip">6879121b8f9c6824f6f03266-tab</span><span class="chip">68ac8cdb207a2a2927a27775</span><span class="chip">68ac8cdb207a2a2927a27775-tab</span><span class="chip">6953c35f88f24e0dd42a1218</span><span class="chip">6953c35f88f24e0dd42a1218-tab</span><span class="chip">basic-addon1</span><span class="chip">chatScrollViewParentAlerts</span><span class="chip">docs-internal-guid-2b81aed8-7fff-5e6b-3df4-740ad0bc32f3</span><span class="chip">docs-internal-guid-3cf97d5e-7fff-6ae2-e3ed-e28c1f11416e</span><span class="chip">docs-internal-guid-4071bd07-7fff-f7a7-3707-c62db945bdd1</span><span class="chip">docs-internal-guid-7a7c6d17-7fff-2242-234c-f86e7d095ba4</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">textarea #textAreaTxt name=txt-area &quot;Type your message here..&quot;</span><span class="chip">input type=text &quot;Search files...&quot;</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file7.html.png" alt="file7.html">
+			<div>
+				<h3>file7.html</h3>
+				<p><strong>SHA:</strong> <code>c5809738ed519eb0</code> · <strong>Size:</strong> 3.2 KB · <strong>Audited gaps:</strong> 11 (4 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-user-info-modal</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">user-modal</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">user-modal</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">@Mention Private Chat Follow Mute Close</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file8.html.png" alt="file8.html">
+			<div>
+				<h3>file8.html</h3>
+				<p><strong>SHA:</strong> <code>debd559e1f5f9870</code> · <strong>Size:</strong> 2.5 KB · <strong>Audited gaps:</strong> 9 (0 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-play-youtube-modal</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">play-youtube-modal</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">basic-addonPlay</span><span class="chip">basic-addonSave</span><span class="chip">play-youtube-modal</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">Close</span><span class="chip">input type=text &quot;Paste YouTube URL&quot;</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file9.html.png" alt="file9.html">
+			<div>
+				<h3>file9.html</h3>
+				<p><strong>SHA:</strong> <code>430c1096f7ce5e53</code> · <strong>Size:</strong> 63.7 KB · <strong>Audited gaps:</strong> 21 (16 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-user-settings-modal</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">alert-compact-mode</span><span class="chip">alert-donot-disturb</span><span class="chip">alert-popup-donot-disturb</span><span class="chip">alert-regular-mode</span><span class="chip">alertDoNotDisturb</span><span class="chip">alertPopup</span><span class="chip">alertTextMode</span><span class="chip">chat-alerts-bottom</span><span class="chip">chat-alerts-left</span><span class="chip">chat-alerts-right</span><span class="chip">chat-alerts-top</span><span class="chip">longer-alert-popup</span><span class="chip">non-trade-alert</span><span class="chip">user-alert-settings</span><span class="chip">user-alert-settings-tab</span><span class="chip">user-app-settings</span><span class="chip">user-app-settings-tab</span><span class="chip">user-chat-settings</span><span class="chip">user-chat-settings-tab</span><span class="chip">user-settings-modal</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">alert-compact-mode</span><span class="chip">alert-donot-disturb</span><span class="chip">alert-popup-donot-disturb</span><span class="chip">alert-regular-mode</span><span class="chip">alertDoNotDisturb</span><span class="chip">alertPopup</span><span class="chip">alertTextMode</span><span class="chip">alwaysScrollToBottom</span><span class="chip">app-dark-theme</span><span class="chip">app-disable-video</span><span class="chip">app-donot-disturb</span><span class="chip">app-light-theme</span><span class="chip">app-reactions-popup</span><span class="chip">app-reactions-popup-qa</span><span class="chip">app-reactions-sound-qa</span><span class="chip">app-recording-start-sound</span><span class="chip">app-recording-stop-sound</span><span class="chip">app-speech-reco-overlay</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">Reset Save changes</span><span class="chip">Edit my Info and Avatar</span><span class="chip">Filter out alerts Text Mode: Regular Mode Compact Mode Image Preview: Smaller image preview on Do not disturb: Gif on Ba</span><span class="chip">input #app-light-theme type=radio name=app-color-theme</span><span class="chip">input #app-dark-theme type=radio name=app-color-theme</span><span class="chip">input #chat-alerts-left type=radio name=roomLayoutOptions</span><span class="chip">input #chat-alerts-top type=radio name=roomLayoutOptions</span><span class="chip">input #chat-alerts-right type=radio name=roomLayoutOptions</span><span class="chip">input #chat-alerts-bottom type=radio name=roomLayoutOptions</span><span class="chip">input #pm-window-layout type=checkbox name=pm-window-layout</span><span class="chip">input #chat-text-color type=color name=chat-text-color</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file10.html.png" alt="file10.html">
+			<div>
+				<h3>file10.html</h3>
+				<p><strong>SHA:</strong> <code>edf8be065dbea227</code> · <strong>Size:</strong> 10.9 KB · <strong>Audited gaps:</strong> 14 (0 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-av-settings-modal</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">av-settings-modal</span><span class="chip">presenter-audio-video-settings</span><span class="chip">user-audio-video-settings</span><span class="chip">user-audio-video-settings-tab</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">audio-deviceList</span><span class="chip">av-settings-modal</span><span class="chip">presenter-audio-video-settings</span><span class="chip">speakers-device</span><span class="chip">user-audio-video-settings</span><span class="chip">user-audio-video-settings-tab</span><span class="chip">userSettingsTab</span><span class="chip">userSettingsTabContent</span><span class="chip">video-deviceList</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">Test</span><span class="chip">Change Devices</span><span class="chip">Save Close</span><span class="chip">select #speakers-device</span><span class="chip">select #audio-deviceList</span><span class="chip">select #video-deviceList</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file11.html.png" alt="file11.html">
+			<div>
+				<h3>file11.html</h3>
+				<p><strong>SHA:</strong> <code>66f85f6f951f8a8f</code> · <strong>Size:</strong> 2.1 KB · <strong>Audited gaps:</strong> 6 (3 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-debug-log-modal</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">debug-log-modal</span><span class="chip">debugLogModalTxt</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">debug-log-modal</span><span class="chip">debugLogModalTxt</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">Close</span><span class="chip">textarea #debugLogModalTxt</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file12.html.png" alt="file12.html">
+			<div>
+				<h3>file12.html</h3>
+				<p><strong>SHA:</strong> <code>59e876c189cb99f1</code> · <strong>Size:</strong> 16.0 KB · <strong>Audited gaps:</strong> 9 (1 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-post-alert-modal</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">alert-legal-disclosure-label</span><span class="chip">alert-modal</span><span class="chip">alert-non-trade-label</span><span class="chip">alert-push-label</span><span class="chip">post-alert</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">addon-img</span><span class="chip">addon-url</span><span class="chip">alert-legal-disclosure-label</span><span class="chip">alert-modal</span><span class="chip">alert-non-trade-label</span><span class="chip">alert-push-label</span><span class="chip">fileListAlert</span><span class="chip">filedragAlert</span><span class="chip">fuploadAlert</span><span class="chip">keepOpenChk</span><span class="chip">nav-img</span><span class="chip">nav-tab</span><span class="chip">nav-tab-img</span><span class="chip">nav-tab-text</span><span class="chip">nav-tab-url</span><span class="chip">nav-tabContent</span><span class="chip">nav-text</span><span class="chip">nav-url</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">textarea &quot;Alert Text...&quot;</span><span class="chip">input type=url &quot;Link / URL to send to users&quot;</span><span class="chip">input type=url &quot;Image or Video Link to show&quot;</span><span class="chip">input #fuploadAlert type=file name=fuploadAlert</span><span class="chip">input #keepOpenChk type=checkbox</span><span class="chip">input #postOnXChk type=checkbox</span><span class="chip">input #alert-push-label type=checkbox</span><span class="chip">input #alert-non-trade-label type=checkbox</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file13.html.png" alt="file13.html">
+			<div>
+				<h3>file13.html</h3>
+				<p><strong>SHA:</strong> <code>693d68a2cbb2c239</code> · <strong>Size:</strong> 8.9 KB · <strong>Audited gaps:</strong> 9 (0 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-poll-modal</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">anonymous-poll</span><span class="chip">pollChoiceTxt</span><span class="chip">pollModalCompHolder</span><span class="chip">pollPanelTitlebar</span><span class="chip">pollQuestionTxt</span><span class="chip">sendpoll</span><span class="chip">sendpolltab</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">anonymous-poll</span><span class="chip">nav-tab</span><span class="chip">pollChoiceTxt</span><span class="chip">pollModalCompHolder</span><span class="chip">pollPanelTitlebar</span><span class="chip">pollQuestionTxt</span><span class="chip">savedPolls</span><span class="chip">sendpoll</span><span class="chip">sendpolltab</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">Add Choice</span><span class="chip">Save To Canned Send Poll</span><span class="chip">input #pollQuestionTxt type=text &quot;Main poll question (i.e. Where do you think the market is going?)&quot;</span><span class="chip">input #pollChoiceTxt type=text &quot;Enter a choice (i.e. Up, Down, Sideways)&quot;</span><span class="chip">input #anonymous-poll type=checkbox name=anonymous-poll</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file14.html.png" alt="file14.html">
+			<div>
+				<h3>file14.html</h3>
+				<p><strong>SHA:</strong> <code>3ff8d09a37d93685</code> · <strong>Size:</strong> 3.1 MB · <strong>Audited gaps:</strong> 10 (5 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-chat-logs-modal</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">chat-logs-modal</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">chat-logs-modal</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">Reload Log List</span><span class="chip">Close</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file15.html.png" alt="file15.html">
+			<div>
+				<h3>file15.html</h3>
+				<p><strong>SHA:</strong> <code>26d922dbd6004787</code> · <strong>Size:</strong> 4.3 KB · <strong>Audited gaps:</strong> 8 (2 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-alert-logs-modal</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">alerts-logs-modal</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">alerts-logs-modal</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">Reload Log List</span><span class="chip">Close</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file16.html.png" alt="file16.html">
+			<div>
+				<h3>file16.html</h3>
+				<p><strong>SHA:</strong> <code>cceeb6daf8e884b6</code> · <strong>Size:</strong> 1.7 KB · <strong>Audited gaps:</strong> 6 (4 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-session-control-modal</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">session-control</span><span class="chip">session-control-modal</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">session-control</span><span class="chip">session-control-modal</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">Done</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file17.html.png" alt="file17.html">
+			<div>
+				<h3>file17.html</h3>
+				<p><strong>SHA:</strong> <code>b5983274c8c434b6</code> · <strong>Size:</strong> 2.9 KB · <strong>Audited gaps:</strong> 7 (0 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-mobile-app-info-modal</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">mobileAppInfoModal</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">mobileAppInfoLabel</span><span class="chip">mobileAppInfoModal</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">Close</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file18.html.png" alt="file18.html">
+			<div>
+				<h3>file18.html</h3>
+				<p><strong>SHA:</strong> <code>8d92ab02e238c2f4</code> · <strong>Size:</strong> 4.2 KB · <strong>Audited gaps:</strong> 12 (6 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-reply-modal</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">replyModal</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">replyLabel</span><span class="chip">replyModal</span><span class="chip">textAreaReplyTxt</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">Close</span><span class="chip">textarea #textAreaReplyTxt name=txt-area &quot;Type your message here..&quot;</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file19.html.png" alt="file19.html">
+			<div>
+				<h3>file19.html</h3>
+				<p><strong>SHA:</strong> <code>dbb8c965d69600a4</code> · <strong>Size:</strong> 8.1 KB · <strong>Audited gaps:</strong> 9 (4 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-alert-qa-modal</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">alertQALabel</span><span class="chip">alertQAModal</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">alertQALabel</span><span class="chip">alertQAModal</span><span class="chip">textAreaHolder</span><span class="chip">textAreaQATxt</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">textarea #textAreaQATxt name=txt-area &quot;Type your question here...&quot;</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file20.html.png" alt="file20.html">
+			<div>
+				<h3>file20.html</h3>
+				<p><strong>SHA:</strong> <code>1c38da2e1ac8c439</code> · <strong>Size:</strong> 1.8 KB · <strong>Audited gaps:</strong> 6 (0 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-muted-users-modal</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">mutedUsersModal</span><span class="chip">mutedUsersModalLabel</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">mutedUsersModal</span><span class="chip">mutedUsersModalLabel</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">Close</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file21.html.png" alt="file21.html">
+			<div>
+				<h3>file21.html</h3>
+				<p><strong>SHA:</strong> <code>395edb186cd4071e</code> · <strong>Size:</strong> 1.8 KB · <strong>Audited gaps:</strong> 6 (1 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-followed-users-modal</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">followedUsersModal</span><span class="chip">followedUsersModalLabel</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">followedUsersModal</span><span class="chip">followedUsersModalLabel</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">Close</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file22.html.png" alt="file22.html">
+			<div>
+				<h3>file22.html</h3>
+				<p><strong>SHA:</strong> <code>57ec1e2ef77f4f4c</code> · <strong>Size:</strong> 2.6 KB · <strong>Audited gaps:</strong> 7 (4 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-screenshare-preview</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">none</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">dropdownBasic1</span><span class="chip">screenshareLocalPreviewHolder</span><span class="chip">webcamScreenLocalPreview</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">none</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file23.html.png" alt="file23.html">
+			<div>
+				<h3>file23.html</h3>
+				<p><strong>SHA:</strong> <code>d2d986d7d8d14c21</code> · <strong>Size:</strong> 1.4 KB · <strong>Audited gaps:</strong> 6 (4 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-rec-preview</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">none</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">recLocalPreviewHolder</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">none</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file24.html.png" alt="file24.html">
+			<div>
+				<h3>file24.html</h3>
+				<p><strong>SHA:</strong> <code>395edb186cd4071e</code> · <strong>Size:</strong> 1.8 KB · <strong>Audited gaps:</strong> 5 (0 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-followed-users-modal</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">followedUsersModal</span><span class="chip">followedUsersModalLabel</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">followedUsersModal</span><span class="chip">followedUsersModalLabel</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">Close</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file25.html.png" alt="file25.html">
+			<div>
+				<h3>file25.html</h3>
+				<p><strong>SHA:</strong> <code>624bc12a393d76e2</code> · <strong>Size:</strong> 2.9 KB · <strong>Audited gaps:</strong> 6 (0 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-scheduled-alerts-modal</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">scheduledAlertsModal</span><span class="chip">scheduledAlertsModalLabel</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">scheduledAlertsModal</span><span class="chip">scheduledAlertsModalLabel</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">Close</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file26.html.png" alt="file26.html">
+			<div>
+				<h3>file26.html</h3>
+				<p><strong>SHA:</strong> <code>160ef903c25e6945</code> · <strong>Size:</strong> 2.1 KB · <strong>Audited gaps:</strong> 7 (4 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-alert-send-report-modal</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">alert-send-report-modal</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">alert-send-report-modal</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">Close</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file27.html.png" alt="file27.html">
+			<div>
+				<h3>file27.html</h3>
+				<p><strong>SHA:</strong> <code>dcf5704492a253fc</code> · <strong>Size:</strong> 2.1 KB · <strong>Audited gaps:</strong> 8 (3 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-all-user-pmmodal</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">all-user-pm-modal</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">all-user-pm-modal</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">Close</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file28.html.png" alt="file28.html">
+			<div>
+				<h3>file28.html</h3>
+				<p><strong>SHA:</strong> <code>1761d72565939bff</code> · <strong>Size:</strong> 20.6 KB · <strong>Audited gaps:</strong> 18 (6 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-alerts-advanced-search</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">alerts-advanced-search-modal</span><span class="chip">search-term-input</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">alerts-advanced-search-modal</span><span class="chip">checkArchives</span><span class="chip">checkNonTradeAlert</span><span class="chip">endDateInput</span><span class="chip">search-term-input</span><span class="chip">selectRoomDropdown</span><span class="chip">selectTraderDropdown</span><span class="chip">startDateInput</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">Rooms</span><span class="chip">--Select Traders--</span><span class="chip">--Select Rooms--</span><span class="chip">Search Close</span><span class="chip">input #search-term-input type=search name=search-term-input &quot;Type your search term&quot;</span><span class="chip">input #checkNonTradeAlert type=checkbox</span><span class="chip">input #checkArchives type=checkbox</span><span class="chip">input #startDateInput type=datetime-local</span><span class="chip">input #endDateInput type=datetime-local</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file29.html.png" alt="file29.html">
+			<div>
+				<h3>file29.html</h3>
+				<p><strong>SHA:</strong> <code>fbad3de602d16655</code> · <strong>Size:</strong> 2.5 KB · <strong>Audited gaps:</strong> 8 (3 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-alert-filter-modal</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">alert-filter-modal</span><span class="chip">show-alerts</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">alert-filter-modal</span><span class="chip">show-alerts</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">input #show-alerts type=checkbox</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file30.html.png" alt="file30.html">
+			<div>
+				<h3>file30.html</h3>
+				<p><strong>SHA:</strong> <code>c90b4c9c55e19070</code> · <strong>Size:</strong> 5.1 KB · <strong>Audited gaps:</strong> 9 (2 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-webrtc-troubleshooter</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">webrtc-troubleshooter-modal</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">webrtc-troubleshooter-modal</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">Start Test Copy Results Close</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file31.html.png" alt="file31.html">
+			<div>
+				<h3>file31.html</h3>
+				<p><strong>SHA:</strong> <code>be2d97da73ae3c37</code> · <strong>Size:</strong> 2.2 KB · <strong>Audited gaps:</strong> 9 (6 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-rich-text-editor</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">rteLabel</span><span class="chip">rteModal</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">msgTxtContainer</span><span class="chip">rteLabel</span><span class="chip">rteModal</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">Close Send</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file32.html.png" alt="file32.html">
+			<div>
+				<h3>file32.html</h3>
+				<p><strong>SHA:</strong> <code>146d64c10b262780</code> · <strong>Size:</strong> 2.3 KB · <strong>Audited gaps:</strong> 9 (4 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-privchat</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">none</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">privaChatCompHolder</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">none</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file33.html.png" alt="file33.html">
+			<div>
+				<h3>file33.html</h3>
+				<p><strong>SHA:</strong> <code>a947b36fd6147cd8</code> · <strong>Size:</strong> 135 B · <strong>Audited gaps:</strong> 1 (1 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">none</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">none</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">toast-container</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">none</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/file34.html.png" alt="file34.html">
+			<div>
+				<h3>file34.html</h3>
+				<p><strong>SHA:</strong> <code>33913400e476fd02</code> · <strong>Size:</strong> 108 B · <strong>Audited gaps:</strong> 2 (0 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">none</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">none</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">webcam</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">none</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/mixednavs.html.png" alt="mixednavs.html">
+			<div>
+				<h3>mixednavs.html</h3>
+				<p><strong>SHA:</strong> <code>7a3e01d07ccb8dc0</code> · <strong>Size:</strong> 651 B · <strong>Audited gaps:</strong> 2 (0 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">none</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">none</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">streams-tab</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">none</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/navbar.html.png" alt="navbar.html">
+			<div>
+				<h3>navbar.html</h3>
+				<p><strong>SHA:</strong> <code>5c637f62f3e13de9</code> · <strong>Size:</strong> 10.9 KB · <strong>Audited gaps:</strong> 21 (0 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">none</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">alert-donot-disturb</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">alert-donot-disturb</span><span class="chip">app-donot-disturb</span><span class="chip">chat-donot-disturb</span><span class="chip">cssLogo</span><span class="chip">dropdownVolume</span><span class="chip">navbarsRoom</span><span class="chip">non-trade-donot-disturb</span><span class="chip">presentation-subtitles</span><span class="chip">qa-donot-disturb</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">input type=range</span><span class="chip">input #alert-donot-disturb type=checkbox name=alert-donot-disturb</span><span class="chip">input #qa-donot-disturb type=checkbox name=qa-donot-disturb</span><span class="chip">input #non-trade-donot-disturb type=checkbox name=non-trade-donot-disturb</span><span class="chip">input #chat-donot-disturb type=checkbox name=chat-donot-disturb</span><span class="chip">input #presentation-subtitles type=checkbox name=presentation-subtitles</span><span class="chip">input #app-donot-disturb type=checkbox name=app-donot-disturb</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/navbars-room.html.png" alt="navbars-room.html">
+			<div>
+				<h3>navbars-room.html</h3>
+				<p><strong>SHA:</strong> <code>b2d9990c1bdaa2c0</code> · <strong>Size:</strong> 8.4 KB · <strong>Audited gaps:</strong> 14 (0 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">none</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">alert-donot-disturb</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">alert-donot-disturb</span><span class="chip">app-donot-disturb</span><span class="chip">chat-donot-disturb</span><span class="chip">dropdownVolume</span><span class="chip">navbarsRoom</span><span class="chip">non-trade-donot-disturb</span><span class="chip">presentation-subtitles</span><span class="chip">qa-donot-disturb</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">input type=range</span><span class="chip">input #alert-donot-disturb type=checkbox name=alert-donot-disturb</span><span class="chip">input #qa-donot-disturb type=checkbox name=qa-donot-disturb</span><span class="chip">input #non-trade-donot-disturb type=checkbox name=non-trade-donot-disturb</span><span class="chip">input #chat-donot-disturb type=checkbox name=chat-donot-disturb</span><span class="chip">input #presentation-subtitles type=checkbox name=presentation-subtitles</span><span class="chip">input #app-donot-disturb type=checkbox name=app-donot-disturb</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/navfile.html.png" alt="navfile.html">
+			<div>
+				<h3>navfile.html</h3>
+				<p><strong>SHA:</strong> <code>ed5cd047237d25fc</code> · <strong>Size:</strong> 342 B · <strong>Audited gaps:</strong> 3 (2 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">none</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">none</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">none</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">none</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/odds-and-ends.html.png" alt="odds-and-ends.html">
+			<div>
+				<h3>odds-and-ends.html</h3>
+				<p><strong>SHA:</strong> <code>81c303bcd0870a6d</code> · <strong>Size:</strong> 7.9 MB · <strong>Audited gaps:</strong> 18 (6 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-alert-filter-modal</span><span class="chip">app-alert-logs-modal</span><span class="chip">app-alert-qa-modal</span><span class="chip">app-alert-send-report-modal</span><span class="chip">app-alerts</span><span class="chip">app-alerts-advanced-search</span><span class="chip">app-all-user-pmmodal</span><span class="chip">app-av-settings-modal</span><span class="chip">app-chat</span><span class="chip">app-chat-logs-modal</span><span class="chip">app-debug-log-modal</span><span class="chip">app-followed-users-modal</span><span class="chip">app-mobile-app-info-modal</span><span class="chip">app-muted-users-modal</span><span class="chip">app-note</span><span class="chip">app-play-youtube-modal</span><span class="chip">app-poll-modal</span><span class="chip">app-post-alert-modal</span><span class="chip">app-presentationarea</span><span class="chip">app-presenter-cams</span><span class="chip">app-privchat</span><span class="chip">app-rec-preview</span><span class="chip">app-reply-modal</span><span class="chip">app-rich-text-editor</span><span class="chip">app-room</span><span class="chip">app-room-roster</span><span class="chip">app-roomscroller</span><span class="chip">app-root</span><span class="chip">app-scheduled-alerts-modal</span><span class="chip">app-screenshare-preview</span><span class="chip">app-session-control-modal</span><span class="chip">app-st-message</span><span class="chip">app-user-info-modal</span><span class="chip">app-user-settings-modal</span><span class="chip">app-webcam-holder</span><span class="chip">app-webrtc-troubleshooter</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">alert-compact-mode</span><span class="chip">alert-donot-disturb</span><span class="chip">alert-filter-modal</span><span class="chip">alert-legal-disclosure-label</span><span class="chip">alert-modal</span><span class="chip">alert-non-trade-label</span><span class="chip">alert-popup-donot-disturb</span><span class="chip">alert-push-label</span><span class="chip">alert-regular-mode</span><span class="chip">alert-send-report-modal</span><span class="chip">alertDoNotDisturb</span><span class="chip">alertPopup</span><span class="chip">alertQALabel</span><span class="chip">alertQAModal</span><span class="chip">alertTextMode</span><span class="chip">alerts-advanced-search-modal</span><span class="chip">alerts-logs-modal</span><span class="chip">all-user-pm-modal</span><span class="chip">anonymous-poll</span><span class="chip">av-settings-modal</span><span class="chip">chat-alerts-bottom</span><span class="chip">chat-alerts-left</span><span class="chip">chat-alerts-right</span><span class="chip">chat-alerts-top</span><span class="chip">chat-logs-modal</span><span class="chip">debug-log-modal</span><span class="chip">debugLogModalTxt</span><span class="chip">followedUsersModal</span><span class="chip">followedUsersModalLabel</span><span class="chip">longer-alert-popup</span><span class="chip">mobileAppInfoModal</span><span class="chip">mutedUsersModal</span><span class="chip">mutedUsersModalLabel</span><span class="chip">non-trade-alert</span><span class="chip">play-youtube-modal</span><span class="chip">pollChoiceTxt</span><span class="chip">pollModalCompHolder</span><span class="chip">pollPanelTitlebar</span><span class="chip">pollQuestionTxt</span><span class="chip">post-alert</span><span class="chip">presenter-audio-video-settings</span><span class="chip">replyModal</span><span class="chip">rteLabel</span><span class="chip">rteModal</span><span class="chip">scheduledAlertsModal</span><span class="chip">scheduledAlertsModalLabel</span><span class="chip">search-term-input</span><span class="chip">sendpoll</span><span class="chip">sendpolltab</span><span class="chip">session-control</span><span class="chip">session-control-modal</span><span class="chip">show-alerts</span><span class="chip">user-alert-settings</span><span class="chip">user-alert-settings-tab</span><span class="chip">user-app-settings</span><span class="chip">user-app-settings-tab</span><span class="chip">user-audio-video-settings</span><span class="chip">user-audio-video-settings-tab</span><span class="chip">user-chat-settings</span><span class="chip">user-chat-settings-tab</span><span class="chip">user-modal</span><span class="chip">user-settings-modal</span><span class="chip">webrtc-troubleshooter-modal</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">652765a0e494735aa53574ba</span><span class="chip">652765a0e494735aa53574ba-tab</span><span class="chip">665874b2692d34204762bb73</span><span class="chip">665874b2692d34204762bb73-tab</span><span class="chip">68385e5f7568b13c34072e13</span><span class="chip">68385e5f7568b13c34072e13-tab</span><span class="chip">6879121b8f9c6824f6f03266</span><span class="chip">6879121b8f9c6824f6f03266-tab</span><span class="chip">68ac8cdb207a2a2927a27775</span><span class="chip">68ac8cdb207a2a2927a27775-tab</span><span class="chip">6953c35f88f24e0dd42a1218</span><span class="chip">6953c35f88f24e0dd42a1218-tab</span><span class="chip">addon-img</span><span class="chip">addon-url</span><span class="chip">alert-compact-mode</span><span class="chip">alert-donot-disturb</span><span class="chip">alert-filter-modal</span><span class="chip">alert-legal-disclosure-label</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">(1) 6/8/26, 8:00 AM Good Morning :) Quick schedule update: Henry will be in for the Open today :) See you in a bit! ⠇ Us</span><span class="chip">Add Choice</span><span class="chip">Save To Canned Send Poll</span><span class="chip">Reload Log List</span><span class="chip">Close</span><span class="chip">Done</span><span class="chip">Download Image</span><span class="chip">Mobile App Info Chat Media Connectivity Check General Settings Archives Alert Logs Chat Logs Transcript History Manage M</span><span class="chip">textarea #textAreaTxt name=txt-area &quot;Type your message here..&quot;</span><span class="chip">input type=text &quot;Search files...&quot;</span><span class="chip">input #pollQuestionTxt type=text &quot;Main poll question (i.e. Where do you think the market is going?)&quot;</span><span class="chip">input #pollChoiceTxt type=text &quot;Enter a choice (i.e. Up, Down, Sideways)&quot;</span><span class="chip">input #anonymous-poll type=checkbox name=anonymous-poll</span><span class="chip">input type=range</span><span class="chip">input #alert-donot-disturb type=checkbox name=alert-donot-disturb</span><span class="chip">input #qa-donot-disturb type=checkbox name=qa-donot-disturb</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/pagesource.html.png" alt="pagesource.html">
+			<div>
+				<h3>pagesource.html</h3>
+				<p><strong>SHA:</strong> <code>8293875f7b406ac9</code> · <strong>Size:</strong> 24.1 KB · <strong>Audited gaps:</strong> 13 (0 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-root</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">none</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">none</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">Download Image</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/reload.html.png" alt="reload.html">
+			<div>
+				<h3>reload.html</h3>
+				<p><strong>SHA:</strong> <code>863e6661df1d112b</code> · <strong>Size:</strong> 332 B · <strong>Audited gaps:</strong> 4 (3 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">none</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">none</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">none</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">none</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/subnavbar.html.png" alt="subnavbar.html">
+			<div>
+				<h3>subnavbar.html</h3>
+				<p><strong>SHA:</strong> <code>f86cc82f3f7767f3</code> · <strong>Size:</strong> 8.2 KB · <strong>Audited gaps:</strong> 11 (5 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">none</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">none</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">mainTabs</span><span class="chip">noteChangeIndicator</span><span class="chip">notes-tab</span><span class="chip">screens-tab</span><span class="chip">streams-tab</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">none</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/webcamholder.html.png" alt="webcamholder.html">
+			<div>
+				<h3>webcamholder.html</h3>
+				<p><strong>SHA:</strong> <code>078de600f2c3c254</code> · <strong>Size:</strong> 2.2 KB · <strong>Audited gaps:</strong> 9 (0 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-presenter-cams</span><span class="chip">app-webcam-holder</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">none</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">webcamVideo-</span><span class="chip">webcamsHolder-</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">none</span></p>
+			</div>
+		</article><article class="fragment">
+			<img src="original-fragments/important-doc.html.png" alt="important-doc.html">
+			<div>
+				<h3>important-doc.html</h3>
+				<p><strong>SHA:</strong> <code>136e2a797e604f4a</code> · <strong>Size:</strong> 5.6 MB · <strong>Audited gaps:</strong> 32 (4 high)</p>
+				<p><strong>App selectors:</strong> <span class="chip">app-alert-filter-modal</span><span class="chip">app-alert-logs-modal</span><span class="chip">app-alert-qa-modal</span><span class="chip">app-alert-send-report-modal</span><span class="chip">app-alerts</span><span class="chip">app-alerts-advanced-search</span><span class="chip">app-all-user-pmmodal</span><span class="chip">app-av-settings-modal</span><span class="chip">app-chat</span><span class="chip">app-chat-logs-modal</span><span class="chip">app-debug-log-modal</span><span class="chip">app-followed-users-modal</span><span class="chip">app-mobile-app-info-modal</span><span class="chip">app-muted-users-modal</span><span class="chip">app-note</span><span class="chip">app-play-youtube-modal</span><span class="chip">app-poll-modal</span><span class="chip">app-post-alert-modal</span><span class="chip">app-presentationarea</span><span class="chip">app-presenter-cams</span><span class="chip">app-privchat</span><span class="chip">app-rec-preview</span><span class="chip">app-reply-modal</span><span class="chip">app-rich-text-editor</span><span class="chip">app-room</span><span class="chip">app-room-roster</span><span class="chip">app-roomscroller</span><span class="chip">app-root</span><span class="chip">app-scheduled-alerts-modal</span><span class="chip">app-screenshare-preview</span><span class="chip">app-session-control-modal</span><span class="chip">app-st-message</span><span class="chip">app-user-info-modal</span><span class="chip">app-user-settings-modal</span><span class="chip">app-webcam-holder</span><span class="chip">app-webrtc-troubleshooter</span></p>
+				<p><strong>Modal ids:</strong> <span class="chip">alert-compact-mode</span><span class="chip">alert-donot-disturb</span><span class="chip">alert-filter-modal</span><span class="chip">alert-legal-disclosure-label</span><span class="chip">alert-modal</span><span class="chip">alert-non-trade-label</span><span class="chip">alert-popup-donot-disturb</span><span class="chip">alert-push-label</span><span class="chip">alert-regular-mode</span><span class="chip">alert-send-report-modal</span><span class="chip">alertDoNotDisturb</span><span class="chip">alertPopup</span><span class="chip">alertQALabel</span><span class="chip">alertQAModal</span><span class="chip">alertTextMode</span><span class="chip">alerts-advanced-search-modal</span><span class="chip">alerts-logs-modal</span><span class="chip">all-user-pm-modal</span><span class="chip">anonymous-poll</span><span class="chip">av-settings-modal</span><span class="chip">chat-alerts-bottom</span><span class="chip">chat-alerts-left</span><span class="chip">chat-alerts-right</span><span class="chip">chat-alerts-top</span><span class="chip">chat-logs-modal</span><span class="chip">debug-log-modal</span><span class="chip">debugLogModalTxt</span><span class="chip">followedUsersModal</span><span class="chip">followedUsersModalLabel</span><span class="chip">longer-alert-popup</span><span class="chip">mobileAppInfoModal</span><span class="chip">mutedUsersModal</span><span class="chip">mutedUsersModalLabel</span><span class="chip">non-trade-alert</span><span class="chip">play-youtube-modal</span><span class="chip">pollChoiceTxt</span><span class="chip">pollModalCompHolder</span><span class="chip">pollPanelTitlebar</span><span class="chip">pollQuestionTxt</span><span class="chip">post-alert</span><span class="chip">presenter-audio-video-settings</span><span class="chip">replyModal</span><span class="chip">rteLabel</span><span class="chip">rteModal</span><span class="chip">scheduledAlertsModal</span><span class="chip">scheduledAlertsModalLabel</span><span class="chip">search-term-input</span><span class="chip">sendpoll</span><span class="chip">sendpolltab</span><span class="chip">session-control</span><span class="chip">session-control-modal</span><span class="chip">show-alerts</span><span class="chip">user-alert-settings</span><span class="chip">user-alert-settings-tab</span><span class="chip">user-app-settings</span><span class="chip">user-app-settings-tab</span><span class="chip">user-audio-video-settings</span><span class="chip">user-audio-video-settings-tab</span><span class="chip">user-chat-settings</span><span class="chip">user-chat-settings-tab</span><span class="chip">user-modal</span><span class="chip">user-settings-modal</span><span class="chip">webrtc-troubleshooter-modal</span></p>
+				<p><strong>Important ids:</strong> <span class="chip">652765a0e494735aa53574ba</span><span class="chip">652765a0e494735aa53574ba-tab</span><span class="chip">665874b2692d34204762bb73</span><span class="chip">665874b2692d34204762bb73-tab</span><span class="chip">68385e5f7568b13c34072e13</span><span class="chip">68385e5f7568b13c34072e13-tab</span><span class="chip">6879121b8f9c6824f6f03266</span><span class="chip">6879121b8f9c6824f6f03266-tab</span><span class="chip">68ac8cdb207a2a2927a27775</span><span class="chip">68ac8cdb207a2a2927a27775-tab</span><span class="chip">6953c35f88f24e0dd42a1218</span><span class="chip">6953c35f88f24e0dd42a1218-tab</span><span class="chip">addon-img</span><span class="chip">addon-url</span><span class="chip">alert-compact-mode</span><span class="chip">alert-donot-disturb</span><span class="chip">alert-filter-modal</span><span class="chip">alert-legal-disclosure-label</span></p>
+				<p><strong>Visible controls/text:</strong> <span class="chip">Mobile App Info Chat Media Connectivity Check General Settings Archives Alert Logs Chat Logs Transcript History Manage M</span><span class="chip">Mute Alert sound on QA sound on NTA sound on Chat sound on Subtitles on Don't Disturb Reload Alerts ⠇ User Info Mention </span><span class="chip">@Mention Private Chat Follow Mute Close</span><span class="chip">Close</span><span class="chip">Reset Save changes</span><span class="chip">Edit my Info and Avatar</span><span class="chip">Filter out alerts Text Mode: Regular Mode Compact Mode Image Preview: Smaller image preview on Do not disturb: Gif on Ba</span><span class="chip">Test</span><span class="chip">input type=range</span><span class="chip">input #alert-donot-disturb type=checkbox name=alert-donot-disturb</span><span class="chip">input #qa-donot-disturb type=checkbox name=qa-donot-disturb</span><span class="chip">input #non-trade-donot-disturb type=checkbox name=non-trade-donot-disturb</span><span class="chip">input #chat-donot-disturb type=checkbox name=chat-donot-disturb</span><span class="chip">input #presentation-subtitles type=checkbox name=presentation-subtitles</span><span class="chip">input #app-donot-disturb type=checkbox name=app-donot-disturb</span><span class="chip">textarea #textAreaTxt name=txt-area &quot;Type your message here..&quot;</span></p>
+			</div>
+		</article>
+		<h2 class="section-title">Current Repo Screenshot Artifacts</h2>
+		<div class="current-grid"><figure class="shot"><img src="../../../web/e2e/screenshots/01-room-loaded.png" alt="01-room-loaded.png"><figcaption>01-room-loaded.png · 78.1 KB</figcaption></figure><figure class="shot"><img src="../../../web/e2e/screenshots/02-tab-streams.png" alt="02-tab-streams.png"><figcaption>02-tab-streams.png · 80.6 KB</figcaption></figure><figure class="shot"><img src="../../../web/e2e/screenshots/03-tab-notes.png" alt="03-tab-notes.png"><figcaption>03-tab-notes.png · 78.1 KB</figcaption></figure><figure class="shot"><img src="../../../web/e2e/screenshots/04-tab-files.png" alt="04-tab-files.png"><figcaption>04-tab-files.png · 87.2 KB</figcaption></figure><figure class="shot"><img src="../../../web/e2e/screenshots/05-alert-modal.png" alt="05-alert-modal.png"><figcaption>05-alert-modal.png · 94.1 KB</figcaption></figure><figure class="shot"><img src="../../../web/e2e/screenshots/06-alert-modal-filled.png" alt="06-alert-modal-filled.png"><figcaption>06-alert-modal-filled.png · 98.2 KB</figcaption></figure><figure class="shot"><img src="../../../web/e2e/screenshots/07-alert-posted.png" alt="07-alert-posted.png"><figcaption>07-alert-posted.png · 84.8 KB</figcaption></figure><figure class="shot"><img src="../../../web/e2e/screenshots/08-alert-row-menu.png" alt="08-alert-row-menu.png"><figcaption>08-alert-row-menu.png · 82.3 KB</figcaption></figure><figure class="shot"><img src="../../../web/e2e/screenshots/09-chat-main.png" alt="09-chat-main.png"><figcaption>09-chat-main.png · 81.3 KB</figcaption></figure><figure class="shot"><img src="../../../web/e2e/screenshots/10-chat-offtopic.png" alt="10-chat-offtopic.png"><figcaption>10-chat-offtopic.png · 79.2 KB</figcaption></figure><figure class="shot"><img src="../../../web/e2e/screenshots/11-reaction-picker.png" alt="11-reaction-picker.png"><figcaption>11-reaction-picker.png · 89.6 KB</figcaption></figure><figure class="shot"><img src="../../../web/e2e/screenshots/12-reaction-added.png" alt="12-reaction-added.png"><figcaption>12-reaction-added.png · 83.4 KB</figcaption></figure><figure class="shot"><img src="../../../web/e2e/screenshots/13-poll-modal.png" alt="13-poll-modal.png"><figcaption>13-poll-modal.png · 87.2 KB</figcaption></figure><figure class="shot"><img src="../../../web/e2e/screenshots/14-poll-created.png" alt="14-poll-created.png"><figcaption>14-poll-created.png · 92.7 KB</figcaption></figure><figure class="shot"><img src="../../../web/e2e/screenshots/15-poll-voted.png" alt="15-poll-voted.png"><figcaption>15-poll-voted.png · 92.6 KB</figcaption></figure><figure class="shot"><img src="../../../web/e2e/screenshots/16-poll-closed.png" alt="16-poll-closed.png"><figcaption>16-poll-closed.png · 93.4 KB</figcaption></figure><figure class="shot"><img src="../../../web/e2e/screenshots/17-media-modal.png" alt="17-media-modal.png"><figcaption>17-media-modal.png · 92.4 KB</figcaption></figure><figure class="shot"><img src="../../../web/e2e/screenshots/18-media-playing.png" alt="18-media-playing.png"><figcaption>18-media-playing.png · 67.5 KB</figcaption></figure><figure class="shot"><img src="../../../web/e2e/screenshots/19-session-control.png" alt="19-session-control.png"><figcaption>19-session-control.png · 121.3 KB</figcaption></figure><figure class="shot"><img src="../../../web/e2e/screenshots/20-confirm-clear-chat.png" alt="20-confirm-clear-chat.png"><figcaption>20-confirm-clear-chat.png · 106.1 KB</figcaption></figure><figure class="shot"><img src="../../../web/e2e/screenshots/21-members-online.png" alt="21-members-online.png"><figcaption>21-members-online.png · 81.9 KB</figcaption></figure><figure class="shot"><img src="../../../web/test-results/e2e-proroom.e2e.ts-create-vote-on-and-close-a-poll/test-failed-1.png" alt="FAIL e2e-proroom.e2e.ts-create-vote-on-and-close-a-poll/test-failed-1.png"><figcaption>FAIL e2e-proroom.e2e.ts-create-vote-on-and-close-a-poll/test-failed-1.png · 79.6 KB</figcaption></figure><figure class="shot"><img src="../../../web/test-results/e2e-proroom.e2e.ts-open-th-e4492-l-and-see-the-online-roster/test-failed-1.png" alt="FAIL e2e-proroom.e2e.ts-open-th-e4492-l-and-see-the-online-roster/test-failed-1.png"><figcaption>FAIL e2e-proroom.e2e.ts-open-th-e4492-l-and-see-the-online-roster/test-failed-1.png · 78.5 KB</figcaption></figure><figure class="shot"><img src="../../../web/test-results/e2e-proroom.e2e.ts-play-media-for-all-YouTube-and-stop-it/test-failed-1.png" alt="FAIL e2e-proroom.e2e.ts-play-media-for-all-YouTube-and-stop-it/test-failed-1.png"><figcaption>FAIL e2e-proroom.e2e.ts-play-media-for-all-YouTube-and-stop-it/test-failed-1.png · 78.5 KB</figcaption></figure><figure class="shot"><img src="../../../web/test-results/e2e-proroom.e2e.ts-room-lo-44ed9-creens-Streams-Notes-Files-/test-failed-1.png" alt="FAIL e2e-proroom.e2e.ts-room-lo-44ed9-creens-Streams-Notes-Files-/test-failed-1.png"><figcaption>FAIL e2e-proroom.e2e.ts-room-lo-44ed9-creens-Streams-Notes-Files-/test-failed-1.png · 77.1 KB</figcaption></figure></div>
+		<h2 class="section-title">Original Capture Geometry</h2>
+		<article class="capture"><img src="capture-geometry/proroom-full-member.json.svg" alt="proroom-full-member.json"><div><h3>proroom-full-member.json</h3><p>120 visible rectangles extracted from capture JSON. Shows captured geometry only; not a DOM screenshot.</p></div></article><article class="capture"><img src="capture-geometry/proroom-full-presenter.json.svg" alt="proroom-full-presenter.json"><div><h3>proroom-full-presenter.json</h3><p>120 visible rectangles extracted from capture JSON. Shows captured geometry only; not a DOM screenshot.</p></div></article><article class="capture"><img src="capture-geometry/proroom-ultra-admin-room.json.svg" alt="proroom-ultra-admin-room.json"><div><h3>proroom-ultra-admin-room.json</h3><p>120 visible rectangles extracted from capture JSON. Shows captured geometry only; not a DOM screenshot.</p></div></article><article class="capture"><img src="capture-geometry/proroom-ultra-member-room.json.svg" alt="proroom-ultra-member-room.json"><div><h3>proroom-ultra-member-room.json</h3><p>120 visible rectangles extracted from capture JSON. Shows captured geometry only; not a DOM screenshot.</p></div></article>
+	</main>
+</body>
+</html>

@@ -15,6 +15,7 @@ const CAPTURES = join(OUT, 'capture-geometry');
 
 const SOURCE_DIR = join(ROOT, 'files');
 const CURRENT_SHOTS = join(ROOT, 'web/e2e/screenshots');
+const TEST_RESULTS = join(ROOT, 'web/test-results');
 const GAP_JSON = join(ROOT, 'docs/reference/_gap-findings-raw.json');
 const OLD_CODE_EVIDENCE = '/private/tmp/original-app-evidence/analyzed-2026-06-14T22-21-48-994Z/original-app-full-code-evidence.md';
 const RESOURCE_DIR = '/private/tmp/original-app-evidence/analyzed-2026-06-14T22-21-48-994Z/resources';
@@ -191,23 +192,26 @@ for (const fragment of fragments) {
 }
 await page.close();
 
-const currentShots = existsSync(CURRENT_SHOTS)
+const currentNamedShots = existsSync(CURRENT_SHOTS)
 	? readdirSync(CURRENT_SHOTS)
 			.filter((file) => /\.(png|jpe?g)$/i.test(file))
 			.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
 			.map((name) => ({ name, path: join(CURRENT_SHOTS, name), size: statSync(join(CURRENT_SHOTS, name)).size }))
 	: [];
+const currentFailureShots = readFailureShots();
+const currentShots = [...currentNamedShots, ...currentFailureShots];
 
 const manifest = {
 	generatedAt: new Date().toISOString(),
 	sourceCounts: {
 		originalHtmlFragments: fragments.length,
-		currentRepoScreenshots: currentShots.length,
+		currentRepoScreenshots: currentNamedShots.length,
+		currentFailureScreenshots: currentFailureShots.length,
 		captureGeometryFiles: captureCards.length
 	},
 	limitations: [
 		'Original visuals are rendered from saved HTML fragments plus the harvested original CSS, not a new live original-app browser session.',
-		'Current repo screenshots are existing artifacts because localhost:8081 and localhost:5174 were not running when this report was generated.',
+		'Current repo screenshots include the named e2e screenshot artifacts plus Playwright failure screenshots from the latest run when present.',
 		'Cards with no current screenshot are source/code-evidence only until fresh role-specific screenshots are captured.',
 		'Hidden modals/fragments are force-shown for inspection; that is marked as inspection rendering, not native runtime state.'
 	],
@@ -406,7 +410,8 @@ function buildIndex({ fragments, currentShots, captureCards, manifest }) {
 		<p>Generated ${escapeHtml(manifest.generatedAt)} from raw saved HTML fragments, harvested original CSS, capture JSON, existing repo screenshots, and repo source paths.</p>
 		<div class="stats">
 			<div class="stat"><strong>${manifest.sourceCounts.originalHtmlFragments}</strong>original HTML fragments rendered</div>
-			<div class="stat"><strong>${manifest.sourceCounts.currentRepoScreenshots}</strong>repo screenshot artifacts indexed</div>
+			<div class="stat"><strong>${manifest.sourceCounts.currentRepoScreenshots}</strong>named repo screenshots indexed</div>
+			<div class="stat"><strong>${manifest.sourceCounts.currentFailureScreenshots}</strong>fresh failure screenshots indexed</div>
 			<div class="stat"><strong>${captureCards.length}</strong>capture geometry files rendered</div>
 			<div class="stat"><strong>${mappings.length}</strong>version comparison sections</div>
 		</div>
@@ -435,7 +440,9 @@ function buildMarkdown({ fragments, currentShots, captureCards, manifest }) {
 	lines.push('## Source Counts');
 	lines.push('');
 	lines.push(`- Original HTML fragments rendered: ${fragments.length}`);
-	lines.push(`- Current repo screenshots indexed: ${currentShots.length}`);
+	lines.push(`- Current named repo screenshots indexed: ${manifest.sourceCounts.currentRepoScreenshots}`);
+	lines.push(`- Fresh Playwright failure screenshots indexed: ${manifest.sourceCounts.currentFailureScreenshots}`);
+	lines.push(`- Total current-side screenshots indexed: ${currentShots.length}`);
 	lines.push(`- Capture geometry files rendered: ${captureCards.length}`);
 	lines.push(`- Original harvested CSS: ${cssPath || 'not found'}`);
 	lines.push(`- Original code evidence: ${manifest.originalCodeEvidence || 'not found'}`);
@@ -591,6 +598,29 @@ function readGapRows() {
 	} catch {
 		return [];
 	}
+}
+
+function readFailureShots() {
+	if (!existsSync(TEST_RESULTS)) return [];
+	const results = [];
+	const visit = (dir) => {
+		for (const entry of readdirSync(dir, { withFileTypes: true })) {
+			const full = join(dir, entry.name);
+			if (entry.isDirectory()) {
+				visit(full);
+				continue;
+			}
+			if (!/^test-failed-.*\.png$/i.test(entry.name)) continue;
+			const parent = basename(dirname(full));
+			results.push({
+				name: `FAIL ${parent}/${entry.name}`,
+				path: full,
+				size: statSync(full).size
+			});
+		}
+	};
+	visit(TEST_RESULTS);
+	return results.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
 }
 
 function findOriginalCss() {
