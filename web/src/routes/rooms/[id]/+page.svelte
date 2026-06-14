@@ -26,7 +26,6 @@
 	import MediaPlayer from '$lib/components/MediaPlayer.svelte';
 	import MediaForAllModal from '$lib/components/modals/MediaForAllModal.svelte';
 	import { privateChat, closePrivateChat } from '$lib/privateChat.svelte';
-	import { auth } from '$lib/stores/auth.svelte';
 	import { layout } from '$lib/stores/layout.svelte';
 	import { listPolls, type PollDetail } from '$lib/poll';
 	import { toggleReaction } from '$lib/reactions';
@@ -506,7 +505,6 @@
 		{messages}
 		{present}
 		{channel}
-		meId={auth.user?.id}
 		reactions={reactionsByTarget}
 		canReact={caps?.can_post_message ?? false}
 		{onReact}

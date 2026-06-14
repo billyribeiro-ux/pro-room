@@ -35,9 +35,6 @@
 		/** Admin: delete any message (shown in the row menu). */
 		canManage?: boolean;
 		onDelete?: (id: string) => void;
-		/** Current user's id. Their own messages render right-aligned (reference
-		 * `.msg-right` bubble); everyone else's stay left (`.msg-left`). */
-		meId?: string;
 	}
 	let {
 		messages,
@@ -50,8 +47,7 @@
 		canReact = false,
 		onReact,
 		canManage = false,
-		onDelete,
-		meId
+		onDelete
 	}: Props = $props();
 
 	let body = $state('');
@@ -183,13 +179,12 @@
 		{#each messages as m, i (m.id)}
 			{@const prev = messages[i - 1]}
 			{@const newDay = !prev || dayKey(prev.created_at) !== dayKey(m.created_at)}
-			{@const mine = !!meId && m.author_id === meId}
 			{#if newDay}
 				<li class="separator-row">
 					<span class="separator">{formatDayLabel(m.created_at)}</span>
 				</li>
 			{/if}
-			<li class="msg-box" class:mine>
+			<li class="msg-box">
 				<div class="row1">
 					<div class="msg-menu">
 						<button
@@ -436,27 +431,10 @@
 		gap: 0.5rem;
 	}
 
-	/* Reference chat bubble: the current user's OWN messages right-align
-	   (`.msg-right`: text-align right, margin-right 5px, padding-left 10px) with
-	   the menu/avatar mirrored to the right edge; everyone else stays left
-	   (`.msg-left`). Alerts have no `.msg-right` and so never flip. */
-	.msg-box.mine .row1 {
-		flex-direction: row-reverse;
-	}
-	.msg-box.mine .created-at {
-		margin-left: 0;
-		margin-right: auto;
-	}
-	.msg-box.mine .body {
-		text-align: right;
-		margin-left: 0;
-		margin-right: 5px;
-		padding-left: 10px;
-	}
-	.msg-box.mine .menu {
-		left: auto;
-		right: 0;
-	}
+	/* Reference chat rows are ALL left-aligned with the menu on the left
+	   (`.msg-left` + `.msgMenu.dropright`) — verified across 250+ rows in 6
+	   snapshots; `.msg-right`/`.presenter-msg-right` exist in CSS but are never
+	   applied. So chat does NOT bubble — every message renders left, like alerts. */
 
 	.msg-menu {
 		position: relative;
