@@ -68,6 +68,8 @@ body {
 	background: var(--bg);
 	color: var(--text);
 	font-family: var(--font-sans);
+	/* Reference body is Open Sans weight 300 (light) — drives the overall feel. */
+	font-weight: 300;
 	-webkit-font-smoothing: antialiased;
 }
 

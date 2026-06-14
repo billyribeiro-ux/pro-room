@@ -1,4 +1,12 @@
 <script lang="ts">
+	// Self-hosted Open Sans — the reference app's actual UI font (body weight 300,
+	// nav 700). Loading it makes our `--font-sans` declaration real instead of
+	// silently falling back to the system stack.
+	import '@fontsource/open-sans/300.css';
+	import '@fontsource/open-sans/400.css';
+	import '@fontsource/open-sans/600.css';
+	import '@fontsource/open-sans/700.css';
+	import '@fontsource/open-sans/400-italic.css';
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import Nav from '$lib/components/Nav.svelte';

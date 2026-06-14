@@ -169,24 +169,25 @@
 
 	.hsplit {
 		position: relative;
-		height: 14px;
+		height: 11px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		cursor: row-resize;
-		background: #eef0f4;
-		border-top: 1px solid #dfe2ea;
-		border-bottom: 1px solid #dfe2ea;
+		/* Match the reference's blue split gutter (--split-gutter-bg #0a6db1),
+		   same as the outer <Split> gutter — not a grey divider. */
+		background: var(--ptr-gutter-bg, #0a6db1);
 		touch-action: none;
+		user-select: none;
 	}
 	.hgrab {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		color: #9aa1b0;
+		color: rgba(255, 255, 255, 0.55);
 		pointer-events: none;
 	}
 	.hsplit:hover {
-		background: #e3e6ee;
+		filter: brightness(1.15);
 	}
 </style>
