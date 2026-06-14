@@ -101,7 +101,8 @@
 	 * stay within tweet limits. */
 	function shareToX(tweetText: string) {
 		if (typeof window === 'undefined') return;
-		const href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
+		// x.com is the canonical host now; twitter.com just 301s here anyway.
+		const href = `https://x.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
 		window.open(href, '_blank', 'noopener,noreferrer');
 	}
 

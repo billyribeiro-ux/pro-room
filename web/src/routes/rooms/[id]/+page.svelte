@@ -578,6 +578,9 @@
 		padding: 0.45rem 0.7rem;
 		font-size: 0.85rem;
 		font-weight: 600;
+		/* Keep full size when the tab bar scrolls horizontally (no squish). */
+		flex-shrink: 0;
+		white-space: nowrap;
 	}
 	.ctrl:hover {
 		border-color: var(--accent);

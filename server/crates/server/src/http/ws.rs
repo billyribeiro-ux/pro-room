@@ -69,6 +69,14 @@ async fn room_socket(
     let (mut sink, mut stream) = socket.split();
     let mut rx = state.hub.subscribe(room);
 
+    // Register this connection so kick-duplicates can target it and so presence
+    // is ref-counted (closing one of a user's tabs must not drop their presence).
+    let conn = state.hub.register(room, user);
+    let conn_id = conn.id;
+    let close = conn.close;
+    let closed = close.notified();
+    tokio::pin!(closed);
+
     // Announce presence on join, and record the client IP for the admin view.
     let _ = state.cache.presence_touch(room, user).await;
     if let Some(ip) = ip.as_deref() {
@@ -78,6 +86,8 @@ async fn room_socket(
 
     loop {
         tokio::select! {
+            // Kicked as a duplicate session: shut this socket down.
+            () = &mut closed => break,
             // Fan-out from Redis → this client.
             event = rx.recv() => match event {
                 Ok(payload) => {
@@ -99,10 +109,13 @@ async fn room_socket(
         }
     }
 
-    // Departure: drop presence (and the recorded IP) and notify the room.
-    let _ = state.cache.presence_remove(room, user).await;
-    let _ = state.cache.presence_remove_ip(room, user).await;
-    publish_presence(&state, room).await;
+    // Departure: deregister this connection. Only clear presence when it was the
+    // user's last local socket — a user with another open tab stays present.
+    if state.hub.unregister(room, conn_id) {
+        let _ = state.cache.presence_remove(room, user).await;
+        let _ = state.cache.presence_remove_ip(room, user).await;
+        publish_presence(&state, room).await;
+    }
 }
 
 /// Compute the room's present users (with display names) and broadcast them.

@@ -109,25 +109,17 @@ async fn kick(
 }
 
 /// Kick all duplicate WebSocket sessions: for each connected user, keep their
-/// newest connection and drop the older ones. RBAC: [`Action::ManageMembers`].
+/// newest connection and signal the older ones to close. RBAC:
+/// [`Action::ManageMembers`].
 ///
-/// Best-effort / documented no-op. The realtime hub
-/// ([`crate::realtime::RealtimeHub`]) keys fan-out by `RoomId` only — its state is
-/// `rooms: HashMap<RoomId, broadcast::Sender<String>>`, a single `broadcast`
-/// channel per room. Every WS connection (across all users) shares that one
-/// `Sender` and holds its own `Receiver`; the hub keeps no per-user, per-connection
-/// registry and exposes no handle to close an individual connection. Presence is
-/// tracked in Redis keyed by `(room, user)` with no per-connection identity, so the
-/// server cannot distinguish — let alone selectively close — two live connections
-/// for the same user. We therefore RBAC-gate the request, log, and return `ok()`
-/// without closing anything.
-///
-// TODO: To make this real, the hub would need a per-connection registry — e.g.
-// `HashMap<RoomId, HashMap<UserId, Vec<ConnHandle>>>` where each `ConnHandle`
-// carries a connection id + a `tokio::sync::oneshot`/`Notify` close signal that
-// `room_socket` selects on. `kick_duplicates` would then, per user with >1 live
-// handle, fire the close signal on all but the most recent and re-broadcast
-// `Presence` if the roster changed.
+/// Backed by the hub's per-connection registry:
+/// [`crate::realtime::RealtimeHub::kick_duplicates`] fires each duplicate socket's
+/// close signal, and `room_socket` selects on it to
+/// shut down (then refreshes presence via its normal cleanup). Scope note: the
+/// registry is per-instance, so duplicates living on a *different* server instance
+/// are not closed — acceptable, since duplicate tabs are a single-client concern
+/// and a true multi-instance dedup would mean broadcasting a control event for
+/// every instance to run this locally.
 async fn kick_duplicates(
     State(state): State<AppState>,
     CurrentUser(user): CurrentUser,
@@ -136,13 +128,9 @@ async fn kick_duplicates(
     let ctx = RoomContext::load(&state, &user, id).await?;
     ctx.ensure(&state, Action::ManageMembers).await?;
 
-    tracing::info!(
-        room_id = %id,
-        actor_id = %user.user_id,
-        "kick-duplicates requested, but the realtime hub keeps no per-connection \
-         registry (fan-out is keyed by room only); no-op"
-    );
-    Ok(ok())
+    let kicked = state.hub.kick_duplicates(id);
+    tracing::info!(room_id = %id, actor_id = %user.user_id, kicked, "kicked duplicate sessions");
+    Ok(Json(serde_json::json!({ "ok": true, "kicked": kicked })))
 }
 
 #[derive(Deserialize)]

@@ -176,12 +176,25 @@
 		background: var(--bg-elev);
 		border-bottom: 1px solid var(--border);
 		flex-shrink: 0;
+		/* Tabs + presenter controls can exceed the pane width; scroll the row
+		   instead of clipping the right-most buttons (Members / Go live / …). */
+		overflow-x: auto;
+		overflow-y: hidden;
+		scrollbar-width: thin;
+	}
+	.tabbar::-webkit-scrollbar {
+		height: 6px;
+	}
+	.tabbar::-webkit-scrollbar-thumb {
+		background: var(--border);
+		border-radius: 3px;
 	}
 	.stage-actions {
 		margin-left: auto;
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
+		flex-shrink: 0;
 	}
 	.tabbar button {
 		display: inline-flex;
@@ -195,6 +208,8 @@
 		padding: 0.45rem 0.85rem;
 		border-radius: 8px;
 		cursor: pointer;
+		flex-shrink: 0;
+		white-space: nowrap;
 	}
 	.tabbar button:hover:not(.active):not(:disabled) {
 		color: var(--text);
@@ -223,6 +238,7 @@
 		background: color-mix(in srgb, var(--warn) 16%, transparent);
 		border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent);
 		white-space: nowrap;
+		flex-shrink: 0;
 	}
 	.panel {
 		position: relative;
