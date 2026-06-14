@@ -2,6 +2,7 @@
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import Nav from '$lib/components/Nav.svelte';
+	import DialogHost from '$lib/components/DialogHost.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { theme } from '$lib/stores/theme.svelte';
 	import { page } from '$app/state';
@@ -43,6 +44,8 @@
 		<p class="loading">Loading…</p>
 	{/if}
 </main>
+
+<DialogHost />
 
 <style>
 	main {

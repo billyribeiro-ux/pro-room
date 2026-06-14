@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { theme, type ThemeTokenKey } from '$lib/stores/theme.svelte';
 	import { parseHexColor } from '$lib/schemas';
-	import { Palette, ArrowCounterClockwise, TextAa } from 'phosphor-svelte';
+	import { PaletteIcon, ArrowCounterClockwiseIcon, TextAaIcon } from 'phosphor-svelte';
 
 	type Field = { key: ThemeTokenKey; label: string };
 
@@ -65,7 +65,7 @@
 
 <div class="page">
 	<header class="head">
-		<Palette size={26} weight="bold" />
+		<PaletteIcon size={26} weight="bold" />
 		<div>
 			<h1>Appearance</h1>
 			<p>
@@ -125,7 +125,7 @@
 	<section class="block">
 		<h2>Message text size</h2>
 		<div class="size-row">
-			<TextAa size={18} />
+			<TextAaIcon size={18} />
 			<input
 				type="range"
 				min="10"
@@ -161,7 +161,7 @@
 
 	<section class="block">
 		<button class="reset" type="button" onclick={reset}>
-			<ArrowCounterClockwise size={18} /> Reset to defaults
+			<ArrowCounterClockwiseIcon size={18} /> Reset to defaults
 		</button>
 	</section>
 </div>

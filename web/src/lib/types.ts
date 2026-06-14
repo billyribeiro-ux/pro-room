@@ -1,5 +1,7 @@
 // Wire types mirroring the Rust API's JSON responses.
 
+import type { PollDetail } from './poll';
+
 export type Role = 'member' | 'admin' | 'super_admin';
 export type UserStatus = 'active' | 'suspended';
 export type Visibility = 'public' | 'private';
@@ -120,4 +122,5 @@ export type RoomEvent =
 	| { type: 'alert'; alert: Alert; author_name: string }
 	| { type: 'chat'; message: Message; author_name: string }
 	| { type: 'presence'; users: PresentUser[] }
-	| { type: 'live'; is_live: boolean };
+	| { type: 'live'; is_live: boolean }
+	| { type: 'poll'; poll: PollDetail };

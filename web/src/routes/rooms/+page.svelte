@@ -4,7 +4,7 @@
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 	import type { Room, RoomDetail, Visibility } from '$lib/types';
-	import { Plus, Broadcast, Lock, Globe } from 'phosphor-svelte';
+	import { PlusIcon, BroadcastIcon, LockIcon, GlobeIcon } from 'phosphor-svelte';
 
 	let rooms = $state<Room[]>([]);
 	let loading = $state(true);
@@ -51,7 +51,7 @@
 	<h1>Trading Rooms</h1>
 	{#if canCreate}
 		<button class="primary" onclick={() => (showCreate = !showCreate)}>
-			<Plus size={16} weight="bold" /> New room
+			<PlusIcon size={16} weight="bold" /> New room
 		</button>
 	{/if}
 </header>
@@ -82,14 +82,15 @@
 				<a class="room" href={resolve('/rooms/[id]', { id: room.id })}>
 					<div class="row">
 						<span class="name">{room.name}</span>
-						{#if room.is_live}<span class="live"><Broadcast size={13} weight="fill" /> LIVE</span
+						{#if room.is_live}<span class="live"
+								><BroadcastIcon size={13} weight="fill" /> LIVE</span
 							>{/if}
 					</div>
 					<div class="meta">
 						{#if room.visibility === 'public'}
-							<Globe size={14} /> Public
+							<GlobeIcon size={14} /> Public
 						{:else}
-							<Lock size={14} /> Private
+							<LockIcon size={14} /> Private
 						{/if}
 						<span class="slug">/{room.slug}</span>
 					</div>

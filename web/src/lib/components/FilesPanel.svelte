@@ -1,14 +1,15 @@
 <script lang="ts">
 	import { api, ApiError } from '$lib/api';
 	import { API_URL } from '$lib/config';
+	import { confirmDialog } from '$lib/dialog.svelte';
 	import { onMount } from 'svelte';
 	import type { RoomFile, FileCategory } from '$lib/types';
 	import {
-		DownloadSimple,
-		MagnifyingGlass,
-		ArrowClockwise,
-		UploadSimple,
-		Trash
+		DownloadSimpleIcon,
+		MagnifyingGlassIcon,
+		ArrowClockwiseIcon,
+		UploadSimpleIcon,
+		TrashIcon
 	} from 'phosphor-svelte';
 
 	interface Props {
@@ -115,7 +116,14 @@
 	}
 
 	async function remove(f: RoomFile) {
-		if (!window.confirm(`Delete "${f.filename}"?`)) return;
+		if (
+			!(await confirmDialog({
+				message: `Delete "${f.filename}"?`,
+				confirmLabel: 'Delete',
+				danger: true
+			}))
+		)
+			return;
 		busy = true;
 		error = null;
 		try {
@@ -166,11 +174,11 @@
 
 		<div class="tools">
 			<div class="search">
-				<MagnifyingGlass size={15} />
+				<MagnifyingGlassIcon size={15} />
 				<input placeholder="Search files…" bind:value={query} />
 			</div>
 			<button type="button" class="ic" onclick={load} disabled={busy} aria-label="Refresh">
-				<ArrowClockwise size={16} />
+				<ArrowClockwiseIcon size={16} />
 			</button>
 			{#if canManage}
 				<button
@@ -179,7 +187,7 @@
 					onclick={() => fileInput?.click()}
 					disabled={uploading}
 				>
-					<UploadSimple size={15} weight="bold" />
+					<UploadSimpleIcon size={15} weight="bold" />
 					{uploading ? 'Uploading…' : 'Upload'}
 				</button>
 				<input class="hidden-input" type="file" bind:this={fileInput} onchange={onUpload} />
@@ -212,7 +220,7 @@
 						<td class="num">{formatDate(f.created_at)}</td>
 						<td class="act">
 							<button type="button" class="download" onclick={() => download(f)}>
-								<DownloadSimple size={14} weight="bold" /> Download
+								<DownloadSimpleIcon size={14} weight="bold" /> Download
 							</button>
 							{#if canManage}
 								<button
@@ -222,7 +230,7 @@
 									aria-label="Delete"
 									disabled={busy}
 								>
-									<Trash size={15} />
+									<TrashIcon size={15} />
 								</button>
 							{/if}
 						</td>
@@ -287,14 +295,11 @@
 		height: 1.1rem;
 		padding: 0 0.3rem;
 		border-radius: 999px;
-		background: #e2e7f0;
-		color: #5a6170;
+		/* Red count pill — matches the reference's `bg-danger` files badge. */
+		background: #dc3545;
+		color: #ffffff;
 		font-size: 0.7rem;
 		font-weight: 700;
-	}
-	.active .badge {
-		background: rgba(255, 255, 255, 0.28);
-		color: #ffffff;
 	}
 	.tools {
 		display: flex;

@@ -1,18 +1,26 @@
 <script lang="ts">
-	import type { Alert } from '$lib/types';
+	import type { Alert, PresentUser } from '$lib/types';
 	import { parseMessage, formatStamp, dayKey, formatDayLabel } from '$lib/message';
 	import AlertQaModal from './AlertQaModal.svelte';
+	import UserInfoModal from './modals/UserInfoModal.svelte';
+	import AdvancedSearchModal from './modals/AdvancedSearchModal.svelte';
+	import AlertFilterModal from './modals/AlertFilterModal.svelte';
+	import ScheduledAlertsModal from './modals/ScheduledAlertsModal.svelte';
+	import AlertSendReportModal from './modals/AlertSendReportModal.svelte';
 	import {
-		Bell,
-		MagnifyingGlass,
-		Gear,
-		CaretDown,
-		DotsThreeVertical,
-		Question,
-		CheckCircle,
-		User,
-		ArrowBendUpLeft,
-		Copy
+		BellIcon,
+		MagnifyingGlassIcon,
+		GearIcon,
+		CaretDownIcon,
+		DotsThreeVerticalIcon,
+		QuestionIcon,
+		CheckCircleIcon,
+		UserIcon,
+		ArrowBendUpLeftIcon,
+		CopyIcon,
+		FunnelSimpleIcon,
+		ClockIcon,
+		ChartBarIcon
 	} from 'phosphor-svelte';
 
 	export type AlertItem = Alert & {
@@ -28,12 +36,13 @@
 
 	interface Props {
 		alerts: AlertItem[];
+		present?: PresentUser[];
 		canPost: boolean;
 		onPost: (symbol: string, side: string, note: string) => Promise<void>;
 		/** Optional: open the Q&A thread for an alert (inert when omitted). */
 		onOpenQa?: (alert: AlertItem) => void;
 	}
-	let { alerts, canPost, onPost, onOpenQa }: Props = $props();
+	let { alerts, present = [], canPost, onPost, onOpenQa }: Props = $props();
 
 	let symbol = $state('');
 	let side = $state('buy');
@@ -46,6 +55,17 @@
 	// The alert whose Q&A thread modal is open, or null when closed. Self-
 	// contained: opening the modal requires no new props from the parent.
 	let qaAlert = $state<AlertItem | null>(null);
+
+	// User-info modal target (a row's author), or null when closed.
+	let infoUser = $state<{ display_name?: string; user_id?: string; online?: boolean } | null>(null);
+	// Header affordances: advanced-search modal, plus the gear settings dropdown
+	// and the two alert-settings modals it opens.
+	let searchOpen = $state(false);
+	let settingsOpen = $state(false);
+	let filterOpen = $state(false);
+	let scheduledOpen = $state(false);
+	// The alert whose delivery report is open (admin), or null.
+	let reportAlert = $state<AlertItem | null>(null);
 
 	async function submit(e: SubmitEvent) {
 		e.preventDefault();
@@ -92,20 +112,77 @@
 		onOpenQa?.(a);
 		qaAlert = a;
 	}
+
+	function openUserInfo(a: AlertItem) {
+		infoUser = {
+			display_name: a.author_name,
+			user_id: a.author_id,
+			online: present.some((p) => p.user_id === a.author_id)
+		};
+		openMenuId = null;
+	}
+
+	// "Mention" drops "@name " into the note composer so the next alert can
+	// address that trader. Harmless when the user can't post (no input rendered).
+	function mention(a: AlertItem) {
+		const name = (a.author_name ?? 'Trader').trim();
+		note = note ? `${note} @${name} ` : `@${name} `;
+		openMenuId = null;
+	}
 </script>
 
-<svelte:window onkeydown={(e) => e.key === 'Escape' && (openMenuId = null)} />
+<svelte:window
+	onkeydown={(e) => {
+		if (e.key === 'Escape') {
+			openMenuId = null;
+			settingsOpen = false;
+		}
+	}}
+/>
 
 <section class="panel">
 	<header>
-		<div class="title"><Bell size={17} weight="fill" /> Alerts</div>
+		<div class="title"><BellIcon size={17} weight="fill" /> Alerts</div>
 		<div class="actions">
-			<button type="button" aria-label="Search alerts"
-				><MagnifyingGlass size={16} weight="bold" /></button
+			<button type="button" aria-label="Search alerts" onclick={() => (searchOpen = true)}
+				><MagnifyingGlassIcon size={16} weight="bold" /></button
 			>
-			<button type="button" class="gear" aria-label="Alert settings">
-				<Gear size={16} weight="fill" /><CaretDown size={10} weight="bold" />
-			</button>
+			<div class="settings-menu">
+				<button
+					type="button"
+					class="gear"
+					aria-label="Alert settings"
+					aria-haspopup="menu"
+					aria-expanded={settingsOpen}
+					onclick={() => (settingsOpen = !settingsOpen)}
+				>
+					<GearIcon size={16} weight="fill" /><CaretDownIcon size={10} weight="bold" />
+				</button>
+				{#if settingsOpen}
+					<div class="menu settings-dropdown" role="menu">
+						<button
+							type="button"
+							role="menuitem"
+							onclick={() => {
+								settingsOpen = false;
+								filterOpen = true;
+							}}
+						>
+							<FunnelSimpleIcon size={14} /> Filter alerts
+						</button>
+						<button
+							type="button"
+							role="menuitem"
+							onclick={() => {
+								settingsOpen = false;
+								scheduledOpen = true;
+							}}
+						>
+							<ClockIcon size={14} /> Scheduled alerts
+						</button>
+					</div>
+				{/if}
+			</div>
 		</div>
 	</header>
 
@@ -129,19 +206,31 @@
 							aria-expanded={openMenuId === a.id}
 							onclick={() => toggleMenu(a.id)}
 						>
-							<DotsThreeVertical size={18} weight="bold" />
+							<DotsThreeVerticalIcon size={18} weight="bold" />
 						</button>
 						{#if openMenuId === a.id}
 							<div class="menu" role="menu">
-								<button type="button" role="menuitem" onclick={() => (openMenuId = null)}>
-									<User size={14} weight="fill" /> User Info
+								<button type="button" role="menuitem" onclick={() => openUserInfo(a)}>
+									<UserIcon size={14} weight="fill" /> User Info
 								</button>
-								<button type="button" role="menuitem" onclick={() => (openMenuId = null)}>
-									<ArrowBendUpLeft size={14} weight="bold" /> Mention
+								<button type="button" role="menuitem" onclick={() => mention(a)}>
+									<ArrowBendUpLeftIcon size={14} weight="bold" /> Mention
 								</button>
 								<button type="button" role="menuitem" onclick={() => copyBody(a)}>
-									<Copy size={14} weight="bold" /> Copy
+									<CopyIcon size={14} weight="bold" /> Copy
 								</button>
+								{#if canPost}
+									<button
+										type="button"
+										role="menuitem"
+										onclick={() => {
+											reportAlert = a;
+											openMenuId = null;
+										}}
+									>
+										<ChartBarIcon size={14} weight="bold" /> Delivery report
+									</button>
+								{/if}
 							</div>
 						{/if}
 					</div>
@@ -159,7 +248,7 @@
 					{#if (a.question_count ?? 0) > 0 || a.answered}
 						<button type="button" class="alert-qa" onclick={() => openQa(a)}>
 							{#if (a.question_count ?? 0) > 0}<span class="qa-count">({a.question_count})</span
-								>{/if}<Question size={11} weight="fill" />{#if a.answered}<CheckCircle
+								>{/if}<QuestionIcon size={11} weight="fill" />{#if a.answered}<CheckCircleIcon
 									size={11}
 									weight="fill"
 									class="qa-check"
@@ -204,6 +293,19 @@
 </section>
 
 <AlertQaModal alert={qaAlert} onClose={() => (qaAlert = null)} />
+<UserInfoModal
+	open={infoUser !== null}
+	user={infoUser ?? undefined}
+	onClose={() => (infoUser = null)}
+/>
+<AdvancedSearchModal open={searchOpen} onClose={() => (searchOpen = false)} />
+<AlertFilterModal open={filterOpen} onClose={() => (filterOpen = false)} />
+<ScheduledAlertsModal open={scheduledOpen} onClose={() => (scheduledOpen = false)} />
+<AlertSendReportModal
+	open={reportAlert !== null}
+	alertId={reportAlert?.id}
+	onClose={() => (reportAlert = null)}
+/>
 
 <style>
 	.panel {
@@ -251,6 +353,14 @@
 	}
 	.actions button:hover {
 		background: rgba(255, 255, 255, 0.18);
+	}
+	.settings-menu {
+		position: relative;
+		display: inline-flex;
+	}
+	.menu.settings-dropdown {
+		left: auto;
+		right: 0;
 	}
 	.feed {
 		list-style: none;

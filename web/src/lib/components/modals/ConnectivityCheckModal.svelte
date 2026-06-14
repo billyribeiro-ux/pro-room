@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Plug } from 'phosphor-svelte';
+	import { PlugIcon, CopyIcon } from 'phosphor-svelte';
 	import Modal from '../Modal.svelte';
 
 	interface Props {
@@ -54,18 +54,28 @@
 		if (status === 'fail') return 'Failed';
 		return 'Pending';
 	}
+
+	function copyResults() {
+		const text = checks.map((c) => `${c.label}: ${dotLabel(c.status)}`).join('\n');
+		navigator.clipboard?.writeText(text).catch(() => {
+			// Clipboard may be unavailable (permissions/insecure context); ignore.
+		});
+	}
 </script>
 
 {#snippet footer()}
-	<button class="btn ghost" type="button" onclick={onClose}>Close</button>
 	<button class="btn primary" type="button" onclick={startTest} disabled={running}>
 		{running ? 'Testing…' : 'Start Test'}
 	</button>
+	<button class="btn ghost" type="button" onclick={copyResults}>
+		<CopyIcon size={14} /> Copy Results
+	</button>
+	<button class="btn ghost" type="button" onclick={onClose}>Close</button>
 {/snippet}
 
-<Modal {open} {onClose} title="Connectivity / Mic Troubleshooter" {footer}>
+<Modal {open} {onClose} title="Connectivity Check" {footer}>
 	<div class="intro">
-		<Plug size={20} />
+		<PlugIcon size={20} />
 		<p>Run a quick connectivity check to confirm the room can reach our media servers.</p>
 	</div>
 
@@ -137,6 +147,9 @@
 		color: var(--text-dim);
 	}
 	.btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
 		border-radius: var(--radius);
 		padding: 0.5rem 0.9rem;
 		font-weight: 600;

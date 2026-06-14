@@ -18,6 +18,12 @@ pub struct Config {
     #[allow(dead_code)]
     pub session_secret: String,
     pub session_ttl: Duration,
+    /// DEV-ONLY testing affordance. When true, the `CurrentUser` extractor
+    /// resolves a synthetic super-admin for requests that have no valid
+    /// session, letting QA exercise every endpoint without logging in. Parsed
+    /// from `AUTH_DEV_BYPASS`; defaults to `false` and MUST stay unset in any
+    /// non-local deployment. Never ship enabled.
+    pub auth_dev_bypass: bool,
     pub livekit: Option<LiveKitConfig>,
     pub google_oauth: Option<OAuthProviderConfig>,
     pub github_oauth: Option<OAuthProviderConfig>,
@@ -85,6 +91,8 @@ impl Config {
             uploads_dir: opt("APP_UPLOADS_DIR").unwrap_or_else(|| "./uploads".to_owned()),
             session_secret,
             session_ttl: Duration::from_secs(ttl_hours * 3600),
+            // DEV-ONLY: off unless explicitly opted in with a truthy value.
+            auth_dev_bypass: truthy("AUTH_DEV_BYPASS"),
             livekit: optional_group(&[
                 ("LIVEKIT_URL", true),
                 ("LIVEKIT_API_KEY", true),
@@ -117,6 +125,15 @@ fn req(key: &'static str) -> Result<String, ConfigError> {
 
 fn opt(key: &str) -> Option<String> {
     std::env::var(key).ok().filter(|v| !v.trim().is_empty())
+}
+
+/// Parse a boolean env flag. Only `"1"` and `"true"` (case-insensitive) are
+/// truthy; anything else — including unset — is `false`.
+fn truthy(key: &str) -> bool {
+    match opt(key) {
+        Some(v) => matches!(v.trim().to_ascii_lowercase().as_str(), "1" | "true"),
+        None => false,
+    }
 }
 
 /// Returns the values of a group of env vars only if all the ones marked

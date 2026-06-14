@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { PresentUser } from '$lib/types';
-	import { Users } from 'phosphor-svelte';
+	import { UsersIcon } from 'phosphor-svelte';
 
 	interface Props {
 		users: PresentUser[];
@@ -9,7 +9,7 @@
 </script>
 
 <div class="presence">
-	<Users size={15} />
+	<UsersIcon size={15} />
 	<span class="count">{users.length}</span>
 	<div class="chips">
 		{#each users as u (u.user_id)}

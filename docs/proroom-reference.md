@@ -267,3 +267,30 @@ Backlog slices (non-overlapping where possible):
 - Forward-only migrations; `CREATE INDEX IF NOT EXISTS`.
 - Operate only on repo `billyribeiro-ux/pro-room`, branch
   `claude/protradingroom-app-research-kwkzg3`; commit/push only there; no PR unless asked.
+
+---
+
+## 12. Roles & capability matrix (RBAC)
+
+**Target model — 4 tiers, ordered `super_admin ▸ admin ▸ moderator ▸ member`:**
+
+| Capability | member | moderator | admin | super_admin |
+|---|:--:|:--:|:--:|:--:|
+| Read chat / alerts, subscribe to screen+audio | ✅ | ✅ | ✅ | ✅ |
+| Post chat messages | ✅ | ✅ | ✅ | ✅ |
+| **Post alerts** | ❌ | ✅ | ✅ | ✅ |
+| **Publish screen / audio (present)** | ❌ | ✅ | ✅ | ✅ |
+| Moderate chat (mute users / delete messages) | ❌ | ✅ | ✅ | ✅ |
+| Create polls / close polls | ❌ | ✅ | ✅ | ✅ |
+| Manage room settings, members & per-room roles | ❌ | ❌ | ✅ | ✅ |
+| Manage users globally (create/deactivate, global roles) | ❌ | ❌ | ❌ | ✅ |
+
+Member = **chat only** (the explicit rule). Poll **voting** is allowed to members (audience participation); poll **creation** is moderator+.
+
+**Current code (as built):** `domain/src/role.rs` has only `Member < Admin < SuperAdmin` (no `Moderator`). `Role::is_admin()` (Admin|SuperAdmin) gates `AlertCreate`/`ScreenPublish`, so member is already chat-only ✅. `Permission` = AlertCreate/AlertRead/ScreenPublish/ScreenSubscribe/MessageCreate/MessageRead/RoomManage/MemberManage/UserManage — **no chat-moderation permission yet**. Policy lives in `authz/` (`policy.rs`/`rbac.rs`).
+
+**Gap to close when RBAC is re-enabled** (currently **bypassed for the testing phase** via `AUTH_DEV_BYPASS`):
+1. Insert `Moderator` between `Member` and `Admin` in the `Role` enum (+ `FromStr`/`as_str`/`Ord`/tests; any DB role CHECK constraint → new forward-only migration).
+2. Add moderation permissions (e.g. `MessageModerate`, `UserMute`) granted to moderator+.
+3. Re-map the policy so alerts+screen+poll-create+moderation = `Moderator|Admin|SuperAdmin`; room/member mgmt = `Admin|SuperAdmin`; global user mgmt = `SuperAdmin`. (`is_admin()` currently conflates "can present/alert" with "is admin" — split into `can_present()`/`can_manage()`.)
+4. Frontend: capability flags + role-gated UI (hide alert composer / screen-share / poll-create / mod tools from members).

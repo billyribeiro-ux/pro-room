@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { UsersThree } from 'phosphor-svelte';
+	import { UsersThreeIcon } from 'phosphor-svelte';
 	import Modal from '../Modal.svelte';
 
 	interface Props {
@@ -15,7 +15,7 @@
 
 <Modal {open} {onClose} title="Followed Users" {footer}>
 	<div class="empty">
-		<UsersThree size={28} />
+		<UsersThreeIcon size={28} />
 		<p>You don't have any followed users.</p>
 	</div>
 </Modal>

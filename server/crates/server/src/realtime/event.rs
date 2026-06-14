@@ -2,7 +2,7 @@
 //! serialized to JSON both for Redis fan-out and for delivery to browsers.
 
 use domain::UserId;
-use domain::entities::{Alert, Message};
+use domain::entities::{Alert, Message, PollDetail};
 use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize)]
@@ -19,6 +19,8 @@ pub enum RoomEvent {
     Presence { users: Vec<PresentUser> },
     /// The room's live/broadcasting state changed.
     Live { is_live: bool },
+    /// A poll was created, voted on, or closed; carries the up-to-date detail.
+    Poll { poll: PollDetail },
 }
 
 #[derive(Debug, Clone, Serialize)]

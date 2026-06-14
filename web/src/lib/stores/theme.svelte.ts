@@ -7,6 +7,7 @@
  * whole app re-themes live. Overrides persist to `localStorage` and are
  * validated with valibot on the way in (untrusted storage / user input).
  */
+import { browser } from '$app/environment';
 import { parseHexColor, parseFontSizePx } from '$lib/schemas';
 
 /** Customizable color tokens (subset of the layout tokens worth recoloring). */
@@ -28,25 +29,37 @@ export type ThemeTokens = {
 
 export type ThemeTokenKey = keyof ThemeTokens;
 
-/** Defaults copied verbatim from layout.css `:root`. */
+/** Defaults copied verbatim from layout.css `:root` — the navy "Revolution
+ * Trading Room" palette that matches the reference app. */
 const DEFAULTS: ThemeTokens = {
-	'--bg': '#0b0e14',
-	'--bg-elev': '#141925',
-	'--bg-elev-2': '#1c2230',
-	'--border': '#28303f',
-	'--text': '#e6e9ef',
-	'--text-dim': '#9aa4b5',
-	'--accent': '#3b82f6',
-	'--accent-hover': '#2f6fe0',
-	'--positive': '#16c784',
-	'--negative': '#ea3943',
+	'--bg': '#0c2434',
+	'--bg-elev': '#0f2e43',
+	'--bg-elev-2': '#103d5c',
+	'--border': '#1a4f74',
+	'--text': '#ffffff',
+	'--text-dim': '#9fc4dd',
+	'--accent': '#45a2ff',
+	'--accent-hover': '#3a8fe6',
+	'--positive': '#92d528',
+	'--negative': '#bb352a',
 	'--warn': '#f0b90b',
-	'--username-color': '#e6e9ef',
-	'--ticker-color': '#3b82f6'
+	'--username-color': '#cfe6ff',
+	'--ticker-color': '#45a2ff'
 };
 
 /** Default message font size in px (mirrors layout.css `--msg-font-size`). */
 const DEFAULT_FONT_SIZE = 14;
+
+/**
+ * Light / dark mode is orthogonal to the recolorable token overrides above:
+ * the *mode* swaps the whole base palette by toggling
+ * `document.documentElement.dataset.theme`, which `layout.css` keys a
+ * `:root[data-theme='light'] { ... }` override block off of. The navy app
+ * ships dark by default.
+ */
+export type ThemeMode = 'light' | 'dark';
+
+const DEFAULT_MODE: ThemeMode = 'dark';
 
 export type ThemePreset = {
 	id: string;
@@ -81,7 +94,21 @@ export const PRESETS: ThemePreset[] = [
 	{
 		id: 'midnight',
 		name: 'Midnight',
-		tokens: { ...DEFAULTS }
+		tokens: {
+			'--bg': '#0b0e14',
+			'--bg-elev': '#141925',
+			'--bg-elev-2': '#1c2230',
+			'--border': '#28303f',
+			'--text': '#e6e9ef',
+			'--text-dim': '#9aa4b5',
+			'--accent': '#3b82f6',
+			'--accent-hover': '#2f6fe0',
+			'--positive': '#16c784',
+			'--negative': '#ea3943',
+			'--warn': '#f0b90b',
+			'--username-color': '#e6e9ef',
+			'--ticker-color': '#3b82f6'
+		}
 	},
 	{
 		id: 'emerald',
@@ -144,6 +171,7 @@ export const PRESETS: ThemePreset[] = [
 
 const STORAGE_KEY = 'ptr.theme.tokens';
 const FONT_STORAGE_KEY = 'ptr.theme.fontSize';
+const MODE_STORAGE_KEY = 'ptr.theme.mode';
 
 function loadOverrides(): Partial<ThemeTokens> {
 	if (typeof window === 'undefined') return {};
@@ -176,12 +204,25 @@ function loadFontSize(): number {
 	}
 }
 
+function loadMode(): ThemeMode {
+	if (!browser) return DEFAULT_MODE;
+	try {
+		const raw = window.localStorage.getItem(MODE_STORAGE_KEY);
+		return raw === 'light' || raw === 'dark' ? raw : DEFAULT_MODE;
+	} catch {
+		return DEFAULT_MODE;
+	}
+}
+
 class ThemeStore {
 	/** Current effective token values (defaults merged with persisted overrides). */
 	tokens = $state<ThemeTokens>({ ...DEFAULTS, ...loadOverrides() });
 
 	/** Current message font size in px. */
 	fontSize = $state<number>(loadFontSize());
+
+	/** Current light/dark mode (selects the base palette via `data-theme`). */
+	mode = $state<ThemeMode>(loadMode());
 
 	/** The full set of selectable token keys. */
 	get keys(): ThemeTokenKey[] {
@@ -201,6 +242,17 @@ class ThemeStore {
 			root.style.setProperty(key, this.tokens[key]);
 		}
 		root.style.setProperty('--msg-font-size', `${this.fontSize}px`);
+		this.applyMode();
+	}
+
+	/**
+	 * Reflect the current mode onto `document.documentElement.dataset.theme`,
+	 * which `layout.css` keys its `:root[data-theme='light']` override block off
+	 * of. Guarded with the `$app/environment` browser check for SSR safety.
+	 */
+	applyMode(): void {
+		if (!browser) return;
+		document.documentElement.dataset.theme = this.mode;
 	}
 
 	private persist(): void {
@@ -208,6 +260,7 @@ class ThemeStore {
 		try {
 			window.localStorage.setItem(STORAGE_KEY, JSON.stringify(this.tokens));
 			window.localStorage.setItem(FONT_STORAGE_KEY, String(this.fontSize));
+			window.localStorage.setItem(MODE_STORAGE_KEY, this.mode);
 		} catch {
 			// Storage may be unavailable (private mode, quota); ignore.
 		}
@@ -237,6 +290,14 @@ class ThemeStore {
 		return true;
 	}
 
+	/** Switch the light/dark mode, then re-apply and persist. */
+	setMode(mode: ThemeMode): void {
+		if (mode !== 'light' && mode !== 'dark') return;
+		this.mode = mode;
+		this.applyMode();
+		this.persist();
+	}
+
 	/** Replace all tokens with a named preset's palette. */
 	applyPreset(id: string): void {
 		const preset = PRESETS.find((p) => p.id === id);
@@ -246,15 +307,18 @@ class ThemeStore {
 		this.persist();
 	}
 
-	/** Restore the default ("Midnight") palette and clear persisted overrides. */
+	/** Restore the default (navy "Revolution Trading Room") palette and clear
+	 * persisted overrides. */
 	reset(): void {
 		this.tokens = { ...DEFAULTS };
 		this.fontSize = DEFAULT_FONT_SIZE;
+		this.mode = DEFAULT_MODE;
 		this.apply();
 		if (typeof window !== 'undefined') {
 			try {
 				window.localStorage.removeItem(STORAGE_KEY);
 				window.localStorage.removeItem(FONT_STORAGE_KEY);
+				window.localStorage.removeItem(MODE_STORAGE_KEY);
 			} catch {
 				// ignore
 			}

@@ -1,13 +1,14 @@
 <script lang="ts">
-	import type { ChatChannel } from '$lib/types';
+	import type { ChatChannel, PresentUser } from '$lib/types';
 	import AlertFeed, { type AlertItem } from './AlertFeed.svelte';
 	import ChatPanel, { type ChatItem } from './ChatPanel.svelte';
-	import { DotsSix } from 'phosphor-svelte';
+	import { DotsSixIcon } from 'phosphor-svelte';
 
 	interface Props {
 		alerts: AlertItem[];
 		messages: ChatItem[];
 		channel: ChatChannel;
+		present: PresentUser[];
 		canPostAlert: boolean;
 		canPostMessage: boolean;
 		onPostAlert: (symbol: string, side: string, note: string) => Promise<void>;
@@ -18,6 +19,7 @@
 		alerts,
 		messages,
 		channel,
+		present,
 		canPostAlert,
 		canPostMessage,
 		onPostAlert,
@@ -25,12 +27,11 @@
 		onChannel
 	}: Props = $props();
 
-	const DEFAULT_WIDTH = 360;
-	const MIN_WIDTH = 280;
-	const MAX_WIDTH = 620;
+	// The column's WIDTH is now owned by the outer <Split> gutter in the room
+	// shell; the dock just fills its pane. Only the internal alerts/chat split
+	// fraction lives here.
 	const MIN_FRACTION = 0.15;
 	const MAX_FRACTION = 0.85;
-	const WIDTH_KEY = 'acdock.width';
 	const FRACTION_KEY = 'acdock.fraction';
 
 	function loadNumber(key: string, fallback: number): number {
@@ -45,7 +46,6 @@
 		return Math.min(hi, Math.max(lo, n));
 	}
 
-	let columnWidth = $state(clamp(loadNumber(WIDTH_KEY, DEFAULT_WIDTH), MIN_WIDTH, MAX_WIDTH));
 	let alertsFraction = $state(clamp(loadNumber(FRACTION_KEY, 0.5), MIN_FRACTION, MAX_FRACTION));
 	let dragging = $state(false);
 
@@ -59,29 +59,8 @@
 
 	$effect(() => {
 		if (typeof window === 'undefined') return;
-		window.localStorage.setItem(WIDTH_KEY, String(columnWidth));
-	});
-	$effect(() => {
-		if (typeof window === 'undefined') return;
 		window.localStorage.setItem(FRACTION_KEY, String(alertsFraction));
 	});
-
-	function startWidthDrag(e: PointerEvent) {
-		e.preventDefault();
-		dragging = true;
-		const move = (ev: PointerEvent) => {
-			if (!columnEl) return;
-			const left = columnEl.getBoundingClientRect().left;
-			columnWidth = clamp(ev.clientX - left, MIN_WIDTH, MAX_WIDTH);
-		};
-		const up = () => {
-			dragging = false;
-			window.removeEventListener('pointermove', move);
-			window.removeEventListener('pointerup', up);
-		};
-		window.addEventListener('pointermove', move);
-		window.addEventListener('pointerup', up);
-	}
 
 	function startHeightDrag(e: PointerEvent) {
 		e.preventDefault();
@@ -101,22 +80,14 @@
 		window.addEventListener('pointerup', up);
 	}
 
-	function resetWidth() {
-		columnWidth = DEFAULT_WIDTH;
-	}
 	function resetHeight() {
 		alertsFraction = 0.5;
 	}
 </script>
 
-<div
-	class="dock"
-	class:dragging
-	{@attach bindColumn}
-	style="width: {columnWidth}px; --alerts-fr: {alertsFraction};"
->
+<div class="dock" class:dragging {@attach bindColumn} style="--alerts-fr: {alertsFraction};">
 	<div class="alerts-pane">
-		<AlertFeed {alerts} canPost={canPostAlert} onPost={onPostAlert} />
+		<AlertFeed {alerts} {present} canPost={canPostAlert} onPost={onPostAlert} />
 	</div>
 
 	<div
@@ -127,22 +98,18 @@
 		onpointerdown={startHeightDrag}
 		ondblclick={resetHeight}
 	>
-		<span class="hgrab"><DotsSix size={16} weight="bold" /></span>
+		<span class="hgrab"><DotsSixIcon size={16} weight="bold" /></span>
 	</div>
 
 	<div class="chat-pane">
-		<ChatPanel {messages} {channel} canPost={canPostMessage} onPost={onPostMessage} {onChannel} />
-	</div>
-
-	<div
-		class="vsplit"
-		role="separator"
-		aria-orientation="vertical"
-		aria-label="Resize column width"
-		onpointerdown={startWidthDrag}
-		ondblclick={resetWidth}
-	>
-		<span class="vgrab"><DotsSix size={16} weight="bold" /></span>
+		<ChatPanel
+			{messages}
+			{present}
+			{channel}
+			canPost={canPostMessage}
+			onPost={onPostMessage}
+			{onChannel}
+		/>
 	</div>
 </div>
 
@@ -154,9 +121,10 @@
 			minmax(80px, calc(var(--alerts-fr, 0.5) * 100%))
 			auto
 			minmax(80px, 1fr);
+		width: 100%;
 		height: 100%;
 		min-height: 0;
-		flex-shrink: 0;
+		min-width: 0;
 		border-radius: 8px;
 		box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 		background: #ffffff;
@@ -191,34 +159,5 @@
 	}
 	.hsplit:hover {
 		background: #e3e6ee;
-	}
-
-	.vsplit {
-		position: absolute;
-		top: 0;
-		right: -3px;
-		width: 12px;
-		height: 100%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		cursor: col-resize;
-		touch-action: none;
-		z-index: 2;
-	}
-	.vgrab {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 12px;
-		height: 34px;
-		border-radius: 6px;
-		background: #cfd4de;
-		color: #6b7180;
-		transform: rotate(90deg);
-		pointer-events: none;
-	}
-	.vsplit:hover .vgrab {
-		background: #b6bcc9;
 	}
 </style>

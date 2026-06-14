@@ -3,7 +3,7 @@
 	import { ApiError } from '$lib/api';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { ChartLineUp } from 'phosphor-svelte';
+	import { ChartLineUpIcon } from 'phosphor-svelte';
 
 	let displayName = $state('');
 	let email = $state('');
@@ -29,7 +29,7 @@
 <div class="shell">
 	<div class="card">
 		<div class="head">
-			<ChartLineUp size={28} weight="bold" />
+			<ChartLineUpIcon size={28} weight="bold" />
 			<h1>Create account</h1>
 		</div>
 

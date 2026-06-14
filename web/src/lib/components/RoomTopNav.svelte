@@ -1,27 +1,47 @@
 <script lang="ts">
 	import {
-		List,
-		Users,
-		DeviceMobile,
-		SpeakerHigh,
-		SpeakerSlash,
-		ArrowsClockwise
+		ListIcon,
+		UsersIcon,
+		DeviceMobileIcon,
+		SpeakerHighIcon,
+		SpeakerSlashIcon,
+		ArrowsClockwiseIcon,
+		ClosedCaptioningIcon,
+		XIcon
 	} from 'phosphor-svelte';
 
 	interface Props {
+		/** Room display name shown in the brand slot. Integration phase passes the real room name. */
 		roomName?: string;
+		/** Live count of connected users. */
 		userCount: number;
+		/** Collapse/expand the room shell sidebar. */
 		onToggleSidebar: () => void;
+		/** Hard-reload the room (re-establish realtime + refetch). */
 		onReload: () => void;
+		/** Opens the mobile-app info modal. Integration phase wires MobileAppInfoModal. */
+		onMobileInfo?: () => void;
+		/** Name of the user currently speaking; null/undefined shows "No one is speaking". */
+		speaker?: string | null;
 	}
 	let {
-		roomName = 'Revolution Trading Room',
+		roomName = 'Trading Room',
 		userCount,
 		onToggleSidebar,
-		onReload
+		onReload,
+		onMobileInfo,
+		speaker = null
 	}: Props = $props();
 
 	// Local-only UI state — no backend wiring yet.
+	//
+	// POLARITY NOTE (do not invert): the reference app models each sound toggle as a
+	// `*-donot-disturb` checkbox where CHECKED = SUPPRESS the sound. We deliberately keep
+	// these as POSITIVE "sound on" booleans (default true = the user hears the sound) so the
+	// UX status word reads truthfully. When these get backend-wired, the mapping is:
+	//   sound on (true)  === NOT do-not-disturb
+	//   sound off (false) === do-not-disturb / suppressed
+	// Wire it through that identity — do NOT pass these booleans straight into a mute/DND flag.
 	let volumeOpen = $state(false);
 	let volume = $state(80);
 	let muted = $state(false);
@@ -40,21 +60,32 @@
 		aria-label="Toggle sidebar"
 		title="Toggle sidebar"
 	>
-		<List size={18} />
+		<ListIcon size={18} />
 	</button>
 
 	<span class="users" title="Users connected">
-		<Users size={16} />
+		<UsersIcon size={16} />
 		<span class="count">{userCount}</span>
 	</span>
 
-	<button class="icon-btn" aria-label="Launch in mobile app" title="Launch in mobile app" disabled>
-		<DeviceMobile size={16} />
+	<button
+		class="icon-btn"
+		onclick={onMobileInfo}
+		aria-label="Launch in mobile app"
+		title="Launch in mobile app"
+	>
+		<DeviceMobileIcon size={16} />
 	</button>
 
 	<span class="brand">{roomName}</span>
 
-	<span class="talking">( No one is speaking )</span>
+	<span class="talking">
+		{#if speaker}
+			( {speaker} is speaking )
+		{:else}
+			( No one is speaking )
+		{/if}
+	</span>
 
 	<span class="spacer"></span>
 
@@ -67,14 +98,26 @@
 			title="Volume settings"
 		>
 			{#if muted}
-				<SpeakerSlash size={16} />
+				<SpeakerSlashIcon size={16} />
 			{:else}
-				<SpeakerHigh size={16} />
+				<SpeakerHighIcon size={16} />
 			{/if}
 		</button>
 
 		{#if volumeOpen}
 			<div class="volume-panel">
+				<div class="panel-head">
+					<h4>Volume</h4>
+					<button
+						class="panel-close"
+						onclick={() => (volumeOpen = false)}
+						aria-label="Close volume settings"
+						title="Close"
+					>
+						<XIcon size={14} />
+					</button>
+				</div>
+
 				<label class="vol-row">
 					<span class="vol-label">Volume</span>
 					<input
@@ -94,19 +137,42 @@
 				<hr class="divider" />
 
 				<div class="sound-options">
-					<label><input type="checkbox" bind:checked={alertSound} /> Alert sound</label>
-					<label><input type="checkbox" bind:checked={qaSound} /> QA sound</label>
-					<label><input type="checkbox" bind:checked={ntaSound} /> NTA sound</label>
-					<label><input type="checkbox" bind:checked={chatSound} /> Chat sound</label>
-					<label><input type="checkbox" bind:checked={subtitles} /> Subtitles</label>
-					<label><input type="checkbox" bind:checked={dontDisturb} /> Don't Disturb</label>
+					<label>
+						<input type="checkbox" bind:checked={alertSound} />
+						Alert sound <span class="status">{alertSound ? 'on' : 'off'}</span>
+					</label>
+					<label>
+						<input type="checkbox" bind:checked={qaSound} />
+						QA sound <span class="status">{qaSound ? 'on' : 'off'}</span>
+					</label>
+					<label>
+						<input type="checkbox" bind:checked={ntaSound} />
+						NTA sound <span class="status">{ntaSound ? 'on' : 'off'}</span>
+					</label>
+					<label>
+						<input type="checkbox" bind:checked={chatSound} />
+						Chat sound <span class="status">{chatSound ? 'on' : 'off'}</span>
+					</label>
+					<label title="Show Speech Recognition Overlay">
+						<input
+							type="checkbox"
+							bind:checked={subtitles}
+							aria-label="Show Speech Recognition Overlay"
+						/>
+						<ClosedCaptioningIcon size={14} />
+						Subtitles <span class="status">{subtitles ? 'on' : 'off'}</span>
+					</label>
+					<label>
+						<input type="checkbox" bind:checked={dontDisturb} />
+						Don't Disturb <span class="status">{dontDisturb ? 'on' : 'off'}</span>
+					</label>
 				</div>
 			</div>
 		{/if}
 	</div>
 
 	<button class="icon-btn" onclick={onReload} aria-label="Reload" title="Reload">
-		<ArrowsClockwise size={16} />
+		<ArrowsClockwiseIcon size={16} />
 	</button>
 </nav>
 
@@ -165,6 +231,15 @@
 		color: var(--text-dim);
 		font-size: 0.8rem;
 		white-space: nowrap;
+		animation: fade-in 0.25s ease;
+	}
+	@keyframes fade-in {
+		from {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+		}
 	}
 	.spacer {
 		flex: 1;
@@ -185,6 +260,31 @@
 		flex-direction: column;
 		gap: 0.5rem;
 		z-index: 41;
+	}
+	.panel-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+	.panel-head h4 {
+		margin: 0;
+		font-size: 0.85rem;
+		font-weight: 700;
+		color: var(--text);
+	}
+	.panel-close {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		background: transparent;
+		border: none;
+		color: var(--text-dim);
+		border-radius: var(--radius);
+		padding: 0.15rem;
+		line-height: 0;
+	}
+	.panel-close:hover {
+		color: var(--text);
 	}
 	.vol-row {
 		display: flex;
@@ -235,5 +335,13 @@
 	}
 	.sound-options input[type='checkbox'] {
 		accent-color: var(--accent);
+	}
+	.sound-options .status {
+		margin-left: auto;
+		font-size: 0.7rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.02em;
+		color: var(--text-dim);
 	}
 </style>

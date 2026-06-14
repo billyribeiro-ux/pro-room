@@ -1,7 +1,9 @@
 //! Persistent entities. These mirror database rows but carry no persistence
 //! logic themselves (repositories in the `server` crate own the SQL).
 
-use crate::{AlertId, FileId, MessageId, NoteId, QuestionId, Role, RoomId, UserId};
+use crate::{
+    AlertId, FileId, MessageId, NoteId, PollId, PollOptionId, QuestionId, Role, RoomId, UserId,
+};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
@@ -212,6 +214,58 @@ pub struct Question {
     pub created_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339::option")]
     pub answered_at: Option<OffsetDateTime>,
+}
+
+/// A live poll posted to a room. Members vote (one vote each, changeable while
+/// the poll is `open`); the author (an admin) closes it. `anonymous` only
+/// affects how the frontend presents voters — vote counts are always returned.
+/// `status` is `"open"` or `"closed"`.
+#[derive(Debug, Clone, Serialize)]
+pub struct Poll {
+    pub id: PollId,
+    pub room_id: RoomId,
+    pub author_id: UserId,
+    pub question: String,
+    pub anonymous: bool,
+    pub status: String,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
+}
+
+/// A single selectable option on a poll. `position` orders options within a
+/// poll (lower = earlier).
+#[derive(Debug, Clone, Serialize)]
+pub struct PollOption {
+    pub id: PollOptionId,
+    pub poll_id: PollId,
+    pub label: String,
+    pub position: i32,
+}
+
+/// An option together with its current vote tally. `votes` is `i64` to match
+/// Postgres `count(*)` (`bigint`) and to never overflow on a popular poll.
+#[derive(Debug, Clone, Serialize)]
+pub struct PollOptionResult {
+    pub id: PollOptionId,
+    pub label: String,
+    pub position: i32,
+    pub votes: i64,
+}
+
+/// A poll aggregated with its options and per-option vote tallies. This is the
+/// read model returned by every poll endpoint and broadcast over WebSocket.
+#[derive(Debug, Clone, Serialize)]
+pub struct PollDetail {
+    pub id: PollId,
+    pub room_id: RoomId,
+    pub author_id: UserId,
+    pub question: String,
+    pub anonymous: bool,
+    pub status: String,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
+    pub options: Vec<PollOptionResult>,
+    pub total_votes: i64,
 }
 
 /// A named, titled rich-text document scoped to a room. The `body` is plain

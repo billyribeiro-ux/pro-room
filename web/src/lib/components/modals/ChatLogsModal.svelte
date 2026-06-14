@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ChatText, ArrowsClockwise } from 'phosphor-svelte';
+	import { ChatTextIcon, ArrowsClockwiseIcon } from 'phosphor-svelte';
 	import Modal from '../Modal.svelte';
 
 	interface Props {
@@ -15,13 +15,13 @@
 <Modal {open} {onClose} title="Chat Logs">
 	<div class="toolbar">
 		<button class="reload" type="button" disabled>
-			<ArrowsClockwise size={14} /> Reload Log List
+			<ArrowsClockwiseIcon size={14} /> Reload Log List
 		</button>
 	</div>
 
 	{#if logs.length === 0}
 		<div class="empty">
-			<ChatText size={28} />
+			<ChatTextIcon size={28} />
 			<p>No logs yet.</p>
 		</div>
 	{:else}

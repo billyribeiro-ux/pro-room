@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { SpeakerSlash } from 'phosphor-svelte';
+	import { SpeakerSlashIcon } from 'phosphor-svelte';
 	import Modal from '../Modal.svelte';
 
 	interface Props {
@@ -15,7 +15,7 @@
 
 <Modal {open} {onClose} title="Muted / Ignored Users" {footer}>
 	<div class="empty">
-		<SpeakerSlash size={28} />
+		<SpeakerSlashIcon size={28} />
 		<p>You don't have any muted/ignored users.</p>
 	</div>
 </Modal>

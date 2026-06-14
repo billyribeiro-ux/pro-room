@@ -1,17 +1,19 @@
 <script lang="ts">
 	import { api, ApiError } from '$lib/api';
+	import { browser } from '$app/environment';
 	import { onMount } from 'svelte';
+	import DOMPurify from 'dompurify';
+	import { confirmDialog, promptDialog } from '$lib/dialog.svelte';
+	import RichTextEditorModal from './modals/RichTextEditorModal.svelte';
 	import type { Note } from '$lib/types';
 	import {
-		DownloadSimple,
-		Plus,
-		PencilSimple,
-		Trash,
-		FloppyDisk,
-		X,
-		CaretLeft,
-		CaretRight,
-		House
+		DownloadSimpleIcon,
+		PlusIcon,
+		PencilSimpleIcon,
+		TrashIcon,
+		CaretLeftIcon,
+		CaretRightIcon,
+		HouseIcon
 	} from 'phosphor-svelte';
 
 	interface Props {
@@ -24,12 +26,17 @@
 	let selectedId = $state<string | null>(null);
 	let error = $state<string | null>(null);
 	let busy = $state(false);
-	let editing = $state(false);
-	let draftTitle = $state('');
-	let draftBody = $state('');
+	let editorOpen = $state(false);
 
 	const selected = $derived(notes.find((n) => n.id === selectedId) ?? notes[0] ?? null);
 	const selectedIndex = $derived(notes.findIndex((n) => n.id === selected?.id));
+
+	// Note bodies are admin-authored rich HTML (canManage gates editing). Sanitise
+	// before {@html} as defence-in-depth against a compromised author; browser-only
+	// since notes render client-side after the onMount fetch.
+	function sanitize(html: string): string {
+		return browser ? DOMPurify.sanitize(html) : '';
+	}
 
 	async function load() {
 		try {
@@ -45,24 +52,7 @@
 	onMount(load);
 
 	function select(id: string) {
-		editing = false;
 		selectedId = id;
-	}
-
-	// Split text into segments, marking URL runs so they can be rendered as
-	// real links without ever passing raw user input through {@html}.
-	const URL_RE = /(https?:\/\/[^\s]+)/g;
-	function segments(text: string): { text: string; href?: string }[] {
-		const out: { text: string; href?: string }[] = [];
-		let last = 0;
-		for (const m of text.matchAll(URL_RE)) {
-			const idx = m.index ?? 0;
-			if (idx > last) out.push({ text: text.slice(last, idx) });
-			out.push({ text: m[0], href: m[0] });
-			last = idx + m[0].length;
-		}
-		if (last < text.length) out.push({ text: text.slice(last) });
-		return out;
 	}
 
 	function download(note: Note) {
@@ -78,7 +68,9 @@
 	}
 
 	async function createNote() {
-		const title = window.prompt('Note title')?.trim();
+		const title = (
+			await promptDialog({ title: 'New note', message: 'Note title', placeholder: 'Title' })
+		)?.trim();
 		if (!title) return;
 		busy = true;
 		error = null;
@@ -86,7 +78,7 @@
 			const note = await api.post<Note>(`/api/rooms/${roomId}/notes`, { title, body: '' });
 			notes = [...notes, note];
 			selectedId = note.id;
-			startEdit(note);
+			editorOpen = true;
 		} catch (err) {
 			error = err instanceof ApiError ? err.message : 'Could not create note';
 		} finally {
@@ -94,26 +86,18 @@
 		}
 	}
 
-	function startEdit(note: Note) {
-		draftTitle = note.title;
-		draftBody = note.body;
-		editing = true;
-	}
-
-	function cancelEdit() {
-		editing = false;
-	}
-
-	async function saveEdit(note: Note) {
+	// Persist the rich-text editor's HTML as the note body.
+	async function saveBody(html: string) {
+		const note = selected;
+		if (!note) return;
 		busy = true;
 		error = null;
 		try {
 			const updated = await api.patch<Note>(`/api/rooms/${roomId}/notes/${note.id}`, {
-				title: draftTitle.trim() || note.title,
-				body: draftBody
+				body: html
 			});
 			notes = notes.map((n) => (n.id === updated.id ? updated : n));
-			editing = false;
+			editorOpen = false;
 		} catch (err) {
 			error = err instanceof ApiError ? err.message : 'Could not save note';
 		} finally {
@@ -122,7 +106,9 @@
 	}
 
 	async function rename(note: Note) {
-		const title = window.prompt('New title', note.title)?.trim();
+		const title = (
+			await promptDialog({ title: 'Rename note', message: 'New title', value: note.title })
+		)?.trim();
 		if (!title || title === note.title) return;
 		busy = true;
 		error = null;
@@ -137,7 +123,14 @@
 	}
 
 	async function remove(note: Note) {
-		if (!window.confirm(`Delete note "${note.title}"?`)) return;
+		if (
+			!(await confirmDialog({
+				message: `Delete note "${note.title}"?`,
+				confirmLabel: 'Delete',
+				danger: true
+			}))
+		)
+			return;
 		busy = true;
 		error = null;
 		try {
@@ -184,13 +177,13 @@
 				class:active={selected?.id === n.id}
 				onclick={() => select(n.id)}
 			>
-				{#if i === 0}<House size={13} weight="fill" />{/if}
+				{#if i === 0}<HouseIcon size={13} weight="fill" />{/if}
 				{n.title}
 			</button>
 		{/each}
 		{#if canManage}
 			<button type="button" class="new" onclick={createNote} disabled={busy}>
-				<Plus size={13} weight="bold" /> New note
+				<PlusIcon size={13} weight="bold" /> New note
 			</button>
 		{/if}
 	</div>
@@ -199,11 +192,7 @@
 
 	{#if selected}
 		<div class="head">
-			{#if editing}
-				<input class="title-input" bind:value={draftTitle} placeholder="Title" />
-			{:else}
-				<h3>{selected.title}</h3>
-			{/if}
+			<h3>{selected.title}</h3>
 			<div class="head-actions">
 				{#if canManage}
 					<button
@@ -213,7 +202,7 @@
 						disabled={busy || selectedIndex <= 0}
 						aria-label="Move left"
 					>
-						<CaretLeft size={16} />
+						<CaretLeftIcon size={16} />
 					</button>
 					<button
 						type="button"
@@ -222,55 +211,27 @@
 						disabled={busy || selectedIndex >= notes.length - 1}
 						aria-label="Move right"
 					>
-						<CaretRight size={16} />
+						<CaretRightIcon size={16} />
 					</button>
-					{#if editing}
-						<button type="button" class="ic" onclick={cancelEdit} aria-label="Cancel">
-							<X size={16} />
-						</button>
-						<button type="button" class="save" onclick={() => saveEdit(selected)} disabled={busy}>
-							<FloppyDisk size={15} weight="fill" /> Save
-						</button>
-					{:else}
-						<button type="button" class="ic" onclick={() => startEdit(selected)} aria-label="Edit">
-							<PencilSimple size={16} />
-						</button>
-						<button type="button" class="ic" onclick={() => rename(selected)} aria-label="Rename">
-							<PencilSimple size={16} weight="bold" />
-						</button>
-						<button
-							type="button"
-							class="ic del"
-							onclick={() => remove(selected)}
-							aria-label="Delete"
-						>
-							<Trash size={16} />
-						</button>
-					{/if}
+					<button type="button" class="ic" onclick={() => (editorOpen = true)} aria-label="Edit">
+						<PencilSimpleIcon size={16} />
+					</button>
+					<button type="button" class="ic" onclick={() => rename(selected)} aria-label="Rename">
+						<PencilSimpleIcon size={16} weight="bold" />
+					</button>
+					<button type="button" class="ic del" onclick={() => remove(selected)} aria-label="Delete">
+						<TrashIcon size={16} />
+					</button>
 				{/if}
 				<button type="button" class="download" onclick={() => download(selected)}>
-					<DownloadSimple size={15} weight="bold" /> Download
+					<DownloadSimpleIcon size={15} weight="bold" /> Download
 				</button>
 			</div>
 		</div>
 
 		<div class="body">
-			{#if editing}
-				<textarea bind:value={draftBody} placeholder="Write your note…"></textarea>
-			{:else}
-				<div class="rendered">
-					{#each selected.body.split('\n') as line, li (li)}
-						<p>
-							{#each segments(line) as seg, si (si)}
-								{#if seg.href}
-									<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- user-supplied external link in note body -->
-									<a href={seg.href} target="_blank" rel="noopener noreferrer">{seg.text}</a>
-								{:else}{seg.text}{/if}
-							{/each}
-						</p>
-					{/each}
-				</div>
-			{/if}
+			<!-- eslint-disable-next-line svelte/no-at-html-tags -- admin-authored note HTML, DOMPurify-sanitised -->
+			<div class="rendered">{@html sanitize(selected.body)}</div>
 		</div>
 	{:else}
 		<div class="empty">
@@ -278,6 +239,13 @@
 		</div>
 	{/if}
 </div>
+
+<RichTextEditorModal
+	open={editorOpen}
+	initialHtml={selected?.body ?? ''}
+	onClose={() => (editorOpen = false)}
+	onSave={saveBody}
+/>
 
 <style>
 	.notes {
@@ -339,14 +307,6 @@
 		margin: 0;
 		font-size: 1rem;
 	}
-	.title-input {
-		flex: 1;
-		border: 1px solid #d3d7e0;
-		border-radius: 6px;
-		padding: 0.35rem 0.5rem;
-		font-size: 0.95rem;
-		color: #1f2430;
-	}
 	.head-actions {
 		display: flex;
 		align-items: center;
@@ -376,7 +336,6 @@
 		border-color: #ea3943;
 		color: #ea3943;
 	}
-	.save,
 	.download {
 		display: inline-flex;
 		align-items: center;
@@ -388,22 +347,10 @@
 		font-weight: 700;
 		color: #ffffff;
 		cursor: pointer;
-	}
-	.download {
 		background: #16a34a;
 	}
 	.download:hover {
 		background: #138a3e;
-	}
-	.save {
-		background: #1f86d6;
-	}
-	.save:hover {
-		background: #1a73ba;
-	}
-	.save:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
 	}
 	.body {
 		flex: 1;
@@ -411,30 +358,34 @@
 		overflow-y: auto;
 		padding: 0.85rem;
 	}
-	.rendered p {
+	/* Rendered note bodies are sanitised {@html}, invisible to the Svelte
+	   compiler, so these element selectors must be :global to survive pruning. */
+	.rendered :global(p) {
 		margin: 0 0 0.6rem;
-		white-space: pre-wrap;
 		word-break: break-word;
 		font-size: 0.9rem;
 		line-height: 1.5;
 		min-height: 0.6em;
 	}
-	.rendered a {
+	.rendered :global(a) {
 		color: #1f86d6;
 		text-decoration: underline;
 	}
-	textarea {
-		width: 100%;
-		height: 100%;
-		min-height: 240px;
-		resize: vertical;
-		border: 1px solid #d3d7e0;
-		border-radius: 8px;
-		padding: 0.6rem 0.7rem;
+	.rendered :global(ul),
+	.rendered :global(ol) {
+		margin: 0 0 0.6rem;
+		padding-left: 1.4rem;
 		font-size: 0.9rem;
 		line-height: 1.5;
-		color: #1f2430;
-		font-family: inherit;
+	}
+	.rendered :global(li) {
+		margin: 0 0 0.2rem;
+	}
+	.rendered :global(strong) {
+		font-weight: 700;
+	}
+	.rendered :global(em) {
+		font-style: italic;
 	}
 	.empty {
 		flex: 1;

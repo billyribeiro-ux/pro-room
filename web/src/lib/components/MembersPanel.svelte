@@ -2,7 +2,7 @@
 	import { api, ApiError } from '$lib/api';
 	import { onMount } from 'svelte';
 	import type { MemberView, Role } from '$lib/types';
-	import { X, UserPlus, Trash } from 'phosphor-svelte';
+	import { XIcon, UserPlusIcon, TrashIcon } from 'phosphor-svelte';
 
 	interface Props {
 		roomId: string;
@@ -56,7 +56,7 @@
 	<aside class="drawer" onclick={(e) => e.stopPropagation()}>
 		<header>
 			<h2>Members</h2>
-			<button class="close" onclick={onClose} aria-label="Close"><X size={18} /></button>
+			<button class="close" onclick={onClose} aria-label="Close"><XIcon size={18} /></button>
 		</header>
 
 		{#if error}<p class="error">{error}</p>{/if}
@@ -69,7 +69,7 @@
 				<option value="super_admin">Super admin</option>
 			</select>
 			<button class="add" type="submit" disabled={busy}>
-				<UserPlus size={16} /> Add
+				<UserPlusIcon size={16} /> Add
 			</button>
 		</form>
 
@@ -82,7 +82,7 @@
 					</div>
 					<span class="role">{m.role.replace('_', ' ')}</span>
 					<button class="del" onclick={() => remove(m.user_id)} aria-label="Remove">
-						<Trash size={15} />
+						<TrashIcon size={15} />
 					</button>
 				</li>
 			{:else}

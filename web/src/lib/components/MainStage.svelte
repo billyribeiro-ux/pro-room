@@ -1,23 +1,53 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import type { SharePublisher } from '$lib/livekit.svelte';
-	import { Monitor, NotePencil, Folder } from 'phosphor-svelte';
+	import { MonitorIcon, NotePencilIcon, FolderIcon } from 'phosphor-svelte';
 	import ScreenStage from './ScreenStage.svelte';
 	import NotesPanel from './NotesPanel.svelte';
 	import FilesPanel from './FilesPanel.svelte';
+	import WebcamHolder from './WebcamHolder.svelte';
+
+	/** Presenter camera feeds; matches WebcamHolder's Publisher shape. */
+	interface WebcamPublisher {
+		id: string;
+		name?: string;
+		track?: MediaStreamTrack | null;
+	}
 
 	interface Props {
 		roomId: string;
 		canManage: boolean;
 		publishers: SharePublisher[];
 		connected: boolean;
+		/**
+		 * Presenter camera feeds, rendered as a strip above the tabs (matches the
+		 * reference's `app-webcam-holder` placement). Empty until camera publishing
+		 * is wired, so the strip stays hidden rather than showing an empty band.
+		 */
+		webcamPublishers?: WebcamPublisher[];
+		/** Room controls rendered on the right of the tab bar (share / go-live / poll / members). */
+		actions?: Snippet;
 	}
-	let { roomId, canManage, publishers, connected }: Props = $props();
+	let {
+		roomId,
+		canManage,
+		publishers,
+		connected,
+		webcamPublishers = [],
+		actions
+	}: Props = $props();
 
 	type Tab = 'screens' | 'notes' | 'files';
 	let tab = $state<Tab>('screens');
 </script>
 
 <div class="main-stage">
+	{#if webcamPublishers.length > 0}
+		<div class="webcam-strip">
+			<WebcamHolder publishers={webcamPublishers} />
+		</div>
+	{/if}
+
 	<div class="tabbar" role="tablist" aria-label="Room panels">
 		<button
 			type="button"
@@ -26,7 +56,7 @@
 			class:active={tab === 'screens'}
 			onclick={() => (tab = 'screens')}
 		>
-			<Monitor size={18} weight={tab === 'screens' ? 'fill' : 'regular'} /> Screens
+			<MonitorIcon size={18} weight={tab === 'screens' ? 'fill' : 'regular'} /> Screens
 		</button>
 		<button
 			type="button"
@@ -35,7 +65,7 @@
 			class:active={tab === 'notes'}
 			onclick={() => (tab = 'notes')}
 		>
-			<NotePencil size={18} weight={tab === 'notes' ? 'fill' : 'regular'} /> Notes
+			<NotePencilIcon size={18} weight={tab === 'notes' ? 'fill' : 'regular'} /> Notes
 		</button>
 		<button
 			type="button"
@@ -44,8 +74,12 @@
 			class:active={tab === 'files'}
 			onclick={() => (tab = 'files')}
 		>
-			<Folder size={18} weight={tab === 'files' ? 'fill' : 'regular'} /> Files
+			<FolderIcon size={18} weight={tab === 'files' ? 'fill' : 'regular'} /> Files
 		</button>
+
+		{#if actions}
+			<div class="stage-actions">{@render actions()}</div>
+		{/if}
 	</div>
 
 	<div class="panel">
@@ -71,13 +105,25 @@
 		overflow: hidden;
 		background: var(--bg-elev);
 	}
+	.webcam-strip {
+		flex-shrink: 0;
+		border-bottom: 1px solid var(--border);
+		background: var(--bg-elev-2);
+	}
 	.tabbar {
 		display: flex;
+		align-items: center;
 		gap: 0.25rem;
 		padding: 0.4rem 0.5rem;
 		background: var(--bg-elev);
 		border-bottom: 1px solid var(--border);
 		flex-shrink: 0;
+	}
+	.stage-actions {
+		margin-left: auto;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
 	}
 	.tabbar button {
 		display: inline-flex;

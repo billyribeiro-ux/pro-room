@@ -2,7 +2,13 @@
 	import { auth } from '$lib/stores/auth.svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { ChartLineUp, SignOut, UsersThree, ShieldStar, Palette } from 'phosphor-svelte';
+	import {
+		ChartLineUpIcon,
+		SignOutIcon,
+		UsersThreeIcon,
+		ShieldStarIcon,
+		PaletteIcon
+	} from 'phosphor-svelte';
 
 	async function logout() {
 		await auth.logout();
@@ -12,23 +18,23 @@
 
 <nav>
 	<a class="brand" href={resolve('/rooms')}>
-		<ChartLineUp size={22} weight="bold" />
+		<ChartLineUpIcon size={22} weight="bold" />
 		<span>ProTradingRoom</span>
 	</a>
 
 	{#if auth.user}
 		<div class="links">
-			<a href={resolve('/rooms')}><UsersThree size={18} /> Rooms</a>
+			<a href={resolve('/rooms')}><UsersThreeIcon size={18} /> Rooms</a>
 			{#if auth.can('user.manage')}
-				<a href={resolve('/admin/users')}><ShieldStar size={18} /> Admin</a>
+				<a href={resolve('/admin/users')}><ShieldStarIcon size={18} /> Admin</a>
 			{/if}
-			<a href={resolve('/settings')}><Palette size={18} /> Settings</a>
+			<a href={resolve('/settings')}><PaletteIcon size={18} /> Settings</a>
 		</div>
 		<div class="user">
 			<span class="name">{auth.user.display_name}</span>
 			<span class="role">{auth.user.global_role.replace('_', ' ')}</span>
 			<button class="logout" onclick={logout} title="Sign out">
-				<SignOut size={18} />
+				<SignOutIcon size={18} />
 			</button>
 		</div>
 	{/if}

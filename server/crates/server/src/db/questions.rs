@@ -76,13 +76,13 @@ pub async fn create(
          RETURNING id, alert_id, room_id, author_id, body, answer, \
                    answered_by, resolved, created_at, answered_at",
     )
-        .bind(alert_id.as_uuid())
-        .bind(room_id.as_uuid())
-        .bind(author_id.as_uuid())
-        .bind(body)
-        .fetch_one(pool)
-        .await
-        .context("insert question")?;
+    .bind(alert_id.as_uuid())
+    .bind(room_id.as_uuid())
+    .bind(author_id.as_uuid())
+    .bind(body)
+    .fetch_one(pool)
+    .await
+    .context("insert question")?;
     Ok(row.into())
 }
 
@@ -98,11 +98,11 @@ pub async fn list_for_alert(
          FROM questions \
          WHERE alert_id = $1 AND room_id = $2 ORDER BY created_at ASC",
     )
-        .bind(alert_id.as_uuid())
-        .bind(room_id.as_uuid())
-        .fetch_all(pool)
-        .await
-        .context("list questions")?;
+    .bind(alert_id.as_uuid())
+    .bind(room_id.as_uuid())
+    .fetch_all(pool)
+    .await
+    .context("list questions")?;
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
@@ -122,12 +122,12 @@ pub async fn resolve(
          RETURNING id, alert_id, room_id, author_id, body, answer, \
                    answered_by, resolved, created_at, answered_at",
     )
-        .bind(question_id.as_uuid())
-        .bind(room_id.as_uuid())
-        .bind(answer)
-        .bind(answered_by.as_uuid())
-        .fetch_optional(pool)
-        .await
-        .context("resolve question")?;
+    .bind(question_id.as_uuid())
+    .bind(room_id.as_uuid())
+    .bind(answer)
+    .bind(answered_by.as_uuid())
+    .fetch_optional(pool)
+    .await
+    .context("resolve question")?;
     Ok(row.map(Into::into))
 }

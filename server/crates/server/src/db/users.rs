@@ -178,6 +178,56 @@ pub async fn display_names(
         .collect())
 }
 
+/// Flat projection for [`find_highest_privilege`]. `email` is Postgres `citext`
+/// (decodes to `String`); `global_role`/`status` are the enum columns cast to
+/// `text` in the query, then `.parse()`d into the domain enums by the mapping
+/// below. Uses runtime `query_as` for the same offline-cache reason as the
+/// polls/questions repositories.
+#[derive(sqlx::FromRow)]
+struct HighestPrivilegeRow {
+    id: uuid::Uuid,
+    email: String,
+    display_name: String,
+    global_role: String,
+    status: String,
+    created_at: time::OffsetDateTime,
+}
+
+/// DEV-ONLY: resolve the highest-privilege active user, for the env-gated auth
+/// bypass (see `auth::session::CurrentUser`). Prefers a `super_admin`, then an
+/// `admin`. Returns `None` if no such user exists. Never used unless
+/// `AUTH_DEV_BYPASS` is set; not part of the normal request path.
+pub async fn find_highest_privilege(pool: &PgPool) -> anyhow::Result<Option<User>> {
+    let row: Option<HighestPrivilegeRow> = sqlx::query_as(
+        r"
+        SELECT id, email, display_name,
+               global_role::text AS global_role,
+               status::text AS status,
+               created_at
+        FROM users
+        WHERE status = 'active'::user_status
+          AND global_role IN ('super_admin'::user_role, 'admin'::user_role)
+        ORDER BY global_role DESC, created_at ASC
+        LIMIT 1
+        ",
+    )
+    .fetch_optional(pool)
+    .await
+    .context("find highest-privilege user")?;
+
+    row.map(|row| {
+        Ok(User {
+            id: UserId::from_uuid(row.id),
+            email: row.email,
+            display_name: row.display_name,
+            global_role: row.global_role.parse().context("parse role")?,
+            status: row.status.parse().context("parse status")?,
+            created_at: row.created_at,
+        })
+    })
+    .transpose()
+}
+
 pub async fn count(pool: &PgPool) -> anyhow::Result<i64> {
     let row = sqlx::query!(r#"SELECT count(*) AS "count!" FROM users"#)
         .fetch_one(pool)

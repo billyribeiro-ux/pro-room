@@ -2,7 +2,7 @@
 	import type { SharePublisher } from '$lib/livekit.svelte';
 	import type { Track } from 'livekit-client';
 	import type { Attachment } from 'svelte/attachments';
-	import { SquareSplitHorizontal, Square, Broadcast } from 'phosphor-svelte';
+	import { SquareSplitHorizontalIcon, SquareIcon, BroadcastIcon } from 'phosphor-svelte';
 
 	interface Props {
 		publishers: SharePublisher[];
@@ -33,12 +33,12 @@
 <div class="stage">
 	<div class="bar">
 		<span class="count">
-			<Broadcast size={14} weight={publishers.length ? 'fill' : 'regular'} />
+			<BroadcastIcon size={14} weight={publishers.length ? 'fill' : 'regular'} />
 			{publishers.length} sharing
 		</span>
 		<div class="toggle" role="group" aria-label="Layout">
 			<button class:active={layout === 'one'} onclick={() => (layout = 'one')} title="Single view">
-				<Square size={16} />
+				<SquareIcon size={16} />
 			</button>
 			<button
 				class:active={layout === 'split'}
@@ -46,7 +46,7 @@
 				title="Split view"
 				disabled={publishers.length < 2}
 			>
-				<SquareSplitHorizontal size={16} />
+				<SquareSplitHorizontalIcon size={16} />
 			</button>
 		</div>
 	</div>

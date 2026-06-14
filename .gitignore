@@ -18,3 +18,8 @@ Thumbs.db
 # Build artifacts
 /web/build
 /web/.svelte-kit
+
+# Local reference captures — large Angular DOM dumps used to reverse-engineer the
+# 1:1 clone. Kept locally for discovery; never committed (tens of MB, not source).
+/files/
+/important-doc.html

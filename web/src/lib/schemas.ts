@@ -44,6 +44,61 @@ export const AnswerSchema = v.pipe(
 	v.maxLength(4000, 'Answer is too long')
 );
 
+/**
+ * Poll question. Trimmed, required, capped at 280 chars (matches the backend
+ * `polls` contract for `question`).
+ */
+export const PollQuestionSchema = v.pipe(
+	v.string(),
+	v.trim(),
+	v.minLength(1, 'Question is required'),
+	v.maxLength(280, 'Question is too long (max 280)')
+);
+
+/** A single poll option label. Trimmed, required, capped at 80 chars. */
+export const PollOptionSchema = v.pipe(
+	v.string(),
+	v.trim(),
+	v.minLength(1, 'Option is required'),
+	v.maxLength(80, 'Option is too long (max 80)')
+);
+
+/**
+ * The full set of poll options: at least 2, at most 10, each a valid
+ * (trimmed, 1–80) label. Each element is validated through `PollOptionSchema`,
+ * so the output array is already trimmed.
+ */
+export const PollOptionsSchema = v.pipe(
+	v.array(PollOptionSchema),
+	v.minLength(2, 'Add at least 2 options'),
+	v.maxLength(10, 'No more than 10 options')
+);
+
+/** The shape produced by a successful create-poll form validation. */
+export interface PollCreateInput {
+	question: string;
+	options: string[];
+}
+
+/**
+ * Validate a whole create-poll form. Returns the normalised
+ * `{ question, options }` on success, or the first human-readable issue
+ * string on failure. The question is validated first so its message wins
+ * when both are invalid.
+ */
+export function validatePollCreate(
+	question: string,
+	options: string[]
+): { ok: true; value: PollCreateInput } | { ok: false; issue: string } {
+	const q = v.safeParse(PollQuestionSchema, question);
+	if (!q.success) return { ok: false, issue: firstIssue(q) ?? 'Invalid question' };
+
+	const o = v.safeParse(PollOptionsSchema, options);
+	if (!o.success) return { ok: false, issue: firstIssue(o) ?? 'Invalid options' };
+
+	return { ok: true, value: { question: q.output, options: o.output } };
+}
+
 /** First human-readable issue from a failed safeParse, or null when valid. */
 export function firstIssue<TSchema extends v.GenericSchema>(
 	result: v.SafeParseResult<TSchema>

@@ -1,17 +1,18 @@
 <script lang="ts">
-	import type { Message, ChatChannel } from '$lib/types';
+	import type { Message, ChatChannel, PresentUser } from '$lib/types';
 	import { parseMessage, formatStamp, dayKey, formatDayLabel } from '$lib/message';
+	import UserInfoModal from './modals/UserInfoModal.svelte';
 	import {
-		ChatCircle,
-		MagnifyingGlass,
-		Gear,
-		CaretDown,
-		Smiley,
-		Image as ImageIcon,
-		DotsThreeVertical,
-		User,
-		ArrowBendUpLeft,
-		Copy
+		ChatCircleIcon,
+		MagnifyingGlassIcon,
+		GearIcon,
+		CaretDownIcon,
+		SmileyIcon,
+		ImageIcon,
+		DotsThreeVerticalIcon,
+		UserIcon,
+		ArrowBendUpLeftIcon,
+		CopyIcon
 	} from 'phosphor-svelte';
 
 	export type ChatItem = Message & {
@@ -24,11 +25,12 @@
 	interface Props {
 		messages: ChatItem[];
 		channel: ChatChannel;
+		present?: PresentUser[];
 		canPost: boolean;
 		onPost: (body: string) => Promise<void>;
 		onChannel: (channel: ChatChannel) => void;
 	}
-	let { messages, channel, canPost, onPost, onChannel }: Props = $props();
+	let { messages, channel, present = [], canPost, onPost, onChannel }: Props = $props();
 
 	let body = $state('');
 	let sending = $state(false);
@@ -36,16 +38,42 @@
 	// Which row's ⠇ menu is open (message id), or null when none.
 	let openMenuId = $state<string | null>(null);
 
-	async function submit(e: SubmitEvent) {
-		e.preventDefault();
+	// User-info modal target (a row's author), or null when closed.
+	let infoUser = $state<{ display_name?: string; user_id?: string; online?: boolean } | null>(null);
+
+	let textareaEl = $state<HTMLTextAreaElement | null>(null);
+
+	// Auto-grow the composer up to a few lines, matching the reference textarea.
+	function autogrow() {
+		const el = textareaEl;
+		if (!el) return;
+		el.style.height = 'auto';
+		el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+	}
+
+	async function send() {
 		const text = body.trim();
 		if (!text) return;
 		sending = true;
 		try {
 			await onPost(text);
 			body = '';
+			autogrow();
 		} finally {
 			sending = false;
+		}
+	}
+
+	function onSubmit(e: SubmitEvent) {
+		e.preventDefault();
+		void send();
+	}
+
+	// Enter sends; Shift+Enter inserts a newline (reference behaviour).
+	function onComposerKeydown(e: KeyboardEvent) {
+		if (e.key === 'Enter' && !e.shiftKey) {
+			e.preventDefault();
+			void send();
 		}
 	}
 
@@ -69,13 +97,29 @@
 		}
 		openMenuId = null;
 	}
+
+	function openUserInfo(m: ChatItem) {
+		infoUser = {
+			display_name: m.author_name,
+			user_id: m.author_id,
+			online: present.some((p) => p.user_id === m.author_id)
+		};
+		openMenuId = null;
+	}
+
+	// "Mention" drops "@name " into the composer.
+	function mention(m: ChatItem) {
+		const name = (m.author_name ?? 'trader').trim();
+		body = body ? `${body} @${name} ` : `@${name} `;
+		openMenuId = null;
+	}
 </script>
 
 <svelte:window onkeydown={(e) => e.key === 'Escape' && (openMenuId = null)} />
 
 <section class="panel">
 	<header>
-		<div class="lead"><ChatCircle size={17} weight="fill" /></div>
+		<div class="lead"><ChatCircleIcon size={17} weight="fill" /></div>
 		<div class="tabs" role="tablist" aria-label="Chat channels">
 			<button
 				type="button"
@@ -94,10 +138,10 @@
 		</div>
 		<div class="actions">
 			<button type="button" aria-label="Search chat"
-				><MagnifyingGlass size={16} weight="bold" /></button
+				><MagnifyingGlassIcon size={16} weight="bold" /></button
 			>
 			<button type="button" class="gear" aria-label="Chat settings">
-				<Gear size={16} weight="fill" /><CaretDown size={10} weight="bold" />
+				<GearIcon size={16} weight="fill" /><CaretDownIcon size={10} weight="bold" />
 			</button>
 		</div>
 	</header>
@@ -122,18 +166,18 @@
 							aria-expanded={openMenuId === m.id}
 							onclick={() => toggleMenu(m.id)}
 						>
-							<DotsThreeVertical size={18} weight="bold" />
+							<DotsThreeVerticalIcon size={18} weight="bold" />
 						</button>
 						{#if openMenuId === m.id}
 							<div class="menu" role="menu">
-								<button type="button" role="menuitem" onclick={() => (openMenuId = null)}>
-									<User size={14} weight="fill" /> User Info
+								<button type="button" role="menuitem" onclick={() => openUserInfo(m)}>
+									<UserIcon size={14} weight="fill" /> User Info
 								</button>
-								<button type="button" role="menuitem" onclick={() => (openMenuId = null)}>
-									<ArrowBendUpLeft size={14} weight="bold" /> Mention
+								<button type="button" role="menuitem" onclick={() => mention(m)}>
+									<ArrowBendUpLeftIcon size={14} weight="bold" /> Mention
 								</button>
 								<button type="button" role="menuitem" onclick={() => copyBody(m)}>
-									<Copy size={14} weight="bold" /> Copy
+									<CopyIcon size={14} weight="bold" /> Copy
 								</button>
 							</div>
 						{/if}
@@ -168,11 +212,19 @@
 	</ul>
 
 	{#if canPost}
-		<form onsubmit={submit}>
+		<form onsubmit={onSubmit}>
 			<div class="pill">
-				<input placeholder="Type your message here.." bind:value={body} maxlength="2000" />
+				<textarea
+					bind:this={textareaEl}
+					bind:value={body}
+					rows="1"
+					maxlength="2000"
+					placeholder="Type your message here.."
+					oninput={autogrow}
+					onkeydown={onComposerKeydown}
+				></textarea>
 				<button type="button" class="ic" aria-label="Emoji"
-					><Smiley size={18} weight="fill" /></button
+					><SmileyIcon size={18} weight="fill" /></button
 				>
 				<button type="button" class="ic" aria-label="Image"
 					><ImageIcon size={18} weight="fill" /></button
@@ -185,6 +237,12 @@
 		<p class="readonly">You can read the chat. Join the room to participate.</p>
 	{/if}
 </section>
+
+<UserInfoModal
+	open={infoUser !== null}
+	user={infoUser ?? undefined}
+	onClose={() => (infoUser = null)}
+/>
 
 <style>
 	.panel {
@@ -416,7 +474,7 @@
 		border-radius: 999px;
 		padding: 0.15rem 0.5rem;
 	}
-	.pill input {
+	.pill textarea {
 		flex: 1;
 		min-width: 0;
 		border: none;
@@ -425,6 +483,11 @@
 		color: #1f2430;
 		font-size: 0.85rem;
 		padding: 0.35rem 0.25rem;
+		resize: none;
+		overflow-y: auto;
+		max-height: 120px;
+		line-height: 1.4;
+		font-family: inherit;
 	}
 	.ic {
 		display: inline-flex;

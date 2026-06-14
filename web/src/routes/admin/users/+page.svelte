@@ -3,7 +3,7 @@
 	import { auth } from '$lib/stores/auth.svelte';
 	import { onMount } from 'svelte';
 	import type { Role, User, UserStatus } from '$lib/types';
-	import { ShieldStar } from 'phosphor-svelte';
+	import { ShieldStarIcon } from 'phosphor-svelte';
 
 	let users = $state<User[]>([]);
 	let error = $state<string | null>(null);
@@ -46,7 +46,7 @@
 </script>
 
 <header class="page-head">
-	<ShieldStar size={22} weight="fill" />
+	<ShieldStarIcon size={22} weight="fill" />
 	<h1>User Administration</h1>
 </header>
 

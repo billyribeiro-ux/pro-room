@@ -6,7 +6,7 @@
 	import { QuestionBodySchema, AnswerSchema, firstIssue } from '$lib/schemas';
 	import { formatStamp, parseMessage } from '$lib/message';
 	import * as v from 'valibot';
-	import { X, PaperPlaneTilt, CheckCircle } from 'phosphor-svelte';
+	import { XIcon, PaperPlaneTiltIcon, CheckCircleIcon } from 'phosphor-svelte';
 
 	interface Props {
 		alert: AlertItem | null;
@@ -137,7 +137,7 @@
 			<header>
 				<h2>Q&amp;A — {alert.symbol}</h2>
 				<button type="button" class="close" aria-label="Close" onclick={onClose}>
-					<X size={18} weight="bold" />
+					<XIcon size={18} weight="bold" />
 				</button>
 			</header>
 
@@ -168,7 +168,9 @@
 
 								{#if q.resolved && q.answer}
 									<div class="answer">
-										<span class="answer-tag"><CheckCircle size={13} weight="fill" /> Answer</span>
+										<span class="answer-tag"
+											><CheckCircleIcon size={13} weight="fill" /> Answer</span
+										>
 										<p class="answer-body">
 											{#each parseMessage(q.answer) as seg, si (si)}{#if seg.kind === 'ticker'}<span
 														class="ticker">{seg.value}</span
@@ -224,7 +226,7 @@
 				{#if composeError}<p class="field-err">{composeError}</p>{/if}
 				<div class="composer-actions">
 					<button type="submit" class="primary" disabled={sending}>
-						<PaperPlaneTilt size={14} weight="fill" /> Send
+						<PaperPlaneTiltIcon size={14} weight="fill" /> Send
 					</button>
 				</div>
 			</form>

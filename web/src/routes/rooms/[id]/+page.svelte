@@ -2,6 +2,7 @@
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import { onMount, onDestroy } from 'svelte';
+	import { MediaQuery } from 'svelte/reactivity';
 	import { api, ApiError } from '$lib/api';
 	import { ScreenShareRoom } from '$lib/livekit.svelte';
 	import { RoomSocket } from '$lib/realtime.svelte';
@@ -10,11 +11,30 @@
 	import { type AlertItem } from '$lib/components/AlertFeed.svelte';
 	import { type ChatItem } from '$lib/components/ChatPanel.svelte';
 	import AlertsChatDock from '$lib/components/AlertsChatDock.svelte';
-	import PresenceBar from '$lib/components/PresenceBar.svelte';
 	import MembersPanel from '$lib/components/MembersPanel.svelte';
+	// PresenceBar removed from the room chrome (matches the reference — presence is
+	// shown via the top-nav user count + the sidebar roster).
 	import RoomTopNav from '$lib/components/RoomTopNav.svelte';
 	import RoomSidebar from '$lib/components/RoomSidebar.svelte';
-	import { Broadcast, MonitorPlay, StopCircle, Gear, ArrowLeft } from 'phosphor-svelte';
+	import PollPanel from '$lib/components/PollPanel.svelte';
+	import PollModal from '$lib/components/PollModal.svelte';
+	import RecPreview from '$lib/components/RecPreview.svelte';
+	import PrivateChat from '$lib/components/PrivateChat.svelte';
+	import ConnectionOverlay from '$lib/components/ConnectionOverlay.svelte';
+	import MobileAppInfoModal from '$lib/components/modals/MobileAppInfoModal.svelte';
+	import Split from '$lib/components/Split.svelte';
+	import { privateChat, closePrivateChat } from '$lib/privateChat.svelte';
+	import { layout } from '$lib/stores/layout.svelte';
+	import { listPolls, type PollDetail } from '$lib/poll';
+	import {
+		BroadcastIcon,
+		MonitorPlayIcon,
+		StopCircleIcon,
+		GearIcon,
+		ArrowLeftIcon,
+		ChartBarIcon,
+		RecordIcon
+	} from 'phosphor-svelte';
 
 	// Always present for the /rooms/[id] route.
 	const roomId = page.params.id as string;
@@ -30,13 +50,57 @@
 	let error = $state<string | null>(null);
 	let screenDisabled = $state(false);
 	let showMembers = $state(false);
-	let sidebarOpen = $state(true);
+	// Off-canvas by default (matches the reference) — the top-nav hamburger
+	// reveals it; content fills the width when closed.
+	let sidebarOpen = $state(false);
+	let polls = $state<PollDetail[]>([]);
+	let showCreatePoll = $state(false);
+	let showRecPreview = $state(false);
+	let showMobileInfo = $state(false);
 
 	const screen = new ScreenShareRoom();
-	let socket: RoomSocket | null = null;
+	// $state so the template reacts both to the socket being created in onMount
+	// and to its internal `connected` flag (drives the ConnectionOverlay).
+	let socket = $state<RoomSocket | null>(null);
 
 	const caps = $derived(detail?.capabilities);
 	const messages = $derived(channel === 'main' ? mainMessages : offTopicMessages);
+
+	// Room layout (from the General Settings "Room Layout" radios). The reference
+	// uses a resizable angular-split: alerts+chat ≈ ⅓, presentation ≈ ⅔. We map
+	// the chosen position onto a <Split> — direction, which pane comes first, and
+	// the initial size of pane A. On narrow viewports we force a vertical stack
+	// (a ⅓/⅔ horizontal split is unusable at phone widths). The shell is re-keyed
+	// on position+breakpoint so the split re-seeds (Split reads `initial` once).
+	const narrow = new MediaQuery('(max-width: 900px)');
+	const splitDir = $derived<'horizontal' | 'vertical'>(
+		narrow.current || layout.position === 'top' || layout.position === 'bottom'
+			? 'vertical'
+			: 'horizontal'
+	);
+	const dockFirst = $derived(
+		narrow.current ? true : layout.position === 'left' || layout.position === 'top'
+	);
+	const splitInitial = $derived(
+		narrow.current
+			? 45
+			: layout.position === 'left'
+				? 33.5
+				: layout.position === 'top'
+					? 42
+					: layout.position === 'right'
+						? 66.5
+						: 58
+	);
+
+	// Insert a new poll or replace an existing one in place (keyed by id) so a
+	// vote/close update never duplicates, and a closed poll keeps showing its
+	// final tallies until the next full load.
+	function upsertPoll(updated: PollDetail) {
+		const idx = polls.findIndex((p) => p.id === updated.id);
+		polls =
+			idx === -1 ? [updated, ...polls] : polls.map((p) => (p.id === updated.id ? updated : p));
+	}
 
 	function handleEvent(ev: RoomEvent) {
 		switch (ev.type) {
@@ -57,6 +121,9 @@
 				break;
 			case 'live':
 				if (detail) detail = { ...detail, room: { ...detail.room, is_live: ev.is_live } };
+				break;
+			case 'poll':
+				upsertPoll(ev.poll);
 				break;
 		}
 	}
@@ -114,12 +181,14 @@
 	onMount(async () => {
 		try {
 			detail = await api.get<RoomDetail>(`/api/rooms/${roomId}`);
-			const [a, m] = await Promise.all([
+			const [a, m, p] = await Promise.all([
 				api.get<AlertItem[]>(`/api/rooms/${roomId}/alerts`),
-				api.get<ChatItem[]>(`/api/rooms/${roomId}/messages?channel=main`)
+				api.get<ChatItem[]>(`/api/rooms/${roomId}/messages?channel=main`),
+				listPolls(roomId)
 			]);
 			alerts = a;
 			mainMessages = [...m].reverse();
+			polls = p;
 			loaded = { ...loaded, main: true };
 		} catch (err) {
 			error = err instanceof ApiError ? err.message : 'Failed to load room';
@@ -139,136 +208,168 @@
 
 {#if error}
 	<div class="banner">
-		<a href={resolve('/rooms')}><ArrowLeft size={16} /> Rooms</a> <span>{error}</span>
+		<a href={resolve('/rooms')}><ArrowLeftIcon size={16} /> Rooms</a> <span>{error}</span>
 	</div>
 {:else if detail}
 	<RoomTopNav
+		roomName={detail.room.name}
 		userCount={present.length}
 		onToggleSidebar={() => (sidebarOpen = !sidebarOpen)}
+		onMobileInfo={() => (showMobileInfo = true)}
 		onReload={() => location.reload()}
 	/>
 
-	<header class="room-head">
-		<a class="back" href={resolve('/rooms')}><ArrowLeft size={18} /></a>
-		<h1>{detail.room.name}</h1>
-		{#if detail.room.is_live}
-			<span class="live"><Broadcast size={13} weight="fill" /> LIVE</span>
+	<!-- Surfaces the realtime socket state: green "Connected" flash on reconnect,
+	     persistent "Reconnecting…" banner when the WS drops. Treats "no socket
+	     yet" (initial load) as connected so it doesn't flash on first paint. -->
+	<ConnectionOverlay connected={socket?.connected ?? true} />
+
+	<div class="room-body">
+		{#if screenDisabled}
+			<p class="notice">
+				Screen sharing is unavailable — the server has no LiveKit credentials configured.
+			</p>
 		{/if}
-		<div class="spacer"></div>
-		<PresenceBar users={present} />
 
-		<div class="controls">
-			{#if caps?.can_publish_screen && !screenDisabled}
-				{#if screen.publishing}
-					<button class="ctrl stop" onclick={() => screen.stopSharing()}>
-						<StopCircle size={16} weight="fill" /> Stop sharing
-					</button>
-				{:else}
-					<button class="ctrl" onclick={() => screen.startSharing()} disabled={!screen.connected}>
-						<MonitorPlay size={16} /> Share screen
-					</button>
-				{/if}
-			{/if}
-			{#if caps?.can_manage_room}
-				<button class="ctrl" class:live-on={detail.room.is_live} onclick={toggleLive}>
-					<Broadcast size={16} weight={detail.room.is_live ? 'fill' : 'regular'} />
-					{detail.room.is_live ? 'End broadcast' : 'Go live'}
-				</button>
-			{/if}
-			{#if caps?.can_manage_members}
-				<button class="ctrl" onclick={() => (showMembers = !showMembers)}>
-					<Gear size={16} /> Members
-				</button>
-			{/if}
-		</div>
-	</header>
+		<div class="shell-body">
+			<RoomSidebar
+				open={sidebarOpen}
+				{present}
+				canManage={caps?.can_manage_room ?? false}
+				onClose={() => (sidebarOpen = false)}
+			/>
 
-	{#if screenDisabled}
-		<p class="notice">
-			Screen sharing is unavailable — the server has no LiveKit credentials configured.
-		</p>
-	{/if}
-
-	<div class="shell-body">
-		<RoomSidebar open={sidebarOpen} {present} onClose={() => (sidebarOpen = false)} />
-
-		<div class="layout">
-			<aside class="side-col">
-				<AlertsChatDock
-					{alerts}
-					{messages}
-					{channel}
-					canPostAlert={caps?.can_post_alert ?? false}
-					canPostMessage={caps?.can_post_message ?? false}
-					onPostAlert={postAlert}
-					onPostMessage={postMessage}
-					onChannel={selectChannel}
-				/>
-			</aside>
-			<div class="stage-col">
-				<MainStage
-					{roomId}
-					canManage={caps?.can_manage_room ?? false}
-					publishers={screen.publishers}
-					connected={screen.connected}
-				/>
+			<div class="layout">
+				{#key `${layout.position}:${narrow.current}`}
+					<Split direction={splitDir} initial={splitInitial} min={12}>
+						{#snippet a()}
+							{#if dockFirst}{@render dockPane()}{:else}{@render stagePane()}{/if}
+						{/snippet}
+						{#snippet b()}
+							{#if dockFirst}{@render stagePane()}{:else}{@render dockPane()}{/if}
+						{/snippet}
+					</Split>
+				{/key}
 			</div>
 		</div>
 	</div>
 
+	<!-- Active polls float over the room so the Alerts+Chat column keeps its full
+	height (matching the reference). Closed polls remain to show final tallies. -->
+	{#if polls.length > 0}
+		<aside class="poll-overlay" aria-label="Active polls">
+			{#each polls as poll (poll.id)}
+				<PollPanel {poll} canManage={caps?.can_post_alert ?? false} onChange={upsertPoll} />
+			{/each}
+		</aside>
+	{/if}
+
 	{#if showMembers && caps?.can_manage_members}
 		<MembersPanel {roomId} onClose={() => (showMembers = false)} />
 	{/if}
+
+	<PollModal
+		open={showCreatePoll}
+		onClose={() => (showCreatePoll = false)}
+		onCreated={upsertPoll}
+	/>
+
+	<RecPreview open={showRecPreview} {roomId} onClose={() => (showRecPreview = false)} />
+
+	<PrivateChat
+		open={privateChat.peer !== null}
+		peer={privateChat.peer ?? undefined}
+		onClose={closePrivateChat}
+	/>
+
+	<MobileAppInfoModal open={showMobileInfo} onClose={() => (showMobileInfo = false)} />
 {:else}
 	<p class="dim">Loading room…</p>
 {/if}
 
+{#snippet stageActions()}
+	{#if caps?.can_publish_screen && !screenDisabled}
+		{#if screen.publishing}
+			<button class="ctrl stop" onclick={() => screen.stopSharing()}>
+				<StopCircleIcon size={16} weight="fill" /> Stop sharing
+			</button>
+		{:else}
+			<button class="ctrl" onclick={() => screen.startSharing()} disabled={!screen.connected}>
+				<MonitorPlayIcon size={16} /> Share screen
+			</button>
+		{/if}
+	{/if}
+	{#if caps?.can_post_alert}
+		<button class="ctrl" onclick={() => (showCreatePoll = true)}>
+			<ChartBarIcon size={16} /> New poll
+		</button>
+	{/if}
+	{#if caps?.can_manage_room}
+		<button class="ctrl" onclick={() => (showRecPreview = true)}>
+			<RecordIcon size={16} weight="fill" /> Record
+		</button>
+	{/if}
+	{#if caps?.can_manage_room}
+		<button class="ctrl" class:live-on={detail?.room.is_live} onclick={toggleLive}>
+			<BroadcastIcon size={16} weight={detail?.room.is_live ? 'fill' : 'regular'} />
+			{detail?.room.is_live ? 'End broadcast' : 'Go live'}
+		</button>
+	{/if}
+	{#if caps?.can_manage_members}
+		<button class="ctrl" onclick={() => (showMembers = !showMembers)}>
+			<GearIcon size={16} /> Members
+		</button>
+	{/if}
+{/snippet}
+
+<!-- The two resizable panes of the room shell, placed by the Split above in an
+     order that depends on the chosen Room Layout. -->
+{#snippet dockPane()}
+	<AlertsChatDock
+		{alerts}
+		{messages}
+		{present}
+		{channel}
+		canPostAlert={caps?.can_post_alert ?? false}
+		canPostMessage={caps?.can_post_message ?? false}
+		onPostAlert={postAlert}
+		onPostMessage={postMessage}
+		onChannel={selectChannel}
+	/>
+{/snippet}
+
+{#snippet stagePane()}
+	<MainStage
+		{roomId}
+		canManage={caps?.can_manage_room ?? false}
+		publishers={screen.publishers}
+		connected={screen.connected}
+		actions={stageActions}
+	/>
+{/snippet}
+
 <style>
-	.room-head {
+	.room-body {
+		/* Clear the 49px fixed top nav, then fill the rest of the viewport. */
+		margin-top: 49px;
+		height: calc(100vh - 49px);
 		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		margin-bottom: 1rem;
-		/* Clear the 49px fixed top nav. */
-		margin-top: calc(49px + 1rem);
+		flex-direction: column;
+		min-height: 0;
 	}
 	.shell-body {
+		position: relative;
+		flex: 1;
 		display: flex;
 		align-items: stretch;
-		gap: 1rem;
-		/* The sidebar slides out via negative margin; keep it from spilling. */
+		min-height: 0;
+		/* In-flow sidebar collapses to width 0 when closed; clip during the
+		   transition so nothing spills. */
 		overflow: hidden;
 	}
 	.shell-body .layout {
 		flex: 1;
 		min-width: 0;
-	}
-	.back {
-		display: inline-flex;
-		color: var(--text-dim);
-	}
-	.back:hover {
-		color: var(--text);
-	}
-	h1 {
-		margin: 0;
-		font-size: 1.3rem;
-	}
-	.live {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.25rem;
-		color: var(--negative);
-		font-size: 0.7rem;
-		font-weight: 700;
-		letter-spacing: 0.05em;
-	}
-	.spacer {
-		flex: 1;
-	}
-	.controls {
-		display: flex;
-		gap: 0.5rem;
 	}
 	.ctrl {
 		display: inline-flex;
@@ -298,18 +399,21 @@
 		border-color: var(--negative);
 	}
 	.layout {
-		display: grid;
-		grid-template-columns: auto 1fr;
-		gap: 1rem;
-		height: calc(100vh - 170px);
-	}
-	.stage-col {
-		min-height: 0;
+		height: 100%;
 		min-width: 0;
-	}
-	.side-col {
 		min-height: 0;
-		min-width: 0;
+	}
+	.poll-overlay {
+		position: fixed;
+		right: 1rem;
+		bottom: 1rem;
+		z-index: 50;
+		width: min(340px, calc(100vw - 2rem));
+		max-height: 70vh;
+		overflow-y: auto;
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
 	}
 	.notice {
 		background: color-mix(in srgb, var(--warn) 12%, transparent);
@@ -333,14 +437,5 @@
 	}
 	.dim {
 		color: var(--text-dim);
-	}
-	@media (max-width: 900px) {
-		.shell-body {
-			flex-direction: column;
-		}
-		.layout {
-			grid-template-columns: 1fr;
-			height: auto;
-		}
 	}
 </style>

@@ -99,10 +99,44 @@ impl FromRequestParts<AppState> for CurrentUser {
         state: &AppState,
     ) -> Result<Self, Self::Rejection> {
         let jar = CookieJar::from_headers(&parts.headers);
-        let secret = jar.get(COOKIE_NAME).ok_or(AppError::Unauthorized)?.value();
-        let user = resolve(state, secret)
-            .await?
-            .ok_or(AppError::Unauthorized)?;
-        Ok(Self(user))
+        if let Some(cookie) = jar.get(COOKIE_NAME)
+            && let Some(user) = resolve(state, cookie.value()).await?
+        {
+            return Ok(Self(user));
+        }
+
+        // DEV-ONLY auth bypass. Gated behind `AUTH_DEV_BYPASS` (default off, see
+        // `Config::auth_dev_bypass`). When there is no valid session AND the flag
+        // is set, resolve a synthetic super-admin so QA can hit every endpoint
+        // without logging in. This branch is unreachable in production because
+        // the flag stays unset. NEVER SHIP ENABLED.
+        if state.config.auth_dev_bypass {
+            return Ok(Self(dev_bypass_user(state).await?));
+        }
+
+        Err(AppError::Unauthorized)
     }
+}
+
+/// DEV-ONLY: build the synthetic caller used by the `AUTH_DEV_BYPASS` testing
+/// affordance. Resolves a real highest-privilege user row so any FK-referencing
+/// write (membership upserts, audit rows) stays valid, then forces the global
+/// role to the most privileged value so every RBAC capability check passes.
+/// Errors loudly (`401`) if the database has no admin/super-admin to borrow.
+async fn dev_bypass_user(state: &AppState) -> Result<SessionUser, AppError> {
+    let user = db::users::find_highest_privilege(&state.db)
+        .await?
+        .ok_or(AppError::Unauthorized)?;
+    tracing::warn!(
+        user_id = %user.id,
+        "AUTH_DEV_BYPASS active: serving request as synthetic super-admin (dev-only)"
+    );
+    Ok(SessionUser {
+        user_id: user.id,
+        email: user.email,
+        display_name: user.display_name,
+        // Force the highest role regardless of the borrowed row's actual role so
+        // all role-gated capabilities resolve to allow.
+        global_role: Role::SuperAdmin,
+    })
 }

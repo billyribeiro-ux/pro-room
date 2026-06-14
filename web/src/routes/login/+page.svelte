@@ -4,7 +4,12 @@
 	import { API_URL } from '$lib/config';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { GoogleLogo, GithubLogo, EnvelopeSimple, ChartLineUp } from 'phosphor-svelte';
+	import {
+		GoogleLogoIcon,
+		GithubLogoIcon,
+		EnvelopeSimpleIcon,
+		ChartLineUpIcon
+	} from 'phosphor-svelte';
 
 	let email = $state('');
 	let password = $state('');
@@ -48,7 +53,7 @@
 <div class="shell">
 	<div class="card">
 		<div class="head">
-			<ChartLineUp size={28} weight="bold" />
+			<ChartLineUpIcon size={28} weight="bold" />
 			<h1>Sign in</h1>
 		</div>
 
@@ -70,14 +75,18 @@
 		</form>
 
 		<button class="ghost" onclick={sendMagicLink}>
-			<EnvelopeSimple size={18} /> Email me a magic link
+			<EnvelopeSimpleIcon size={18} /> Email me a magic link
 		</button>
 
 		<div class="divider"><span>or</span></div>
 
 		<div class="oauth">
-			<button onclick={() => oauth('google')}><GoogleLogo size={18} weight="bold" /> Google</button>
-			<button onclick={() => oauth('github')}><GithubLogo size={18} weight="bold" /> GitHub</button>
+			<button onclick={() => oauth('google')}
+				><GoogleLogoIcon size={18} weight="bold" /> Google</button
+			>
+			<button onclick={() => oauth('github')}
+				><GithubLogoIcon size={18} weight="bold" /> GitHub</button
+			>
 		</div>
 
 		<p class="foot">No account? <a href={resolve('/register')}>Create one</a></p>
