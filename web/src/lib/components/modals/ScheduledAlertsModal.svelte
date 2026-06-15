@@ -153,9 +153,10 @@
 		cursor: pointer;
 	}
 	.btn.primary {
-		background: var(--accent);
+		/* Reference footer Close is Darkly btn-primary #375a7f (not the teal accent). */
+		background: var(--modal-btn-primary, #375a7f);
 		color: #fff;
-		border-color: var(--accent);
+		border-color: var(--modal-btn-primary, #375a7f);
 	}
 	.btn.primary:hover {
 		opacity: 0.9;

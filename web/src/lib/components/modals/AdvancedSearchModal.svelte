@@ -62,7 +62,7 @@
 	<button class="btn primary" type="submit" form={formId}>
 		<Icon name="search" size={14} /> Search
 	</button>
-	<button class="btn ghost" type="button" onclick={onClose}>Close</button>
+	<button class="btn secondary" type="button" onclick={onClose}>Close</button>
 {/snippet}
 
 <Modal {open} {onClose} title="Alerts Advanced Search" {footer}>
@@ -247,19 +247,20 @@
 		border: 1px solid var(--border);
 		cursor: pointer;
 	}
-	.btn.ghost {
-		background: transparent;
-		color: var(--text-dim);
-		font-weight: 600;
+	.btn.secondary {
+		/* Darkly btn-secondary #444 (reference Close button). */
+		background: var(--modal-btn-secondary, #444);
+		color: #fff;
+		border-color: var(--modal-btn-secondary, #444);
 	}
-	.btn.ghost:hover {
-		color: var(--text);
-		border-color: var(--accent);
+	.btn.secondary:hover {
+		opacity: 0.9;
 	}
 	.btn.primary {
-		background: var(--accent);
+		/* Darkly btn-primary #375a7f (reference Search button), not the teal accent. */
+		background: var(--modal-btn-primary, #375a7f);
 		color: #fff;
-		border-color: var(--accent);
+		border-color: var(--modal-btn-primary, #375a7f);
 	}
 	.btn.primary:hover {
 		opacity: 0.9;
