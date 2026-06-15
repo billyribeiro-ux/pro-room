@@ -27,3 +27,9 @@ Thumbs.db
 # local redis dev artifact
 dump.rdb
 *.rdb
+
+# admin-room reference-spec: report.md is the committed artifact; the rest are
+# bulky/regenerable intermediates (15MB+ raw capture, sliced JSON, section fragments).
+evidence-folder/_slices/
+evidence-folder/_report-sections/
+evidence-folder/*.json
