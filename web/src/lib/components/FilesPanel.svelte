@@ -162,7 +162,10 @@
 				onclick={() => (category = c.key)}
 			>
 				{c.label}
-				<span class="badge">{counts[c.key]}</span>
+				{#if counts[c.key] > 0}
+					<!-- Reference badge hides at 0 (.badge:empty { display:none }). -->
+					<span class="badge">{counts[c.key]}</span>
+				{/if}
 			</button>
 		{/each}
 
@@ -298,18 +301,21 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		min-width: 1.1rem;
-		height: 1.1rem;
-		padding: 0 0.3rem;
-		border-radius: 999px;
-		/* Red count pill — matches the reference's `bg-danger` files badge.
-		   .files-badge positioning: margin-top -9px; margin-left 3px. */
-		background: #dc3545;
+		/* Reference .badge: padding .35em .65em; font-size .75em; line-height 1;
+		   1px solid #000 border; .rounded-pill = 50rem (full pill). Sized by
+		   padding, NOT a fixed min-width/height. */
+		padding: 0.35em 0.65em;
+		line-height: 1;
+		border: 1px solid #000000;
+		border-radius: 50rem;
+		/* `.bg-danger` is OVERRIDDEN to coral rgb(231,76,60) — NOT the Bootstrap
+		   default #dc3545 (220,53,69). report.md §04 line 945. */
+		background: rgb(231, 76, 60);
 		color: #ffffff;
-		font-size: 0.7rem;
+		font-size: 0.75em;
 		font-weight: 700;
-		margin-top: -9px;
-		margin-left: 3px;
+		/* .files-badge: notch up-right onto the sub-tab label (margin -9px 0 0 3px). */
+		margin: -9px 0 0 3px;
 	}
 	.tools {
 		display: flex;
