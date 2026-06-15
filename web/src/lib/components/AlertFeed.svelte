@@ -316,13 +316,26 @@
 
 	{#if canPost}
 		<form onsubmit={submit}>
-			<input id="alert-symbol" name="symbol" class="sym" placeholder="Symbol" bind:value={symbol} required />
+			<input
+				id="alert-symbol"
+				name="symbol"
+				class="sym"
+				placeholder="Symbol"
+				bind:value={symbol}
+				required
+			/>
 			<select id="alert-side" name="side" bind:value={side} aria-label="Side">
 				<option value="buy">Buy</option>
 				<option value="sell">Sell</option>
 				<option value="watch">Watch</option>
 			</select>
-			<input id="alert-note" name="note" class="note" placeholder="Note (optional)" bind:value={note} />
+			<input
+				id="alert-note"
+				name="note"
+				class="note"
+				placeholder="Note (optional)"
+				bind:value={note}
+			/>
 			<button type="submit" disabled={posting}>Post</button>
 		</form>
 	{/if}
@@ -558,23 +571,31 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.15rem;
-		/* Reference: the Q&A badge sits on the RIGHT, immediately before the
-		   date/time (see Bruce Marshall capture) — auto margin pushes the badge +
-		   created-at cluster to the right edge; everyone else stays left. */
+		/* The Q&A badge sits on the RIGHT, immediately before the date/time —
+		   auto margin pushes the badge + created-at cluster to the right edge. */
 		margin-left: auto;
-		background: #eef4fb;
-		border: 1px solid #cfe0f5;
-		color: #0a6db1;
-		/* Reference .alert-qa (btn-sm btn-secondary): 10px, padding 1px 3px,
-		   border-radius 4px. Color kept per our theme rules. */
+		/* Reference button.alert-qa is a Bootstrap btn-sm.btn-secondary: gray bg
+		   rgb(108,117,125) #6c757d, white text, 400 10px/15px, padding 1px 3px,
+		   1px solid #6c757d border (= bg). report.md §06 line 150 (was a custom
+		   light-blue badge — the reference is BS secondary gray). */
+		background: #6c757d;
+		border: 1px solid #6c757d;
+		color: #ffffff;
 		font-size: 10px;
-		line-height: 1;
+		font-weight: 400;
+		line-height: 15px;
+		/* The reference button is 18×19 (line-height 15 + 2 padding + 2 border).
+		   inline-flex collapses to the 10px icon, so pin the box height to 19px
+		   (border-box) — icon stays centered, box matches. */
+		min-height: 19px;
 		padding: 1px 3px;
 		border-radius: 4px;
 		cursor: pointer;
 	}
 	.alert-qa:hover {
-		background: #e0ecfa;
+		/* BS btn-secondary hover darken (#5c636a / border #565e64). */
+		background: #5c636a;
+		border-color: #565e64;
 	}
 	.qa-count {
 		font-weight: 700;
@@ -600,7 +621,8 @@
 	}
 
 	.body {
-		margin: 0.35rem 0 0 8px;
+		/* Reference body div.text-formated.ml-2.mr-2 = 8px left + right margin. */
+		margin: 0.35rem 8px 0 8px;
 		color: #676767;
 		/* Reference .text-formated line-height is 1.5 (19.5px @ 13px). */
 		line-height: 1.5;
