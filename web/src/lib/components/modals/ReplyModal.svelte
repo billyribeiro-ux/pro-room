@@ -5,13 +5,16 @@
 	interface Props {
 		open: boolean;
 		onClose: () => void;
-		/** Called with the trimmed reply text on Send. */
+		/** Recipient/target name shown in the title (private-reply target). */
+		recipient?: string;
+		/** Called with the trimmed reply text on send (Enter). */
 		onSend?: (text: string) => void;
 	}
-	let { open, onClose, onSend }: Props = $props();
+	let { open, onClose, recipient, onSend }: Props = $props();
 
 	let text = $state('');
-	let canSend = $derived(text.trim().length > 0);
+	// Reference title is the recipient name + colon (the private-reply target).
+	const title = $derived(recipient ? `${recipient}:` : 'Reply');
 
 	function send() {
 		const trimmed = text.trim();
@@ -25,46 +28,52 @@
 		text = '';
 		onClose();
 	}
+
+	// Reference has no Send button — Enter (no Shift) sends, Shift+Enter newlines.
+	function onKeydown(e: KeyboardEvent) {
+		if (e.key === 'Enter' && !e.shiftKey) {
+			e.preventDefault();
+			send();
+		}
+	}
 </script>
 
-<Modal {open} onClose={close} title="Reply">
-	<label class="field">
-		<span class="sr-only">Reply text</span>
-		<textarea bind:value={text} rows="3" placeholder="Write a reply…"></textarea>
-	</label>
-
-	{#snippet footer()}
+<Modal {open} onClose={close} {title}>
+	<!-- Reference body: textarea with the emoji/image buttons inline in a right
+	     column beside it (odds-and-ends.html app-reply-modal). -->
+	<div class="reply-row">
+		<textarea
+			bind:value={text}
+			rows="1"
+			placeholder="Write a reply…"
+			aria-label="Reply text"
+			onkeydown={onKeydown}
+		></textarea>
 		<div class="tools">
-			<button type="button" class="tool" aria-label="Insert emoji">
-				<Icon name="smile" />
+			<button type="button" class="tool" aria-label="Add emoji" title="Add Emojis">
+				<Icon name="smile" family="regular" />
 			</button>
-			<button type="button" class="tool" aria-label="Attach image">
+			<button type="button" class="tool" aria-label="Upload an image" title="Upload an Image">
 				<Icon name="image" />
 			</button>
 		</div>
-		<button type="button" class="primary" onclick={send} disabled={!canSend}>
-			<Icon name="paper-plane" size={14} /> Send
-		</button>
+	</div>
+
+	{#snippet footer()}
+		<!-- Reference footer is a single secondary Close (no Send; Enter sends). -->
+		<button type="button" class="btn secondary" onclick={close}>Close</button>
 	{/snippet}
 </Modal>
 
 <style>
-	.sr-only {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		padding: 0;
-		margin: -1px;
-		overflow: hidden;
-		clip: rect(0, 0, 0, 0);
-		white-space: nowrap;
-		border: 0;
-	}
-	.field {
-		display: block;
+	.reply-row {
+		display: flex;
+		align-items: stretch;
+		gap: 0.5rem;
 	}
 	textarea {
-		width: 100%;
+		flex: 1;
+		min-width: 0;
 		box-sizing: border-box;
 		resize: vertical;
 		background: var(--bg-elev);
@@ -81,8 +90,8 @@
 	}
 	.tools {
 		display: flex;
+		flex-direction: column;
 		gap: 0.4rem;
-		margin-right: auto;
 	}
 	.tool {
 		display: inline-flex;
@@ -94,28 +103,27 @@
 		border-radius: var(--radius);
 		padding: 0.4rem;
 		line-height: 0;
+		cursor: pointer;
 	}
 	.tool:hover {
 		color: var(--accent);
 		border-color: var(--accent);
 	}
-	.primary {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.4rem;
-		background: var(--accent);
-		color: #fff;
-		border: none;
+	.btn {
 		border-radius: var(--radius);
 		padding: 0.45rem 0.95rem;
 		font-size: 0.85rem;
 		font-weight: 700;
+		border: 1px solid transparent;
+		cursor: pointer;
 	}
-	.primary:hover:not(:disabled) {
-		background: var(--accent-hover);
+	/* Darkly btn-secondary. */
+	.btn.secondary {
+		background: var(--modal-btn-secondary, #444);
+		border-color: var(--modal-btn-secondary, #444);
+		color: #fff;
 	}
-	.primary:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
+	.btn.secondary:hover {
+		opacity: 0.9;
 	}
 </style>

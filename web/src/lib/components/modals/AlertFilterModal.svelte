@@ -1,6 +1,5 @@
 <script lang="ts">
 	import Modal from '../Modal.svelte';
-	import Icon from '../Icon.svelte';
 
 	interface Props {
 		open: boolean;
@@ -11,21 +10,19 @@
 	let onlyThesePeople = $state(false);
 </script>
 
-<Modal {open} {onClose} title="Filter out alerts">
+<!-- Reference h5: "Filter out alerts from the following:" (file3.html app-alert-filter-modal). -->
+<Modal {open} {onClose} title="Filter out alerts from the following:">
 	<label class="check">
 		<input type="checkbox" bind:checked={onlyThesePeople} />
-		Only show alerts from these people
+		Only show alerts from these people:
 	</label>
 
-	<div class="list" class:dim={!onlyThesePeople}>
-		<div class="empty">
-			<Icon name="filter" size={22} />
-			<p>No people selected yet.</p>
-		</div>
-	</div>
+	<!-- Reference shows a plain "List is empty." when no people are selected. -->
+	<p class="empty">List is empty.</p>
 
 	{#snippet footer()}
-		<button type="button" class="primary" onclick={onClose}>Done</button>
+		<!-- Reference footer is a single secondary Close (not a primary "Done"). -->
+		<button type="button" class="btn secondary" onclick={onClose}>Close</button>
 	{/snippet}
 </Modal>
 
@@ -37,40 +34,29 @@
 		font-size: 0.88rem;
 		font-weight: 600;
 	}
-	.list {
-		margin-top: 0.9rem;
-		border: 1px solid var(--border);
-		border-radius: var(--radius);
-		min-height: 110px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-	.list.dim {
-		opacity: 0.55;
+	/* Reference --checkbox-bg-color is teal #00bc8c. */
+	.check input[type='checkbox'] {
+		accent-color: #00bc8c;
 	}
 	.empty {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 0.4rem;
+		margin: 0.9rem 0 0;
 		color: var(--text-dim);
-		text-align: center;
-	}
-	.empty p {
-		margin: 0;
 		font-size: 0.85rem;
 	}
-	.primary {
-		background: var(--accent);
-		color: #fff;
-		border: none;
+	.btn {
 		border-radius: var(--radius);
-		padding: 0.4rem 0.95rem;
+		padding: 0.45rem 0.95rem;
 		font-size: 0.85rem;
 		font-weight: 700;
+		border: 1px solid transparent;
+		cursor: pointer;
 	}
-	.primary:hover {
-		background: var(--accent-hover);
+	.btn.secondary {
+		background: var(--modal-btn-secondary, #444);
+		border-color: var(--modal-btn-secondary, #444);
+		color: #fff;
+	}
+	.btn.secondary:hover {
+		opacity: 0.9;
 	}
 </style>

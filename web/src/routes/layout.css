@@ -42,6 +42,10 @@
 	--modal-danger: #e74c3c;
 	--modal-active-tab: #00bc8c;
 	--modal-input-bg: #444;
+	/* Darkly button variants used in modal footers/actions (capture cssVariables.root
+	   + Bootswatch Darkly): primary #375a7f, secondary #444, success #00bc8c, danger #e74c3c. */
+	--modal-btn-primary: #375a7f;
+	--modal-btn-secondary: #444;
 	/* App font — Open Sans is the reference's effective app font; Lato fallback. */
 	--font-sans:
 		'Open Sans', 'Lato', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica,
