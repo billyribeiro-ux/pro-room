@@ -180,10 +180,13 @@
 </script>
 
 {#snippet footer()}
-	<button class="btn ghost" type="button" onclick={onClose}>Done</button>
+	<!-- Reference footer: a single full-width green btn-success btn-block "Done".
+	     The reference body was *ngIf-collapsed in every capture (no DOM), so the
+	     body is left as our functional host-control set rather than guessed. -->
+	<button class="btn success block" type="button" onclick={onClose}>Done</button>
 {/snippet}
 
-<Modal {open} {onClose} title="Session Control" {footer}>
+<Modal {open} {onClose} title="Session Control" size="lg" {footer}>
 	<div class="intro">
 		<Icon name="shield-alt" size={20} />
 		<p>Host controls for this session. Actions apply to everyone in the room.</p>
@@ -291,12 +294,16 @@
 		font-size: 0.85rem;
 		border: 1px solid var(--border);
 	}
-	.btn.ghost {
-		background: transparent;
-		color: var(--text-dim);
+	/* Darkly btn-success, full-width (btn-block). */
+	.btn.success {
+		background: var(--modal-success, #00bc8c);
+		border-color: var(--modal-success, #00bc8c);
+		color: #fff;
 	}
-	.btn.ghost:hover {
-		color: var(--text);
-		border-color: var(--accent);
+	.btn.success:hover {
+		opacity: 0.9;
+	}
+	.btn.block {
+		width: 100%;
 	}
 </style>

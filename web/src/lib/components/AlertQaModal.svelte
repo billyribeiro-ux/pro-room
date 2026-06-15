@@ -7,6 +7,7 @@
 	import { formatStamp, parseMessage } from '$lib/message';
 	import * as v from 'valibot';
 	import Icon from './Icon.svelte';
+	import MessageBody from './MessageBody.svelte';
 
 	interface Props {
 		alert: AlertItem | null;
@@ -16,6 +17,20 @@
 
 	// Always present for the /rooms/[id] route.
 	const roomId = page.params.id as string;
+
+	// The originating alert echoed in the header (reference .admin-alert block):
+	// its body text (symbol + side + note) and avatar initials fallback.
+	function alertBody(a: AlertItem): string {
+		const head = a.side ? `${a.symbol} ${a.side}` : a.symbol;
+		return a.note ? `${head} ${a.note}` : head;
+	}
+	function initials(name: string | undefined): string {
+		const n = (name ?? 'Trader').trim();
+		const parts = n.split(/\s+/).filter(Boolean);
+		if (parts.length === 0) return '?';
+		if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+		return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+	}
 
 	let questions = $state<Question[]>([]);
 	let loading = $state(false);
@@ -135,7 +150,27 @@
 	>
 		<div class="dialog" role="dialog" aria-modal="true" aria-label="Alert questions">
 			<header>
-				<h2>Q&amp;A — {alert.symbol}</h2>
+				<div class="head-main">
+					<h2>Q&amp;A for Alert:</h2>
+					<!-- Reference echoes the originating alert inside the header (.admin-alert):
+					     avatar + username + created-at + the alert body. -->
+					<div class="admin-alert">
+						{#if alert.image_url}
+							<img class="aa-avatar" src={alert.image_url} alt="" width="50" height="50" />
+						{:else}
+							<span class="aa-avatar aa-fallback" aria-hidden="true"
+								>{initials(alert.author_name)}</span
+							>
+						{/if}
+						<div class="aa-meta">
+							<div class="aa-top">
+								<strong class="aa-username">{alert.author_name ?? 'Trader'}</strong>
+								<time class="aa-time">{formatStamp(alert.created_at)}</time>
+							</div>
+							<div class="aa-body"><MessageBody text={alertBody(alert)} /></div>
+						</div>
+					</div>
+				</div>
 				<button type="button" class="close" aria-label="Close" onclick={onClose}>
 					<Icon name="times" size={18} />
 				</button>
@@ -246,7 +281,8 @@
 	.dialog {
 		display: flex;
 		flex-direction: column;
-		width: min(34rem, 100%);
+		/* Reference #alertQAModal .modal-dialog is capped at max-width 600px. */
+		width: min(600px, 100%);
 		max-height: 80vh;
 		background: var(--bg-elev-2);
 		border: 1px solid var(--border);
@@ -256,17 +292,71 @@
 	}
 	header {
 		display: flex;
-		align-items: center;
+		/* align-items-start so the close stays top-right when the echoed alert grows. */
+		align-items: flex-start;
 		justify-content: space-between;
 		gap: 0.5rem;
 		padding: 0.75rem 1rem;
 		border-bottom: 1px solid var(--border);
 		flex-shrink: 0;
 	}
+	.head-main {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		min-width: 0;
+	}
 	header h2 {
 		margin: 0;
 		font-size: 1rem;
 		font-weight: 700;
+	}
+	.admin-alert {
+		display: flex;
+		gap: 0.5rem;
+		align-items: flex-start;
+	}
+	.aa-avatar {
+		width: 50px;
+		height: 50px;
+		flex: 0 0 50px;
+		border-radius: 0;
+		object-fit: cover;
+	}
+	.aa-fallback {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--bg-elev);
+		color: var(--text-dim);
+		font-weight: 700;
+		font-size: 0.9rem;
+	}
+	.aa-meta {
+		display: flex;
+		flex-direction: column;
+		gap: 0.15rem;
+		min-width: 0;
+	}
+	.aa-top {
+		display: flex;
+		align-items: baseline;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+	.aa-username {
+		font-weight: 900;
+		font-size: 0.85rem;
+		color: var(--accent);
+	}
+	.aa-time {
+		font-size: 0.72rem;
+		color: var(--text-dim);
+	}
+	.aa-body {
+		font-size: 0.85rem;
+		color: var(--text-dim);
+		line-height: 1.4;
 	}
 	.close {
 		display: inline-flex;
