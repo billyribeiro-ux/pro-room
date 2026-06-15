@@ -27,6 +27,17 @@
 	--ticker-color: #0a6db1;
 	--msg-font-size: 13px;
 	--radius: 6px;
+	/* Reference modals are ALWAYS dark (Bootstrap "Darkly"), independent of the
+	   light/dark message-panel theme — fixed values, NOT overridden in light mode.
+	   Source: evidence-folder/report.md §07/§10 (--modal-content-* / Darkly palette). */
+	--modal-bg: #303030;
+	--modal-color: #f4f4f4;
+	--modal-border: #444;
+	--modal-close-bg: #375a7f;
+	--modal-success: #00bc8c;
+	--modal-danger: #e74c3c;
+	--modal-active-tab: #00bc8c;
+	--modal-input-bg: #444;
 	/* App font — Open Sans is the reference's effective app font; Lato fallback. */
 	--font-sans:
 		'Open Sans', 'Lato', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica,

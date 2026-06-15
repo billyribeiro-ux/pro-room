@@ -90,12 +90,24 @@
 		max-height: calc(100vh - 2rem);
 		display: flex;
 		flex-direction: column;
-		background: var(--bg-elev-2);
-		border: 1px solid var(--border);
+		/* Reference modals are a fixed DARK surface (Bootstrap "Darkly": #303030 bg,
+		   #444 border, soft near-white #f4f4f4 text) — independent of the light/dark
+		   message-panel theme. Driven by the --modal-* tokens (layout.css).
+		   Custom props inherit through the DOM, so re-mapping the room theme tokens
+		   HERE re-themes every modal's inner content (cards/inputs/borders/accents)
+		   to the dark Darkly palette in one place — no per-modal edits. */
+		--bg-elev: var(--modal-input-bg);
+		--bg-elev-2: var(--modal-bg);
+		--border: var(--modal-border);
+		--accent: var(--modal-active-tab);
+		--accent-hover: #00a37a;
+		--positive: var(--modal-success);
+		--text: var(--modal-color);
+		--text-dim: #b8b8b8;
+		background: var(--modal-bg);
+		border: 1px solid var(--modal-border);
 		border-radius: 8px;
-		/* Reference modal-content body text is a soft near-white (#f4f4f4), a touch
-		   dimmer than the pure-white --text used on room panels. */
-		color: #f4f4f4;
+		color: var(--modal-color);
 		box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5);
 		outline: none;
 	}
@@ -105,7 +117,7 @@
 		justify-content: space-between;
 		gap: 0.75rem;
 		padding: 1rem;
-		border-bottom: 1px solid var(--border);
+		border-bottom: 1px solid var(--modal-border);
 	}
 	.title {
 		margin: 0;
@@ -117,16 +129,17 @@
 		align-items: center;
 		justify-content: center;
 		background: transparent;
-		border: 1px solid var(--border);
-		color: var(--text-dim);
+		border: 1px solid var(--modal-border);
+		color: var(--modal-color);
 		border-radius: var(--radius);
 		padding: 0.3rem;
 		line-height: 0;
 		flex: 0 0 auto;
 	}
 	.close:hover {
-		color: var(--text);
-		border-color: var(--accent-hover);
+		background: var(--modal-close-bg);
+		color: #fff;
+		border-color: var(--modal-close-bg);
 	}
 	.body {
 		padding: 1rem;
@@ -140,6 +153,6 @@
 		justify-content: flex-end;
 		gap: 0.5rem;
 		padding: 1rem;
-		border-top: 1px solid var(--border);
+		border-top: 1px solid var(--modal-border);
 	}
 </style>
