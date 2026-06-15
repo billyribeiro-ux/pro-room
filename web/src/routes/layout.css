@@ -21,10 +21,13 @@
 	--negative: #bb352a;
 	--warn: #f39c12;
 	/* Message chrome (consumed by alert/chat rows + theme customizer preview).
-	   Usernames/tickers render on the WHITE message panel, so they use the darker
-	   room blue #0a6db1 (the brighter #45a2ff is reserved for autolinked URLs). */
+	   Both render on the WHITE message panel. Username is the darker room blue
+	   #0a6db1 (reference §06 line 149). The ticker `.stockColor` is NOT the
+	   username blue — the reference renders it near-black #1a1a1a, 700, italic,
+	   UPPERCASE (literal capture rule + computed §06 line 1341); the brighter
+	   #45a2ff stays reserved for autolinked URLs. */
 	--username-color: #0a6db1;
-	--ticker-color: #0a6db1;
+	--ticker-color: #1a1a1a;
 	--msg-font-size: 13px;
 	--radius: 6px;
 	/* Reference modals are ALWAYS dark (Bootstrap "Darkly"), independent of the
@@ -62,7 +65,8 @@
 	--negative: #c23b30;
 	--warn: #b8860b;
 	--username-color: #1565be;
-	--ticker-color: #1d7fe0;
+	/* Ticker is near-black on the always-white message panel in both modes. */
+	--ticker-color: #1a1a1a;
 }
 
 * {

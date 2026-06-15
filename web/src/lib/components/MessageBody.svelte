@@ -35,10 +35,14 @@
 		line-height: 1.5;
 	}
 	.ticker {
-		/* Reference .stockColor (e.g. $VLO): 13px, font-weight 700, ITALIC. */
-		color: var(--ticker-color, #0a6db1);
+		/* Reference .stockColor (e.g. $VLO): near-black #1a1a1a, 700, ITALIC,
+		   text-transform UPPERCASE. Literal capture rule + computed §06 line 1341.
+		   Color is the themeable --ticker-color token (default #1a1a1a); the
+		   uppercase/italic/weight are fixed reference behavior, not themed. */
+		color: var(--ticker-color, #1a1a1a);
 		font-weight: 700;
 		font-style: italic;
+		text-transform: uppercase;
 	}
 	.mention {
 		color: #048d04;

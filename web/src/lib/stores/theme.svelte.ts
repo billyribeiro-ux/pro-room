@@ -44,7 +44,7 @@ const DEFAULTS: ThemeTokens = {
 	'--negative': '#bb352a',
 	'--warn': '#f39c12',
 	'--username-color': '#0a6db1',
-	'--ticker-color': '#0a6db1'
+	'--ticker-color': '#1a1a1a'
 };
 
 /** Default message font size in px (mirrors layout.css `--msg-font-size`). */
@@ -88,7 +88,7 @@ export const PRESETS: ThemePreset[] = [
 			'--negative': '#bb352a',
 			'--warn': '#f39c12',
 			'--username-color': '#0a6db1',
-			'--ticker-color': '#0a6db1'
+			'--ticker-color': '#1a1a1a'
 		}
 	},
 	{
