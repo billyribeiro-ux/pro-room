@@ -1,5 +1,4 @@
 <script lang="ts">
-	import Icon from '../Icon.svelte';
 	import Modal from '../Modal.svelte';
 
 	interface Props {
@@ -10,47 +9,36 @@
 </script>
 
 {#snippet footer()}
-	<button class="btn ghost" type="button" onclick={onClose}>Close</button>
+	<!-- Reference Close is Darkly btn-primary (deliberately distinct from Followed's btn-light). -->
+	<button class="btn primary" type="button" onclick={onClose}>Close</button>
 {/snippet}
 
-<Modal {open} {onClose} title="Muted / Ignored Users" {footer}>
-	<div class="empty">
-		<Icon name="volume-mute" size={28} />
-		<p>You don't have any muted/ignored users.</p>
-	</div>
+<Modal {open} {onClose} title="Muted Chat Users" {footer}>
+	<!-- Reference body is a single centered text node, no icon. -->
+	<div class="empty">You don't have any muted chat users.</div>
 </Modal>
 
 <style>
 	.empty {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 0.5rem;
-		padding: 1.5rem 0.5rem;
+		text-align: center;
+		padding: 1.25rem 0.5rem;
 		color: var(--text-dim);
-	}
-	.empty :global(svg),
-	.empty :global(i) {
-		color: var(--text-dim);
-		opacity: 0.7;
-	}
-	.empty p {
-		margin: 0;
 		font-size: 0.9rem;
 	}
 	.btn {
 		border-radius: var(--radius);
 		padding: 0.5rem 0.9rem;
-		font-weight: 600;
+		font-weight: 700;
 		font-size: 0.85rem;
-		border: 1px solid var(--border);
+		border: 1px solid transparent;
+		cursor: pointer;
 	}
-	.btn.ghost {
-		background: transparent;
-		color: var(--text-dim);
+	.btn.primary {
+		background: var(--modal-btn-primary, #375a7f);
+		border-color: var(--modal-btn-primary, #375a7f);
+		color: #fff;
 	}
-	.btn.ghost:hover {
-		color: var(--text);
-		border-color: var(--accent);
+	.btn.primary:hover {
+		opacity: 0.9;
 	}
 </style>

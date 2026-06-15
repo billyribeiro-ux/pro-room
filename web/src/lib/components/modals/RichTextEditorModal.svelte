@@ -128,11 +128,14 @@
 </script>
 
 {#snippet footer()}
-	<button class="btn ghost" type="button" onclick={onClose}>Close</button>
-	<button class="btn primary" type="button" onclick={send}>Send</button>
+	<!-- Reference footer splits Close (left) and Send (right) across the full width. -->
+	<div class="foot-split">
+		<button class="btn ghost" type="button" onclick={onClose}>Close</button>
+		<button class="btn primary" type="button" onclick={send}>Send</button>
+	</div>
 {/snippet}
 
-<Modal {open} {onClose} title="Rich Text" {footer}>
+<Modal {open} {onClose} title="Rich Text Editor" {footer}>
 	<div class="rte">
 		<div class="toolbar" role="toolbar" aria-label="Text formatting" aria-controls="rte-editor">
 			{#each tools as tool (tool.label)}
@@ -183,6 +186,11 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.5rem;
+	}
+	.foot-split {
+		display: flex;
+		width: 100%;
+		justify-content: space-between;
 	}
 	.toolbar {
 		display: flex;

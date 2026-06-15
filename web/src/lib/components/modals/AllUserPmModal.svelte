@@ -23,10 +23,11 @@
 </script>
 
 {#snippet footer()}
-	<button class="btn ghost" type="button" onclick={onClose}>Close</button>
+	<button class="btn secondary" type="button" onclick={onClose}>Close</button>
 {/snippet}
 
-<Modal {open} {onClose} title="All private messages" {footer}>
+<!-- Reference h5 is "All private messages:" (trailing colon + dynamic count slot). -->
+<Modal {open} {onClose} title="All private messages:" {footer}>
 	{#if threads.length === 0}
 		<div class="empty">
 			<Icon name="envelope" size={28} />
@@ -130,12 +131,12 @@
 		font-size: 0.85rem;
 		border: 1px solid var(--border);
 	}
-	.btn.ghost {
-		background: transparent;
-		color: var(--text-dim);
+	.btn.secondary {
+		background: var(--modal-btn-secondary, #444);
+		color: #fff;
+		border-color: var(--modal-btn-secondary, #444);
 	}
-	.btn.ghost:hover {
-		color: var(--text);
-		border-color: var(--accent);
+	.btn.secondary:hover {
+		opacity: 0.9;
 	}
 </style>
