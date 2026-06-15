@@ -10,8 +10,11 @@
 		footer?: Snippet;
 		/** Bootstrap dialog size: md (default ~440px), lg (~800px), xl (~1140px). */
 		size?: 'md' | 'lg' | 'xl';
+		/** Custom header content rendered in place of the plain title (e.g. an
+		 * identity block). `title` is still used as the dialog's aria-label. */
+		header?: Snippet;
 	}
-	let { open, title, onClose, children, footer, size = 'md' }: Props = $props();
+	let { open, title, onClose, children, footer, size = 'md', header }: Props = $props();
 
 	const titleId = $props.id();
 	let panel = $state<HTMLDivElement | null>(null);
@@ -45,14 +48,19 @@
 			class:xl={size === 'xl'}
 			role="dialog"
 			aria-modal="true"
-			aria-labelledby={titleId}
+			aria-labelledby={header ? undefined : titleId}
+			aria-label={header ? title : undefined}
 			tabindex="-1"
 			bind:this={panel}
 			onclick={(e) => e.stopPropagation()}
 			onkeydown={onKeydown}
 		>
 			<header class="head">
-				<h2 id={titleId} class="title">{title}</h2>
+				{#if header}
+					{@render header()}
+				{:else}
+					<h2 id={titleId} class="title">{title}</h2>
+				{/if}
 				<button
 					class="close"
 					type="button"
