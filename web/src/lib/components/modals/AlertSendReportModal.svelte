@@ -48,7 +48,8 @@
 </script>
 
 {#snippet footer()}
-	<button class="btn ghost" type="button" onclick={onClose}>Close</button>
+	<!-- Reference footer: Bootstrap btn-secondary Close. -->
+	<button class="btn secondary" type="button" onclick={onClose}>Close</button>
 {/snippet}
 
 <Modal {open} {onClose} {title} {footer}>
@@ -149,12 +150,12 @@
 		font-size: 0.85rem;
 		border: 1px solid var(--border);
 	}
-	.btn.ghost {
-		background: transparent;
-		color: var(--text-dim);
+	.btn.secondary {
+		background: var(--modal-btn-secondary, #444);
+		color: #fff;
+		border-color: var(--modal-btn-secondary, #444);
 	}
-	.btn.ghost:hover {
-		color: var(--text);
-		border-color: var(--accent);
+	.btn.secondary:hover {
+		opacity: 0.9;
 	}
 </style>

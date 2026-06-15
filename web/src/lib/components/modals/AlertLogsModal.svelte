@@ -1,5 +1,4 @@
 <script lang="ts">
-	import Icon from '../Icon.svelte';
 	import Modal from '../Modal.svelte';
 
 	interface Props {
@@ -8,95 +7,86 @@
 	}
 	let { open, onClose }: Props = $props();
 
-	// No backend yet — the list is always empty. The header action is inert.
+	// No backend yet — the list is empty and "Reload" is inert until wired.
 	const logs: { id: string; date: string; by: string }[] = [];
+	function reload() {
+		/* fetch the log list — inert until the backend is wired */
+	}
 </script>
 
-<Modal {open} {onClose} title="Alert Logs">
-	<div class="toolbar">
-		<button class="reload" type="button" disabled>
-			<Icon name="sync" size={14} /> Reload Log List
-		</button>
-	</div>
+{#snippet footer()}
+	<!-- Reference footer: a single secondary Close. -->
+	<button class="btn secondary" type="button" onclick={onClose}>Close</button>
+{/snippet}
 
-	{#if logs.length === 0}
-		<div class="empty">
-			<Icon name="bell" size={28} />
-			<p>No logs yet.</p>
-		</div>
-	{:else}
-		<ul class="list">
-			{#each logs as log (log.id)}
-				<li class="entry">
-					<span class="date">{log.date}</span>
-					<span class="by">by {log.by}</span>
-				</li>
-			{/each}
-		</ul>
-	{/if}
+<!-- Reference h5 is the plural "Alerts Logs". -->
+<Modal {open} {onClose} title="Alerts Logs" {footer}>
+	<!-- Reference: an enabled btn-primary "Reload Log List" (no icon) at the body top. -->
+	<button class="btn primary reload" type="button" onclick={reload}>Reload Log List</button>
+
+	<!-- Reference: a Bootstrap list-group of clickable action items (date + By stacked).
+	     Empty in capture, so an empty list renders nothing (no placeholder). -->
+	<div class="list-group">
+		{#each logs as log (log.id)}
+			<button type="button" class="list-group-item">
+				<div class="lg-date">{log.date}</div>
+				<div class="lg-by">By:&nbsp;{log.by}</div>
+			</button>
+		{/each}
+	</div>
 </Modal>
 
 <style>
-	.toolbar {
-		display: flex;
-		justify-content: flex-end;
-		margin-bottom: 0.75rem;
-	}
 	.reload {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.4rem;
-		background: var(--bg-elev);
-		border: 1px solid var(--border);
-		border-radius: var(--radius);
-		color: var(--text-dim);
-		padding: 0.4rem 0.7rem;
-		font-size: 0.8rem;
-		font-weight: 600;
+		margin: 0.5rem 0;
 	}
-	.reload:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-	}
-	.empty {
+	.list-group {
 		display: flex;
 		flex-direction: column;
-		align-items: center;
-		gap: 0.5rem;
-		padding: 1.5rem 0.5rem;
-		color: var(--text-dim);
 	}
-	.empty :global(svg),
-	.empty :global(i) {
-		color: var(--text-dim);
-		opacity: 0.7;
-	}
-	.empty p {
-		margin: 0;
-		font-size: 0.9rem;
-	}
-	.list {
-		list-style: none;
-		margin: 0;
-		padding: 0;
-		display: flex;
-		flex-direction: column;
-		gap: 0.3rem;
-	}
-	.entry {
-		display: flex;
-		align-items: center;
-		gap: 0.6rem;
+	.list-group-item {
+		display: block;
+		width: 100%;
+		text-align: left;
 		background: var(--bg-elev);
 		border: 1px solid var(--border);
-		border-radius: var(--radius);
-		padding: 0.5rem 0.7rem;
+		color: var(--text);
+		padding: 0.6rem 0.85rem;
+		cursor: pointer;
+	}
+	.list-group-item + .list-group-item {
+		border-top: none;
+	}
+	.list-group-item:hover {
+		background: var(--bg-elev-2);
+	}
+	.lg-date,
+	.lg-by {
+		font-weight: 700;
 		font-size: 0.85rem;
 	}
-	.date {
-		font-weight: 600;
+	.btn {
+		border-radius: var(--radius);
+		padding: 0.45rem 0.9rem;
+		font-weight: 700;
+		font-size: 0.85rem;
+		border: 1px solid transparent;
+		cursor: pointer;
 	}
-	.by {
-		color: var(--text-dim);
+	.btn.primary {
+		background: var(--modal-btn-primary, #375a7f);
+		border-color: var(--modal-btn-primary, #375a7f);
+		color: #fff;
+	}
+	.btn.primary:hover {
+		opacity: 0.9;
+	}
+	.btn.secondary {
+		background: var(--modal-btn-secondary, #444);
+		border-color: var(--modal-btn-secondary, #444);
+		color: #fff;
+	}
+	.btn.secondary:hover {
+		opacity: 0.9;
 	}
 </style>
