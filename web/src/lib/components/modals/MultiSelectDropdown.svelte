@@ -30,14 +30,16 @@
 	}
 
 	// Bootstrap's `data-bs-auto-close="outside"`: the menu stays open while picking
-	// items and only closes on a click outside the whole control. A plain window
-	// handler (not an $effect) keeps the close out of reactive scope.
+	// items and only closes on a click outside the whole control. Capture phase is
+	// required — this lives inside Modal.svelte's panel, which stopPropagation()s
+	// clicks in the bubble phase, so a bubble-phase window handler never sees
+	// in-modal clicks. Capture fires on the way down, before that stop.
 	function onWindowClick(e: MouseEvent) {
 		if (open && root && !root.contains(e.target as Node)) open = false;
 	}
 </script>
 
-<svelte:window onclick={onWindowClick} />
+<svelte:window onclickcapture={onWindowClick} />
 
 <div class="ms" bind:this={root}>
 	<button
