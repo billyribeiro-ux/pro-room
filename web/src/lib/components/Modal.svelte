@@ -8,8 +8,10 @@
 		onClose: () => void;
 		children?: Snippet;
 		footer?: Snippet;
+		/** Bootstrap dialog size: md (default ~440px), lg (~800px), xl (~1140px). */
+		size?: 'md' | 'lg' | 'xl';
 	}
-	let { open, title, onClose, children, footer }: Props = $props();
+	let { open, title, onClose, children, footer, size = 'md' }: Props = $props();
 
 	const titleId = $props.id();
 	let panel = $state<HTMLDivElement | null>(null);
@@ -39,6 +41,8 @@
 	<div class="backdrop" onclick={onClose} onkeydown={onKeydown}>
 		<div
 			class="panel"
+			class:lg={size === 'lg'}
+			class:xl={size === 'xl'}
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby={titleId}
@@ -111,6 +115,13 @@
 		color: var(--modal-color);
 		box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5);
 		outline: none;
+	}
+	/* Bootstrap modal-lg / modal-xl widths. */
+	.panel.lg {
+		max-width: 800px;
+	}
+	.panel.xl {
+		max-width: 1140px;
 	}
 	.head {
 		display: flex;

@@ -6,6 +6,10 @@
 		id: string;
 		text: string;
 		sendAt: string;
+		/** Display name of the trader who scheduled it (reference "Sender" column). */
+		sender?: string;
+		/** Recurrence label, e.g. "Never", "Daily" (reference "Repeat" column). */
+		repeat?: string;
 	}
 
 	interface Props {
@@ -13,29 +17,10 @@
 		onClose: () => void;
 		/** Currently scheduled alerts, newest first. Defaults to the empty state. */
 		scheduled?: ScheduledAlert[];
-		/** Called when the composer schedules a new alert. */
-		onSchedule?: (text: string, sendAt: string) => void;
-		/** Called when an alert's delete (×) is clicked. */
+		/** Called when an alert's delete action is clicked. */
 		onDelete?: (id: string) => void;
 	}
-	let { open, onClose, scheduled = [], onSchedule, onDelete }: Props = $props();
-
-	let text = $state('');
-	let sendAt = $state('');
-
-	const formId = $props.id();
-
-	const canSchedule = $derived(text.trim().length > 0 && sendAt !== '');
-
-	function schedule(e: SubmitEvent) {
-		e.preventDefault();
-		if (!canSchedule) return;
-		onSchedule?.(text.trim(), sendAt);
-		// Reset the composer for the next entry. The parent owns the list, so we
-		// only clear our own local draft state — no list mutation here.
-		text = '';
-		sendAt = '';
-	}
+	let { open, onClose, scheduled = [], onDelete }: Props = $props();
 
 	// "2026-06-14T09:30" -> a readable local label, falling back to the raw value
 	// if the browser can't parse it (e.g. an empty or malformed sendAt).
@@ -45,6 +30,7 @@
 		return d.toLocaleString(undefined, {
 			month: 'short',
 			day: 'numeric',
+			year: 'numeric',
 			hour: 'numeric',
 			minute: '2-digit'
 		});
@@ -52,183 +38,107 @@
 </script>
 
 {#snippet footer()}
-	<button class="btn ghost" type="button" onclick={onClose}>Close</button>
+	<!-- Reference footer is a single primary Close button. -->
+	<button class="btn primary" type="button" onclick={onClose}>Close</button>
 {/snippet}
 
-<Modal {open} {onClose} title="Manage Scheduled Alerts" {footer}>
-	<form id={formId} class="composer" onsubmit={schedule}>
-		<div class="field">
-			<label class="label" for="{formId}-text">Alert</label>
-			<input
-				id="{formId}-text"
-				type="text"
-				bind:value={text}
-				placeholder="Alert to send…"
-				autocomplete="off"
-			/>
-		</div>
-		<div class="row">
-			<div class="field grow">
-				<label class="label" for="{formId}-when">Send at</label>
-				<input id="{formId}-when" type="datetime-local" bind:value={sendAt} />
-			</div>
-			<button class="btn primary" type="submit" disabled={!canSchedule}>
-				<Icon name="paper-plane" size={14} /> Schedule
-			</button>
-		</div>
-	</form>
-
-	<h3 class="section-title">Scheduled</h3>
-
-	{#if scheduled.length === 0}
-		<div class="empty">
-			<Icon name="clock" size={22} />
-			<p>No scheduled alerts yet.</p>
-		</div>
-	{:else}
-		<ul class="list">
+<!-- Reference is a modal-xl, manage-only striped table (no in-modal composer);
+     scheduling is created elsewhere. files/file2.html #scheduledAlertsModal. -->
+<Modal {open} {onClose} title="Manage Scheduled Alerts" size="xl" {footer}>
+	<table class="sched">
+		<thead>
+			<tr>
+				<th scope="col">Date / Time</th>
+				<th scope="col">Sender</th>
+				<th scope="col">Alert</th>
+				<th scope="col">Repeat</th>
+				<th scope="col" class="actions-col">Actions</th>
+			</tr>
+		</thead>
+		<tbody>
 			{#each scheduled as alert (alert.id)}
-				<li class="item">
-					<span class="item-text">
-						<span class="item-alert">{alert.text}</span>
-						<span class="item-when">
-							<Icon name="clock" size={13} />
-							{formatSendAt(alert.sendAt)}
-						</span>
-					</span>
-					<button
-						class="remove"
-						type="button"
-						onclick={() => onDelete?.(alert.id)}
-						aria-label="Delete scheduled alert"
-						title="Delete"
-					>
-						<Icon name="times" size={15} />
-					</button>
-				</li>
+				<tr>
+					<td class="nowrap">{formatSendAt(alert.sendAt)}</td>
+					<td>{alert.sender ?? '—'}</td>
+					<td class="alert-text">{alert.text}</td>
+					<td>{alert.repeat ?? 'Never'}</td>
+					<td class="actions-col">
+						<button
+							class="del"
+							type="button"
+							onclick={() => onDelete?.(alert.id)}
+							aria-label="Delete scheduled alert"
+							title="Delete"
+						>
+							<Icon name="trash-alt" size={14} />
+						</button>
+					</td>
+				</tr>
+			{:else}
+				<tr>
+					<td class="empty" colspan="5">No scheduled alerts.</td>
+				</tr>
 			{/each}
-		</ul>
-	{/if}
+		</tbody>
+	</table>
 </Modal>
 
 <style>
-	.composer {
-		display: flex;
-		flex-direction: column;
-		gap: 0.6rem;
-		padding-bottom: 0.9rem;
-		border-bottom: 1px solid var(--border);
-	}
-	.row {
-		display: flex;
-		align-items: flex-end;
-		gap: 0.5rem;
-	}
-	.field {
-		display: flex;
-		flex-direction: column;
-		gap: 0.3rem;
-		min-width: 0;
-	}
-	.field.grow {
-		flex: 1 1 auto;
-	}
-	.label {
-		font-size: 0.78rem;
-		font-weight: 600;
-		color: var(--text-dim);
-	}
-	input[type='text'],
-	input[type='datetime-local'] {
+	/* Reference: <table class="table table-striped text-white w-100"> on the dark
+	   Darkly modal. */
+	.sched {
 		width: 100%;
-		box-sizing: border-box;
-		background: var(--bg-elev);
-		border: 1px solid var(--border);
+		border-collapse: collapse;
 		color: var(--text);
-		border-radius: var(--radius);
-		padding: 0.45rem 0.55rem;
-		font: inherit;
 		font-size: 0.85rem;
 	}
-	input:focus {
-		outline: none;
-		border-color: var(--accent);
-	}
-	.section-title {
-		margin: 0.9rem 0 0.5rem;
-		font-size: 0.74rem;
+	thead th {
+		text-align: left;
 		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 0.03em;
-		color: var(--text-dim);
+		padding: 0.5rem 0.65rem;
+		border-bottom: 2px solid var(--border);
+		white-space: nowrap;
 	}
-	.empty {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 0.4rem;
-		color: var(--text-dim);
-		padding: 1.25rem 0;
-		text-align: center;
+	tbody td {
+		padding: 0.5rem 0.65rem;
+		border-bottom: 1px solid var(--border);
+		vertical-align: top;
 	}
-	.empty :global(svg),
-	.empty :global(i) {
-		opacity: 0.7;
+	/* Bootstrap .table-striped: subtle overlay on odd rows. */
+	tbody tr:nth-child(odd) td {
+		background: rgba(255, 255, 255, 0.05);
 	}
-	.empty p {
-		margin: 0;
-		font-size: 0.88rem;
+	.nowrap {
+		white-space: nowrap;
 	}
-	.list {
-		list-style: none;
-		margin: 0;
-		padding: 0;
-		display: flex;
-		flex-direction: column;
-		gap: 0.4rem;
-	}
-	.item {
-		display: flex;
-		align-items: center;
-		gap: 0.6rem;
-		background: var(--bg-elev);
-		border: 1px solid var(--border);
-		border-radius: var(--radius);
-		padding: 0.55rem 0.65rem;
-	}
-	.item-text {
-		display: flex;
-		flex-direction: column;
-		gap: 0.2rem;
-		flex: 1;
-		min-width: 0;
-	}
-	.item-alert {
-		font-size: 0.86rem;
+	.alert-text {
 		overflow-wrap: anywhere;
 	}
-	.item-when {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.3rem;
-		font-size: 0.76rem;
-		color: var(--text-dim);
+	.actions-col {
+		text-align: right;
+		white-space: nowrap;
+		width: 1%;
 	}
-	.remove {
+	.del {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		flex: 0 0 auto;
 		background: transparent;
 		border: 1px solid var(--border);
 		color: var(--text-dim);
 		border-radius: var(--radius);
 		padding: 0.25rem;
 		line-height: 0;
+		cursor: pointer;
 	}
-	.remove:hover {
-		color: var(--negative);
-		border-color: var(--negative);
+	.del:hover {
+		color: var(--modal-danger, #e74c3c);
+		border-color: var(--modal-danger, #e74c3c);
+	}
+	.empty {
+		text-align: center;
+		color: var(--text-dim);
+		padding: 1.5rem;
 	}
 	.btn {
 		display: inline-flex;
@@ -240,29 +150,14 @@
 		font-size: 0.85rem;
 		font-weight: 700;
 		border: 1px solid var(--border);
-		white-space: nowrap;
-	}
-	.btn.ghost {
-		background: transparent;
-		color: var(--text-dim);
-		font-weight: 600;
-	}
-	.btn.ghost:hover {
-		color: var(--text);
-		border-color: var(--accent);
+		cursor: pointer;
 	}
 	.btn.primary {
-		flex: 0 0 auto;
 		background: var(--accent);
 		color: #fff;
 		border-color: var(--accent);
 	}
-	.btn.primary:hover:not(:disabled) {
-		background: var(--accent-hover);
-		border-color: var(--accent-hover);
-	}
-	.btn:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
+	.btn.primary:hover {
+		opacity: 0.9;
 	}
 </style>
