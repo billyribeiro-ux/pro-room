@@ -11,11 +11,12 @@
 	type Status = 'pending' | 'pass' | 'fail';
 	type Check = { key: string; label: string; status: Status };
 
+	// Reference uses full descriptive labels (files/file30.html span.fw-medium).
 	const labels: Record<string, string> = {
-		udp: 'UDP',
-		tcp: 'TCP',
-		stun: 'STUN',
-		turn: 'TURN'
+		udp: 'UDP Enabled',
+		tcp: 'TCP Enabled',
+		stun: 'STUN Server Connectivity',
+		turn: 'TURN Server Connectivity'
 	};
 
 	let checks = $state<Check[]>([
@@ -73,79 +74,55 @@
 	<button class="btn ghost" type="button" onclick={onClose}>Close</button>
 {/snippet}
 
-<Modal {open} {onClose} title="Connectivity Check" {footer}>
-	<div class="intro">
-		<Icon name="plug" size={20} />
-		<p>Run a quick connectivity check to confirm the room can reach our media servers.</p>
-	</div>
+<Modal {open} {onClose} title="Connectivity/Mic Troubleshooter" {footer}>
+	<!-- Reference: p.text-muted.mb-4, no leading icon (files/file30.html). -->
+	<p class="intro">This tool checks your network and connectivity to essential WebRTC servers.</p>
 
-	<ul class="rows">
+	<div class="rows">
 		{#each checks as check (check.key)}
-			<li class="row">
-				<span class="dot {check.status}" aria-hidden="true"></span>
-				<span class="name">{check.label}</span>
-				<span class="state">{dotLabel(check.status)}</span>
-			</li>
+			<!-- Reference status-item: label (fw-medium) LEFT, colored ● dot RIGHT, no state word. -->
+			<div class="status-item">
+				<span class="fw-medium">{check.label}</span>
+				<span class="status-icon {check.status}" role="img" aria-label={dotLabel(check.status)}
+					>●</span
+				>
+			</div>
 		{/each}
-	</ul>
+	</div>
 </Modal>
 
 <style>
 	.intro {
-		display: flex;
-		align-items: flex-start;
-		gap: 0.6rem;
+		margin: 0 0 1.5rem;
 		color: var(--text-dim);
-	}
-	.intro :global(svg),
-	.intro :global(i) {
-		color: var(--accent);
-		flex: 0 0 auto;
-		margin-top: 0.15rem;
-	}
-	.intro p {
-		margin: 0;
 	}
 	.rows {
-		list-style: none;
-		margin: 1rem 0 0;
-		padding: 0;
 		display: flex;
 		flex-direction: column;
-		gap: 0.4rem;
 	}
-	.row {
+	.status-item {
 		display: flex;
 		align-items: center;
+		justify-content: space-between;
 		gap: 0.65rem;
-		background: var(--bg-elev);
-		border: 1px solid var(--border);
-		border-radius: var(--radius);
-		padding: 0.6rem 0.75rem;
+		padding: 0.5rem 0;
 	}
-	.dot {
-		width: 10px;
-		height: 10px;
-		flex: 0 0 10px;
-		border-radius: 50%;
-		background: var(--text-dim);
+	.fw-medium {
+		font-weight: 500;
 	}
-	.dot.pending {
-		background: var(--text-dim);
-	}
-	.dot.pass {
-		background: var(--positive);
-	}
-	.dot.fail {
-		background: var(--negative);
-	}
-	.name {
-		font-weight: 600;
-		flex: 1;
-	}
-	.state {
-		font-size: 0.8rem;
+	.status-icon {
+		font-size: 1rem;
+		line-height: 1;
 		color: var(--text-dim);
+	}
+	.status-icon.pending {
+		color: var(--text-dim);
+	}
+	.status-icon.pass {
+		color: var(--positive);
+	}
+	.status-icon.fail {
+		color: var(--negative);
 	}
 	.btn {
 		display: inline-flex;
