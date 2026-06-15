@@ -34,7 +34,8 @@
 	   light/dark message-panel theme — fixed values, NOT overridden in light mode.
 	   Source: evidence-folder/report.md §07/§10 (--modal-content-* / Darkly palette). */
 	--modal-bg: #303030;
-	--modal-color: #f4f4f4;
+	/* Reference --modal-content-color is pure #fff (capture cssVariables.root). */
+	--modal-color: #ffffff;
 	--modal-border: #444;
 	--modal-close-bg: #375a7f;
 	--modal-success: #00bc8c;

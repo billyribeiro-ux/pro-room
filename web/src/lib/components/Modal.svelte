@@ -106,7 +106,8 @@
 		--text-dim: #b8b8b8;
 		background: var(--modal-bg);
 		border: 1px solid var(--modal-border);
-		border-radius: 8px;
+		/* Reference .modal-content radius is 6px (the dominant radius token), not 8px. */
+		border-radius: 6px;
 		color: var(--modal-color);
 		box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5);
 		outline: none;

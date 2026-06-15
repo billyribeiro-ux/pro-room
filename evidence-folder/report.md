@@ -1523,6 +1523,22 @@ loaded). `Lato` and `summernote` fonts are declared but unloaded on this surface
 
 ## 07 — Modals, Overlays & Dropdown Menus
 
+> ⚠️ **CORRECTION (verified against the primary capture `cssVariables.root`):** the
+> modal `--modal-*` token VALUES quoted throughout this section (and the §08/§10
+> token tables) are WRONG — they list the room's navy/green palette by mistake.
+> The modals are Bootstrap **"Darkly"** gray, independent of the light panels.
+> Authoritative values from `proroom-ultra-admin-room.json → cssVariables.root`:
+> `--modal-content-bg-color #303030`, `--modal-content-color #fff`,
+> `--modal-content-border-color #444`, `--modal-tabs-border-color #444`,
+> `--modal-active-tab-bg-color #222`, `--modal-active-tab-color #00bc8c`,
+> `--modal-active-tab-border-color #444`, `--modal-btn-close-bg/-border #375a7f`,
+> `--modal-btn-success-bg/-border #00bc8c`, `--modal-btn-danger-bg/-border #e74c3c`,
+> `--modal-input-group-bg #444`, `--modal-upload-files-color #555`,
+> `--modal-alert-link-color #00bc8c`, `--modal-btn-hover-opacity .9`.
+> NOTE: the CHAT/screen tabs' `#45a2ff` active pill comes from `--tab-active-bg`,
+> NOT `--modal-active-tab-bg-color` (the report conflates the two). The shipped
+> Modal.svelte / layout.css `--modal-*` tokens already use these Darkly values.
+
 Reference reconstruction of every modal/overlay/dropdown surface present in the admin trading-room DOM (viewport 1989×1166). Third-party visual reference only — structure / layout / CSS / behavior are documented; their copy and image data are NOT reproduced as ours.
 
 The modals slice (`elements-modals.json`) contains 15 nodes: **5 modal/overlay TRIGGERS** (sidebar buttons + navbar mobile icon, all using Bootstrap 5 `data-bs-toggle="modal"`) and **9 chat image-lightbox triggers** (`div.img-container` with inline `onclick="openImageModal(...)"`). The actual modal *bodies* live collapsed/hidden in the DOM (`visible:false`); their authoritative inventory is reconstructed from `theme.json → inventory.modalsInDom` (33 modals worth of `modal-*` parts), `inventory.menus` (dropdown menus), and the modal-specific design tokens in `cssVariables.root`. Cross-referenced with `targeted.json` (volume dropdown + settings-modal tab matched rules).
