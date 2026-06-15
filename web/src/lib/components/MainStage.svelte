@@ -89,6 +89,7 @@
 				role="tab"
 				aria-selected={activeTab === t.id}
 				class:active={activeTab === t.id}
+				class:notes-active={activeTab === t.id && t.id === 'notes'}
 				disabled={locked && t.id !== 'screens'}
 				onclick={() => (tab = t.id)}
 			>
@@ -167,9 +168,8 @@
 		/* Reference idle .nav-link: 8px padding all sides, 5px margins all sides. */
 		padding: 8px;
 		margin: 5px;
-		/* Reference idle presentation tabs are top-rounded folder tabs
-		   (6px top corners, square bottom). */
-		border-radius: 6px 6px 0 0;
+		/* Reference idle main tabs: 6px radius, transparent (no fill until hover/active). */
+		border-radius: 6px;
 		cursor: pointer;
 		flex-shrink: 0;
 		white-space: nowrap;
@@ -185,23 +185,19 @@
 		cursor: not-allowed;
 	}
 	.tabbar button.active {
-		/* Reference active main-tab (#notes-tab.active): color #fff. */
-		color: var(--text);
-		/* Reference active main-tab: bg rgb(12,36,52) = --bg #0c2434 (notes-tabs-bg,
-		   the navbar dark, NOT the accent), font-weight 300. */
-		background: var(--bg);
+		/* Reference active main-tab is a flat #45a2ff PILL — confirmed by the
+		   captured computed style of #screens-tab.active: bg rgb(69,162,255),
+		   white text, transparent border, 3px radius (NOT the dark folder). */
+		color: #fff;
+		background: var(--accent, #45a2ff);
 		font-weight: 300;
-		/* Reference active tab: 3px 3px 0 0 top-rounded folder shape. */
-		border-radius: 3px 3px 0 0;
-		/* Reference active tab: 1px #0a6db1 border top/right/left; bottom removed
-		   (border-bottom-width 0) so the tab merges into the pane below. */
-		border-color: var(--accent-hover);
-		border-bottom-width: 0;
-		/* Extra bottom padding (8px → 15px) drops the tab over the pane edge,
-		   matching the reference active-tab rect (37px tall vs 31px idle). */
-		padding-bottom: 15px;
-		/* Reference active tab pulls 1px down into the pane. */
-		margin-bottom: -1px;
+		border-color: transparent;
+		border-radius: 3px;
+	}
+	.tabbar button.active.notes-active {
+		/* Reference quirk: the active NOTES tab uses the dark notes-pane bg
+		   (--notes-tabs-bg #0c2434) instead of the blue pill. */
+		background: var(--bg, #0c2434);
 	}
 	.locked-pill {
 		display: inline-flex;
