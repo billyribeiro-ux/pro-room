@@ -53,7 +53,7 @@
 	let body = $state('');
 	let sending = $state(false);
 
-	// Which row's ⠇ menu is open (message id), or null when none.
+	// Which row's ⠿ menu is open (message id), or null when none.
 	let openMenuId = $state<string | null>(null);
 
 	// User-info modal target (a row's author), or null when closed.
@@ -195,10 +195,10 @@
 							aria-expanded={openMenuId === m.id}
 							onclick={() => toggleMenu(m.id)}
 						>
-							<!-- Reference row menu glyph is the literal char "⠇" (the Angular
-							     app's `.menuTriger::after { content:"⠇" }`), not a FA icon —
-							     20px, weight 600, in the username colour. -->
-							<span class="ellipsis" aria-hidden="true">⠇</span>
+							<!-- Reference row menu is the DOUBLE-column dots kebab "⠿" (U+283F,
+							     2 cols × 3 dots), 20px / weight 600 in the username colour —
+							     not the single-column ⠇ and not a FA icon. -->
+							<span class="ellipsis" aria-hidden="true">⠿</span>
 						</button>
 						{#if openMenuId === m.id}
 							<div class="menu" role="menu">
@@ -439,7 +439,7 @@
 	.msg-menu {
 		position: relative;
 		flex-shrink: 0;
-		/* Reference CHAT row: the ⠇ menu sits on the RIGHT of the row (the message
+		/* Reference CHAT row: the ⠿ menu sits on the RIGHT of the row (the message
 		   body still renders left-aligned). order:1 pushes it past the
 		   right-floated timestamp to the far right edge. (Alerts keep it on the left.) */
 		order: 1;
@@ -450,7 +450,7 @@
 		justify-content: center;
 		background: transparent;
 		border: none;
-		/* Reference .msgMenu: the "⠇" glyph at 20px / weight 600 in the username
+		/* Reference .msgMenu: the "⠿" glyph at 20px / weight 600 in the username
 		   colour (light-theme --username-color resolves to #000), flat (no radius);
 		   hover #8c8686 (--light-brown) at weight 900. */
 		color: #000;

@@ -56,7 +56,7 @@
 	let note = $state('');
 	let posting = $state(false);
 
-	// Which row's ⠇ menu is open (alert id), or null when none.
+	// Which row's ⠿ menu is open (alert id), or null when none.
 	let openMenuId = $state<string | null>(null);
 
 	// The alert whose Q&A thread modal is open, or null when closed. Self-
@@ -222,9 +222,9 @@
 							aria-expanded={openMenuId === a.id}
 							onclick={() => toggleMenu(a.id)}
 						>
-							<!-- Same ⠇ glyph as the chat row menu (reference uses the same kebab on
+							<!-- Same ⠿ glyph as the chat row menu (reference uses the same kebab on
 							     both); alerts keep it on the LEFT. -->
-							<span class="ellipsis" aria-hidden="true">⠇</span>
+							<span class="ellipsis" aria-hidden="true">⠿</span>
 						</button>
 						{#if openMenuId === a.id}
 							<div class="menu" role="menu">
@@ -469,7 +469,7 @@
 		justify-content: center;
 		background: transparent;
 		border: none;
-		/* Reference .msgMenu: the ⠇ glyph at 20px / weight 600, flat (no radius),
+		/* Reference .msgMenu: the ⠿ glyph at 20px / weight 600, flat (no radius),
 		   hover #8c8686. Same kebab as the chat row (alerts keep it on the left). */
 		color: var(--username-color);
 		font-weight: 600;
