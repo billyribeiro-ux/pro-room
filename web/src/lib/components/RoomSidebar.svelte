@@ -206,18 +206,19 @@
 					<Icon name="user" size={14} /> <span class="label">Users:</span>
 					<span class="roster-count">{present.length}</span>
 				</span>
+				<!-- Reference visual order (float-right reversed): search · sort · sync · cog. -->
 				<span class="roster-actions">
-					<button class="mini mini-cog" aria-label="User options" title="User options" disabled>
-						<Icon name="cog" size={14} />
-					</button>
-					<button class="mini mini-reload" aria-label="Reload users" title="Reload users" disabled>
-						<Icon name="sync" size={14} />
+					<button class="mini mini-search" aria-label="Search users" title="Search users" disabled>
+						<Icon name="search" size={14} />
 					</button>
 					<button class="mini mini-sort" aria-label="Sort users" title="Sort users" disabled>
 						<Icon name="sort-alpha-down" size={14} />
 					</button>
-					<button class="mini mini-search" aria-label="Search users" title="Search users" disabled>
-						<Icon name="search" size={14} />
+					<button class="mini mini-reload" aria-label="Reload users" title="Reload users" disabled>
+						<Icon name="sync" size={14} />
+					</button>
+					<button class="mini mini-cog" aria-label="User options" title="User options" disabled>
+						<Icon name="cog" size={14} />
 					</button>
 				</span>
 			</div>
