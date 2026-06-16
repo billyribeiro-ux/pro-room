@@ -593,7 +593,13 @@
 	}
 
 	.body {
-		margin: 0.35rem 0 0 8px;
+		/* Body lines up under the USERNAME (the content column past the avatar), like
+		   the alert rows — not flush-left under the avatar. A regular member row has
+		   the kebab on the LEFT (kebab + avatar + gaps push the username to ~86px), so
+		   the body indents ~72px. Admin/super-admin rows move the kebab to the RIGHT,
+		   so only the avatar pushes the username (~62px) → smaller indent (see
+		   .elevated below). */
+		margin: 0.35rem 0 0 72px;
 		/* Reference chat body (div.msg-left) computed colour --lightTheme-msg-color =
 		   #676767 (per the presenter-deep computed style) — NOT #1a1a1a; 13px /
 		   line-height 1.5 (19.5px). */
@@ -602,6 +608,11 @@
 		word-break: break-word;
 		white-space: pre-wrap;
 		font-size: var(--msg-font-size);
+	}
+	/* Admin/super-admin rows: kebab is on the right, so only the avatar offsets the
+	   username — the body lines up under it at a smaller indent. */
+	.msg-box.elevated .body {
+		margin-left: 48px;
 	}
 	form {
 		display: flex;
