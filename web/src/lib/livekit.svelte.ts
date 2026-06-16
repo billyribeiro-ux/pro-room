@@ -37,6 +37,9 @@ export class ScreenShareRoom {
 	/** Identities of participants currently speaking (includes local). */
 	activeSpeakers = $state<string[]>([]);
 	error = $state<string | null>(null);
+	/** True when the browser blocked autoplay of remote audio (presenter mic /
+	    screen audio). The first in-room user gesture calls resumeAudio() to unlock. */
+	audioBlocked = $state(false);
 
 	#room: Room | null = null;
 	/** When sharing via an external encoder (OBS Virtual Camera / XSplit VCam), the
@@ -75,6 +78,12 @@ export class ScreenShareRoom {
 					.filter((s) => s.audioLevel > 0 || s.isSpeaking)
 					.map((s) => s.identity);
 			})
+			.on(RoomEvent.AudioPlaybackStatusChanged, () => {
+				// The browser blocks autoplay of remote audio (presenter mic / screen
+				// audio) until the user gestures. Surface it so the first in-room click
+				// can unlock it via resumeAudio() — otherwise listeners hear nothing.
+				this.audioBlocked = this.#room ? !this.#room.canPlaybackAudio : false;
+			})
 			.on(RoomEvent.Disconnected, () => {
 				logEvent('LiveKit disconnected');
 				this.connected = false;
@@ -85,8 +94,24 @@ export class ScreenShareRoom {
 		await room.connect(url, token);
 		this.#room = room;
 		this.connected = true;
+		this.audioBlocked = !room.canPlaybackAudio;
 		logEvent('LiveKit connected');
 		this.#refresh();
+	}
+
+	/**
+	 * Resume blocked remote-audio playback. MUST be called from a user-gesture
+	 * handler (click/tap) or the browser re-blocks it. Members never publish, so
+	 * without this the presenter's mic is silently autoplay-blocked for them.
+	 */
+	async resumeAudio(): Promise<void> {
+		if (!this.#room) return;
+		try {
+			await this.#room.startAudio();
+			this.audioBlocked = !this.#room.canPlaybackAudio;
+		} catch (e) {
+			logEvent(`startAudio failed: ${e instanceof Error ? e.message : String(e)}`);
+		}
 	}
 
 	/** Start sharing this user's screen (admins/super admins only). */
@@ -178,7 +203,15 @@ export class ScreenShareRoom {
 
 	async stopCamera(): Promise<void> {
 		if (!this.#room) return;
-		await this.#room.localParticipant.setCameraEnabled(false);
+		// setCameraEnabled(false) only MUTES the camera in livekit-client — it stops
+		// the device but LEAVES the publication in trackPublications with a non-null
+		// (now-ended) track, so #refresh keeps the tile and it renders BLACK (the
+		// reported bug). Unpublish so the publication is removed and the tile clears;
+		// unpublish also fires LocalTrackUnpublished -> a second #refresh for free.
+		const pub = this.#room.localParticipant.getTrackPublication(Track.Source.Camera);
+		if (pub?.track) {
+			await this.#room.localParticipant.unpublishTrack(pub.track);
+		}
 		this.cameraPublishing = false;
 		this.#refresh();
 	}
@@ -197,7 +230,12 @@ export class ScreenShareRoom {
 
 	async stopMic(): Promise<void> {
 		if (!this.#room) return;
-		await this.#room.localParticipant.setMicrophoneEnabled(false);
+		// Same mute-not-unpublish defect as the camera: unpublish so the mic
+		// publication is actually removed, not left published-but-muted.
+		const pub = this.#room.localParticipant.getTrackPublication(Track.Source.Microphone);
+		if (pub?.track) {
+			await this.#room.localParticipant.unpublishTrack(pub.track);
+		}
 		this.micPublishing = false;
 		this.micMuted = false;
 	}
@@ -226,7 +264,12 @@ export class ScreenShareRoom {
 	async switchDevice(kind: MediaDeviceKind, deviceId: string): Promise<void> {
 		if (!this.#room || !deviceId) return;
 		try {
-			await this.#room.switchActiveDevice(kind, deviceId);
+			// exact=false: store the device as an `ideal` preference, NOT `{exact:id}`.
+			// The AV-Settings modal enumerates devices WITHOUT a getUserMedia grant, so
+			// its ids can be stale/empty; an exact constraint would make the next
+			// startMic/startCamera getUserMedia throw OverconstrainedError (the "mic not
+			// working at all" regression). `ideal` lets acquisition fall back to default.
+			await this.#room.switchActiveDevice(kind, deviceId, false);
 		} catch (e) {
 			logEvent(`Device switch error: ${e instanceof Error ? e.message : String(e)}`);
 			this.error = e instanceof Error ? e.message : 'failed to switch device';

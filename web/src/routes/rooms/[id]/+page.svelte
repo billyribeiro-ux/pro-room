@@ -152,7 +152,9 @@
 			id: p.identity,
 			name: p.name,
 			isLocal: p.isLocal,
-			track: p.track.mediaStreamTrack
+			// Null-safe: a momentarily-null track during teardown must never throw
+			// while this $derived recomputes (WebcamHolder clears srcObject on null).
+			track: p.track?.mediaStreamTrack ?? null
 		}))
 	);
 
@@ -382,6 +384,10 @@
 		if (e.key === 'Escape') screenMenuOpen = false;
 	}}
 	onclick={(e) => {
+		// The first in-room click unblocks autoplay-blocked remote audio (presenter
+		// mic / screen audio) — browsers require a user gesture to start playback, so
+		// without this members never hear the mic.
+		if (screen.audioBlocked) void screen.resumeAudio();
 		// Close the screen-share source menu when clicking outside it.
 		if (screenMenuOpen && screenMenuEl && !screenMenuEl.contains(e.target as Node)) {
 			screenMenuOpen = false;
