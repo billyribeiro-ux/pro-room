@@ -253,7 +253,7 @@
 						<span class="avatar" aria-hidden="true">{initials(m.author_name)}</span>
 					{/if}
 
-					<span class="username" style:color={m.author_color ?? '#000'}
+					<span class="username" style:color={m.author_color ?? 'var(--username-color)'}
 						>{m.author_name ?? 'trader'}</span
 					>
 
@@ -570,10 +570,11 @@
 	.username {
 		font-size: 14px;
 		font-weight: 900;
-		/* Reference chat .username colour is the light-theme --username-color = #000
-		   (a per-user author_color still wins via the inline style); cursor:pointer
+		/* Reference chat .username computed colour is --lightTheme-username-color =
+		   #0a6db1 (room link-blue), per the presenter-deep matchedRule — NOT #000.
+		   A per-user author_color still wins via the inline style; cursor:pointer
 		   matches the reference (the name opens user info). */
-		color: #000;
+		color: var(--username-color);
 		cursor: pointer;
 		/* Reference .username (mx-1) has 4px horizontal margin. */
 		margin: 0 4px;
@@ -593,9 +594,10 @@
 
 	.body {
 		margin: 0.35rem 0 0 8px;
-		/* Reference chat body (.msg-left/.msg-right) colour --msg-color (light) =
-		   #1a1a1a; 13px with line-height 1.5 (19.5px). */
-		color: #1a1a1a;
+		/* Reference chat body (div.msg-left) computed colour --lightTheme-msg-color =
+		   #676767 (per the presenter-deep computed style) — NOT #1a1a1a; 13px /
+		   line-height 1.5 (19.5px). */
+		color: #676767;
 		line-height: 1.5;
 		word-break: break-word;
 		white-space: pre-wrap;
@@ -605,9 +607,11 @@
 		display: flex;
 		align-items: center;
 		gap: 0.45rem;
-		padding: 0.6rem 0.65rem;
+		/* Reference textSendDiv sits on the white chat surface with a 5px margin;
+		   no separate gray bar (the #textAreaHolder bg is #fff). */
+		padding: 5px;
 		border-top: 1px solid #e3e5ec;
-		background: #f7f8fa;
+		background: #ffffff;
 		flex-shrink: 0;
 	}
 	.pill {
@@ -616,9 +620,11 @@
 		gap: 0.2rem;
 		flex: 1;
 		min-width: 0;
+		/* Reference #textAreaHolder.textSendDiv: white, BORDERLESS, 8px radius
+		   (not a 999px pill with a gray border) — presenter-deep chatHolder. */
 		background: #ffffff;
-		border: 1px solid #d3d7e0;
-		border-radius: 999px;
+		border: none;
+		border-radius: 8px;
 		padding: 0.15rem 0.5rem;
 	}
 	.pill textarea {
@@ -627,14 +633,18 @@
 		border: none;
 		outline: none;
 		background: transparent;
-		/* Reference --lightTheme-textarea-color. */
+		/* Reference .txt-area.form-control.border-0: --lightTheme-textarea-color
+		   #676767, 14px / weight 400 / line-height 21px, min-height 35, max-height
+		   300, padding 6px 5px (presenter-deep chatTextarea computed). */
 		color: #676767;
-		font-size: 0.85rem;
-		padding: 0.35rem 0.25rem;
+		font-size: 14px;
+		font-weight: 400;
+		padding: 6px 5px;
 		resize: none;
 		overflow-y: auto;
-		max-height: 120px;
-		line-height: 1.4;
+		min-height: 35px;
+		max-height: 300px;
+		line-height: 21px;
 		font-family: inherit;
 	}
 	.ic {

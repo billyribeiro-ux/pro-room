@@ -648,8 +648,11 @@
 	}
 
 	.body {
-		/* Reference body div.text-formated.ml-2.mr-2 = 8px left + right margin. */
-		margin: 0.35rem 8px 0 8px;
+		/* Reference body (div.text-formated) sits in the content column to the RIGHT
+		   of the avatar gutter, aligned under the username (capture: body x=66 ≈
+		   username x=62, both past the avatar) — NOT flush-left under the avatar.
+		   Left indent ≈ kebab + avatar + row gaps; right margin stays mr-2 (8px). */
+		margin: 0.35rem 8px 0 71px;
 		color: #676767;
 		/* Reference .text-formated body is font-weight 100 (Open Sans Thin, now
 		   loaded). Very thin per the capture. */

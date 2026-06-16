@@ -432,15 +432,13 @@
 	.item-ps {
 		padding-left: 4px;
 	}
-	/* Reference .sidebar-menu:hover only shifts the text color toward
-	   --lighter-gray (#eee on the dark skin) with a 1px transparent border and
-	   NO background fill. On this light skin the equivalent prominence shift is
-	   toward a darker readable gray (#212529, the file's existing dark token).
+	/* Reference .sidebar-item:hover (presenter-deep matchedRule): a #e9ecef
+	   background fill, and the text color STAYS the resting #676767 (the
+	   .sidebar-item rule is color:inherit !important, so hover does not darken it).
 	   Border stays transparent (reserved in the base rule, no geometry shift). */
 	.item:hover:not(:disabled) {
-		color: #212529;
+		background: #e9ecef;
 		border-color: transparent;
-		background: transparent;
 	}
 	.item:disabled {
 		opacity: 0.6;
