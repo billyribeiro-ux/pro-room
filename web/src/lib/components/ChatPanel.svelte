@@ -98,7 +98,7 @@
 
 	async function send() {
 		const text = body.trim();
-		if (!text) return;
+		if (!text || sending) return;
 		sending = true;
 		// Always scroll our own message into view when it lands (bypasses the
 		// near-bottom guard).
@@ -284,25 +284,52 @@
 	</ul>
 
 	{#if canPost}
+		<!-- Reference #textAreaHolder.textSendDiv: a flat white 8px-radius holder with
+		     a flex-fill textarea (div.px-0.flex-fill) and a centered icon column
+		     (div.textAreaBtnsCol) of span.textAreaBtns — Add Emojis (far fa-smile),
+		     Upload an Image (fas fa-image), Search for GIFs (12px "GIF"). There is NO
+		     Send button: Enter sends, Shift+Enter inserts a newline. -->
 		<form onsubmit={onSubmit}>
 			<div class="pill">
-				<textarea
-					id="chat-composer"
-					name="message"
-					bind:this={textareaEl}
-					bind:value={body}
-					rows="1"
-					maxlength="2000"
-					placeholder="Type your message here.."
-					oninput={autogrow}
-					onkeydown={onComposerKeydown}
-				></textarea>
-				<button type="button" class="ic" aria-label="Emoji"><Icon name="smile" size={18} /></button>
-				<button type="button" class="ic" aria-label="Image"><Icon name="image" size={18} /></button>
-
-				<button type="button" class="ic gif" aria-label="GIF">GIF</button>
+				<div class="txt-wrap">
+					<textarea
+						id="chat-composer"
+						name="message"
+						bind:this={textareaEl}
+						bind:value={body}
+						rows="1"
+						spellcheck="true"
+						maxlength="2000"
+						placeholder="Type your message here.."
+						oninput={autogrow}
+						onkeydown={onComposerKeydown}
+					></textarea>
+				</div>
+				<div class="textAreaBtnsCol">
+					<button
+						type="button"
+						class="textAreaBtns"
+						aria-label="Add Emojis"
+						title="Add Emojis"
+					>
+						<Icon name="smile" family="regular" size={18} />
+					</button>
+					<button
+						type="button"
+						class="textAreaBtns"
+						aria-label="Upload an Image"
+						title="Upload an Image"
+					>
+						<Icon name="image" size={18} />
+					</button>
+					<button
+						type="button"
+						class="textAreaBtns gif"
+						aria-label="Search for GIFs"
+						title="Search for GIFs">GIF</button
+					>
+				</div>
 			</div>
-			<button type="submit" class="send" disabled={sending}>Send</button>
 		</form>
 	{:else}
 		<p class="readonly">You can read the chat. Join the room to participate.</p>
@@ -646,9 +673,15 @@
 		border-radius: 8px;
 		padding: 0.15rem 0.5rem;
 	}
-	.pill textarea {
+	/* Reference div.px-0.flex-fill: the textarea grows to fill, no h-padding. */
+	.txt-wrap {
 		flex: 1;
 		min-width: 0;
+		padding: 0;
+	}
+	.pill textarea {
+		width: 100%;
+		box-sizing: border-box;
 		border: none;
 		outline: none;
 		background: transparent;
@@ -666,44 +699,38 @@
 		line-height: 21px;
 		font-family: inherit;
 	}
-	.ic {
+	/* Reference div.textAreaBtnsCol: a centered row of the emoji/image/GIF buttons. */
+	.textAreaBtnsCol {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+		padding: 0;
+		margin: 0;
+		gap: 0.2rem;
+		flex-shrink: 0;
+	}
+	/* Reference span.textAreaBtns: icon-only button, --textarea-holder-btns-color
+	   #676767, hover --textarea-holder-btns-hover-color #0a6db1. */
+	.textAreaBtns {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
 		background: transparent;
 		border: none;
-		/* Reference --textarea-holder-btns-color. */
 		color: #676767;
 		cursor: pointer;
 		padding: 0.25rem;
 		border-radius: 6px;
 	}
-	.ic:hover {
-		/* Reference --textarea-holder-btns-hover-color. */
+	.textAreaBtns:hover {
 		color: #0a6db1;
 	}
-	.gif {
-		font-size: 0.72rem;
+	.textAreaBtns.gif {
+		/* Reference GIF button: 12px text. */
+		font-size: 12px;
 		font-weight: 800;
 		letter-spacing: 0.02em;
-	}
-	.send {
-		background: #0a6db1;
-		color: #fff;
-		border: none;
-		border-radius: 999px;
-		padding: 0.45rem 0.9rem;
-		font-weight: 600;
-		font-size: 0.82rem;
-		cursor: pointer;
-		flex-shrink: 0;
-	}
-	.send:hover {
-		background: #095a93;
-	}
-	.send:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
 	}
 	.readonly {
 		margin: 0;
