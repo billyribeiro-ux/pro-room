@@ -16,9 +16,19 @@
 		/** Name of the user currently speaking; null/undefined shows "No one is speaking". */
 		speaker?: string | null;
 		/**
+		 * True while the room is being recorded. Renders the reference's
+		 * `[ REC ]` indicator (li.recIndicator) between the talking indicator and
+		 * the volume dropdown, colored --presenter-recording-color (#45a2ff).
+		 * Defaults to false so the member/idle navbar matches the verified viewer
+		 * capture (no [ REC ] visible). Additive — the parent contract is unchanged.
+		 */
+		recording?: boolean;
+		/**
 		 * Presenter broadcast controls (Share screen / Camera / Mic / CC / Music /
 		 * New poll / Record / Go live / Members). Rendered inline in the main nav.
-		 * The snippet's own caps gating hides it entirely for members.
+		 * The snippet's own caps gating hides it entirely for members. In the
+		 * reference these are the 14 *ngIf placeholders that sit between the
+		 * talking indicator and the volume dropdown, so the group renders there.
 		 */
 		actions?: Snippet;
 	}
@@ -29,6 +39,7 @@
 		onReload,
 		onMobileInfo,
 		speaker = null,
+		recording = false,
 		actions
 	}: Props = $props();
 
@@ -56,13 +67,13 @@
 	<button
 		class="icon-btn menu-btn"
 		onclick={onToggleSidebar}
-		aria-label="Toggle sidebar"
-		title="Toggle sidebar"
+		aria-label="Open Sidebar"
+		title="Open Sidebar"
 	>
 		<Icon name="bars" size={18} />
 	</button>
 
-	<span class="users" title="Users connected">
+	<span class="users" title="Users Connected">
 		<Icon name="user" size={14} />
 		<span class="count">{userCount}</span>
 	</span>
@@ -80,21 +91,31 @@
 
 	<!-- Reference: navbar-brand carries mr-auto and the action group is
 	     ul.navbar-nav.ml-auto, so everything actionable is pinned RIGHT. The
-	     spacer reproduces that gap; the presenter controls sit in the right
-	     cluster ahead of the talking indicator + volume + reload. -->
+	     spacer reproduces mr-auto; the right cluster order matches the verified
+	     viewer capture: talking indicator → presenter controls (*ngIf
+	     placeholders) → [ REC ] → volume (dropstart) → reload. -->
 	<span class="spacer"></span>
 
+	<span class="talking">
+		{#if speaker}
+			<Icon name="microphone" size={16} class="talking-mic" />
+			<span class="talking-string">( {speaker} is speaking )</span>
+		{:else}
+			<span class="talking-string">( No one is speaking )</span>
+		{/if}
+	</span>
+
+	<!-- Presenter broadcast controls. In the reference these are the 14 *ngIf
+	     placeholders between the talking indicator and the volume dropdown, so
+	     the group renders here (not via the spacer ahead of talking). The
+	     snippet's own caps gating renders nothing for members. -->
 	{#if actions}
 		<div class="nav-controls">{@render actions()}</div>
 	{/if}
 
-	<span class="talking">
-		{#if speaker}
-			( {speaker} is speaking )
-		{:else}
-			( No one is speaking )
-		{/if}
-	</span>
+	{#if recording}
+		<span class="rec-indicator">[ REC ]</span>
+	{/if}
 
 	<div class="volume">
 		<button
@@ -113,33 +134,31 @@
 
 		{#if volumeOpen}
 			<div class="volume-panel">
-				<div class="panel-head">
-					<h4>Volume</h4>
+				<h4 class="panel-title">
+					Volume
 					<button
 						class="panel-close"
 						onclick={() => (volumeOpen = false)}
 						aria-label="Close volume settings"
 						title="Close"
 					>
-						<Icon name="times" size={14} />
+						<Icon name="times" size={16} />
 					</button>
-				</div>
+				</h4>
 
-				<label class="vol-row">
-					<span class="vol-label">Volume</span>
-					<input
-						id="nav-volume"
-						name="volume"
-						type="range"
-						min="0"
-						max="100"
-						bind:value={volume}
-						disabled={muted}
-						aria-label="Volume"
-					/>
-				</label>
+				<input
+					id="nav-volume"
+					name="volume"
+					class="vol-ctrl"
+					type="range"
+					min="0"
+					max="100"
+					bind:value={volume}
+					disabled={muted}
+					aria-label="Volume"
+				/>
 
-				<button class="mute" class:on={muted} onclick={() => (muted = !muted)}>
+				<button class="mute" class:on={muted} onclick={() => (muted = !muted)} title="Mute Audio">
 					{muted ? 'Unmute' : 'Mute'}
 				</button>
 
@@ -246,7 +265,10 @@
 		padding: 0;
 		margin: 0 4px 0 0;
 	}
-	.icon-btn:hover:not(:disabled) {
+	/* Bars / users / mobile icon-links dim on hover. Volume + reload nav-links
+	   instead recolor to #45a2ff (rule below) — a pure color change with no
+	   opacity dim, matching the reference nav-link:hover. */
+	.icon-btn:not(.nav-link-btn):hover:not(:disabled) {
 		opacity: 0.8;
 	}
 	.icon-btn:disabled {
@@ -259,6 +281,15 @@
 	   needs :global to cross the child component's scope boundary. */
 	.icon-btn :global(.nav-muted-icon) {
 		color: rgb(171, 176, 181);
+	}
+	/* Volume + reload nav-links resting at #abb0b5; on hover/focus they turn
+	   #45a2ff (--app-link-color in the presenter theme), NOT just opacity-dim,
+	   matching the reference `.navbar-dark .navbar-nav .nav-link:hover{color:
+	   var(--app-link-color)}`. The hover color targets the glyph via the merged
+	   .nav-muted-icon class on Icon.svelte's inner <i>, which needs :global. */
+	.nav-link-btn:hover:not(:disabled) :global(.nav-muted-icon),
+	.nav-link-btn:focus-visible:not(:disabled) :global(.nav-muted-icon) {
+		color: var(--accent);
 	}
 	.users {
 		display: inline-flex;
@@ -291,10 +322,42 @@
 		white-space: nowrap;
 	}
 	.talking {
-		/* Reference a inside li.talkingIndicator: pure white (#fff), 16px,
-		   line-height 41px, margin 0 5px — NOT the dim color. */
+		/* Reference a inside li.talkingIndicator: pure white (#fff = --text,
+		   --presenter-noRecording-color), 16px, line-height 41px, margin 0 5px,
+		   display:inline-flex align-items:center (so the mic glyph + waveform
+		   sit on the text baseline). max-width 400px, ellipsis. */
+		display: inline-flex;
+		align-items: center;
+		max-width: 400px;
+		max-height: 47px;
 		color: var(--text);
 		font-size: 16px;
+		line-height: 41px;
+		margin: 0 5px;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+		animation: fade-in 0.25s ease;
+	}
+	/* Reference .talkingIndicator .talking-string: 14px, margin 0 5px,
+	   max-width 250px, nowrap, overflow auto/hidden. */
+	.talking-string {
+		font-size: 14px;
+		margin: 0 5px;
+		max-width: 250px;
+		white-space: nowrap;
+		overflow: hidden;
+	}
+	/* Active-speaker mic glyph (i.fa-microphone, white, ~11x16) — present only
+	   when a speaker is active in the reference. */
+	.talking :global(.talking-mic) {
+		color: var(--text);
+	}
+	/* Reference li.recIndicator > a: --presenter-recording-color #45a2ff,
+	   line-height 41px, max-width 117px, display:inline-block, margin 0 5px. */
+	.rec-indicator {
+		display: inline-block;
+		max-width: 117px;
+		color: var(--accent);
 		line-height: 41px;
 		margin: 0 5px;
 		white-space: nowrap;
@@ -352,81 +415,89 @@
 	.volume {
 		position: relative;
 	}
+	/* Reference div.dropdown-menu.volumeControl: text-align:center; color
+	   --light-gray; background --darker-black (#111); border 1px solid
+	   rgb(250,250,250). dropstart => opens to the LEFT of the toggle, so the
+	   panel is pinned to the toggle's right edge and grows leftward. */
 	.volume-panel {
 		position: absolute;
 		top: calc(100% + 0.4rem);
 		right: 0;
-		width: 210px;
-		background: var(--bg-elev-2);
-		border: 1px solid var(--border);
+		width: 220px;
+		text-align: center;
+		background: #111;
+		border: 1px solid rgb(250, 250, 250);
 		border-radius: var(--radius);
 		padding: 0.7rem;
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
+		color: #abb0b5;
 		z-index: 41;
 	}
-	.panel-head {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-	}
-	.panel-head h4 {
-		margin: 0;
-		font-size: 0.85rem;
-		font-weight: 700;
-		color: var(--text);
+	/* Reference header is an <h4>Volume with a float-right fa-times close. */
+	.panel-title {
+		margin: 0 0 0.5rem;
+		font-size: 1.1rem;
+		font-weight: 500;
+		color: #fff;
+		text-align: center;
 	}
 	.panel-close {
+		float: right;
+		margin-right: 0.5rem;
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
 		background: transparent;
 		border: none;
-		color: var(--text-dim);
-		border-radius: var(--radius);
-		padding: 0.15rem;
+		color: #abb0b5;
 		line-height: 0;
+		padding: 0;
+		cursor: pointer;
 	}
 	.panel-close:hover {
-		color: var(--text);
+		color: #fff;
 	}
-	.vol-row {
-		display: flex;
-		flex-direction: column;
-		gap: 0.3rem;
-	}
-	.vol-label {
-		font-size: 0.75rem;
-		color: var(--text-dim);
-	}
-	.vol-row input[type='range'] {
+	/* Reference input.volCtrl range slider, full width, then a <br>. */
+	.vol-ctrl {
 		width: 100%;
+		margin: 0.3rem 0 0.6rem;
 		accent-color: var(--accent);
 	}
+	.vol-ctrl:disabled {
+		opacity: 0.5;
+	}
+	/* Reference button.btn.btn-primary.btn-sm "Mute" — primary = room accent. */
 	.mute {
-		background: var(--bg-elev);
-		border: 1px solid var(--border);
-		color: var(--text);
+		display: inline-block;
+		background: var(--accent);
+		border: 1px solid var(--accent);
+		color: #fff;
 		border-radius: var(--radius);
-		padding: 0.35rem 0.6rem;
-		font-size: 0.8rem;
-		font-weight: 600;
+		padding: 0.25rem 0.7rem;
+		font-size: 0.875rem;
+		font-weight: 400;
+		cursor: pointer;
 	}
 	.mute:hover {
-		border-color: var(--accent);
+		background: var(--accent-hover);
+		border-color: var(--accent-hover);
 	}
 	.mute.on {
-		color: var(--negative);
+		background: var(--negative);
 		border-color: var(--negative);
 	}
+	/* Reference <hr> + div.dropdown-divider separating the slider/mute from the
+	   sound options. */
 	.divider {
 		border: none;
-		border-top: 1px solid var(--border);
-		margin: 0;
+		border-top: 1px solid rgba(250, 250, 250, 0.3);
+		margin: 0.6rem 0;
 		width: 100%;
 	}
+	/* Reference .room-sound-options: text-align:left; padding-left:30px. Each row
+	   is div.my-1 > input.form-check-input + label.form-check-label. */
 	.sound-options {
+		text-align: left;
+		padding-left: 30px;
 		display: flex;
 		flex-direction: column;
 		gap: 0.35rem;
@@ -435,18 +506,19 @@
 		display: flex;
 		align-items: center;
 		gap: 0.45rem;
-		font-size: 0.8rem;
-		color: var(--text);
+		font-size: 0.875rem;
+		color: #abb0b5;
+		cursor: pointer;
+	}
+	.sound-options label:hover {
+		opacity: 0.85;
 	}
 	.sound-options input[type='checkbox'] {
 		accent-color: var(--accent);
 	}
 	.sound-options .status {
 		margin-left: auto;
-		font-size: 0.7rem;
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.02em;
-		color: var(--text-dim);
+		font-size: 0.75rem;
+		color: #abb0b5;
 	}
 </style>

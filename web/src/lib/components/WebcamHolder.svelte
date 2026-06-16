@@ -49,30 +49,41 @@
 	<div class="holder">
 		{#each publishers as publisher (publisher.id)}
 			<div class="card">
+				<!-- Reference: object-fit:contain so a non-4:3 stream letterboxes on
+				     black rather than cropping (webcamsHolderVideo). -->
 				<video {@attach attachTrack(publisher.track)} autoplay muted playsinline></video>
 
+				<!-- Reference overlay sits absolute top:0 above the video (z101); the
+				     name is a full-width centered bar, the close X floats top-right. -->
 				<div class="overlay">
-					<span class="name" title={publisher.name ?? 'Presenter'}>
+					<h5 class="name" title={publisher.name ?? 'Presenter'}>
 						{publisher.name ?? 'Presenter'}{publisher.isLocal ? ' (you)' : ''}
-					</span>
-					{#if onClose && publisher.isLocal}
-						<button
-							class="close"
-							type="button"
-							aria-label="Turn off your camera"
-							title="Turn off camera"
-							onclick={() => onClose?.(publisher.id)}
-						>
-							<Icon name="times" size={14} />
-						</button>
-					{/if}
+					</h5>
 				</div>
+
+				{#if onClose && publisher.isLocal}
+					<button
+						class="close"
+						type="button"
+						aria-label="Turn off your camera"
+						title="Turn off camera"
+						onclick={() => onClose?.(publisher.id)}
+					>
+						<Icon name="times" size={20} />
+					</button>
+				{/if}
 			</div>
 		{/each}
 	</div>
 {/if}
 
 <style>
+	/* Active-tile border accent (reference yellowgreen rgb(154,205,50)); not in
+	   the global room palette, so scoped here per the spec. */
+	.holder {
+		--webcam-active-border: #9acd32;
+	}
+
 	.empty {
 		padding: 0.4rem 0.6rem;
 		font-size: 0.75rem;
@@ -82,76 +93,86 @@
 	.holder {
 		display: flex;
 		flex-wrap: wrap;
-		/* Reference wrapper: justify-content-center align-items-end w-100 — cards
-		   are horizontally centered, wrap, and bottom-align in the holder. */
+		/* Reference webcam-wrapper: justify-content-center align-items-end w-100 —
+		   cards are horizontally centered, wrap, and bottom-align in the holder. */
 		justify-content: center;
 		align-items: flex-end;
 		width: 100%;
-		gap: 0.5rem;
-		padding: 0.5rem;
 	}
 
 	.card {
 		position: relative;
-		/* Fixed aspect ratio so cards reserve their space before the stream
-		   attaches — no layout shift when srcObject is set. */
-		aspect-ratio: 16 / 9;
-		width: 180px;
-		background: var(--bg-elev-2, #1c2230);
-		border: 1px solid var(--border, #28303f);
-		border-radius: var(--radius, 10px);
+		/* Reference card.webcamsHolder: fixed 320x240 (4:3), 5px margin, black
+		   card, 1px yellowgreen active border, 6px radius, Open Sans 300/16. */
+		width: 320px;
+		height: 240px;
+		margin: 5px;
+		background: #000;
+		border: 1px solid var(--webcam-active-border);
+		border-radius: 6px;
 		overflow: hidden;
+		color: rgb(33, 37, 41);
+		font:
+			300 16px 'Open Sans',
+			sans-serif;
 	}
 
 	video {
 		display: block;
 		width: 100%;
 		height: 100%;
-		object-fit: cover;
-		background: #000;
+		/* Reference webcamsHolderVideo: contain (not cover) so off-ratio streams
+		   letterbox against the black card; camera-off shows the black card. */
+		object-fit: contain;
+		background: transparent;
 	}
 
 	.overlay {
+		/* Reference overlay: absolute top:0 spanning the card width, z101, above
+		   the video — the name bar lives across the TOP, not the bottom. */
 		position: absolute;
+		top: 0;
 		left: 0;
 		right: 0;
-		bottom: 0;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 0.4rem;
-		padding: 0.25rem 0.4rem;
-		background: linear-gradient(to top, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0));
+		z-index: 101;
 	}
 
 	.name {
-		min-width: 0;
+		/* Reference pNameLabel: full-width centered black bar, white text, 20px
+		   line, weight 500, margin 0. */
+		margin: 0;
+		width: 100%;
+		height: 20px;
+		line-height: 20px;
+		background: rgba(0, 0, 0, 0.5);
+		color: #fff;
+		font-size: 16px;
+		font-weight: 500;
+		text-align: center;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
-		font-size: 0.75rem;
-		font-weight: 600;
-		color: #fff;
 	}
 
 	.close {
-		flex: 0 0 auto;
+		/* Reference closeIcon: absolute top:0 right:5px, z102, plain white 20px
+		   fa-times — no pill, no background. */
+		position: absolute;
+		top: 0;
+		right: 5px;
+		z-index: 102;
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		padding: 0.15rem;
+		padding: 0;
 		line-height: 0;
-		background: rgba(0, 0, 0, 0.4);
-		border: 1px solid rgba(255, 255, 255, 0.25);
-		border-radius: 999px;
+		background: transparent;
+		border: none;
 		color: #fff;
-	}
-	.close:hover {
-		background: var(--negative, #ea3943);
-		border-color: var(--negative, #ea3943);
+		cursor: pointer;
 	}
 	.close:focus-visible {
-		outline: 2px solid var(--accent, #3b82f6);
+		outline: 2px solid var(--accent, #45a2ff);
 		outline-offset: 1px;
 	}
 </style>
