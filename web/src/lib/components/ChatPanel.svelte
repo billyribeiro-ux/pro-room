@@ -10,6 +10,7 @@
 	import { formatStamp, dayKey, formatDayLabel } from '$lib/message';
 	import { muted } from '$lib/stores/social.svelte';
 	import { prefs } from '$lib/stores/prefs.svelte';
+	import { shouldThrottle } from '$lib/stores/visibility.svelte';
 	import MessageBody from './MessageBody.svelte';
 	import ReactionBar from './ReactionBar.svelte';
 	import UserInfoModal from './modals/UserInfoModal.svelte';
@@ -88,6 +89,9 @@
 	$effect.pre(() => {
 		if (!messagesEl) return; // not yet mounted
 		visibleMessages.length; // re-run whenever the (filtered) list changes
+		// "Tab sleep optimization": skip the autoscroll DOM write while the tab is
+		// hidden so a backgrounded room doesn't do layout work.
+		if (shouldThrottle()) return;
 		const atBottom = messagesEl.offsetHeight + messagesEl.scrollTop > messagesEl.scrollHeight - 40;
 		// "Always Scroll To Bottom" (reference alwaysScrollToBottom) overrides the
 		// near-bottom guard so the log always snaps to the newest message.

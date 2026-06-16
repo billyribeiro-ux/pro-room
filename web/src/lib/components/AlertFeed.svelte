@@ -13,6 +13,7 @@
 	import AlertSendReportModal from './modals/AlertSendReportModal.svelte';
 	import Icon from './Icon.svelte';
 	import { prefs } from '$lib/stores/prefs.svelte';
+	import { shouldThrottle } from '$lib/stores/visibility.svelte';
 
 	export type AlertItem = Alert & {
 		author_name?: string;
@@ -76,6 +77,8 @@
 	$effect.pre(() => {
 		if (!feedEl) return; // not yet mounted
 		alerts.length; // re-run whenever an alert is added/removed
+		// "Tab sleep optimization": skip autoscroll layout work while hidden.
+		if (shouldThrottle()) return;
 		const atBottom = feedEl.offsetHeight + feedEl.scrollTop > feedEl.scrollHeight - 40;
 		if (atBottom || stickNext) {
 			stickNext = false;
