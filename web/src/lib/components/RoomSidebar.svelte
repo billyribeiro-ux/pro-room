@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PresentUser } from '$lib/types';
+	import type { ScreenShareRoom } from '$lib/livekit.svelte';
 	import Icon from './Icon.svelte';
 	import MobileAppInfoModal from './modals/MobileAppInfoModal.svelte';
 	import ConnectivityCheckModal from './modals/ConnectivityCheckModal.svelte';
@@ -20,6 +21,8 @@
 		canManage?: boolean;
 		onClose?: () => void;
 		roomId: string;
+		/** Live LiveKit room — lets AV Settings apply device changes to the call. */
+		screen?: ScreenShareRoom;
 		/** Broadcast a YouTube video to the room (Play YouTube modal → media-for-all). */
 		onPlayMedia?: (kind: 'youtube', url: string) => void;
 		/** Stop the room-wide video for everyone. */
@@ -31,6 +34,7 @@
 		canManage = false,
 		onClose,
 		roomId,
+		screen,
 		onPlayMedia,
 		onStopMedia
 	}: Props = $props();
@@ -266,7 +270,19 @@
 
 <MobileAppInfoModal open={mobileAppOpen} onClose={() => (mobileAppOpen = false)} />
 <ConnectivityCheckModal open={connectivityOpen} onClose={() => (connectivityOpen = false)} />
-<AVSettingsModal open={avSettingsOpen} onClose={() => (avSettingsOpen = false)} />
+<AVSettingsModal
+	open={avSettingsOpen}
+	onClose={() => (avSettingsOpen = false)}
+	onChangeDevices={(audioInputId, videoInputId) => {
+		if (audioInputId) screen?.switchDevice('audioinput', audioInputId);
+		if (videoInputId) screen?.switchDevice('videoinput', videoInputId);
+	}}
+	onSave={({ speakerId, audioInputId, videoInputId }) => {
+		if (audioInputId) screen?.switchDevice('audioinput', audioInputId);
+		if (videoInputId) screen?.switchDevice('videoinput', videoInputId);
+		if (speakerId) screen?.switchDevice('audiooutput', speakerId);
+	}}
+/>
 <AlertLogsModal open={alertLogsOpen} onClose={() => (alertLogsOpen = false)} {roomId} />
 <ChatLogsModal open={chatLogsOpen} onClose={() => (chatLogsOpen = false)} {roomId} />
 <MutedUsersModal open={mutedUsersOpen} onClose={() => (mutedUsersOpen = false)} />

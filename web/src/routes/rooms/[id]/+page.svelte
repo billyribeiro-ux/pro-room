@@ -386,6 +386,7 @@
 				canManage={caps?.can_manage_room ?? false}
 				onClose={() => (sidebarOpen = false)}
 				{roomId}
+				{screen}
 				onPlayMedia={playMedia}
 				onStopMedia={stopMedia}
 			/>

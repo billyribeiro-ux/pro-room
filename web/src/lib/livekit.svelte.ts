@@ -208,6 +208,27 @@ export class ScreenShareRoom {
 		}
 	}
 
+	/**
+	 * Apply a device selection (mic/camera/speaker) to the LIVE call. LiveKit
+	 * performs the underlying WebRTC replaceTrack internally, so the published
+	 * track switches input without dropping the tile. For 'audiooutput' it routes
+	 * playback where setSinkId is supported, else resolves false. No-op without a
+	 * connected room or a real device id.
+	 */
+	async switchDevice(kind: MediaDeviceKind, deviceId: string): Promise<void> {
+		if (!this.#room || !deviceId) return;
+		try {
+			await this.#room.switchActiveDevice(kind, deviceId);
+		} catch (e) {
+			this.error = e instanceof Error ? e.message : 'failed to switch device';
+		}
+	}
+
+	/** The active device id for a kind, or undefined — used to preselect the modal. */
+	getActiveDevice(kind: MediaDeviceKind): string | undefined {
+		return this.#room?.getActiveDevice(kind);
+	}
+
 	/** Whether the given participant identity is currently speaking. */
 	isSpeaking(identity: string): boolean {
 		return this.activeSpeakers.includes(identity);
