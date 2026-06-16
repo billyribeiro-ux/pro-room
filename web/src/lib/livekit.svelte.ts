@@ -38,6 +38,12 @@ export class ScreenShareRoom {
 	error = $state<string | null>(null);
 
 	#room: Room | null = null;
+	/** When sharing via an external encoder (OBS Virtual Camera / XSplit VCam), the
+	   feed is a getUserMedia video track published with the ScreenShare source, so it
+	   renders in the main stage like a browser share. Tracked here so stopSharing can
+	   unpublish it and release the device. Null when sharing via the browser. */
+	#externalPub: LocalTrackPublication | null = null;
+	#externalStream: MediaStream | null = null;
 
 	async connect(url: string, token: string): Promise<void> {
 		const room = new Room({ adaptiveStream: true, dynacast: true });
@@ -91,9 +97,62 @@ export class ScreenShareRoom {
 		}
 	}
 
+	/**
+	 * Share via an external encoder (OBS Virtual Camera / XSplit VCam). These
+	 * present as ordinary video-input devices; we capture the virtual cam with
+	 * getUserMedia and publish it as a ScreenShare-source track so it shows in the
+	 * main stage exactly like a browser share. Sets a helpful error if no virtual
+	 * camera is running.
+	 */
+	async startSharingExternalCam(): Promise<void> {
+		if (!this.#room) return;
+		try {
+			// A getUserMedia grant is required before device labels are readable.
+			let stream = await navigator.mediaDevices.getUserMedia({ video: true });
+			const devices = await navigator.mediaDevices.enumerateDevices();
+			const vcam = devices.find(
+				(d) => d.kind === 'videoinput' && /obs|xsplit|vcam|virtual\s*cam/i.test(d.label)
+			);
+			if (!vcam) {
+				stream.getTracks().forEach((t) => t.stop());
+				this.error =
+					'No OBS / XSplit virtual camera found. Start "OBS Virtual Camera" or "XSplit VCam" first, then try again.';
+				return;
+			}
+			// Re-acquire the exact virtual-cam device if the default grant wasn't it.
+			if (stream.getVideoTracks()[0]?.getSettings().deviceId !== vcam.deviceId) {
+				stream.getTracks().forEach((t) => t.stop());
+				stream = await navigator.mediaDevices.getUserMedia({
+					video: { deviceId: { exact: vcam.deviceId } }
+				});
+			}
+			this.#externalStream = stream;
+			this.#externalPub = await this.#room.localParticipant.publishTrack(
+				stream.getVideoTracks()[0],
+				{ source: Track.Source.ScreenShare, name: 'screen' }
+			);
+			this.publishing = true;
+			this.#refresh();
+		} catch (e) {
+			this.#externalStream?.getTracks().forEach((t) => t.stop());
+			this.#externalStream = null;
+			this.error = e instanceof Error ? e.message : 'failed to start OBS/XSplit cam';
+		}
+	}
+
 	async stopSharing(): Promise<void> {
 		if (!this.#room) return;
-		await this.#room.localParticipant.setScreenShareEnabled(false);
+		if (this.#externalPub) {
+			// External-encoder share: unpublish the track and release the device.
+			if (this.#externalPub.track) {
+				await this.#room.localParticipant.unpublishTrack(this.#externalPub.track);
+			}
+			this.#externalStream?.getTracks().forEach((t) => t.stop());
+			this.#externalPub = null;
+			this.#externalStream = null;
+		} else {
+			await this.#room.localParticipant.setScreenShareEnabled(false);
+		}
 		this.publishing = false;
 		this.#refresh();
 	}
@@ -155,6 +214,9 @@ export class ScreenShareRoom {
 	}
 
 	async disconnect(): Promise<void> {
+		this.#externalStream?.getTracks().forEach((t) => t.stop());
+		this.#externalStream = null;
+		this.#externalPub = null;
 		await this.#room?.disconnect();
 		this.#room = null;
 		this.connected = false;

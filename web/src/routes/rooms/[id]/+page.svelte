@@ -58,6 +58,9 @@
 	let showMobileInfo = $state(false);
 	let showMediaModal = $state(false);
 	let captionsOn = $state(false);
+	// Screen-share source picker (Browser vs OBS/XSplit virtual cam).
+	let screenMenuOpen = $state(false);
+	let screenMenuEl = $state<HTMLDivElement | undefined>();
 	// Admin "mute all" broadcast — disables the chat composer for non-admins.
 	let mutedAll = $state(false);
 	// Presenter "lock this screen" broadcast — holds non-admin viewers on Screens.
@@ -326,6 +329,18 @@
 	});
 </script>
 
+<svelte:window
+	onkeydown={(e) => {
+		if (e.key === 'Escape') screenMenuOpen = false;
+	}}
+	onclick={(e) => {
+		// Close the screen-share source menu when clicking outside it.
+		if (screenMenuOpen && screenMenuEl && !screenMenuEl.contains(e.target as Node)) {
+			screenMenuOpen = false;
+		}
+	}}
+/>
+
 {#if error}
 	<div class="banner">
 		<a href={resolve('/rooms')}><Icon name="arrow-left" /> Rooms</a> <span>{error}</span>
@@ -440,15 +455,47 @@
 				<Icon name="stop-circle" />
 			</button>
 		{:else}
-			<button
-				class="ctrl"
-				onclick={() => screen.startSharing()}
-				disabled={!screen.connected}
-				title="Share screen"
-				aria-label="Share screen"
-			>
-				<Icon name="desktop" />
-			</button>
+			<!-- Reference: the screen-share button opens a small menu to pick the
+			     source — Browser (getDisplayMedia) or an external encoder (OBS Virtual
+			     Camera / XSplit VCam), captured as a video device + published as the
+			     screen feed. -->
+			<div class="ctrl-menu" bind:this={screenMenuEl}>
+				<button
+					class="ctrl"
+					onclick={() => (screenMenuOpen = !screenMenuOpen)}
+					disabled={!screen.connected}
+					title="Share screen"
+					aria-label="Share screen"
+					aria-haspopup="menu"
+					aria-expanded={screenMenuOpen}
+				>
+					<Icon name="desktop" /><Icon name="caret-down" size={10} />
+				</button>
+				{#if screenMenuOpen}
+					<div class="share-menu" role="menu">
+						<button
+							type="button"
+							role="menuitem"
+							onclick={() => {
+								screenMenuOpen = false;
+								void screen.startSharing();
+							}}
+						>
+							<Icon name="desktop" size={14} /> Browser
+						</button>
+						<button
+							type="button"
+							role="menuitem"
+							onclick={() => {
+								screenMenuOpen = false;
+								void screen.startSharingExternalCam();
+							}}
+						>
+							<Icon name="video" size={14} /> OBS / XSplit Cam
+						</button>
+					</div>
+				{/if}
+			</div>
 		{/if}
 		{#if screen.cameraPublishing}
 			<button
@@ -627,6 +674,44 @@
 	.ctrl.live-on {
 		color: var(--negative);
 		border-color: var(--negative);
+	}
+	/* Screen-share source picker (Browser / OBS-XSplit). */
+	.ctrl-menu {
+		position: relative;
+		display: inline-flex;
+		flex-shrink: 0;
+	}
+	.share-menu {
+		position: absolute;
+		top: 100%;
+		left: 0;
+		z-index: 30;
+		margin-top: 0.25rem;
+		min-width: 11rem;
+		display: flex;
+		flex-direction: column;
+		background: var(--bg-elev-2);
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+		padding: 0.25rem;
+	}
+	.share-menu button {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		background: transparent;
+		border: none;
+		color: var(--text);
+		font-size: 0.85rem;
+		text-align: left;
+		padding: 0.45rem 0.6rem;
+		border-radius: 6px;
+		cursor: pointer;
+		white-space: nowrap;
+	}
+	.share-menu button:hover {
+		background: var(--accent-hover);
 	}
 	.layout {
 		height: 100%;
