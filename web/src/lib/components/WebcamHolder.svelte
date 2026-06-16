@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from './Icon.svelte';
+	import { prefs } from '$lib/stores/prefs.svelte';
 	import type { Attachment } from 'svelte/attachments';
 
 	/** A single presenter publishing a camera feed. */
@@ -96,9 +97,16 @@
 				onpointerup={onPointerUp}
 				onpointercancel={onPointerUp}
 			>
-				<!-- Reference: object-fit:contain so a non-4:3 stream letterboxes on
-				     black rather than cropping (webcamsHolderVideo). -->
-				<video {@attach attachTrack(publisher.track)} autoplay muted playsinline></video>
+				<!-- "Disable Video (saves bandwidth)" (reference preferences.disableVideo
+				     → "Video off to preserve data..."): skip attaching the track and show
+				     the placeholder so no video is decoded. -->
+				{#if prefs.videoEnabled}
+					<!-- Reference: object-fit:contain so a non-4:3 stream letterboxes on
+					     black rather than cropping (webcamsHolderVideo). -->
+					<video {@attach attachTrack(publisher.track)} autoplay muted playsinline></video>
+				{:else}
+					<div class="video-off">Video off to preserve data...</div>
+				{/if}
 
 				<!-- Reference overlay sits absolute top:0 above the video (z101); the
 				     name is a full-width centered bar, the close X floats top-right. -->
@@ -182,6 +190,22 @@
 		   letterbox against the black card; camera-off shows the black card. */
 		object-fit: contain;
 		background: transparent;
+	}
+
+	/* "Disable Video (saves bandwidth)" placeholder — reference verbatim text,
+	   shown in place of the <video> when prefs.videoEnabled is off. */
+	.video-off {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 100%;
+		height: 100%;
+		padding: 0.5rem;
+		text-align: center;
+		font-size: 0.78rem;
+		font-weight: 600;
+		color: #cfd3d8;
+		background: #000;
 	}
 
 	.overlay {

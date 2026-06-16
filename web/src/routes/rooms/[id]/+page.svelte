@@ -27,6 +27,7 @@
 	import MediaForAllModal from '$lib/components/modals/MediaForAllModal.svelte';
 	import { privateChat, closePrivateChat } from '$lib/privateChat.svelte';
 	import { layout } from '$lib/stores/layout.svelte';
+	import { prefs, setPref } from '$lib/stores/prefs.svelte';
 	import { listPolls, type PollDetail } from '$lib/poll';
 	import { toggleReaction } from '$lib/reactions';
 	import { broadcastMedia } from '$lib/media';
@@ -57,7 +58,8 @@
 	let showRecPreview = $state(false);
 	let showMobileInfo = $state(false);
 	let showMediaModal = $state(false);
-	let captionsOn = $state(false);
+	// Closed-captions overlay is now a shared preference (prefs.captionsOverlay) so
+	// the sidebar CC button and the General Settings toggle stay in sync.
 	// Screen-share source picker (Browser vs OBS/XSplit virtual cam). The menu is
 	// position:fixed and anchored to the trigger's viewport rect, because the
 	// .nav-controls cluster scrolls horizontally (overflow-x:auto, which also clips
@@ -569,8 +571,8 @@
 		{/if}
 		<button
 			class="ctrl"
-			class:live-on={captionsOn}
-			onclick={() => (captionsOn = !captionsOn)}
+			class:live-on={prefs.captionsOverlay}
+			onclick={() => setPref('captionsOverlay', !prefs.captionsOverlay)}
 			title="Captions (CC)"
 			aria-label="Captions"
 		>
@@ -638,7 +640,7 @@
 		connected={screen.connected}
 		{webcamPublishers}
 		onWebcamClose={() => screen.stopCamera()}
-		captionsActive={captionsOn}
+		captionsActive={prefs.captionsOverlay}
 		{screenLocked}
 	/>
 {/snippet}

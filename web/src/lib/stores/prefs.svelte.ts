@@ -60,7 +60,10 @@ export type PrefKey = keyof Prefs;
 /** Reference-faithful defaults (polarity matches the original preference object). */
 const DEFAULTS: Prefs = {
 	videoEnabled: true,
-	captionsOverlay: true,
+	// Reference showSpeechRecoOverlay defaults ON, but OUR captions overlay starts
+	// LOCAL mic speech-recognition when active — so default OFF to avoid auto-
+	// requesting the mic on load; the sidebar CC button / this toggle turns it on.
+	captionsOverlay: false,
 	alertMode: 'regular',
 	chatMode: 'regular',
 	smallImagePreview: false,
