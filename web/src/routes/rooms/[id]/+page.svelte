@@ -21,6 +21,7 @@
 	import RecPreview from '$lib/components/RecPreview.svelte';
 	import PrivateChat from '$lib/components/PrivateChat.svelte';
 	import ConnectionOverlay from '$lib/components/ConnectionOverlay.svelte';
+	import ToastContainer from '$lib/components/ToastContainer.svelte';
 	import MobileAppInfoModal from '$lib/components/modals/MobileAppInfoModal.svelte';
 	import Split from '$lib/components/Split.svelte';
 	import MediaPlayer from '$lib/components/MediaPlayer.svelte';
@@ -38,6 +39,9 @@
 	import { broadcastMedia } from '$lib/media';
 	import { deleteAlert, deleteMessage } from '$lib/admin';
 	import { playSound } from '$lib/sound.svelte';
+	import { isMuted } from '$lib/stores/dnd.svelte';
+	import { showToast } from '$lib/stores/toast.svelte';
+	import { alertBody } from '$lib/alertText';
 	import type { ReactionTally, ReactionTarget, MediaKind } from '$lib/types';
 	import Icon from '$lib/components/Icon.svelte';
 
@@ -211,6 +215,16 @@
 				alerts = [...alerts, { ...ev.alert, author_name: ev.author_name }].slice(-100);
 				// DND-aware chime (suppressed by the matching Do-Not-Disturb flag).
 				playSound('alert');
+				// Top-right toast (reference toastr.warning on new alert): 10s when the
+				// "Longer alert popup" pref is on, else 5s; suppressed by the alertPopup
+				// DND flag (isMuted folds in the master dnd.app switch too).
+				if (!isMuted('alertPopup')) {
+					showToast(
+						`Alert from @${ev.author_name ?? 'Trader'}`,
+						alertBody(ev.alert),
+						prefs.longerAlertPopup ? 10000 : 5000
+					);
+				}
 				break;
 			case 'chat': {
 				const item = { ...ev.message, author_name: ev.author_name, author_role: ev.author_role };
@@ -394,6 +408,7 @@
 	     persistent "Reconnecting…" banner when the WS drops. Treats "no socket
 	     yet" (initial load) as connected so it doesn't flash on first paint. -->
 	<ConnectionOverlay connected={socket?.connected ?? true} />
+	<ToastContainer />
 
 	<div class="room-body">
 		{#if screenDisabled}
