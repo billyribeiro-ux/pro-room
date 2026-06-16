@@ -9,6 +9,7 @@
 	} from '$lib/types';
 	import { formatStamp, dayKey, formatDayLabel } from '$lib/message';
 	import { muted } from '$lib/stores/social.svelte';
+	import { prefs } from '$lib/stores/prefs.svelte';
 	import MessageBody from './MessageBody.svelte';
 	import ReactionBar from './ReactionBar.svelte';
 	import UserInfoModal from './modals/UserInfoModal.svelte';
@@ -57,7 +58,17 @@
 
 	// Hide chat from muted users (client-side, per-device list) — matches the
 	// reference, where muting filters that user's messages locally.
-	const visibleMessages = $derived(messages.filter((m) => !muted.has(m.author_id)));
+	const filteredMessages = $derived(messages.filter((m) => !muted.has(m.author_id)));
+
+	// "Reduce Chatlog Memory" (reference trimChatLogs): when on, only keep the most
+	// recent TRIM_SIZE rows in view — fewer DOM nodes + less retained state. Mirrors
+	// the reference, which shift()s the oldest entries past globals.trimLogSize.
+	const TRIM_SIZE = 300;
+	const visibleMessages = $derived(
+		prefs.trimChatLogs && filteredMessages.length > TRIM_SIZE
+			? filteredMessages.slice(-TRIM_SIZE)
+			: filteredMessages
+	);
 
 	// Trader options for the Advanced Search multi-select = the present roster.
 	const traderOptions = $derived(present.map((p) => ({ value: p.user_id, label: p.display_name })));
@@ -78,7 +89,9 @@
 		if (!messagesEl) return; // not yet mounted
 		visibleMessages.length; // re-run whenever the (filtered) list changes
 		const atBottom = messagesEl.offsetHeight + messagesEl.scrollTop > messagesEl.scrollHeight - 40;
-		if (atBottom || stickNext) {
+		// "Always Scroll To Bottom" (reference alwaysScrollToBottom) overrides the
+		// near-bottom guard so the log always snaps to the newest message.
+		if (atBottom || stickNext || prefs.alwaysScrollToBottom) {
 			stickNext = false;
 			tick().then(() => messagesEl?.scrollTo(0, messagesEl.scrollHeight));
 		}
@@ -206,7 +219,12 @@
 		</div>
 	</header>
 
-	<ul class="messages" bind:this={messagesEl}>
+	<ul
+		class="messages"
+		class:compact={prefs.chatMode === 'compact'}
+		class:small-images={prefs.smallImagePreview}
+		bind:this={messagesEl}
+	>
 		{#each visibleMessages as m, i (m.id)}
 			{@const prev = visibleMessages[i - 1]}
 			{@const newDay = !prev || dayKey(prev.created_at) !== dayKey(m.created_at)}
@@ -494,6 +512,25 @@
 	   effective room role) get the grey row --msgs-bg-adm = #f4f4f4. */
 	.msg-box.elevated {
 		background: #f4f4f4;
+	}
+	/* "Compact Mode" (reference switchChatDisplayMode 'c'): denser rows — tighter
+	   vertical padding + smaller body, so more messages fit on screen. */
+	.messages.compact .msg-box {
+		padding-top: 0.3rem;
+		padding-bottom: 0.1rem;
+	}
+	.messages.compact .row1 {
+		gap: 0.35rem;
+	}
+	.messages.compact .body {
+		font-size: 0.82em;
+		line-height: 1.25;
+	}
+	/* "Smaller image preview" (reference smallImagePreview): inline body images
+	   render at a reduced max size. The avatar is unaffected. */
+	.messages.small-images :global(.body img) {
+		max-width: 120px;
+		max-height: 120px;
 	}
 	.row1 {
 		display: flex;

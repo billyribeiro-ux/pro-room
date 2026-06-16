@@ -7,6 +7,7 @@
 		type LayoutPosition
 	} from '$lib/stores/layout.svelte';
 	import { dnd, setDnd } from '$lib/stores/dnd.svelte';
+	import { prefs, setPref } from '$lib/stores/prefs.svelte';
 	import Modal from '../Modal.svelte';
 	import Icon from '../Icon.svelte';
 
@@ -64,39 +65,19 @@
 		theme.setFontSize(Number((e.currentTarget as HTMLInputElement).value));
 	}
 
-	// --- Local-only preference toggles --------------------------------------
-	// Most of these aren't backend-wired yet, so they live as local `$state`.
-	// (The theme mode, layout, and color/size controls above drive real
-	// reactive stores instead.)
-
-	// App/Alert/Chat "Do not disturb" — these checkboxes are "sound/popup ON"
-	// (checked = enabled), so they're the INVERSE of the `dnd` store flags
-	// (where true = suppressed). Initialised from the persisted store, and a
-	// sync effect below pushes changes back (inverted) so they take real effect.
-	let appDnd = $state({
-		dontDisturb: dnd.app,
-		startRecordingSound: true,
-		stopRecordingSound: true,
-		reactionsResponse: true,
-		reactionsQaResponse: true
-	});
-	let appVideoEnabled = $state(true);
-	let appCaptionsEnabled = $state(false);
-
-	// Alert tab.
-	let alertTextMode = $state<'regular' | 'compact'>('regular');
+	// --- Do-Not-Disturb sound/popup toggles (route to the dnd store) ----------
+	// These checkboxes are "sound/popup ON" (checked = enabled) — the INVERSE of
+	// the `dnd` store flags (true = suppressed). Initialised from the persisted
+	// store; the sync effect below pushes changes back (inverted) so they take
+	// real effect via the room's playSound()/popup gating. Every OTHER toggle is
+	// a real preference read straight from the `prefs` store (setPref persists it).
+	let appDnd = $state({ dontDisturb: dnd.app });
 	let alertDnd = $state({
 		alertQaPopup: !dnd.alertPopup,
 		alertSound: !dnd.alert,
 		qaSound: !dnd.qa,
-		qaReactionsSound: true,
 		nonTradeAlertSound: !dnd.nonTradeAlert
 	});
-	let alertLongerPopup = $state(false);
-
-	// Chat tab.
-	let chatTextMode = $state<'regular' | 'compact'>('regular');
-	let chatSmallerImagePreview = $state(true);
 	let chatDnd = $state({
 		gif: !dnd.chatGif,
 		badges: !dnd.chatBadges,
@@ -104,9 +85,6 @@
 		chatSound: !dnd.chat
 	});
 
-	// Push the "sound on" toggles into the `dnd` store (inverted → "suppressed"),
-	// so the room's playSound() actually honours them. The master "Don't Disturb"
-	// maps straight through (checked = suppress all).
 	$effect(() => {
 		setDnd('app', appDnd.dontDisturb);
 		setDnd('alert', !alertDnd.alertSound);
@@ -118,13 +96,14 @@
 		setDnd('chatBadges', !chatDnd.badges);
 		setDnd('chatPopup', !chatDnd.chatPmPopup);
 	});
-	let chatExtraColumn = $state(false);
-	let chatAlwaysScrollBottom = $state(false);
-	let chatReduceMemory = $state(true);
-	let chatTabSleep = $state(true);
 
 	function selectMode(mode: ThemeMode) {
 		theme.setMode(mode);
+	}
+
+	// Checkbox helper — reads the boolean off the change event for setPref.
+	function checked(e: Event): boolean {
+		return (e.currentTarget as HTMLInputElement).checked;
 	}
 </script>
 
@@ -264,24 +243,40 @@
 					<span>Don't Disturb</span>
 				</label>
 				<label class="check">
-					<input type="checkbox" bind:checked={appDnd.startRecordingSound} />
+					<input
+						type="checkbox"
+						checked={prefs.startRecordingSound}
+						onchange={(e) => setPref('startRecordingSound', checked(e))}
+					/>
 					<span>Start recording sound</span>
-					<span class="state">{appDnd.startRecordingSound ? 'on' : 'off'}</span>
+					<span class="state">{prefs.startRecordingSound ? 'on' : 'off'}</span>
 				</label>
 				<label class="check">
-					<input type="checkbox" bind:checked={appDnd.stopRecordingSound} />
+					<input
+						type="checkbox"
+						checked={prefs.stopRecordingSound}
+						onchange={(e) => setPref('stopRecordingSound', checked(e))}
+					/>
 					<span>Stop recording sound</span>
-					<span class="state">{appDnd.stopRecordingSound ? 'on' : 'off'}</span>
+					<span class="state">{prefs.stopRecordingSound ? 'on' : 'off'}</span>
 				</label>
 				<label class="check">
-					<input type="checkbox" bind:checked={appDnd.reactionsResponse} />
+					<input
+						type="checkbox"
+						checked={prefs.reactionsResponse}
+						onchange={(e) => setPref('reactionsResponse', checked(e))}
+					/>
 					<span>Reactions Response</span>
-					<span class="state">{appDnd.reactionsResponse ? 'on' : 'off'}</span>
+					<span class="state">{prefs.reactionsResponse ? 'on' : 'off'}</span>
 				</label>
 				<label class="check">
-					<input type="checkbox" bind:checked={appDnd.reactionsQaResponse} />
+					<input
+						type="checkbox"
+						checked={prefs.reactionsQaResponse}
+						onchange={(e) => setPref('reactionsQaResponse', checked(e))}
+					/>
 					<span>Reactions QA Response</span>
-					<span class="state">{appDnd.reactionsQaResponse ? 'on' : 'off'}</span>
+					<span class="state">{prefs.reactionsQaResponse ? 'on' : 'off'}</span>
 				</label>
 			</div>
 
@@ -291,7 +286,11 @@
 				<span>Disable/Enable Video</span>
 			</div>
 			<label class="check">
-				<input type="checkbox" bind:checked={appVideoEnabled} />
+				<input
+					type="checkbox"
+					checked={prefs.videoEnabled}
+					onchange={(e) => setPref('videoEnabled', checked(e))}
+				/>
 				<span>Video Enabled</span>
 			</label>
 
@@ -301,7 +300,11 @@
 				<span>Show Closed Captions Overlay</span>
 			</div>
 			<label class="check">
-				<input type="checkbox" bind:checked={appCaptionsEnabled} />
+				<input
+					type="checkbox"
+					checked={prefs.captionsOverlay}
+					onchange={(e) => setPref('captionsOverlay', checked(e))}
+				/>
 				<span>Enabled</span>
 			</label>
 
@@ -324,11 +327,11 @@
 			</div>
 			<div class="radios" role="radiogroup" aria-label="Alert text mode">
 				<label class="radio">
-					<input type="radio" name="alert-text-mode" value="regular" bind:group={alertTextMode} />
+					<input type="radio" name="alert-text-mode" value="regular" checked={prefs.alertMode === 'regular'} onchange={() => setPref('alertMode', 'regular')} />
 					<span>Regular Mode</span>
 				</label>
 				<label class="radio">
-					<input type="radio" name="alert-text-mode" value="compact" bind:group={alertTextMode} />
+					<input type="radio" name="alert-text-mode" value="compact" checked={prefs.alertMode === 'compact'} onchange={() => setPref('alertMode', 'compact')} />
 					<span>Compact Mode</span>
 				</label>
 			</div>
@@ -358,9 +361,9 @@
 					<span class="state">{alertDnd.qaSound ? 'on' : 'off'}</span>
 				</label>
 				<label class="check">
-					<input type="checkbox" bind:checked={alertDnd.qaReactionsSound} />
+					<input type="checkbox" checked={prefs.qaReactionsSound} onchange={(e) => setPref('qaReactionsSound', checked(e))} />
 					<span>QA Reactions Sound</span>
-					<span class="state">{alertDnd.qaReactionsSound ? 'on' : 'off'}</span>
+					<span class="state">{prefs.qaReactionsSound ? 'on' : 'off'}</span>
 				</label>
 				<label class="check">
 					<input type="checkbox" bind:checked={alertDnd.nonTradeAlertSound} />
@@ -375,9 +378,9 @@
 				<span>Alert popup</span>
 			</div>
 			<label class="check">
-				<input type="checkbox" bind:checked={alertLongerPopup} />
+				<input type="checkbox" checked={prefs.longerAlertPopup} onchange={(e) => setPref('longerAlertPopup', checked(e))} />
 				<span>Longer alert popup</span>
-				<span class="state">{alertLongerPopup ? 'on' : 'off'}</span>
+				<span class="state">{prefs.longerAlertPopup ? 'on' : 'off'}</span>
 			</label>
 			<!-- Filter out alerts — integration phase points this at AlertFilterModal. -->
 			<button class="btn ghost wide" type="button" onclick={() => onFilterAlerts?.()}>
@@ -393,11 +396,11 @@
 			</div>
 			<div class="radios" role="radiogroup" aria-label="Chat text mode">
 				<label class="radio">
-					<input type="radio" name="chat-text-mode" value="regular" bind:group={chatTextMode} />
+					<input type="radio" name="chat-text-mode" value="regular" checked={prefs.chatMode === 'regular'} onchange={() => setPref('chatMode', 'regular')} />
 					<span>Regular Mode</span>
 				</label>
 				<label class="radio">
-					<input type="radio" name="chat-text-mode" value="compact" bind:group={chatTextMode} />
+					<input type="radio" name="chat-text-mode" value="compact" checked={prefs.chatMode === 'compact'} onchange={() => setPref('chatMode', 'compact')} />
 					<span>Compact Mode</span>
 				</label>
 			</div>
@@ -408,9 +411,9 @@
 				<span>Image Preview</span>
 			</div>
 			<label class="check">
-				<input type="checkbox" bind:checked={chatSmallerImagePreview} />
+				<input type="checkbox" checked={prefs.smallImagePreview} onchange={(e) => setPref('smallImagePreview', checked(e))} />
 				<span>Smaller image preview</span>
-				<span class="state">{chatSmallerImagePreview ? 'on' : 'off'}</span>
+				<span class="state">{prefs.smallImagePreview ? 'on' : 'off'}</span>
 			</label>
 
 			<!-- Do not disturb -->
@@ -450,9 +453,9 @@
 				<span>Extra chat column</span>
 			</div>
 			<label class="check">
-				<input type="checkbox" bind:checked={chatExtraColumn} />
+				<input type="checkbox" checked={prefs.extraChatColumn} onchange={(e) => setPref('extraChatColumn', checked(e))} />
 				<span>Chat column</span>
-				<span class="state">{chatExtraColumn ? 'on' : 'off'}</span>
+				<span class="state">{prefs.extraChatColumn ? 'on' : 'off'}</span>
 			</label>
 
 			<!-- Always Scroll To Bottom -->
@@ -461,9 +464,9 @@
 				<span>Always Scroll To Bottom</span>
 			</div>
 			<label class="check">
-				<input type="checkbox" bind:checked={chatAlwaysScrollBottom} />
+				<input type="checkbox" checked={prefs.alwaysScrollToBottom} onchange={(e) => setPref('alwaysScrollToBottom', checked(e))} />
 				<span>Always scroll to bottom</span>
-				<span class="state">{chatAlwaysScrollBottom ? 'on' : 'off'}</span>
+				<span class="state">{prefs.alwaysScrollToBottom ? 'on' : 'off'}</span>
 			</label>
 
 			<!-- Reduce Chatlog Memory -->
@@ -473,14 +476,14 @@
 			</div>
 			<div class="checks">
 				<label class="check">
-					<input type="checkbox" bind:checked={chatReduceMemory} />
+					<input type="checkbox" checked={prefs.trimChatLogs} onchange={(e) => setPref('trimChatLogs', checked(e))} />
 					<span>Reduce Chatlog Memory</span>
-					<span class="state">{chatReduceMemory ? 'on' : 'off'}</span>
+					<span class="state">{prefs.trimChatLogs ? 'on' : 'off'}</span>
 				</label>
 				<label class="check">
-					<input type="checkbox" bind:checked={chatTabSleep} />
+					<input type="checkbox" checked={prefs.tabSleep} onchange={(e) => setPref('tabSleep', checked(e))} />
 					<span>Tab sleep optimization</span>
-					<span class="state">{chatTabSleep ? 'on' : 'off'}</span>
+					<span class="state">{prefs.tabSleep ? 'on' : 'off'}</span>
 				</label>
 			</div>
 		</div>
