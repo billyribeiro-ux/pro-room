@@ -2,10 +2,14 @@
 	import type { ChatChannel, PresentUser, ReactionTally, ReactionTarget } from '$lib/types';
 	import AlertFeed, { type AlertItem } from './AlertFeed.svelte';
 	import ChatPanel, { type ChatItem } from './ChatPanel.svelte';
+	import { prefs } from '$lib/stores/prefs.svelte';
 
 	interface Props {
 		alerts: AlertItem[];
 		messages: ChatItem[];
+		/** Off-topic channel history — rendered as the second column when the
+		    "Extra chat column" preference is on. */
+		offTopicMessages?: ChatItem[];
 		channel: ChatChannel;
 		present: PresentUser[];
 		/** Aggregated reactions keyed `${target_kind}:${target_id}`. */
@@ -20,11 +24,14 @@
 		canPostMessage: boolean;
 		onPostAlert: (symbol: string, side: string, note: string) => Promise<void>;
 		onPostMessage: (body: string) => Promise<void>;
+		/** Post into the off-topic channel (used by the extra column). */
+		onPostOffTopic?: (body: string) => Promise<void>;
 		onChannel: (channel: ChatChannel) => void;
 	}
 	let {
 		alerts,
 		messages,
+		offTopicMessages = [],
 		channel,
 		present,
 		reactions = {},
@@ -37,6 +44,7 @@
 		canPostMessage,
 		onPostAlert,
 		onPostMessage,
+		onPostOffTopic,
 		onChannel
 	}: Props = $props();
 
@@ -126,20 +134,41 @@
 		<span class="hgrab" aria-hidden="true"></span>
 	</div>
 
-	<div class="chat-pane">
-		<ChatPanel
-			{messages}
-			{present}
-			{channel}
-			{reactions}
-			{canReact}
-			{onReact}
-			{canManage}
-			onDelete={onDeleteMessage}
-			canPost={canPostMessage}
-			onPost={onPostMessage}
-			{onChannel}
-		/>
+	<div class="chat-pane" class:two-col={prefs.extraChatColumn}>
+		<div class="chat-col">
+			<ChatPanel
+				{messages}
+				{present}
+				{channel}
+				{reactions}
+				{canReact}
+				{onReact}
+				{canManage}
+				onDelete={onDeleteMessage}
+				canPost={canPostMessage}
+				onPost={onPostMessage}
+				{onChannel}
+			/>
+		</div>
+		{#if prefs.extraChatColumn}
+			<!-- "Extra chat column" (reference extraChatColumn): a second pane locked to
+			     the Off-Topic channel, shown alongside the main one. -->
+			<div class="chat-col">
+				<ChatPanel
+					messages={offTopicMessages}
+					{present}
+					channel="off_topic"
+					{reactions}
+					{canReact}
+					{onReact}
+					{canManage}
+					onDelete={onDeleteMessage}
+					canPost={canPostMessage}
+					onPost={onPostOffTopic ?? onPostMessage}
+					onChannel={() => {}}
+				/>
+			</div>
+		{/if}
 	</div>
 </div>
 
@@ -147,6 +176,12 @@
 	.dock {
 		position: relative;
 		display: grid;
+		/* Explicit full-width-but-shrinkable column. Without this the implicit grid
+		   column is `auto` (content-sized); the two-column chat pane has flex
+		   children that shrink to 0 min-content, which collapses an auto column to
+		   ~0. minmax(0, 1fr) pins it to the dock width while still letting the inner
+		   flex columns split. Single-column layout is unchanged (still full width). */
+		grid-template-columns: minmax(0, 1fr);
 		grid-template-rows:
 			minmax(80px, calc(var(--alerts-fr, 0.5) * 100%))
 			auto
@@ -171,6 +206,26 @@
 	.chat-pane {
 		min-height: 0;
 		overflow: hidden;
+	}
+	/* Each chat column fills its pane. In single-column mode there's just one,
+	   filling the whole chat-pane (no layout change from before). */
+	.chat-col {
+		height: 100%;
+		min-height: 0;
+		overflow: hidden;
+	}
+	/* "Extra chat column": split the chat pane into two equal side-by-side columns
+	   (main + off-topic) with a thin reference divider between them. */
+	.chat-pane.two-col {
+		display: flex;
+		flex-direction: row;
+	}
+	.chat-pane.two-col .chat-col {
+		flex: 1 1 0;
+		min-width: 0;
+	}
+	.chat-pane.two-col .chat-col + .chat-col {
+		border-left: 1px solid #d9d9d9;
 	}
 
 	.hsplit {

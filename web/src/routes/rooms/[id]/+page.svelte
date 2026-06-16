@@ -291,8 +291,11 @@
 		await api.post(`/api/rooms/${roomId}/alerts`, { symbol, side, note: note || null });
 	}
 
+	async function postMessageTo(ch: ChatChannel, body: string) {
+		await api.post(`/api/rooms/${roomId}/messages`, { body, channel: ch });
+	}
 	async function postMessage(body: string) {
-		await api.post(`/api/rooms/${roomId}/messages`, { body, channel });
+		await postMessageTo(channel, body);
 	}
 
 	async function toggleLive() {
@@ -620,6 +623,7 @@
 	<AlertsChatDock
 		{alerts}
 		{messages}
+		{offTopicMessages}
 		{present}
 		{channel}
 		reactions={reactionsByTarget}
@@ -632,6 +636,7 @@
 		canPostMessage={canChat}
 		onPostAlert={postAlert}
 		onPostMessage={postMessage}
+		onPostOffTopic={(body) => postMessageTo('off_topic', body)}
 		onChannel={selectChannel}
 	/>
 {/snippet}
