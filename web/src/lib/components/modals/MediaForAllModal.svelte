@@ -28,7 +28,7 @@
 	// `…/song.mp3?token=abc#t=5` still resolves to mp3. Falls back to a plain
 	// suffix check when the string isn't a parseable URL.
 	function pathExtKind(raw: string): MediaKind | null {
-		let path = raw;
+		let path: string;
 		try {
 			path = new URL(raw).pathname;
 		} catch {
@@ -49,7 +49,7 @@
 	// dot. Parsing the host also makes `*.evil-soundcloud.com` spoofs impossible.
 	function detectKind(raw: string): MediaKind | null {
 		const trimmed = raw.trim();
-		let host: string | null = null;
+		let host: string | null;
 		try {
 			host = new URL(trimmed).hostname.toLowerCase().replace(/^www\./, '');
 		} catch {

@@ -72,6 +72,9 @@
 	// Aggregated reactions per target, keyed `${kind}:${id}`. `mine` is recomputed
 	// from our own local set so another user's reaction event can't flip our pill.
 	let reactionsByTarget = $state<Record<string, ReactionTally[]>>({});
+	// Intentionally a plain (non-reactive) side-table: it only feeds onReact's
+	// recompute of reactionsByTarget; it is never read in the template.
+	// eslint-disable-next-line svelte/prefer-svelte-reactivity
 	const myReactions = new Map<string, Set<string>>();
 
 	const screen = new ScreenShareRoom();
@@ -134,16 +137,6 @@
 		const id = screen.activeSpeakers.find((i) => present.some((u) => u.user_id === i));
 		return id ? (present.find((u) => u.user_id === id)?.display_name ?? null) : null;
 	});
-
-	// Live audio streams for the Streams tab: the present users LiveKit currently
-	// reports as speaking, mapped to their roster names (empty when the room's
-	// quiet — the tab shows its own empty state).
-	const speakers = $derived(
-		screen.activeSpeakers
-			.map((id) => present.find((u) => u.user_id === id))
-			.filter((u): u is PresentUser => u !== undefined)
-			.map((u) => ({ id: u.user_id, name: u.display_name }))
-	);
 
 	// Toggle an emoji reaction on a message/alert. The POST response's `mine` is
 	// authoritative for us, so we rebuild our local set from it.
@@ -573,7 +566,6 @@
 		{webcamPublishers}
 		onWebcamClose={() => screen.stopCamera()}
 		captionsActive={captionsOn}
-		{speakers}
 		{screenLocked}
 	/>
 {/snippet}

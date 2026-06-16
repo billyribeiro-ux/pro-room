@@ -48,12 +48,7 @@
 
 		{#snippet confirmFooter()}
 			<button class="btn ghost" type="button" onclick={dismissDialog}>Cancel</button>
-			<button
-				class="btn primary"
-				class:danger={request.danger}
-				type="button"
-				onclick={confirm}
-			>
+			<button class="btn primary" class:danger={request.danger} type="button" onclick={confirm}>
 				{request.confirmLabel ?? 'Confirm'}
 			</button>
 		{/snippet}

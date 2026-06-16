@@ -30,7 +30,7 @@
 	// the documented Svelte pattern: $effect.pre tracking messages.length + tick().
 	$effect.pre(() => {
 		if (!listEl) return;
-		messages.length; // track so this re-runs when a message is added
+		void messages.length; // track so this re-runs when a message is added
 		const atBottom = listEl.offsetHeight + listEl.scrollTop >= listEl.scrollHeight - 40;
 		if (atBottom) {
 			tick().then(() => listEl?.scrollTo(0, listEl.scrollHeight));

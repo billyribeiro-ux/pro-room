@@ -279,7 +279,12 @@
 						{/if}
 
 						<label class="anonymous-poll-container">
-							<input id="anonymous-poll" name="anonymous-poll" type="checkbox" bind:checked={anonymous} />
+							<input
+								id="anonymous-poll"
+								name="anonymous-poll"
+								type="checkbox"
+								bind:checked={anonymous}
+							/>
 							<span>Anonymous Poll (Does not show the voting members' names)</span>
 						</label>
 
@@ -289,12 +294,7 @@
 							<button type="button" class="btn save" onclick={saveToCanned}>
 								<Icon name="save" size={13} /> Save To Canned
 							</button>
-							<button
-								type="button"
-								class="btn btn-success"
-								onclick={submit}
-								disabled={sending}
-							>
+							<button type="button" class="btn btn-success" onclick={submit} disabled={sending}>
 								{sending ? 'Sending…' : 'Send Poll'}
 							</button>
 						</div>
@@ -313,7 +313,9 @@
 											<span class="canned-meta">{c.options.length} choices</span>
 										</div>
 										<div class="canned-actions">
-											<button type="button" class="btn small" onclick={() => useCanned(c)}>Use</button>
+											<button type="button" class="btn small" onclick={() => useCanned(c)}
+												>Use</button
+											>
 											<button
 												type="button"
 												class="icon-btn"

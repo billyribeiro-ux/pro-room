@@ -57,7 +57,9 @@ async function clickAction(page: Page, name: string) {
 /** Dismiss whatever modal/dialog is open (Modal.svelte closes on Escape). */
 async function closeModal(page: Page) {
 	await page.keyboard.press('Escape');
-	await expect(page.getByRole('dialog')).toHaveCount(0, { timeout: 5_000 }).catch(() => {});
+	await expect(page.getByRole('dialog'))
+		.toHaveCount(0, { timeout: 5_000 })
+		.catch(() => {});
 }
 
 test.beforeAll(async ({ request }) => {
@@ -77,7 +79,9 @@ test.beforeEach(async ({ page }) => {
 	await enterRoom(page);
 });
 
-test('room loads with the four stage tabs (Screens / Streams / Notes / Files)', async ({ page }) => {
+test('room loads with the four stage tabs (Screens / Streams / Notes / Files)', async ({
+	page
+}) => {
 	await shot(page, '01-room-loaded');
 
 	// Streams tab → live-audio empty state.
@@ -209,7 +213,9 @@ test('create, vote on, and close a poll', async ({ page }) => {
 	await expect(dialog).toBeVisible();
 	await expect(dialog.getByText('Create a poll')).toBeVisible();
 
-	await dialog.locator("input[placeholder='What do you want to ask?']").fill('Best setup for tomorrow? $SPY');
+	await dialog
+		.locator("input[placeholder='What do you want to ask?']")
+		.fill('Best setup for tomorrow? $SPY');
 	// Target the option <input>s directly — getByLabel('Option 1') also matches the
 	// "Remove option 1" button by substring.
 	await dialog.locator("input[aria-label='Option 1']").fill('Breakout');

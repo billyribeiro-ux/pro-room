@@ -15,12 +15,6 @@
 		isLocal?: boolean;
 	}
 
-	/** One live audio stream (a present user speaking on mic). */
-	interface Speaker {
-		id: string;
-		name: string;
-	}
-
 	interface Props {
 		roomId: string;
 		canManage: boolean;
@@ -37,11 +31,6 @@
 		/** When true, the live speech-recognition captions overlay is shown. */
 		captionsActive?: boolean;
 		/**
-		 * Present users currently speaking on mic. Accepted for API compatibility;
-		 * the reference room has no Streams tab so it is not rendered here.
-		 */
-		speakers?: Speaker[];
-		/**
 		 * Presenter "lock this screen": while true, non-admin viewers are held on
 		 * the Screens tab and the other tabs are disabled. Admins (`canManage`) are
 		 * never held, so they can keep working the room while it's locked.
@@ -56,7 +45,6 @@
 		webcamPublishers = [],
 		onWebcamClose,
 		captionsActive = false,
-		speakers = [],
 		screenLocked = false
 	}: Props = $props();
 

@@ -162,7 +162,6 @@
 
 		<div class="body">
 			{#if recording}
-				<!-- svelte-ignore a11y_media_has_caption -->
 				<video bind:this={videoEl} autoplay muted playsinline></video>
 				<span class="elapsed">{mmss(elapsed)}</span>
 			{:else if recordedBlob}

@@ -36,12 +36,12 @@ export default defineConfig({
 		viewport: { width: 1680, height: 950 },
 		screenshot: 'only-on-failure',
 		trace: 'retain-on-failure',
-		...devices['Desktop Chrome'],
+		...devices['Desktop Chrome']
 	},
 	webServer: {
 		command: 'vite dev --port 5174 --strictPort',
 		port: 5174,
 		reuseExistingServer: true,
-		timeout: 120_000,
-	},
+		timeout: 120_000
+	}
 });

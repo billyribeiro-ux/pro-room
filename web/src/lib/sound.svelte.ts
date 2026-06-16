@@ -27,14 +27,7 @@ import { browser } from '$app/environment';
 import { dnd, isMuted, type DndKey } from './stores/dnd.svelte';
 
 /** A notification sound cue. */
-export type SoundKind =
-	| 'alert'
-	| 'qa'
-	| 'chat'
-	| 'nta'
-	| 'reaction'
-	| 'recordStart'
-	| 'recordStop';
+export type SoundKind = 'alert' | 'qa' | 'chat' | 'nta' | 'reaction' | 'recordStart' | 'recordStop';
 
 /** A synthesised tone: base frequency (Hz), duration (s), and peak gain. */
 interface Tone {
@@ -79,8 +72,7 @@ const CHANNEL: Record<SoundKind, DndKey | null> = {
 function getAudioContextCtor(): typeof AudioContext | undefined {
 	if (!browser) return undefined;
 	if (typeof AudioContext !== 'undefined') return AudioContext;
-	const prefixed = (globalThis as { webkitAudioContext?: typeof AudioContext })
-		.webkitAudioContext;
+	const prefixed = (globalThis as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
 	return prefixed;
 }
 

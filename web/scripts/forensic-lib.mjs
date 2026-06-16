@@ -64,7 +64,9 @@ export async function openRoom({ role = 'presenter', width = 1988, height = 1200
 		});
 	}
 
-	await page.goto(ROOM_URL, { waitUntil: 'networkidle', timeout: 45000 }).catch((e) => errors.push('GOTO: ' + e.message));
+	await page
+		.goto(ROOM_URL, { waitUntil: 'networkidle', timeout: 45000 })
+		.catch((e) => errors.push('GOTO: ' + e.message));
 	await page.waitForTimeout(1500);
 	// Guarantee web fonts are applied before any measurement (Open Sans / Lato).
 	await page.evaluate(() => (document.fonts ? document.fonts.ready : null)).catch(() => {});
@@ -74,15 +76,45 @@ export async function openRoom({ role = 'presenter', width = 1988, height = 1200
 
 /** Visual computed-style props to diff (mirrors web/scripts/pixel-diff.mjs). */
 export const PROPS = [
-	'display', 'position', 'box-sizing', 'width', 'height',
-	'background-color', 'color', 'font-family', 'font-size', 'font-weight', 'font-style',
-	'line-height', 'letter-spacing', 'text-transform', 'text-align',
-	'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
-	'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
-	'border-top-width', 'border-right-width', 'border-bottom-width', 'border-left-width',
-	'border-top-color', 'border-top-style',
-	'border-top-left-radius', 'border-top-right-radius', 'border-bottom-right-radius', 'border-bottom-left-radius',
-	'gap', 'opacity', 'box-shadow', 'flex-direction', 'justify-content', 'align-items'
+	'display',
+	'position',
+	'box-sizing',
+	'width',
+	'height',
+	'background-color',
+	'color',
+	'font-family',
+	'font-size',
+	'font-weight',
+	'font-style',
+	'line-height',
+	'letter-spacing',
+	'text-transform',
+	'text-align',
+	'padding-top',
+	'padding-right',
+	'padding-bottom',
+	'padding-left',
+	'margin-top',
+	'margin-right',
+	'margin-bottom',
+	'margin-left',
+	'border-top-width',
+	'border-right-width',
+	'border-bottom-width',
+	'border-left-width',
+	'border-top-color',
+	'border-top-style',
+	'border-top-left-radius',
+	'border-top-right-radius',
+	'border-bottom-right-radius',
+	'border-bottom-left-radius',
+	'gap',
+	'opacity',
+	'box-shadow',
+	'flex-direction',
+	'justify-content',
+	'align-items'
 ];
 
 /** Normalise a CSS value the way pixel-diff does (rgb→hex, round px) for clean equality. */
@@ -131,8 +163,12 @@ export async function shot(page, absPath, opts = {}) {
 }
 
 export function loadAudit(surface) {
-	return JSON.parse(fs.readFileSync(new URL(`../../script-results/audit/${surface}.json`, import.meta.url)));
+	return JSON.parse(
+		fs.readFileSync(new URL(`../../script-results/audit/${surface}.json`, import.meta.url))
+	);
 }
 export function loadCapture(name) {
-	return JSON.parse(fs.readFileSync(new URL(`../../docs/reference/captures/${name}.json`, import.meta.url)));
+	return JSON.parse(
+		fs.readFileSync(new URL(`../../docs/reference/captures/${name}.json`, import.meta.url))
+	);
 }

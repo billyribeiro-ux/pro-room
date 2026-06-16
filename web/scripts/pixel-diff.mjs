@@ -9,7 +9,9 @@ import { chromium } from '@playwright/test';
 import fs from 'node:fs';
 import os from 'node:os';
 
-const REF = JSON.parse(fs.readFileSync(os.homedir() + '/Downloads/proroom-ultra-member-room.json', 'utf8'));
+const REF = JSON.parse(
+	fs.readFileSync(os.homedir() + '/Downloads/proroom-ultra-member-room.json', 'utf8')
+);
 const ROOM = 'http://localhost:5174/rooms/aea3ca10-30b3-4b16-9763-2bab0a545a0d';
 
 const norm = (v) => {
@@ -26,11 +28,31 @@ const norm = (v) => {
 
 // Compared properties (visual). height/min-height/font-family/gap/text-align excluded as noise.
 const PROPS = [
-	'background-color', 'color', 'font-size', 'font-weight', 'font-style', 'line-height', 'letter-spacing', 'text-transform',
-	'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
-	'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
-	'border-top-width', 'border-bottom-width', 'border-left-width', 'border-right-width',
-	'border-top-color', 'border-top-left-radius', 'border-top-right-radius', 'border-bottom-right-radius', 'border-bottom-left-radius',
+	'background-color',
+	'color',
+	'font-size',
+	'font-weight',
+	'font-style',
+	'line-height',
+	'letter-spacing',
+	'text-transform',
+	'padding-top',
+	'padding-right',
+	'padding-bottom',
+	'padding-left',
+	'margin-top',
+	'margin-right',
+	'margin-bottom',
+	'margin-left',
+	'border-top-width',
+	'border-bottom-width',
+	'border-left-width',
+	'border-right-width',
+	'border-top-color',
+	'border-top-left-radius',
+	'border-top-right-radius',
+	'border-bottom-right-radius',
+	'border-bottom-left-radius',
 	'opacity'
 ];
 
@@ -38,19 +60,49 @@ const PROPS = [
 const MAP = [
 	['dock panel', '.dock', (e) => (e.class || '').includes('alert-chat-box')],
 	['stage panel', '.main-stage', (e) => (e.class || '').includes('presentation-box')],
-	['top nav', '.topnav', (e) => (e.class || '').includes('navbar') && (e.class || '').includes('fixed-top')],
-	['alerts header', '.alerts-pane section.panel > header', (e) => (e.class || '').includes('chat-nav') && !(e.class || '').includes('pm')],
-	['msg row', '.alerts-pane li.msg-box', (e) => (e.class || '').includes('msg-box') && !(e.class || '').includes('adm')],
+	[
+		'top nav',
+		'.topnav',
+		(e) => (e.class || '').includes('navbar') && (e.class || '').includes('fixed-top')
+	],
+	[
+		'alerts header',
+		'.alerts-pane section.panel > header',
+		(e) => (e.class || '').includes('chat-nav') && !(e.class || '').includes('pm')
+	],
+	[
+		'msg row',
+		'.alerts-pane li.msg-box',
+		(e) => (e.class || '').includes('msg-box') && !(e.class || '').includes('adm')
+	],
 	['username', '.alerts-pane .username', (e) => (e.class || '').split(' ').includes('username')],
 	['timestamp', '.alerts-pane .created-at', (e) => (e.class || '').includes('created-at')],
-	['body text', '.alerts-pane .body .message-body', (e) => (e.class || '').includes('text-formated')],
-	['date separator', '.alerts-pane .separator', (e) => (e.class || '').split(' ').includes('separator')],
+	[
+		'body text',
+		'.alerts-pane .body .message-body',
+		(e) => (e.class || '').includes('text-formated')
+	],
+	[
+		'date separator',
+		'.alerts-pane .separator',
+		(e) => (e.class || '').split(' ').includes('separator')
+	],
 	['menu trigger', '.alerts-pane .menu-trigger', (e) => (e.class || '').includes('msgMenu')],
 	['sidebar item', 'aside.sidebar .item', (e) => (e.class || '').includes('sidebar-item')],
-	['stage tab active', '.tabbar button.active', (e) => (e.class || '').includes('nav-link') && (e.class || '').includes('active') && norm(e.style['background-color']) === '#45a2ff']
+	[
+		'stage tab active',
+		'.tabbar button.active',
+		(e) =>
+			(e.class || '').includes('nav-link') &&
+			(e.class || '').includes('active') &&
+			norm(e.style['background-color']) === '#45a2ff'
+	]
 ];
 
-function refStyleFor(pred) { for (const e of REF.elements) if (pred(e)) return e.style; return null; }
+function refStyleFor(pred) {
+	for (const e of REF.elements) if (pred(e)) return e.style;
+	return null;
+}
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1017, height: 1244 } });
@@ -69,19 +121,32 @@ for (const [role, sel, pred] of MAP) {
 		for (const p of cs) o[p] = cs.getPropertyValue(p);
 		return o;
 	}, sel);
-	if (!ourStyle) { console.log(`\n### ${role}  — OUR selector not found: ${sel}`); continue; }
-	if (!refStyle) { console.log(`\n### ${role}  — reference element not found`); continue; }
+	if (!ourStyle) {
+		console.log(`\n### ${role}  — OUR selector not found: ${sel}`);
+		continue;
+	}
+	if (!refStyle) {
+		console.log(`\n### ${role}  — reference element not found`);
+		continue;
+	}
 	const deltas = [];
 	for (const p of PROPS) {
 		// skip border color/radius noise when the corresponding edge has no width
-		if (p === 'border-top-color' && norm(ourStyle['border-top-width']) === '0px' && norm(refStyle['border-top-width']) === '0px') continue;
+		if (
+			p === 'border-top-color' &&
+			norm(ourStyle['border-top-width']) === '0px' &&
+			norm(refStyle['border-top-width']) === '0px'
+		)
+			continue;
 		const o = norm(ourStyle[p]);
 		const r = norm(refStyle[p]);
 		if (o !== r) deltas.push(`    ${p}: ours=${o}  ref=${r}`);
 	}
 	total += deltas.length;
-	if (deltas.length) { console.log(`\n### ${role}  — ${deltas.length} deltas`); console.log(deltas.join('\n')); }
-	else console.log(`### ${role}  ✓`);
+	if (deltas.length) {
+		console.log(`\n### ${role}  — ${deltas.length} deltas`);
+		console.log(deltas.join('\n'));
+	} else console.log(`### ${role}  ✓`);
 }
 console.log(`\n===== TOTAL ACTIONABLE DELTAS: ${total} =====`);
 await browser.close();
