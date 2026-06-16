@@ -19,8 +19,9 @@
 		present: PresentUser[];
 		canManage?: boolean;
 		onClose?: () => void;
+		roomId: string;
 	}
-	let { open, present, canManage = false, onClose }: Props = $props();
+	let { open, present, canManage = false, onClose, roomId }: Props = $props();
 
 	let mobileAppOpen = $state(false);
 	let connectivityOpen = $state(false);
@@ -254,8 +255,8 @@
 <MobileAppInfoModal open={mobileAppOpen} onClose={() => (mobileAppOpen = false)} />
 <ConnectivityCheckModal open={connectivityOpen} onClose={() => (connectivityOpen = false)} />
 <AVSettingsModal open={avSettingsOpen} onClose={() => (avSettingsOpen = false)} />
-<AlertLogsModal open={alertLogsOpen} onClose={() => (alertLogsOpen = false)} />
-<ChatLogsModal open={chatLogsOpen} onClose={() => (chatLogsOpen = false)} />
+<AlertLogsModal open={alertLogsOpen} onClose={() => (alertLogsOpen = false)} {roomId} />
+<ChatLogsModal open={chatLogsOpen} onClose={() => (chatLogsOpen = false)} {roomId} />
 <MutedUsersModal open={mutedUsersOpen} onClose={() => (mutedUsersOpen = false)} />
 <FollowedUsersModal open={followedUsersOpen} onClose={() => (followedUsersOpen = false)} />
 <SettingsModal open={settingsOpen} onClose={() => (settingsOpen = false)} />

@@ -385,6 +385,7 @@
 				{present}
 				canManage={caps?.can_manage_room ?? false}
 				onClose={() => (sidebarOpen = false)}
+				{roomId}
 			/>
 
 			<div class="layout">
