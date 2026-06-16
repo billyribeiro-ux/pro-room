@@ -58,9 +58,20 @@
 	let showMobileInfo = $state(false);
 	let showMediaModal = $state(false);
 	let captionsOn = $state(false);
-	// Screen-share source picker (Browser vs OBS/XSplit virtual cam).
+	// Screen-share source picker (Browser vs OBS/XSplit virtual cam). The menu is
+	// position:fixed and anchored to the trigger's viewport rect, because the
+	// .nav-controls cluster scrolls horizontally (overflow-x:auto, which also clips
+	// overflow-y) — an absolute dropdown would be clipped by that scroll container.
 	let screenMenuOpen = $state(false);
 	let screenMenuEl = $state<HTMLDivElement | undefined>();
+	let shareMenuPos = $state({ top: 0, left: 0 });
+	function toggleShareMenu(btn: HTMLElement) {
+		if (!screenMenuOpen) {
+			const r = btn.getBoundingClientRect();
+			shareMenuPos = { top: Math.round(r.bottom + 4), left: Math.round(r.left) };
+		}
+		screenMenuOpen = !screenMenuOpen;
+	}
 	// Admin "mute all" broadcast — disables the chat composer for non-admins.
 	let mutedAll = $state(false);
 	// Presenter "lock this screen" broadcast — holds non-admin viewers on Screens.
@@ -463,7 +474,7 @@
 			<div class="ctrl-menu" bind:this={screenMenuEl}>
 				<button
 					class="ctrl"
-					onclick={() => (screenMenuOpen = !screenMenuOpen)}
+					onclick={(e) => toggleShareMenu(e.currentTarget)}
 					disabled={!screen.connected}
 					title="Start/Stop Screen Sharing"
 					aria-label="Start/Stop Screen Sharing"
@@ -473,7 +484,12 @@
 					<Icon name="desktop" /><Icon name="caret-down" size={10} />
 				</button>
 				{#if screenMenuOpen}
-					<div class="share-menu" role="menu">
+					<div
+						class="share-menu"
+						role="menu"
+						style:top="{shareMenuPos.top}px"
+						style:left="{shareMenuPos.left}px"
+					>
 						<button
 							type="button"
 							role="menuitem"
@@ -683,11 +699,10 @@
 		flex-shrink: 0;
 	}
 	.share-menu {
-		position: absolute;
-		top: 100%;
-		left: 0;
-		z-index: 30;
-		margin-top: 0.25rem;
+		/* Fixed (not absolute) so it escapes the .nav-controls scroll container's
+		   overflow clipping; anchored to the trigger rect via inline top/left. */
+		position: fixed;
+		z-index: 50;
 		min-width: 11rem;
 		display: flex;
 		flex-direction: column;
