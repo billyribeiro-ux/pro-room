@@ -102,20 +102,21 @@
 		max-height: calc(100vh - 2rem);
 		display: flex;
 		flex-direction: column;
-		/* Reference modals are a fixed DARK surface (Bootstrap "Darkly": #303030 bg,
-		   #444 border, soft near-white #f4f4f4 text) — independent of the light/dark
-		   message-panel theme. Driven by the --modal-* tokens (layout.css).
+		/* Reference modals are a NAVY surface (the room palette: #103d5c bg/border,
+		   soft near-white #f4f4f4 text, #45a2ff active accent) — independent of the
+		   light/dark message-panel theme. Driven by the --modal-* tokens (layout.css).
 		   Custom props inherit through the DOM, so re-mapping the room theme tokens
 		   HERE re-themes every modal's inner content (cards/inputs/borders/accents)
-		   to the dark Darkly palette in one place — no per-modal edits. */
+		   to the navy modal palette in one place — no per-modal edits. */
 		--bg-elev: var(--modal-input-bg);
 		--bg-elev-2: var(--modal-bg);
 		--border: var(--modal-border);
 		--accent: var(--modal-active-tab);
-		--accent-hover: #00a37a;
+		/* Accent hover is the darker room link-blue (active accent is #45a2ff). */
+		--accent-hover: #0a6db1;
 		--positive: var(--modal-success);
 		--text: var(--modal-color);
-		--text-dim: #b8b8b8;
+		--text-dim: #b8c9d8;
 		background: var(--modal-bg);
 		border: 1px solid var(--modal-border);
 		/* Reference .modal-content radius is 6px (the dominant radius token), not 8px. */

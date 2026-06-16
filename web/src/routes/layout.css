@@ -30,21 +30,27 @@
 	--ticker-color: #1a1a1a;
 	--msg-font-size: 13px;
 	--radius: 6px;
-	/* Reference modals are ALWAYS dark (Bootstrap "Darkly"), independent of the
-	   light/dark message-panel theme — fixed values, NOT overridden in light mode.
-	   Source: evidence-folder/report.md §07/§10 (--modal-content-* / Darkly palette). */
-	--modal-bg: #303030;
-	/* Reference --modal-content-color is pure #fff (capture cssVariables.root). */
-	--modal-color: #ffffff;
-	--modal-border: #444;
-	--modal-close-bg: #375a7f;
-	--modal-success: #00bc8c;
-	--modal-danger: #e74c3c;
-	--modal-active-tab: #00bc8c;
-	--modal-input-bg: #444;
-	/* Darkly button variants used in modal footers/actions (capture cssVariables.root
-	   + Bootswatch Darkly): primary #375a7f, secondary #444, success #00bc8c, danger #e74c3c. */
-	--modal-btn-primary: #375a7f;
+	/* Reference modals are NAVY (the room palette), PROVEN by both Mastering-The-Trade
+	   captures: every --modal-* token holds a navy/room value, and the .modal-content
+	   CSS cascade resolves to var(--modal-content-bg-color) = #103d5c. The Darkly
+	   values (#303030 / #00bc8c / #e74c3c / #375a7f) that an earlier note used here are
+	   the Bootswatch BASE globals (--light / --success / --danger / --primary) which
+	   coexist in the same files but do NOT skin the modals. */
+	--modal-bg: #103d5c;
+	--modal-color: #f4f4f4;
+	--modal-border: #103d5c;
+	--modal-close-bg: #0a6db1;
+	--modal-success: #92d528;
+	--modal-danger: #bb352a;
+	--modal-active-tab: #45a2ff;
+	/* Modal input wells: a recessed darker navy (--modal-input-group-bg in the
+	   reference is #0a6db1, but the reference field bg is white BS form-control —
+	   matching that white-field + dark-text treatment is a tracked follow-up; for
+	   now keep readable light-on-dark-navy wells). */
+	--modal-input-bg: #0c2434;
+	/* Reference modal buttons: primary/close #0a6db1, success #92d528, danger
+	   #bb352a; secondary is the Bootswatch --secondary #444. */
+	--modal-btn-primary: #0a6db1;
 	--modal-btn-secondary: #444;
 	/* App font — Open Sans is the reference's effective app font; Lato fallback. */
 	--font-sans:
