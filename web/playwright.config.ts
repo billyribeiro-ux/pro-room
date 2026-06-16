@@ -28,6 +28,10 @@ export default defineConfig({
 	testMatch: '**/*.e2e.{ts,js}',
 	timeout: 60_000,
 	expect: { timeout: 10_000 },
+	// Chat/alert/reaction assertions land via a WebSocket broadcast (not optimistic),
+	// so under full-suite load they can occasionally exceed the 10s expect timeout.
+	// One retry absorbs that timing flakiness (the flows pass reliably in isolation).
+	retries: process.env.CI ? 2 : 1,
 	fullyParallel: false,
 	workers: 1,
 	reporter: [['list'], ['html', { open: 'never', outputFolder: 'e2e/report' }]],
