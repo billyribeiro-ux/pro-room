@@ -66,13 +66,18 @@
 	// The scrollable feed; auto-scrolls to the newest alert (the bottom) when one
 	// arrives — but only if the viewer is already near the bottom, so reading
 	// older alerts isn't interrupted. Measured BEFORE the DOM updates ($effect.pre,
-	// the canonical Svelte 5 chat-autoscroll pattern).
+	// the canonical Svelte 5 chat-autoscroll pattern). `stickNext` is a one-shot
+	// override set when WE post, so our own alert always scrolls into view even if
+	// we'd scrolled up. It's a plain (non-reactive) let so toggling it doesn't
+	// re-run the effect — only an alerts change does.
 	let feedEl = $state<HTMLUListElement | undefined>();
+	let stickNext = false;
 	$effect.pre(() => {
 		if (!feedEl) return; // not yet mounted
 		alerts.length; // re-run whenever an alert is added/removed
 		const atBottom = feedEl.offsetHeight + feedEl.scrollTop > feedEl.scrollHeight - 40;
-		if (atBottom) {
+		if (atBottom || stickNext) {
+			stickNext = false;
 			tick().then(() => feedEl?.scrollTo(0, feedEl.scrollHeight));
 		}
 	});
@@ -97,6 +102,9 @@
 		e.preventDefault();
 		if (!symbol.trim()) return;
 		posting = true;
+		// Always scroll our own alert into view when it lands (bypasses the
+		// near-bottom guard), even if we'd scrolled up to read history.
+		stickNext = true;
 		try {
 			await onPost(symbol, side, note);
 			symbol = '';
@@ -374,7 +382,11 @@
 />
 <AlertFilterModal open={filterOpen} onClose={() => (filterOpen = false)} />
 <ScheduledAlertsModal open={scheduledOpen} onClose={() => (scheduledOpen = false)} />
-<PostAlertModal open={postAlertOpen} onClose={() => (postAlertOpen = false)} />
+<PostAlertModal
+	open={postAlertOpen}
+	onClose={() => (postAlertOpen = false)}
+	onPosted={() => (stickNext = true)}
+/>
 <AlertSendReportModal
 	open={reportAlert !== null}
 	alertId={reportAlert?.id}

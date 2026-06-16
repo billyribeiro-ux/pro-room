@@ -65,11 +65,16 @@
 	// scrolling up to read history isn't interrupted. Measured BEFORE the DOM
 	// updates ($effect.pre — the canonical Svelte 5 chat-autoscroll pattern).
 	let messagesEl = $state<HTMLUListElement | undefined>();
+	// One-shot override set when WE send, so our own message always scrolls into
+	// view even if we'd scrolled up. Plain (non-reactive) let — only a messages
+	// change re-runs the effect, not toggling this flag.
+	let stickNext = false;
 	$effect.pre(() => {
 		if (!messagesEl) return; // not yet mounted
 		messages.length; // re-run whenever a message is added/removed
 		const atBottom = messagesEl.offsetHeight + messagesEl.scrollTop > messagesEl.scrollHeight - 40;
-		if (atBottom) {
+		if (atBottom || stickNext) {
+			stickNext = false;
 			tick().then(() => messagesEl?.scrollTo(0, messagesEl.scrollHeight));
 		}
 	});
@@ -95,6 +100,9 @@
 		const text = body.trim();
 		if (!text) return;
 		sending = true;
+		// Always scroll our own message into view when it lands (bypasses the
+		// near-bottom guard).
+		stickNext = true;
 		try {
 			await onPost(text);
 			body = '';
