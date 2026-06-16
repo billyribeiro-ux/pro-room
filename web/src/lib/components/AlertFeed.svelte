@@ -56,6 +56,9 @@
 	let note = $state('');
 	let posting = $state(false);
 
+	// Trader options for the Advanced Search multi-select = the present roster.
+	const traderOptions = $derived(present.map((p) => ({ value: p.user_id, label: p.display_name })));
+
 	// Which row's ⠿ menu is open (alert id), or null when none.
 	let openMenuId = $state<string | null>(null);
 
@@ -347,7 +350,11 @@
 	user={infoUser ?? undefined}
 	onClose={() => (infoUser = null)}
 />
-<AdvancedSearchModal open={searchOpen} onClose={() => (searchOpen = false)} />
+<AdvancedSearchModal
+	open={searchOpen}
+	traders={traderOptions}
+	onClose={() => (searchOpen = false)}
+/>
 <AlertFilterModal open={filterOpen} onClose={() => (filterOpen = false)} />
 <ScheduledAlertsModal open={scheduledOpen} onClose={() => (scheduledOpen = false)} />
 <PostAlertModal open={postAlertOpen} onClose={() => (postAlertOpen = false)} />
@@ -459,7 +466,10 @@
 
 	.msg-box {
 		position: relative;
-		padding: 0.6rem 0.85rem 0.25rem;
+		/* Reference app-st-message .msg-box is tight (pb-1 only); trim the loose top
+		   padding so rows aren't taller than the reference (insets come from the
+		   avatar gutter + body 8px margins). */
+		padding: 0.3rem 0.85rem 0.25rem;
 		/* Reference rows are white with a top divider (#e1e1e1) and flat corners. */
 		background: #ffffff;
 		border-top: 1px solid #e1e1e1;
@@ -624,6 +634,9 @@
 		/* Reference body div.text-formated.ml-2.mr-2 = 8px left + right margin. */
 		margin: 0.35rem 8px 0 8px;
 		color: #676767;
+		/* Reference .text-formated body is font-weight 100 (Open Sans Thin, now
+		   loaded). Very thin per the capture. */
+		font-weight: 100;
 		/* Reference .text-formated line-height is 1.5 (19.5px @ 13px). */
 		line-height: 1.5;
 		word-break: break-word;

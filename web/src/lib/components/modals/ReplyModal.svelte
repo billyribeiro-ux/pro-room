@@ -45,7 +45,8 @@
 		<textarea
 			bind:value={text}
 			rows="1"
-			placeholder="Write a reply…"
+			spellcheck="true"
+			placeholder="Type your message here.."
 			aria-label="Reply text"
 			onkeydown={onKeydown}
 		></textarea>

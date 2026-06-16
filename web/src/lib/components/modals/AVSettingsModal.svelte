@@ -156,14 +156,22 @@
 
 	{#if tab === 'user'}
 		<div id="av-panel-user" role="tabpanel" aria-labelledby="av-tab-user" class="panel">
-			<label class="check">
-				<input type="checkbox" bind:checked={disableVideo} />
+			<!-- Reference renders this as a clickable nav-link toggle (no checkbox input);
+			     aria-pressed exposes the on/off state the checkbox formerly carried. -->
+			<button
+				type="button"
+				class="check"
+				class:on={disableVideo}
+				title="Disable Video"
+				aria-pressed={disableVideo}
+				onclick={() => (disableVideo = !disableVideo)}
+			>
 				<Icon name="desktop" size={15} />
 				<span>Disable Video <span class="saves-bandwidth">(saves bandwidth)</span></span>
-			</label>
+			</button>
 
 			<div class="field">
-				<label class="label" for="av-speaker"><Icon name="volume-up" size={15} /> Speakers</label>
+				<label class="label" for="av-speaker"><Icon name="volume-up" size={15} /> Speakers:</label>
 				<div class="row">
 					<select id="av-speaker" bind:value={selectedSpeaker}>
 						{#if speakers.length === 0}
@@ -269,6 +277,19 @@
 		font-size: 0.86rem;
 		font-weight: 600;
 		margin-bottom: 0.9rem;
+		align-self: flex-start;
+		background: transparent;
+		border: none;
+		color: var(--text-dim);
+		padding: 0;
+		cursor: pointer;
+		font-family: inherit;
+	}
+	.check:hover {
+		color: var(--text);
+	}
+	.check.on {
+		color: var(--accent);
 	}
 	.saves-bandwidth {
 		color: var(--text-dim);

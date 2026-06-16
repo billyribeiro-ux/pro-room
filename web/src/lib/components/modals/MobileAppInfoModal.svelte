@@ -19,14 +19,19 @@
 	     badges, Google Play FIRST then App Store (files/file2.html). No intro line. -->
 	<div class="badges">
 		<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-		<a class="badge" href="https://play.google.com/store" target="_blank" rel="noopener noreferrer">
+		<a
+			class="badge"
+			href="https://play.google.com/store/apps/details?id=com.bellesoft.stprotradingroom&hl=en&gl=US"
+			target="_blank"
+			rel="noopener noreferrer"
+		>
 			<Icon name="google-play" size={26} family="brands" />
 			<span class="txt"><small>Get it on</small><strong>Google Play</strong></span>
 		</a>
 		<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
 		<a
 			class="badge"
-			href="https://www.apple.com/app-store/"
+			href="https://apps.apple.com/us/app/simpler-trading-mobile/id1278652736"
 			target="_blank"
 			rel="noopener noreferrer"
 		>

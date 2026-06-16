@@ -13,8 +13,14 @@
 		open: boolean;
 		onClose: () => void;
 		threads?: PmThread[];
+		/**
+		 * While the PM list is fetching, the reference body is a centered
+		 * "Loading..." spinner (`fas fa-spinner fa-spin`). Optional with a safe
+		 * default so the modal still works standalone (renders threads/empty).
+		 */
+		loading?: boolean;
 	}
-	let { open, onClose, threads = [] }: Props = $props();
+	let { open, onClose, threads = [], loading = false }: Props = $props();
 
 	/** First letter of the thread name, upper-cased, for the avatar fallback. */
 	function initial(name: string): string {
@@ -28,7 +34,15 @@
 
 <!-- Reference h5 is "All private messages:" (trailing colon + dynamic count slot). -->
 <Modal {open} {onClose} title="All private messages:" {footer}>
-	{#if threads.length === 0}
+	{#if loading}
+		<!-- Reference loading body: centered "Loading..." spinner while PMs fetch. -->
+		<div class="loading">
+			<h5>
+				<Icon name="spinner" size={20} class="fa-spin" />
+				Loading...
+			</h5>
+		</div>
+	{:else if threads.length === 0}
 		<div class="empty">
 			<Icon name="envelope" size={28} />
 			<p>No private messages.</p>
@@ -50,6 +64,23 @@
 </Modal>
 
 <style>
+	.loading {
+		text-align: center;
+		margin: 1.5rem 0;
+		color: var(--text-dim);
+	}
+	.loading h5 {
+		margin: 0;
+		font-size: 1rem;
+		font-weight: 600;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+	.loading :global(svg),
+	.loading :global(i) {
+		color: var(--text-dim);
+	}
 	.empty {
 		display: flex;
 		flex-direction: column;

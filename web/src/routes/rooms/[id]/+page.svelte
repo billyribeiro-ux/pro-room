@@ -103,16 +103,17 @@
 	);
 	const splitInitial = $derived(
 		// Measured from the live reference at desktop width: the alerts/chat column
-		// is ~28.5% (290px of 1017) and the presentation area ~70.4% (716px). Pane A
-		// is the dock for left/top and the stage for right/bottom.
+		// is ~21.24% and the presentation area ~78.76%. Pane A is the dock for
+		// left/top and the stage for right/bottom. (Ratios scale a little with
+		// viewport; this matches the captured 1989px desktop split.)
 		narrow.current
 			? 45
 			: layout.position === 'left'
-				? 28.5
+				? 21.5
 				: layout.position === 'top'
 					? 40
 					: layout.position === 'right'
-						? 70.5
+						? 78.5
 						: 60
 	);
 
@@ -432,20 +433,42 @@
 {#snippet stageActions()}
 	{#if caps?.can_publish_screen && !screenDisabled}
 		{#if screen.publishing}
-			<button class="ctrl stop" onclick={() => screen.stopSharing()} title="Stop sharing" aria-label="Stop sharing">
+			<button
+				class="ctrl stop"
+				onclick={() => screen.stopSharing()}
+				title="Stop sharing"
+				aria-label="Stop sharing"
+			>
 				<Icon name="stop-circle" />
 			</button>
 		{:else}
-			<button class="ctrl" onclick={() => screen.startSharing()} disabled={!screen.connected} title="Share screen" aria-label="Share screen">
+			<button
+				class="ctrl"
+				onclick={() => screen.startSharing()}
+				disabled={!screen.connected}
+				title="Share screen"
+				aria-label="Share screen"
+			>
 				<Icon name="desktop" />
 			</button>
 		{/if}
 		{#if screen.cameraPublishing}
-			<button class="ctrl stop" onclick={() => screen.stopCamera()} title="Stop camera" aria-label="Stop camera">
+			<button
+				class="ctrl stop"
+				onclick={() => screen.stopCamera()}
+				title="Stop camera"
+				aria-label="Stop camera"
+			>
 				<Icon name="video-slash" />
 			</button>
 		{:else}
-			<button class="ctrl" onclick={() => screen.startCamera()} disabled={!screen.connected} title="Camera" aria-label="Camera">
+			<button
+				class="ctrl"
+				onclick={() => screen.startCamera()}
+				disabled={!screen.connected}
+				title="Camera"
+				aria-label="Camera"
+			>
 				<Icon name="video" />
 			</button>
 		{/if}
@@ -459,15 +482,32 @@
 			>
 				<Icon name={screen.micMuted ? 'microphone-slash' : 'microphone'} />
 			</button>
-			<button class="ctrl" onclick={() => screen.stopMic()} title="Stop microphone" aria-label="Stop microphone">
+			<button
+				class="ctrl"
+				onclick={() => screen.stopMic()}
+				title="Stop microphone"
+				aria-label="Stop microphone"
+			>
 				<Icon name="microphone-slash" />
 			</button>
 		{:else}
-			<button class="ctrl" onclick={() => screen.startMic()} disabled={!screen.connected} title="Microphone" aria-label="Microphone">
+			<button
+				class="ctrl"
+				onclick={() => screen.startMic()}
+				disabled={!screen.connected}
+				title="Microphone"
+				aria-label="Microphone"
+			>
 				<Icon name="microphone" />
 			</button>
 		{/if}
-		<button class="ctrl" class:live-on={captionsOn} onclick={() => (captionsOn = !captionsOn)} title="Captions (CC)" aria-label="Captions">
+		<button
+			class="ctrl"
+			class:live-on={captionsOn}
+			onclick={() => (captionsOn = !captionsOn)}
+			title="Captions (CC)"
+			aria-label="Captions"
+		>
 			<Icon name="closed-captioning" />
 		</button>
 		<button class="ctrl" onclick={() => (showMediaModal = true)} title="Music" aria-label="Music">
@@ -491,7 +531,12 @@
 		</button>
 	{/if}
 	{#if caps?.can_manage_members}
-		<button class="ctrl" onclick={() => (showMembers = !showMembers)} title="Members" aria-label="Members">
+		<button
+			class="ctrl"
+			onclick={() => (showMembers = !showMembers)}
+			title="Members"
+			aria-label="Members"
+		>
 			<Icon name="cog" />
 		</button>
 	{/if}

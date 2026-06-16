@@ -58,32 +58,57 @@
 
 <Modal {open} {onClose} title="User Info" {header} {footer}>
 	<!-- Reference body: a nav-tabs strip with an #nav-info pane holding a key/value
-	     details table. -->
-	<div class="tabs" role="tablist" aria-label="User detail tabs">
-		<button class="tab active" role="tab" aria-selected="true" type="button">Info</button>
-	</div>
+	     details table. The `user-info-body` marker class is what the
+	     `:global(.panel:has(.user-info-body))` rule keys on to widen this dialog
+	     to the reference's 600px (DebugLogModal precedent). -->
+	<div class="user-info-body">
+		<div class="tabs" role="tablist" aria-label="User detail tabs">
+			<button class="tab active" role="tab" aria-selected="true" type="button">Info</button>
+		</div>
 
-	<table class="details">
-		<tbody>
-			<tr>
-				<th scope="row">Name</th>
-				<td>{name}</td>
-			</tr>
-			<tr>
-				<th scope="row">Status</th>
-				<td>{online ? 'Online' : 'Offline'}</td>
-			</tr>
-			{#if user?.user_id}
+		<table class="details">
+			<tbody>
 				<tr>
-					<th scope="row">User ID</th>
-					<td class="mono">{user.user_id}</td>
+					<th scope="row">Name</th>
+					<td>{name}</td>
 				</tr>
-			{/if}
-		</tbody>
-	</table>
+				<tr>
+					<th scope="row">Status</th>
+					<td>{online ? 'Online' : 'Offline'}</td>
+				</tr>
+				{#if user?.user_id}
+					<tr>
+						<th scope="row">User ID</th>
+						<td class="mono">{user.user_id}</td>
+					</tr>
+				{/if}
+			</tbody>
+		</table>
+	</div>
 </Modal>
 
 <style>
+	/* Widen the shared Modal shell to the reference's #user-modal .modal-dialog
+	   max-width:600px only when it hosts this content (DebugLogModal precedent).
+	   Keyed on the .user-info-body marker so no edit to Modal.svelte is needed. */
+	:global(.panel:has(.user-info-body)) {
+		max-width: 600px;
+	}
+	/* Reference #user-modal .modal-footer lays the 5 buttons out at width:23%
+	   margin:4px so they distribute across the 600px row (Bootstrap modal-footer
+	   wraps + justify-content). Scope the footer overrides to this dialog only. */
+	:global(.panel:has(.user-info-body)) :global(.foot) {
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 0;
+	}
+	:global(.panel:has(.user-info-body)) :global(.foot) > .action,
+	:global(.panel:has(.user-info-body)) :global(.foot) > .close-btn {
+		width: 23%;
+		margin: 4px;
+		justify-content: center;
+	}
+
 	.identity {
 		display: flex;
 		align-items: center;

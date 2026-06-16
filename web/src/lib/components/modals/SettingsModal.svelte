@@ -199,6 +199,9 @@
 					</label>
 				{/each}
 			</div>
+			<!-- Reference renders <hr/> after the Room Layout radios, before the
+			     PM-logs checkbox, to separate the layout grid from its option. -->
+			<hr />
 			<label class="check">
 				<input
 					type="checkbox"
@@ -228,9 +231,11 @@
 			</ul>
 			<div class="size-row">
 				<label class="size-label" for="settings-text-size">Text Size</label>
+				<!-- Reference uses an <input type="number"> stepper (not a range slider),
+				     which avoids hard-clamping the typed value to min/max. -->
 				<input
 					id="settings-text-size"
-					type="range"
+					type="number"
 					min="10"
 					max="28"
 					step="1"
@@ -261,18 +266,22 @@
 				<label class="check">
 					<input type="checkbox" bind:checked={appDnd.startRecordingSound} />
 					<span>Start recording sound</span>
+					<span class="state">{appDnd.startRecordingSound ? 'on' : 'off'}</span>
 				</label>
 				<label class="check">
 					<input type="checkbox" bind:checked={appDnd.stopRecordingSound} />
 					<span>Stop recording sound</span>
+					<span class="state">{appDnd.stopRecordingSound ? 'on' : 'off'}</span>
 				</label>
 				<label class="check">
 					<input type="checkbox" bind:checked={appDnd.reactionsResponse} />
 					<span>Reactions Response</span>
+					<span class="state">{appDnd.reactionsResponse ? 'on' : 'off'}</span>
 				</label>
 				<label class="check">
 					<input type="checkbox" bind:checked={appDnd.reactionsQaResponse} />
 					<span>Reactions QA Response</span>
+					<span class="state">{appDnd.reactionsQaResponse ? 'on' : 'off'}</span>
 				</label>
 			</div>
 
@@ -333,22 +342,30 @@
 				<label class="check">
 					<input type="checkbox" bind:checked={alertDnd.alertQaPopup} />
 					<span>Alert / QA Popup</span>
+					<span class="state">{alertDnd.alertQaPopup ? 'on' : 'off'}</span>
 				</label>
+				<!-- Reference renders <hr/> after the Alert / QA Popup toggle to split
+				     the popup control from the sound toggles below. -->
+				<hr />
 				<label class="check">
 					<input type="checkbox" bind:checked={alertDnd.alertSound} />
 					<span>Alert sound</span>
+					<span class="state">{alertDnd.alertSound ? 'on' : 'off'}</span>
 				</label>
 				<label class="check">
 					<input type="checkbox" bind:checked={alertDnd.qaSound} />
 					<span>QA sound</span>
+					<span class="state">{alertDnd.qaSound ? 'on' : 'off'}</span>
 				</label>
 				<label class="check">
 					<input type="checkbox" bind:checked={alertDnd.qaReactionsSound} />
 					<span>QA Reactions Sound</span>
+					<span class="state">{alertDnd.qaReactionsSound ? 'on' : 'off'}</span>
 				</label>
 				<label class="check">
 					<input type="checkbox" bind:checked={alertDnd.nonTradeAlertSound} />
 					<span>Non-trade alert sound</span>
+					<span class="state">{alertDnd.nonTradeAlertSound ? 'on' : 'off'}</span>
 				</label>
 			</div>
 
@@ -360,6 +377,7 @@
 			<label class="check">
 				<input type="checkbox" bind:checked={alertLongerPopup} />
 				<span>Longer alert popup</span>
+				<span class="state">{alertLongerPopup ? 'on' : 'off'}</span>
 			</label>
 			<!-- Filter out alerts — integration phase points this at AlertFilterModal. -->
 			<button class="btn ghost wide" type="button" onclick={() => onFilterAlerts?.()}>
@@ -392,6 +410,7 @@
 			<label class="check">
 				<input type="checkbox" bind:checked={chatSmallerImagePreview} />
 				<span>Smaller image preview</span>
+				<span class="state">{chatSmallerImagePreview ? 'on' : 'off'}</span>
 			</label>
 
 			<!-- Do not disturb -->
@@ -403,18 +422,25 @@
 				<label class="check">
 					<input type="checkbox" bind:checked={chatDnd.gif} />
 					<span>Gif</span>
+					<span class="state">{chatDnd.gif ? 'on' : 'off'}</span>
 				</label>
 				<label class="check">
 					<input type="checkbox" bind:checked={chatDnd.badges} />
 					<span>Badges</span>
+					<span class="state">{chatDnd.badges ? 'on' : 'off'}</span>
 				</label>
 				<label class="check">
 					<input type="checkbox" bind:checked={chatDnd.chatPmPopup} />
 					<span>Chat / PM Popup</span>
+					<span class="state">{chatDnd.chatPmPopup ? 'on' : 'off'}</span>
 				</label>
+				<!-- Reference renders <hr/> after the Chat / PM Popup toggle to split
+				     the popup control from the chat sound toggle below. -->
+				<hr />
 				<label class="check">
 					<input type="checkbox" bind:checked={chatDnd.chatSound} />
 					<span>Chat sound</span>
+					<span class="state">{chatDnd.chatSound ? 'on' : 'off'}</span>
 				</label>
 			</div>
 
@@ -426,6 +452,7 @@
 			<label class="check">
 				<input type="checkbox" bind:checked={chatExtraColumn} />
 				<span>Chat column</span>
+				<span class="state">{chatExtraColumn ? 'on' : 'off'}</span>
 			</label>
 
 			<!-- Always Scroll To Bottom -->
@@ -436,6 +463,7 @@
 			<label class="check">
 				<input type="checkbox" bind:checked={chatAlwaysScrollBottom} />
 				<span>Always scroll to bottom</span>
+				<span class="state">{chatAlwaysScrollBottom ? 'on' : 'off'}</span>
 			</label>
 
 			<!-- Reduce Chatlog Memory -->
@@ -447,10 +475,12 @@
 				<label class="check">
 					<input type="checkbox" bind:checked={chatReduceMemory} />
 					<span>Reduce Chatlog Memory</span>
+					<span class="state">{chatReduceMemory ? 'on' : 'off'}</span>
 				</label>
 				<label class="check">
 					<input type="checkbox" bind:checked={chatTabSleep} />
 					<span>Tab sleep optimization</span>
+					<span class="state">{chatTabSleep ? 'on' : 'off'}</span>
 				</label>
 			</div>
 		</div>
@@ -543,10 +573,30 @@
 		cursor: pointer;
 	}
 	/* Standalone checkbox rows (not inside a `.checks` group) need their own
-	   top gap so they don't crowd the control above. */
-	.check + .check,
-	.radios + .check {
+	   top gap so they don't crowd the control above. The Room-Layout PM-logs row
+	   is now separated by an <hr/> instead, so only the `.check + .check`
+	   adjacency remains. */
+	.check + .check {
 		margin-top: 0.4rem;
+	}
+
+	/* Trailing live on/off state word the reference shows on each toggle label.
+	   `margin-left: auto` floats it to the right edge of the row. */
+	.state {
+		margin-left: auto;
+		font-size: 0.75rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		color: var(--text-dim);
+	}
+
+	/* Reference dividers between control sub-groups (after Room Layout, after the
+	   Alert / QA Popup toggle, and after the Chat / PM Popup toggle). */
+	hr {
+		border: none;
+		border-top: 1px solid var(--border);
+		margin: 0.6rem 0;
 	}
 
 	.colors {
@@ -600,9 +650,19 @@
 		font-weight: 600;
 		flex: 0 0 auto;
 	}
-	.size-row input[type='range'] {
-		flex: 1;
+	.size-row input[type='number'] {
+		width: 5rem;
+		background: var(--bg-elev);
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+		color: var(--text);
+		padding: 0.4rem 0.5rem;
+		font-weight: 600;
 		accent-color: var(--accent);
+	}
+	.size-row input[type='number']:focus {
+		outline: none;
+		border-color: var(--accent);
 	}
 	.size-val {
 		font-variant-numeric: tabular-nums;

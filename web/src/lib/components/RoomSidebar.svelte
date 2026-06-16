@@ -50,7 +50,12 @@
 			{/if}
 			<p class="powered-by">
 				Powered by:
-				<a class="ptr-website-link" href="https://www.protradingroom.com" target="_blank" rel="noopener noreferrer">ProTradingRoom.com</a>
+				<a
+					class="ptr-website-link"
+					href="https://www.protradingroom.com"
+					target="_blank"
+					rel="noopener noreferrer">ProTradingRoom.com</a
+				>
 			</p>
 			<p class="version">Version: v0.0.1</p>
 			<p class="powered-cta">
@@ -68,7 +73,9 @@
 		<hr class="sep" />
 
 		<p class="caps">
-			Chat <Icon name="check" size={14} /><span class="cap-media">Media <Icon name="check" size={14} /></span>
+			Chat <Icon name="check" size={14} /><span class="cap-media"
+				>Media <Icon name="check" size={14} /></span
+			>
 		</p>
 
 		<nav class="menu">
@@ -131,13 +138,18 @@
 					>
 						<Icon name="comment" size={14} /><span class="label">Chat Logs</span>
 					</button>
-					<button class="sub-item" aria-label="Transcript History" title="Transcript History" disabled>
+					<button
+						class="sub-item"
+						aria-label="Transcript History"
+						title="Transcript History"
+						disabled
+					>
 						<Icon name="closed-captioning" size={14} /><span class="label">Transcript History</span>
 					</button>
 				</div>
 			</div>
 
-			<div class="nav-item">
+			<div class="nav-item compact">
 				<button
 					class="item item-ps"
 					aria-label="Manage Muted Users"
@@ -148,7 +160,7 @@
 				</button>
 			</div>
 
-			<div class="nav-item">
+			<div class="nav-item compact">
 				<button
 					class="item item-ps"
 					aria-label="Manage Followed Users"
@@ -177,7 +189,9 @@
 							title="Play YouTube Video"
 							onclick={() => (playYoutubeOpen = true)}
 						>
-							<Icon name="youtube" family="brands" size={14} /><span class="label">Play YouTube Video</span>
+							<Icon name="youtube" family="brands" size={14} /><span class="label"
+								>Play YouTube Video</span
+							>
 						</button>
 						<button
 							class="sub-item"
@@ -354,11 +368,14 @@
 		border-color: #565e64;
 	}
 
-	/* Reference hr: margin 5px 0, border-top 1px solid #676767 (246px wide). */
+	/* Reference hr: margin 5px 0, border-top 1px solid #676767 (246px wide),
+	   opacity 0.25 (Bootstrap default hr) so the line reads as a faint
+	   ~#c9c9c9 rather than a solid mid-gray. */
 	.sep {
 		margin: 5px 0;
 		border: none;
 		border-top: 1px solid #676767;
+		opacity: 0.25;
 	}
 
 	/* Reference p (Chat/Media ticks): margin-bottom 8px, no padding, centered. */
@@ -387,6 +404,11 @@
 	.nav-item {
 		padding: 5px 2px;
 	}
+	/* Reference li.nav-item.py-0 (Manage Muted / Manage Followed Users):
+	   0 vertical padding → 38px rows vs the 48px default rows. */
+	.nav-item.compact {
+		padding: 0 2px;
+	}
 	/* Reference a.nav-link.sidebar-item: padding 8px 0, margin 0 5px, 14px,
 	   weight 700, color #676767, full-width (236px inside 250). */
 	.item {
@@ -395,7 +417,9 @@
 		width: auto;
 		text-align: left;
 		background: transparent;
-		border: none;
+		/* Reserve the 1px transparent border in the base state (reference
+		   .sidebar-item) so the :hover border doesn't shift the row geometry. */
+		border: 1px solid transparent;
 		color: #676767;
 		border-radius: 0;
 		padding: 8px 0;
@@ -408,9 +432,15 @@
 	.item-ps {
 		padding-left: 4px;
 	}
+	/* Reference .sidebar-menu:hover only shifts the text color toward
+	   --lighter-gray (#eee on the dark skin) with a 1px transparent border and
+	   NO background fill. On this light skin the equivalent prominence shift is
+	   toward a darker readable gray (#212529, the file's existing dark token).
+	   Border stays transparent (reserved in the base rule, no geometry shift). */
 	.item:hover:not(:disabled) {
-		background: #e9ecef;
-		color: var(--accent);
+		color: #212529;
+		border-color: transparent;
+		background: transparent;
 	}
 	.item:disabled {
 		opacity: 0.6;
@@ -440,7 +470,8 @@
 		width: auto;
 		text-align: left;
 		background: transparent;
-		border: none;
+		/* Reserve the 1px transparent border so :hover doesn't shift geometry. */
+		border: 1px solid transparent;
 		color: #676767;
 		border-radius: 0;
 		padding: 8px 0.6rem 8px 1.4rem;
@@ -448,9 +479,12 @@
 		font-weight: 700;
 		cursor: pointer;
 	}
+	/* Reference .sidebar-menu:hover: text→darker readable gray, transparent
+	   border, NO #e9ecef background fill. */
 	.sub-item:hover:not(:disabled) {
-		background: #e9ecef;
-		color: var(--accent);
+		color: #212529;
+		border-color: transparent;
+		background: transparent;
 	}
 	.sub-item:disabled {
 		opacity: 0.6;

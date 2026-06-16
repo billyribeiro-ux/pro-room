@@ -15,7 +15,7 @@
 
 <Modal {open} {onClose} title="Muted Chat Users" {footer}>
 	<!-- Reference body is a single centered text node, no icon. -->
-	<div class="empty">You don't have any muted chat users.</div>
+	<div class="empty">You don't have any muted/ignored users.</div>
 </Modal>
 
 <style>

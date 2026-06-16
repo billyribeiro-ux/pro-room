@@ -53,6 +53,9 @@
 	let body = $state('');
 	let sending = $state(false);
 
+	// Trader options for the Advanced Search multi-select = the present roster.
+	const traderOptions = $derived(present.map((p) => ({ value: p.user_id, label: p.display_name })));
+
 	// Which row's ⠿ menu is open (message id), or null when none.
 	let openMenuId = $state<string | null>(null);
 
@@ -287,7 +290,11 @@
 	user={infoUser ?? undefined}
 	onClose={() => (infoUser = null)}
 />
-<AdvancedSearchModal open={searchOpen} onClose={() => (searchOpen = false)} />
+<AdvancedSearchModal
+	open={searchOpen}
+	traders={traderOptions}
+	onClose={() => (searchOpen = false)}
+/>
 <SettingsModal open={settingsOpen} onClose={() => (settingsOpen = false)} />
 
 <style>

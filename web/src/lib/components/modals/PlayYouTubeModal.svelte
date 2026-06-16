@@ -59,7 +59,7 @@
 		<input
 			class="input"
 			class:invalid={error}
-			type="url"
+			type="text"
 			inputmode="url"
 			placeholder="Paste YouTube URL"
 			bind:value={url}

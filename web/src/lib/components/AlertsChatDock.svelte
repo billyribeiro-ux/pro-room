@@ -59,7 +59,9 @@
 		return Math.min(hi, Math.max(lo, n));
 	}
 
-	let alertsFraction = $state(clamp(loadNumber(FRACTION_KEY, 0.5), MIN_FRACTION, MAX_FRACTION));
+	// Reference dock is alerts-dominant: the alert-chat-box vertical split puts the
+	// alerts pane at ~0.814 of the column height (capture), not an even 50/50.
+	let alertsFraction = $state(clamp(loadNumber(FRACTION_KEY, 0.814), MIN_FRACTION, MAX_FRACTION));
 	let dragging = $state(false);
 
 	let columnEl: HTMLDivElement | null = null;
@@ -94,7 +96,7 @@
 	}
 
 	function resetHeight() {
-		alertsFraction = 0.5;
+		alertsFraction = 0.814;
 	}
 </script>
 

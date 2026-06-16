@@ -138,15 +138,16 @@
 	}
 
 	.name {
-		/* Reference pNameLabel: full-width centered black bar, white text, 20px
-		   line, weight 500, margin 0. */
+		/* Reference pNameLabel (h5): full-width centered black bar, white text,
+		   20px / weight 500 / 24px line, margin 0, height collapses to content
+		   (~24px) — let it size to the line rather than forcing 20px. */
 		margin: 0;
 		width: 100%;
-		height: 20px;
-		line-height: 20px;
+		min-height: 24px;
+		line-height: 24px;
 		background: rgba(0, 0, 0, 0.5);
 		color: #fff;
-		font-size: 16px;
+		font-size: 20px;
 		font-weight: 500;
 		text-align: center;
 		overflow: hidden;

@@ -254,8 +254,19 @@
 					void send();
 				}}
 			>
-				<textarea bind:value={draft} placeholder="Ask a question about this alert…" rows="2"
-				></textarea>
+				<div class="compose-row">
+					<textarea bind:value={draft} placeholder="Type your question here..." rows="1"></textarea>
+					<!-- Reference Q&A composer has emoji + image affordances beside the textarea
+					     (.textAreaBtnsCol), mirroring the ReplyModal .tools pattern. -->
+					<div class="tools">
+						<button type="button" class="tool" aria-label="Add emoji" title="Add Emojis">
+							<Icon name="smile" family="regular" size={16} />
+						</button>
+						<button type="button" class="tool" aria-label="Upload an image" title="Upload an Image">
+							<Icon name="image" size={16} />
+						</button>
+					</div>
+				</div>
 				{#if composeError}<p class="field-err">{composeError}</p>{/if}
 				<div class="composer-actions">
 					<button type="submit" class="primary" disabled={sending}>
@@ -496,6 +507,37 @@
 	.composer-actions {
 		display: flex;
 		justify-content: flex-end;
+	}
+	/* Textarea + emoji/image tools share a row in the composer (reference .textAreaBtnsCol). */
+	.compose-row {
+		display: flex;
+		align-items: stretch;
+		gap: 0.5rem;
+	}
+	.compose-row textarea {
+		flex: 1;
+		min-width: 0;
+	}
+	.tools {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
+	.tool {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		background: transparent;
+		border: 1px solid var(--border);
+		color: var(--text-dim);
+		border-radius: 7px;
+		padding: 0.4rem;
+		line-height: 0;
+		cursor: pointer;
+	}
+	.tool:hover {
+		color: var(--accent);
+		border-color: var(--accent);
 	}
 
 	textarea {

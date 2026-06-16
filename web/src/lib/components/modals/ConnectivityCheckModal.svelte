@@ -68,7 +68,7 @@
 	<button class="btn primary" type="button" onclick={startTest} disabled={running}>
 		{running ? 'Testing…' : 'Start Test'}
 	</button>
-	<button class="btn ghost" type="button" onclick={copyResults}>
+	<button class="btn success" type="button" onclick={copyResults}>
 		<Icon name="copy" size={14} /> Copy Results
 	</button>
 	<button class="btn ghost" type="button" onclick={onClose}>Close</button>
@@ -154,5 +154,15 @@
 	.btn.primary:disabled {
 		opacity: 0.6;
 		cursor: not-allowed;
+	}
+	/* Darkly btn-success — filled green, matching the reference Copy Results button. */
+	.btn.success {
+		background: var(--modal-success, #00bc8c);
+		border-color: var(--modal-success, #00bc8c);
+		color: #fff;
+	}
+	.btn.success:hover {
+		background: color-mix(in srgb, var(--modal-success, #00bc8c) 88%, #000);
+		border-color: color-mix(in srgb, var(--modal-success, #00bc8c) 88%, #000);
 	}
 </style>

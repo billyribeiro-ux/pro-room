@@ -14,6 +14,13 @@
 		onClose: () => void;
 		alertId?: string;
 		stats?: Stats;
+		/**
+		 * While the send-report payload fetches, the reference body is a centered
+		 * "Loading..." spinner (`fas fa-spinner fa-spin`) shown in place of the
+		 * stats grid. Optional with a safe default so the modal still works
+		 * standalone (renders the placeholder cards immediately).
+		 */
+		loading?: boolean;
 	}
 
 	// PLACEHOLDER STATS — the real send-report payload (delivery summary, push/open
@@ -21,7 +28,7 @@
 	// defaults render the loaded layout with representative numbers until then.
 	const placeholderStats: Stats = { recipients: 0, delivered: 0, push: 0, opened: 0 };
 
-	let { open, onClose, alertId, stats = placeholderStats }: Props = $props();
+	let { open, onClose, alertId, stats = placeholderStats, loading = false }: Props = $props();
 
 	// Reference title: "Alert Sent Report. AlertID: <id>". When no id is supplied
 	// we fall back to an em dash so the colon never dangles.
@@ -58,22 +65,33 @@
 		<p>Delivery report for this alert across in-app, push, and email channels.</p>
 	</div>
 
-	<ul class="stats">
-		{#each formatted as metric (metric.key)}
-			<li class="card {metric.tone}">
-				<span class="icon" aria-hidden="true">
-					<Icon name={metric.icon} size={18} />
-				</span>
-				<span class="value">{metric.value}</span>
-				<span class="label">{metric.label}</span>
-			</li>
-		{/each}
-	</ul>
+	{#if loading}
+		<!-- Reference loading body: centered "Loading..." spinner shown in place of
+		     the stats grid until the real delivery payload arrives. -->
+		<div class="loading">
+			<h5>
+				<Icon name="spinner" size={20} class="fa-spin" />
+				Loading...
+			</h5>
+		</div>
+	{:else}
+		<ul class="stats">
+			{#each formatted as metric (metric.key)}
+				<li class="card {metric.tone}">
+					<span class="icon" aria-hidden="true">
+						<Icon name={metric.icon} size={18} />
+					</span>
+					<span class="value">{metric.value}</span>
+					<span class="label">{metric.label}</span>
+				</li>
+			{/each}
+		</ul>
 
-	<p class="note">
-		<Icon name="info-circle" size={15} />
-		<span>Showing placeholder figures — live delivery data wires in later.</span>
-	</p>
+		<p class="note">
+			<Icon name="info-circle" size={15} />
+			<span>Showing placeholder figures — live delivery data wires in later.</span>
+		</p>
+	{/if}
 </Modal>
 
 <style>
@@ -91,6 +109,23 @@
 	}
 	.summary p {
 		margin: 0;
+	}
+	.loading {
+		text-align: center;
+		margin: 1.5rem 0;
+		color: var(--text-dim);
+	}
+	.loading h5 {
+		margin: 0;
+		font-size: 1rem;
+		font-weight: 600;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+	.loading :global(svg),
+	.loading :global(i) {
+		color: var(--text-dim);
 	}
 	.stats {
 		list-style: none;

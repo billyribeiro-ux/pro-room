@@ -27,8 +27,9 @@
 		publishers: SharePublisher[];
 		connected: boolean;
 		/**
-		 * Presenter camera feeds, rendered as a strip above the tabs (matches the
-		 * reference's `app-webcam-holder` placement). Hidden when empty.
+		 * Presenter camera feeds, rendered as an absolute overlay floated at the
+		 * bottom of the presentation panel (matches the reference's
+		 * `app-webcam-holder` placement). Hidden when empty.
 		 */
 		webcamPublishers?: WebcamPublisher[];
 		/** Turn off the local user's camera (the × on their own tile). */
@@ -76,12 +77,6 @@
 </script>
 
 <div class="main-stage">
-	{#if webcamPublishers.length > 0}
-		<div class="webcam-strip">
-			<WebcamHolder publishers={webcamPublishers} onClose={onWebcamClose} />
-		</div>
-	{/if}
-
 	<div class="tabbar" role="tablist" aria-label="Room panels">
 		{#each TABS as t (t.id)}
 			<button
@@ -114,6 +109,15 @@
 			<FilesPanel {roomId} {canManage} />
 		{/if}
 		<CaptionsOverlay active={captionsActive} />
+
+		{#if webcamPublishers.length > 0}
+			<!-- Reference app-webcam-holder floats ABSOLUTE at the bottom of the
+			     presentation area, overlaying the screen (not an in-flow strip).
+			     Only renders with a live camera publisher → live-verify placement. -->
+			<div class="webcam-overlay">
+				<WebcamHolder publishers={webcamPublishers} onClose={onWebcamClose} />
+			</div>
+		{/if}
 	</div>
 </div>
 
@@ -130,10 +134,19 @@
 		overflow: hidden;
 		background: var(--bg-elev);
 	}
-	.webcam-strip {
-		flex-shrink: 0;
-		border-bottom: 1px solid var(--border);
-		background: var(--bg-elev-2);
+	/* Reference app-webcam-holder: absolute, pinned to the bottom of the
+	   presentation area, floating over the screen. */
+	.webcam-overlay {
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		z-index: 5;
+		/* Clicks fall through the empty overlay; the tiles re-enable themselves. */
+		pointer-events: none;
+	}
+	.webcam-overlay :global(.holder) {
+		pointer-events: auto;
 	}
 	.tabbar {
 		display: flex;
