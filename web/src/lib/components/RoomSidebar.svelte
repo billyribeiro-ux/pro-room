@@ -301,7 +301,7 @@
 />
 <SessionControlModal open={sessionControlOpen} onClose={() => (sessionControlOpen = false)} />
 <DebugLogModal open={debugLogOpen} onClose={() => (debugLogOpen = false)} log={debugLogText()} />
-<AllUserPmModal open={allPmOpen} onClose={() => (allPmOpen = false)} />
+<AllUserPmModal open={allPmOpen} onClose={() => (allPmOpen = false)} {roomId} {present} />
 
 <style>
 	/* In-flow push rail (matches the reference room-sidebar): when open it takes
