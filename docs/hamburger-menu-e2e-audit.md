@@ -13,8 +13,8 @@ Legend: ✅ works end-to-end · 🟡 partial (opens + some real behavior, but ke
 | 5 | **Archives → Alert Logs** | 🔴 | `logs` is a hardcoded `[]`; `reload()` body is empty; **no backend route** for alert-log archives. Live: opens empty, "Reload Log List" does nothing. |
 | 6 | **Archives → Chat Logs** | 🔴 | Same — empty array, dead `reload()`, no backend. Live: opens empty. |
 | 7 | **Archives → Transcript History** | ⛔ | Button `disabled` in source. |
-| 8 | **Manage Muted Users** | 🔴 | Always static "no muted users" text; **no mute/unmute action, no per-user mute backend** (only room-wide mute-all exists, different feature). Live: only Close. |
-| 9 | **Manage Followed Users** | 🔴 | Static "no followed users"; no follow data/action; **no follow backend**. Live: only Close. |
+| 8 | **Manage Muted Users** | ✅ **DONE** | Implemented client-side (commit e702a8b) — matches the original (no backend): Mute toggles a localStorage list from the User Info modal, muted users' chat is filtered, the modal lists them + Unmute. Live E2E verified. |
+| 9 | **Manage Followed Users** | ✅ **DONE** | Implemented client-side (commit e702a8b) — Follow toggles a localStorage list; modal lists followed users + Unfollow. Live E2E verified. |
 | 10 | **Admin → All Private Messages** | 🔴 | Always "No private messages"; **no PM fetch, no PM backend** (only room chat messages exist). Live: only Close. |
 | 11 | **Admin → Play YouTube Video** | 🔴 | URL input validates, but **Save/Play For All are no-ops** (`onPlay`/`onSave` not wired) and there's **no YouTube broadcast backend**. Live: opens, buttons inert. |
 | 12 | **Admin → Session Control** | ✅ | All 5 actions hit real, routed backend endpoints: **Lock/Unlock** (`POST /admin/lock`), **Lock screen** (`/admin/lock-screen`), **Mute all** (`/admin/mute-all`), **Clear chat** (`/admin/clear-chat`), **Kick duplicates** (`/admin/kick-duplicates`). Live: 6 action buttons present + wired. (Caveat: "Lock session & **kick users**" label is misleading — lock doesn't kick existing members; mute/lock-screen state is ephemeral by design.) |
