@@ -12,6 +12,7 @@
 	import ScheduledAlertsModal from './modals/ScheduledAlertsModal.svelte';
 	import AlertSendReportModal from './modals/AlertSendReportModal.svelte';
 	import Icon from './Icon.svelte';
+	import { prefs } from '$lib/stores/prefs.svelte';
 
 	export type AlertItem = Alert & {
 		author_name?: string;
@@ -228,7 +229,12 @@
 		</div>
 	</header>
 
-	<ul class="feed" bind:this={feedEl}>
+	<ul
+		class="feed"
+		class:compact={prefs.alertMode === 'compact'}
+		class:small-images={prefs.smallImagePreview}
+		bind:this={feedEl}
+	>
 		{#each alerts as a, i (a.id)}
 			{@const prev = alerts[i - 1]}
 			{@const newDay = !prev || dayKey(prev.created_at) !== dayKey(a.created_at)}
@@ -682,6 +688,23 @@
 		margin-top: 0.5rem;
 		border-radius: 6px;
 		object-fit: cover;
+	}
+	/* "Smaller image preview" (reference smallImagePreview): shrink the inline
+	   posted alert image. */
+	.feed.small-images .alert-img {
+		max-width: 120px;
+	}
+	/* "Compact Mode" (reference switchAlertMode 'c'): denser alert rows. */
+	.feed.compact .msg-box {
+		padding-top: 0.15rem;
+		padding-bottom: 0.1rem;
+	}
+	.feed.compact .row1 {
+		gap: 0.35rem;
+	}
+	.feed.compact .body {
+		font-size: 0.82em;
+		line-height: 1.25;
 	}
 
 	form {
