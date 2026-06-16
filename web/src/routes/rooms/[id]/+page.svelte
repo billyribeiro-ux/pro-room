@@ -180,7 +180,10 @@
 	function handleEvent(ev: RoomEvent) {
 		switch (ev.type) {
 			case 'alert':
-				alerts = [{ ...ev.alert, author_name: ev.author_name }, ...alerts].slice(0, 100);
+				// Newest alert appended to the END so it lands at the BOTTOM of the feed
+				// (matches chat + the reference: latest is always at the bottom). Keep the
+				// last 100. The feed auto-scrolls to it when the viewer is at the bottom.
+				alerts = [...alerts, { ...ev.alert, author_name: ev.author_name }].slice(-100);
 				// DND-aware chime (suppressed by the matching Do-Not-Disturb flag).
 				playSound('alert');
 				break;
@@ -301,7 +304,9 @@
 				api.get<ChatItem[]>(`/api/rooms/${roomId}/messages?channel=main`),
 				listPolls(roomId)
 			]);
-			alerts = a;
+			// The API returns alerts newest-first; reverse so the newest sits at the
+			// BOTTOM of the feed (same ordering as chat — latest always at the bottom).
+			alerts = [...a].reverse();
 			mainMessages = [...m].reverse();
 			polls = p;
 			loaded = { ...loaded, main: true };

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import type { Alert, PresentUser, ReactionTally, ReactionTarget } from '$lib/types';
 	import { formatStamp, dayKey, formatDayLabel } from '$lib/message';
 	import MessageBody from './MessageBody.svelte';
@@ -59,8 +60,22 @@
 	// Trader options for the Advanced Search multi-select = the present roster.
 	const traderOptions = $derived(present.map((p) => ({ value: p.user_id, label: p.display_name })));
 
-	// Which row's ⠿ menu is open (alert id), or null when none.
+	// Which row's ⠇ menu is open (alert id), or null when none.
 	let openMenuId = $state<string | null>(null);
+
+	// The scrollable feed; auto-scrolls to the newest alert (the bottom) when one
+	// arrives — but only if the viewer is already near the bottom, so reading
+	// older alerts isn't interrupted. Measured BEFORE the DOM updates ($effect.pre,
+	// the canonical Svelte 5 chat-autoscroll pattern).
+	let feedEl = $state<HTMLUListElement | undefined>();
+	$effect.pre(() => {
+		if (!feedEl) return; // not yet mounted
+		alerts.length; // re-run whenever an alert is added/removed
+		const atBottom = feedEl.offsetHeight + feedEl.scrollTop > feedEl.scrollHeight - 40;
+		if (atBottom) {
+			tick().then(() => feedEl?.scrollTo(0, feedEl.scrollHeight));
+		}
+	});
 
 	// The alert whose Q&A thread modal is open, or null when closed. Self-
 	// contained: opening the modal requires no new props from the parent.
@@ -205,7 +220,7 @@
 		</div>
 	</header>
 
-	<ul class="feed">
+	<ul class="feed" bind:this={feedEl}>
 		{#each alerts as a, i (a.id)}
 			{@const prev = alerts[i - 1]}
 			{@const newDay = !prev || dayKey(prev.created_at) !== dayKey(a.created_at)}
@@ -225,9 +240,11 @@
 							aria-expanded={openMenuId === a.id}
 							onclick={() => toggleMenu(a.id)}
 						>
-							<!-- Same ⠿ glyph as the chat row menu (reference uses the same kebab on
-							     both); alerts keep it on the LEFT. -->
-							<span class="ellipsis" aria-hidden="true">⠿</span>
+							<!-- Reference kebab is "⠇" (U+2807, the single braille column: 3 dots
+							     filled on the left, 3 empty on the right) — confirmed by the
+							     reference CSS `menuTriger::after { content: "⠇" }`. Alerts keep it
+							     on the LEFT. -->
+							<span class="ellipsis" aria-hidden="true">⠇</span>
 						</button>
 						{#if openMenuId === a.id}
 							<div class="menu" role="menu">
@@ -492,7 +509,7 @@
 		justify-content: center;
 		background: transparent;
 		border: none;
-		/* Reference .msgMenu: the ⠿ glyph at 20px / weight 600, flat (no radius),
+		/* Reference .msgMenu: the ⠇ glyph at 20px / weight 600, flat (no radius),
 		   hover #8c8686. Same kebab as the chat row (alerts keep it on the left). */
 		color: var(--username-color);
 		font-weight: 600;

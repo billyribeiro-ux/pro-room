@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import type {
 		Message,
 		ChatChannel,
@@ -56,8 +57,22 @@
 	// Trader options for the Advanced Search multi-select = the present roster.
 	const traderOptions = $derived(present.map((p) => ({ value: p.user_id, label: p.display_name })));
 
-	// Which row's ⠿ menu is open (message id), or null when none.
+	// Which row's ⠇ menu is open (message id), or null when none.
 	let openMenuId = $state<string | null>(null);
+
+	// The scrollable message list; auto-scrolls to the newest message (the bottom)
+	// when one arrives — but only if the viewer is already near the bottom, so
+	// scrolling up to read history isn't interrupted. Measured BEFORE the DOM
+	// updates ($effect.pre — the canonical Svelte 5 chat-autoscroll pattern).
+	let messagesEl = $state<HTMLUListElement | undefined>();
+	$effect.pre(() => {
+		if (!messagesEl) return; // not yet mounted
+		messages.length; // re-run whenever a message is added/removed
+		const atBottom = messagesEl.offsetHeight + messagesEl.scrollTop > messagesEl.scrollHeight - 40;
+		if (atBottom) {
+			tick().then(() => messagesEl?.scrollTo(0, messagesEl.scrollHeight));
+		}
+	});
 
 	// User-info modal target (a row's author), or null when closed.
 	let infoUser = $state<{ display_name?: string; user_id?: string; online?: boolean } | null>(null);
@@ -178,7 +193,7 @@
 		</div>
 	</header>
 
-	<ul class="messages">
+	<ul class="messages" bind:this={messagesEl}>
 		{#each messages as m, i (m.id)}
 			{@const prev = messages[i - 1]}
 			{@const newDay = !prev || dayKey(prev.created_at) !== dayKey(m.created_at)}
@@ -198,10 +213,11 @@
 							aria-expanded={openMenuId === m.id}
 							onclick={() => toggleMenu(m.id)}
 						>
-							<!-- Reference row menu is the DOUBLE-column dots kebab "⠿" (U+283F,
-							     2 cols × 3 dots), 20px / weight 600 in the username colour —
-							     not the single-column ⠇ and not a FA icon. -->
-							<span class="ellipsis" aria-hidden="true">⠿</span>
+							<!-- Reference row menu is the single-column dots kebab "⠇" (U+2807:
+							     3 dots filled on the left, 3 empty on the right), 20px / weight 600
+							     in the username colour — confirmed by the reference CSS
+							     `menuTriger::after { content: "⠇" }`. -->
+							<span class="ellipsis" aria-hidden="true">⠇</span>
 						</button>
 						{#if openMenuId === m.id}
 							<div class="menu" role="menu">
