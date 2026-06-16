@@ -481,7 +481,7 @@
 		justify-content: center;
 		background: transparent;
 		border: none;
-		/* Reference .msgMenu: the "⠿" glyph at 20px / weight 600 in the username
+		/* Reference .msgMenu: the "⠇" glyph at 20px / weight 600 in the username
 		   colour (light-theme --username-color resolves to #000), flat (no radius);
 		   hover #8c8686 (--light-brown) at weight 900. */
 		color: #000;
