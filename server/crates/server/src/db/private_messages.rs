@@ -172,7 +172,7 @@ pub async fn threads_for(
                    ORDER BY peer, pm.created_at DESC \
                ) t \
                JOIN users u ON u.id = t.peer_id \
-               ORDER BY t.last_at DESC";
+               ORDER BY t.created_at DESC";
     let rows: Vec<ThreadSummaryRow> = sqlx::query_as(sql)
         .bind(room_id.as_uuid())
         .bind(user.as_uuid())

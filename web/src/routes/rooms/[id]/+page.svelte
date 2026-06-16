@@ -25,7 +25,12 @@
 	import Split from '$lib/components/Split.svelte';
 	import MediaPlayer from '$lib/components/MediaPlayer.svelte';
 	import MediaForAllModal from '$lib/components/modals/MediaForAllModal.svelte';
-	import { privateChat, closePrivateChat } from '$lib/privateChat.svelte';
+	import {
+		privateChat,
+		closePrivateChat,
+		setPmContext,
+		receivePrivate
+	} from '$lib/privateChat.svelte';
 	import { layout } from '$lib/stores/layout.svelte';
 	import { prefs, setPref } from '$lib/stores/prefs.svelte';
 	import { listPolls, type PollDetail } from '$lib/poll';
@@ -217,6 +222,12 @@
 				playSound('chat');
 				break;
 			}
+			case 'private_message':
+				// Targeted to sender+recipient only (server per-user channel). File it
+				// into the open thread, or pop the panel for an incoming PM.
+				receivePrivate(ev.message);
+				if (ev.message.sender_id !== detail?.viewer_id) playSound('chat');
+				break;
 			case 'presence':
 				present = ev.users;
 				break;
@@ -322,6 +333,9 @@
 	onMount(async () => {
 		try {
 			detail = await api.get<RoomDetail>(`/api/rooms/${roomId}`);
+			// Wire PM context so deep callers (UserInfoModal) can open/send threads and
+			// we can mark our own messages.
+			setPmContext(roomId, detail.viewer_id);
 			const [a, m, p] = await Promise.all([
 				api.get<AlertItem[]>(`/api/rooms/${roomId}/alerts`),
 				api.get<ChatItem[]>(`/api/rooms/${roomId}/messages?channel=main`),
