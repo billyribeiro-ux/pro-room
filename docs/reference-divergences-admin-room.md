@@ -6,12 +6,12 @@ Forensic side-by-side comparison of **`proroom-ultra-admin-room.json`** (protrad
 - **Method:** 10 parallel Opus 4.8 sub-agents, one per surface, each grounding every divergence in BOTH the reference computed style/class AND our actual code (`file:line`). No assumptions.
 - **Total divergences: 146** — 2 critical, 27 high, 34 medium, 40 low, 43 cosmetic.
 
-## ✅ Verified corrections (overturn prior assumptions)
+## ⚠️ Open question — reference sources disagree (do NOT assume)
 
-Two findings were cross-checked against the raw capture and **proven**, because they contradicted notes we had on file:
+Two values differ between reference captures, so they are flagged for a decision rather than treated as settled:
 
-- **Modals are NAVY `#103d5c`, not Darkly gray `#303030`.** *Proof:* the app stylesheet declares `.modal-content { background-color: … }` three times at equal specificity — `#303030`, then `var(--bs-modal-bg)`, then `var(--modal-content-bg-color)` (`#103d5c`); the **last wins**. The `--modal-*` token block is the navy room palette (`bg #103d5c`, `text #f4f4f4`, `success #92d528`, `danger #bb352a`, `close/primary #0a6db1`, `active-tab #45a2ff`). The Darkly values (`#303030`/`#00bc8c`/`#e74c3c`/`#375a7f`) are the Bootswatch **base globals** (`--light`/`--success`/`--danger`/`--primary`) that coexist in the file but do **not** skin the modals. Our `layout.css` + `Modal.svelte` are still Darkly gray → **this is a real bug to fix**, not a theme difference (the rule is in the global app stylesheet).
-- **Sidebar roster avatars are CIRCULAR** (`--rosterImg-border-radius: 50%`), not square. (The per-message avatar radius uses a separate selector and is left unconfirmed.)
+- **Modal chrome: navy vs Darkly.** Both "Mastering The Trade" captures provided (`proroom-presenter-deep.json` + `proroom-ultra-admin-room.json`, identical 294-token sets) show **navy** modal tokens (`--modal-content-bg-color #103d5c`, text `#f4f4f4`, success `#92d528`, danger `#bb352a`, close `#0a6db1`, active-tab `#45a2ff`), and in these files the `.modal-content` cascade resolves to navy. A **Darkly-gray** modal set (`#303030` / `#00bc8c` / `#e74c3c` / `#375a7f`) exists in **another capture file** (not in these two — here `#303030` is only the Darkly base globals `--gray-dark`/`--light`). Our build currently ships Darkly gray. This is likely a **per-room theme / app-version difference** — needs confirmation of which theme is the target before changing anything.
+- **Roster avatars:** these captures show `--rosterImg-border-radius: 50%` (circular). Our sidebar renders them square. (Per-message avatar radius uses a separate selector, unconfirmed.) Same caveat — confirm the target theme.
 
 ## Summary by surface
 
