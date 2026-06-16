@@ -8,6 +8,7 @@
 		ReactionTarget
 	} from '$lib/types';
 	import { formatStamp, dayKey, formatDayLabel } from '$lib/message';
+	import { muted } from '$lib/stores/social.svelte';
 	import MessageBody from './MessageBody.svelte';
 	import ReactionBar from './ReactionBar.svelte';
 	import UserInfoModal from './modals/UserInfoModal.svelte';
@@ -54,6 +55,10 @@
 	let body = $state('');
 	let sending = $state(false);
 
+	// Hide chat from muted users (client-side, per-device list) — matches the
+	// reference, where muting filters that user's messages locally.
+	const visibleMessages = $derived(messages.filter((m) => !muted.has(m.author_id)));
+
 	// Trader options for the Advanced Search multi-select = the present roster.
 	const traderOptions = $derived(present.map((p) => ({ value: p.user_id, label: p.display_name })));
 
@@ -71,7 +76,7 @@
 	let stickNext = false;
 	$effect.pre(() => {
 		if (!messagesEl) return; // not yet mounted
-		messages.length; // re-run whenever a message is added/removed
+		visibleMessages.length; // re-run whenever the (filtered) list changes
 		const atBottom = messagesEl.offsetHeight + messagesEl.scrollTop > messagesEl.scrollHeight - 40;
 		if (atBottom || stickNext) {
 			stickNext = false;
@@ -202,8 +207,8 @@
 	</header>
 
 	<ul class="messages" bind:this={messagesEl}>
-		{#each messages as m, i (m.id)}
-			{@const prev = messages[i - 1]}
+		{#each visibleMessages as m, i (m.id)}
+			{@const prev = visibleMessages[i - 1]}
 			{@const newDay = !prev || dayKey(prev.created_at) !== dayKey(m.created_at)}
 			{#if newDay}
 				<li class="separator-row">
