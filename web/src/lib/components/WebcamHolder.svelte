@@ -18,6 +18,41 @@
 
 	let { publishers, onClose }: Props = $props();
 
+	// Reference card.webcamsHolder is draggable (cursor:move + JS reposition). We
+	// translate each card by a per-id offset; pointer-capture keeps the drag alive
+	// even when the pointer leaves the card. Offsets reset when a publisher leaves.
+	let offsets = $state<Record<string, { x: number; y: number }>>({});
+	let dragId = $state<string | null>(null);
+	// Non-reactive drag refs (only read inside the move handler).
+	let startX = 0;
+	let startY = 0;
+	let baseX = 0;
+	let baseY = 0;
+
+	function onPointerDown(e: PointerEvent, id: string) {
+		// Don't start a drag from the close (×) button — let its click through.
+		if ((e.target as HTMLElement).closest('.close')) return;
+		dragId = id;
+		startX = e.clientX;
+		startY = e.clientY;
+		const o = offsets[id] ?? { x: 0, y: 0 };
+		baseX = o.x;
+		baseY = o.y;
+		(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+	}
+
+	function onPointerMove(e: PointerEvent) {
+		if (dragId === null) return;
+		offsets = {
+			...offsets,
+			[dragId]: { x: baseX + (e.clientX - startX), y: baseY + (e.clientY - startY) }
+		};
+	}
+
+	function onPointerUp() {
+		dragId = null;
+	}
+
 	/**
 	 * Attach a publisher's MediaStreamTrack to a <video> via `srcObject`.
 	 * Returns an attachment so each card's video element is wired up
@@ -48,7 +83,19 @@
 {:else}
 	<div class="holder">
 		{#each publishers as publisher (publisher.id)}
-			<div class="card">
+			<!-- Draggable card (reference cursor:move). svelte-ignore: the drag is a
+			     pointer gesture, not a click target, so no role/keyboard equivalent. -->
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<div
+				class="card"
+				class:dragging={dragId === publisher.id}
+				style:transform="translate({offsets[publisher.id]?.x ?? 0}px, {offsets[publisher.id]?.y ??
+					0}px)"
+				onpointerdown={(e) => onPointerDown(e, publisher.id)}
+				onpointermove={onPointerMove}
+				onpointerup={onPointerUp}
+				onpointercancel={onPointerUp}
+			>
 				<!-- Reference: object-fit:contain so a non-4:3 stream letterboxes on
 				     black rather than cropping (webcamsHolderVideo). -->
 				<video {@attach attachTrack(publisher.track)} autoplay muted playsinline></video>
@@ -115,6 +162,16 @@
 		font:
 			300 16px 'Open Sans',
 			sans-serif;
+		/* Reference card is draggable (cursor:move). touch-action:none lets a touch
+		   drag the card instead of scrolling; user-select:none avoids selecting the
+		   name text mid-drag. */
+		cursor: move;
+		touch-action: none;
+		user-select: none;
+	}
+	/* The card being dragged floats above its siblings. */
+	.card.dragging {
+		z-index: 200;
 	}
 
 	video {
