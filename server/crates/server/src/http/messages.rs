@@ -12,7 +12,7 @@ use axum::Router;
 use axum::extract::{Path, Query, State};
 use axum::routing::get;
 use domain::entities::Message;
-use domain::{Action, RoomId};
+use domain::{Action, Role, RoomId};
 use serde::Deserialize;
 
 pub fn router() -> Router<AppState> {
@@ -69,9 +69,15 @@ async fn create(
     }
 
     let message = db::messages::create(&state.db, id, user.user_id, body, channel).await?;
+    // The poster's effective room role, so live recipients style admin/super-admin
+    // messages the same way the listing endpoint does (kebab right + grey row).
+    let author_role = db::members::effective_role(&state.db, id, user.user_id)
+        .await?
+        .unwrap_or(Role::Member);
     let event = RoomEvent::Chat {
         message: message.clone(),
         author_name: user.display_name.clone(),
+        author_role,
     };
     let _ = state.hub.publish(id, &event.to_json()).await;
     Ok(Json(message))

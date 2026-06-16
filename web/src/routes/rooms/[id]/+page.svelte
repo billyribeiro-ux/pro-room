@@ -188,7 +188,7 @@
 				playSound('alert');
 				break;
 			case 'chat': {
-				const item = { ...ev.message, author_name: ev.author_name };
+				const item = { ...ev.message, author_name: ev.author_name, author_role: ev.author_role };
 				if (ev.message.channel === 'off_topic') {
 					offTopicMessages = [...offTopicMessages, item].slice(-100);
 				} else {

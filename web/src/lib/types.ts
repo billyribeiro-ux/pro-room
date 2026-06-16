@@ -81,6 +81,10 @@ export interface Message {
 	channel: ChatChannel;
 	created_at: string;
 	author_name?: string;
+	/** The author's effective room role; present on listed messages (MessageView)
+	 * and merged onto live messages from the chat event. Clients style
+	 * admin/super_admin messages distinctly (kebab on the right + grey row). */
+	author_role?: Role;
 }
 
 export interface PresentUser {
@@ -149,7 +153,7 @@ export interface PresenceEntry {
 // Realtime events pushed over the room WebSocket (discriminated by `type`).
 export type RoomEvent =
 	| { type: 'alert'; alert: Alert; author_name: string }
-	| { type: 'chat'; message: Message; author_name: string }
+	| { type: 'chat'; message: Message; author_name: string; author_role: Role }
 	| { type: 'presence'; users: PresentUser[] }
 	| { type: 'live'; is_live: boolean }
 	| { type: 'poll'; poll: PollDetail }

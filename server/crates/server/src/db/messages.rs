@@ -2,11 +2,13 @@
 
 use anyhow::Context as _;
 use domain::entities::Message;
-use domain::{MessageId, RoomId, UserId};
+use domain::{MessageId, Role, RoomId, UserId};
 use serde::Serialize;
 use sqlx::PgPool;
+use uuid::Uuid;
 
-/// A chat message joined with its author's display name, for listing.
+/// A chat message joined with its author's display name and effective room role,
+/// for listing.
 #[derive(Serialize)]
 pub struct MessageView {
     pub id: MessageId,
@@ -17,6 +19,29 @@ pub struct MessageView {
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: time::OffsetDateTime,
     pub author_name: String,
+    /// The author's effective role in this room (super admin globally wins, then
+    /// the per-room membership role, then their global role). Clients style
+    /// admin/super-admin messages distinctly (kebab on the right + grey row).
+    pub author_role: Role,
+}
+
+/// Row shape for [`list_recent`]. Uses the runtime `query_as` API rather than the
+/// `query!` macro: the offline `.sqlx` cache is generated against a live database
+/// not available at build time here, so the role-join columns below would fail a
+/// macro's compile-time check (same reason `members.rs` uses `query_as`).
+#[derive(sqlx::FromRow)]
+struct MessageRow {
+    id: Uuid,
+    room_id: Uuid,
+    author_id: Uuid,
+    body: String,
+    channel: String,
+    created_at: time::OffsetDateTime,
+    author_name: String,
+    /// The author's account-wide role (always present).
+    global_role: String,
+    /// The author's per-room role, or NULL when they have no membership row.
+    room_role: Option<String>,
 }
 
 pub async fn create(
@@ -87,32 +112,49 @@ pub async fn list_recent(
     channel: &str,
     limit: i64,
 ) -> anyhow::Result<Vec<MessageView>> {
-    let rows = sqlx::query!(
-        r#"
-        SELECT m.id, m.room_id, m.author_id, m.body, m.channel, m.created_at,
-               u.display_name AS author_name
-        FROM messages m
-        JOIN users u ON u.id = m.author_id
-        WHERE m.room_id = $1 AND m.channel = $2
-        ORDER BY m.created_at DESC LIMIT $3
-        "#,
-        room_id.as_uuid(),
-        channel,
-        limit,
+    let rows: Vec<MessageRow> = sqlx::query_as(
+        "SELECT m.id, m.room_id, m.author_id, m.body, m.channel, m.created_at, \
+                u.display_name AS author_name, \
+                u.global_role::text AS global_role, \
+                rm.role::text AS room_role \
+         FROM messages m \
+         JOIN users u ON u.id = m.author_id \
+         LEFT JOIN room_members rm ON rm.room_id = m.room_id AND rm.user_id = m.author_id \
+         WHERE m.room_id = $1 AND m.channel = $2 \
+         ORDER BY m.created_at DESC LIMIT $3",
     )
+    .bind(room_id.as_uuid())
+    .bind(channel)
+    .bind(limit)
     .fetch_all(pool)
     .await
     .context("list messages")?;
-    Ok(rows
-        .into_iter()
-        .map(|row| MessageView {
-            id: MessageId::from_uuid(row.id),
-            room_id: RoomId::from_uuid(row.room_id),
-            author_id: UserId::from_uuid(row.author_id),
-            body: row.body,
-            channel: row.channel,
-            created_at: row.created_at,
-            author_name: row.author_name,
+    rows.into_iter()
+        .map(|row| {
+            let global_role: Role = row.global_role.parse().context("parse global role")?;
+            let room_role = row
+                .room_role
+                .map(|s| s.parse::<Role>())
+                .transpose()
+                .context("parse room role")?;
+            // Effective role: a super admin is always super admin; otherwise the
+            // per-room membership role wins, falling back to the global role.
+            // Mirrors `db::members::effective_role` / `Subject::effective_role`.
+            let author_role = if global_role == Role::SuperAdmin {
+                Role::SuperAdmin
+            } else {
+                room_role.unwrap_or(global_role)
+            };
+            Ok(MessageView {
+                id: MessageId::from_uuid(row.id),
+                room_id: RoomId::from_uuid(row.room_id),
+                author_id: UserId::from_uuid(row.author_id),
+                body: row.body,
+                channel: row.channel,
+                created_at: row.created_at,
+                author_name: row.author_name,
+                author_role,
+            })
         })
-        .collect())
+        .collect()
 }

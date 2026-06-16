@@ -202,7 +202,7 @@
 					<span class="separator">{formatDayLabel(m.created_at)}</span>
 				</li>
 			{/if}
-			<li class="msg-box">
+			<li class="msg-box" class:elevated={!!m.author_role && m.author_role !== 'member'}>
 				<div class="row1">
 					<div class="msg-menu">
 						<button
@@ -408,8 +408,10 @@
 		padding: 0;
 		flex: 1;
 		overflow-y: auto;
-		/* Reference chat scroll bg matches the rows (--msgs-bg light = #f1f1f1). */
-		background: #f1f1f1;
+		/* Reference chat scroll bg matches the regular rows: the computed
+		   --lightTheme-msgs-bg is #fff (the JSON cssVariables.root, authoritative
+		   over the conflicting #f1f1f1 !important source). */
+		background: #ffffff;
 	}
 	.empty {
 		padding: 0.6rem 0.85rem;
@@ -442,11 +444,16 @@
 	.msg-box {
 		position: relative;
 		padding: 0.6rem 0.85rem 0.25rem;
-		/* Reference chat .msg-box: bg --msgs-bg (light) = #f1f1f1, flat, with a top
-		   divider --msg-border-color = #d9d9d9. */
-		background: #f1f1f1;
+		/* Reference chat .msg-box: bg --msgs-bg (light, computed) = #fff, flat, with
+		   a top divider --msg-border-color = #d9d9d9. */
+		background: #ffffff;
 		border-top: 1px solid #d9d9d9;
 		font-size: var(--msg-font-size);
+	}
+	/* Reference .msg-box-adm: messages from an admin/super-admin (the author's
+	   effective room role) get the grey row --msgs-bg-adm = #f4f4f4. */
+	.msg-box.elevated {
+		background: #f4f4f4;
 	}
 	.row1 {
 		display: flex;
@@ -454,17 +461,18 @@
 		gap: 0.5rem;
 	}
 
-	/* Reference chat rows are ALL left-aligned with the menu on the left
-	   (`.msg-left` + `.msgMenu.dropright`) — verified across 250+ rows in 6
-	   snapshots; `.msg-right`/`.presenter-msg-right` exist in CSS but are never
-	   applied. So chat does NOT bubble — every message renders left, like alerts. */
+	/* Reference chat rows: a REGULAR member's row is left-aligned with the ⠇ menu
+	   on the LEFT (like alerts). An admin/super-admin row (`.msg-box-adm`) puts the
+	   menu on the RIGHT and tints the row grey. The body stays left-aligned in both. */
 
 	.msg-menu {
 		position: relative;
 		flex-shrink: 0;
-		/* Reference CHAT row: the ⠿ menu sits on the RIGHT of the row (the message
-		   body still renders left-aligned). order:1 pushes it past the
-		   right-floated timestamp to the far right edge. (Alerts keep it on the left.) */
+		/* Regular rows: menu first → left edge (default flex order). */
+	}
+	/* Admin/super-admin rows: order:1 pushes the menu past the right-floated
+	   timestamp to the far right edge. */
+	.msg-box.elevated .msg-menu {
 		order: 1;
 	}
 	.menu-trigger {
@@ -493,9 +501,10 @@
 	.menu {
 		position: absolute;
 		top: 100%;
-		/* Menu is on the right of the chat row, so the dropdown opens from the right edge. */
-		right: 0;
-		left: auto;
+		/* Regular rows: the kebab is on the left, so the dropdown opens from the
+		   left edge. Admin/super-admin rows flip it (see .elevated .menu below). */
+		left: 0;
+		right: auto;
 		z-index: 5;
 		min-width: 9rem;
 		margin-top: 0.2rem;
@@ -506,6 +515,12 @@
 		padding: 0.25rem;
 		display: flex;
 		flex-direction: column;
+	}
+	/* Admin/super-admin rows: kebab is on the right, so the dropdown opens from
+	   the right edge instead. */
+	.msg-box.elevated .menu {
+		right: 0;
+		left: auto;
 	}
 	.menu button {
 		display: flex;

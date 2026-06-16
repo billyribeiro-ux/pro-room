@@ -2,7 +2,7 @@
 //! serialized to JSON both for Redis fan-out and for delivery to browsers.
 
 use domain::entities::{Alert, Message, PollDetail, ReactionSummary};
-use domain::{AlertId, MessageId, UserId};
+use domain::{AlertId, MessageId, Role, UserId};
 use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize)]
@@ -10,10 +10,13 @@ use serde::Serialize;
 pub enum RoomEvent {
     /// A new trade alert was posted.
     Alert { alert: Alert, author_name: String },
-    /// A new chat message was posted.
+    /// A new chat message was posted. `author_role` is the poster's effective
+    /// room role so clients can style admin/super-admin messages distinctly
+    /// without a follow-up lookup.
     Chat {
         message: Message,
         author_name: String,
+        author_role: Role,
     },
     /// The set of present users changed.
     Presence { users: Vec<PresentUser> },
