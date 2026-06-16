@@ -455,17 +455,18 @@
 				<Icon name="stop-circle" />
 			</button>
 		{:else}
-			<!-- Reference: the screen-share button opens a small menu to pick the
-			     source — Browser (getDisplayMedia) or an external encoder (OBS Virtual
-			     Camera / XSplit VCam), captured as a video device + published as the
-			     screen feed. -->
+			<!-- Reference (decoded from the protradingroom Angular bundle main.*.js, the
+			     HPe template): a "Start/Stop Screen Sharing" control opening a menu with
+			     "Share Screen" → startScreenSharing(512000) = browser getDisplayMedia, and
+			     "OBS / XSPLIT/ Share Virtual Cam" → startScreenSharing("camera") =
+			     getUserMedia on the virtual-cam device. Labels are verbatim from the bundle. -->
 			<div class="ctrl-menu" bind:this={screenMenuEl}>
 				<button
 					class="ctrl"
 					onclick={() => (screenMenuOpen = !screenMenuOpen)}
 					disabled={!screen.connected}
-					title="Share screen"
-					aria-label="Share screen"
+					title="Start/Stop Screen Sharing"
+					aria-label="Start/Stop Screen Sharing"
 					aria-haspopup="menu"
 					aria-expanded={screenMenuOpen}
 				>
@@ -481,7 +482,7 @@
 								void screen.startSharing();
 							}}
 						>
-							<Icon name="desktop" size={14} /> Browser
+							<Icon name="desktop" size={14} /> Share Screen
 						</button>
 						<button
 							type="button"
@@ -491,7 +492,7 @@
 								void screen.startSharingExternalCam();
 							}}
 						>
-							<Icon name="video" size={14} /> OBS / XSplit Cam
+							<Icon name="video" size={14} /> OBS / XSPLIT/ Share Virtual Cam
 						</button>
 					</div>
 				{/if}
