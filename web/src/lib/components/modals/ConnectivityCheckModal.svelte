@@ -27,27 +27,121 @@
 	]);
 	let running = $state(false);
 
+	// ICE config copied VERBATIM from the reference bundle (chat.protradingroom.com
+	// main.*.js): two Google public STUN servers plus protradingroom's own coturn
+	// relay over udp+tcp, with the creds shipped in their public bundle. Matching
+	// the reference's exact servers keeps this a faithful 1:1 probe. (LiveKit Cloud
+	// injects its own TURN at signaling time, invisible to app code, so there is no
+	// "our" relay to test — the reference's relay is the closest faithful target.)
+	const ICE_SERVERS: RTCIceServer[] = [
+		{ urls: 'stun:stun.l.google.com:19302' },
+		{ urls: 'stun:stun1.l.google.com:19302' },
+		{
+			urls: 'turn:flash.protradingroom.com:3478?transport=udp',
+			username: 'ptrUser',
+			credential: 'ptr123'
+		},
+		{
+			urls: 'turn:flash.protradingroom.com:3478?transport=tcp',
+			username: 'ptrUser',
+			credential: 'ptr123'
+		}
+	];
+
+	// Imperative WebRTC handles — NOT $state (they are not rendered, only driven).
+	let pc: RTCPeerConnection | null = null;
+	let timer: ReturnType<typeof setTimeout> | null = null;
+
 	function reset() {
 		for (const c of checks) c.status = 'pending';
 	}
 
-	// Presentational only — walks each row pending -> pass on a short timer.
-	// No real WebRTC probing is performed.
-	function startTest() {
+	// Close any in-flight probe + cancel its finalizer. Idempotent.
+	function teardown() {
+		if (timer) {
+			clearTimeout(timer);
+			timer = null;
+		}
+		if (pc) {
+			pc.onicecandidate = null;
+			pc.onicegatheringstatechange = null;
+			pc.close();
+			pc = null;
+		}
+	}
+
+	// Tear down whenever the modal closes or the component unmounts, so a probe in
+	// flight never leaks an RTCPeerConnection. The returned teardown fires before
+	// each re-run (i.e. on every `open` flip) and on destroy.
+	$effect(() => {
+		void open;
+		return teardown;
+	});
+
+	// Flip a row to pass only on its first matching candidate (mirrors the
+	// reference `!e.testResults.k` first-hit guard).
+	function mark(key: string) {
+		const c = checks.find((x) => x.key === key);
+		if (c && c.status !== 'pass') c.status = 'pass';
+	}
+
+	// Bound the probe: any row not passed by now is a REAL failure (the original's
+	// setTimeout finalizer). Closes the peer connection and ends the run.
+	function finalize() {
+		if (timer) {
+			clearTimeout(timer);
+			timer = null;
+		}
+		for (const c of checks) if (c.status !== 'pass') c.status = 'fail';
+		if (pc) {
+			pc.close();
+			pc = null;
+		}
+		running = false;
+	}
+
+	// Real WebRTC ICE probe — verbatim logic from the reference's onicecandidate:
+	// raw candidate string contains 'udp'/'tcp' -> transport rows; 'typ srflx'
+	// (server-reflexive) -> STUN worked; 'typ relay' -> TURN worked. A dummy data
+	// channel + offer kicks off candidate gathering with no media.
+	async function startTest() {
 		if (running) return;
+		teardown();
 		reset();
 		running = true;
-		let i = 0;
-		const step = () => {
-			if (i >= checks.length) {
-				running = false;
-				return;
-			}
-			checks[i].status = 'pass';
-			i += 1;
-			setTimeout(step, 450);
+
+		try {
+			pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+		} catch {
+			// WebRTC unsupported — fail every row honestly rather than fake a pass.
+			for (const c of checks) c.status = 'fail';
+			running = false;
+			return;
+		}
+
+		pc.onicecandidate = (ev) => {
+			if (!ev.candidate) return;
+			const cand = ev.candidate.candidate;
+			if (cand.includes('udp')) mark('udp');
+			if (cand.includes('tcp')) mark('tcp');
+			if (cand.includes('typ srflx')) mark('stun');
+			if (cand.includes('typ relay')) mark('turn');
 		};
-		setTimeout(step, 450);
+		pc.onicegatheringstatechange = () => {
+			if (pc && pc.iceGatheringState === 'complete') finalize();
+		};
+
+		pc.createDataChannel('test');
+		try {
+			const offer = await pc.createOffer();
+			await pc.setLocalDescription(offer);
+		} catch {
+			// Couldn't initiate gathering (e.g. insecure context) — fail + stop.
+			finalize();
+			return;
+		}
+
+		timer = setTimeout(finalize, 5000);
 	}
 
 	function dotLabel(status: Status): string {
