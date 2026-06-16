@@ -72,7 +72,6 @@
 				role="tab"
 				aria-selected={activeTab === t.id}
 				class:active={activeTab === t.id}
-				class:notes-active={activeTab === t.id && t.id === 'notes'}
 				disabled={locked && t.id !== 'screens'}
 				onclick={() => (tab = t.id)}
 			>
@@ -176,9 +175,10 @@
 		white-space: nowrap;
 	}
 	.tabbar button:hover:not(.active):not(:disabled) {
-		/* Reference .mainTabset .nav-link:hover: 1px #0a6db1 border, radius 3px,
-		   no background change. */
-		border: 1px solid var(--accent-hover);
+		/* Reference .nav-tabs .nav-link:hover winner is border-top-color rgb(68,68,68)
+		   = #444 (presenter-deep mainTabs hover), radius 3px, no background change —
+		   NOT the accent-blue we used before. */
+		border: 1px solid #444;
 		border-radius: 3px;
 	}
 	.tabbar button:disabled {
@@ -195,11 +195,8 @@
 		border-color: transparent;
 		border-radius: 3px;
 	}
-	.tabbar button.active.notes-active {
-		/* Reference quirk: the active NOTES tab uses the dark notes-pane bg
-		   (--notes-tabs-bg #0c2434) instead of the blue pill. */
-		background: var(--bg, #0c2434);
-	}
+	/* (Removed the invented "active Notes = dark folder" quirk: presenter-deep shows
+	   the active tab is the #45a2ff blue pill for ALL tabs, Notes included.) */
 	.locked-pill {
 		display: inline-flex;
 		align-items: center;

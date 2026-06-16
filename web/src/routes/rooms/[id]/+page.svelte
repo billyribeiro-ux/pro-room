@@ -21,17 +21,27 @@
 	import RecPreview from '$lib/components/RecPreview.svelte';
 	import PrivateChat from '$lib/components/PrivateChat.svelte';
 	import ConnectionOverlay from '$lib/components/ConnectionOverlay.svelte';
+	import ToastContainer from '$lib/components/ToastContainer.svelte';
 	import MobileAppInfoModal from '$lib/components/modals/MobileAppInfoModal.svelte';
 	import Split from '$lib/components/Split.svelte';
 	import MediaPlayer from '$lib/components/MediaPlayer.svelte';
 	import MediaForAllModal from '$lib/components/modals/MediaForAllModal.svelte';
-	import { privateChat, closePrivateChat } from '$lib/privateChat.svelte';
+	import {
+		privateChat,
+		closePrivateChat,
+		setPmContext,
+		receivePrivate
+	} from '$lib/privateChat.svelte';
 	import { layout } from '$lib/stores/layout.svelte';
+	import { prefs, setPref } from '$lib/stores/prefs.svelte';
 	import { listPolls, type PollDetail } from '$lib/poll';
 	import { toggleReaction } from '$lib/reactions';
 	import { broadcastMedia } from '$lib/media';
 	import { deleteAlert, deleteMessage } from '$lib/admin';
 	import { playSound } from '$lib/sound.svelte';
+	import { isMuted } from '$lib/stores/dnd.svelte';
+	import { showToast } from '$lib/stores/toast.svelte';
+	import { alertBody } from '$lib/alertText';
 	import type { ReactionTally, ReactionTarget, MediaKind } from '$lib/types';
 	import Icon from '$lib/components/Icon.svelte';
 
@@ -57,7 +67,22 @@
 	let showRecPreview = $state(false);
 	let showMobileInfo = $state(false);
 	let showMediaModal = $state(false);
-	let captionsOn = $state(false);
+	// Closed-captions overlay is now a shared preference (prefs.captionsOverlay) so
+	// the sidebar CC button and the General Settings toggle stay in sync.
+	// Screen-share source picker (Browser vs OBS/XSplit virtual cam). The menu is
+	// position:fixed and anchored to the trigger's viewport rect, because the
+	// .nav-controls cluster scrolls horizontally (overflow-x:auto, which also clips
+	// overflow-y) — an absolute dropdown would be clipped by that scroll container.
+	let screenMenuOpen = $state(false);
+	let screenMenuEl = $state<HTMLDivElement | undefined>();
+	let shareMenuPos = $state({ top: 0, left: 0 });
+	function toggleShareMenu(btn: HTMLElement) {
+		if (!screenMenuOpen) {
+			const r = btn.getBoundingClientRect();
+			shareMenuPos = { top: Math.round(r.bottom + 4), left: Math.round(r.left) };
+		}
+		screenMenuOpen = !screenMenuOpen;
+	}
 	// Admin "mute all" broadcast — disables the chat composer for non-admins.
 	let mutedAll = $state(false);
 	// Presenter "lock this screen" broadcast — holds non-admin viewers on Screens.
@@ -127,7 +152,9 @@
 			id: p.identity,
 			name: p.name,
 			isLocal: p.isLocal,
-			track: p.track.mediaStreamTrack
+			// Null-safe: a momentarily-null track during teardown must never throw
+			// while this $derived recomputes (WebcamHolder clears srcObject on null).
+			track: p.track?.mediaStreamTrack ?? null
 		}))
 	);
 
@@ -144,7 +171,11 @@
 		const key = `${targetKind}:${targetId}`;
 		try {
 			const summary = await toggleReaction(roomId, targetKind, targetId, emoji);
-			myReactions.set(key, new Set(summary.reactions.filter((t) => t.mine).map((t) => t.emoji)));
+			const mine = new Set(summary.reactions.filter((t) => t.mine).map((t) => t.emoji));
+			// Reaction cue (reference reactionsPopup) when WE add a reaction — gated by
+			// the Settings "Reactions Response" preference inside playSound.
+			if (mine.has(emoji) && !myReactions.get(key)?.has(emoji)) playSound('reaction');
+			myReactions.set(key, mine);
 			reactionsByTarget = { ...reactionsByTarget, [key]: summary.reactions };
 		} catch (err) {
 			error = err instanceof ApiError ? err.message : 'Could not react';
@@ -180,12 +211,25 @@
 	function handleEvent(ev: RoomEvent) {
 		switch (ev.type) {
 			case 'alert':
-				alerts = [{ ...ev.alert, author_name: ev.author_name }, ...alerts].slice(0, 100);
+				// Newest alert appended to the END so it lands at the BOTTOM of the feed
+				// (matches chat + the reference: latest is always at the bottom). Keep the
+				// last 100. The feed auto-scrolls to it when the viewer is at the bottom.
+				alerts = [...alerts, { ...ev.alert, author_name: ev.author_name }].slice(-100);
 				// DND-aware chime (suppressed by the matching Do-Not-Disturb flag).
 				playSound('alert');
+				// Top-right toast (reference toastr.warning on new alert): 10s when the
+				// "Longer alert popup" pref is on, else 5s; suppressed by the alertPopup
+				// DND flag (isMuted folds in the master dnd.app switch too).
+				if (!isMuted('alertPopup')) {
+					showToast(
+						`Alert from @${ev.author_name ?? 'Trader'}`,
+						alertBody(ev.alert),
+						prefs.longerAlertPopup ? 10000 : 5000
+					);
+				}
 				break;
 			case 'chat': {
-				const item = { ...ev.message, author_name: ev.author_name };
+				const item = { ...ev.message, author_name: ev.author_name, author_role: ev.author_role };
 				if (ev.message.channel === 'off_topic') {
 					offTopicMessages = [...offTopicMessages, item].slice(-100);
 				} else {
@@ -194,6 +238,12 @@
 				playSound('chat');
 				break;
 			}
+			case 'private_message':
+				// Targeted to sender+recipient only (server per-user channel). File it
+				// into the open thread, or pop the panel for an incoming PM.
+				receivePrivate(ev.message);
+				if (ev.message.sender_id !== detail?.viewer_id) playSound('chat');
+				break;
 			case 'presence':
 				present = ev.users;
 				break;
@@ -268,8 +318,11 @@
 		await api.post(`/api/rooms/${roomId}/alerts`, { symbol, side, note: note || null });
 	}
 
+	async function postMessageTo(ch: ChatChannel, body: string) {
+		await api.post(`/api/rooms/${roomId}/messages`, { body, channel: ch });
+	}
 	async function postMessage(body: string) {
-		await api.post(`/api/rooms/${roomId}/messages`, { body, channel });
+		await postMessageTo(channel, body);
 	}
 
 	async function toggleLive() {
@@ -296,12 +349,17 @@
 	onMount(async () => {
 		try {
 			detail = await api.get<RoomDetail>(`/api/rooms/${roomId}`);
+			// Wire PM context so deep callers (UserInfoModal) can open/send threads and
+			// we can mark our own messages.
+			setPmContext(roomId, detail.viewer_id);
 			const [a, m, p] = await Promise.all([
 				api.get<AlertItem[]>(`/api/rooms/${roomId}/alerts`),
 				api.get<ChatItem[]>(`/api/rooms/${roomId}/messages?channel=main`),
 				listPolls(roomId)
 			]);
-			alerts = a;
+			// The API returns alerts newest-first; reverse so the newest sits at the
+			// BOTTOM of the feed (same ordering as chat — latest always at the bottom).
+			alerts = [...a].reverse();
 			mainMessages = [...m].reverse();
 			polls = p;
 			loaded = { ...loaded, main: true };
@@ -320,6 +378,22 @@
 		void screen.disconnect();
 	});
 </script>
+
+<svelte:window
+	onkeydown={(e) => {
+		if (e.key === 'Escape') screenMenuOpen = false;
+	}}
+	onclick={(e) => {
+		// The first in-room click unblocks autoplay-blocked remote audio (presenter
+		// mic / screen audio) — browsers require a user gesture to start playback, so
+		// without this members never hear the mic.
+		if (screen.audioBlocked) void screen.resumeAudio();
+		// Close the screen-share source menu when clicking outside it.
+		if (screenMenuOpen && screenMenuEl && !screenMenuEl.contains(e.target as Node)) {
+			screenMenuOpen = false;
+		}
+	}}
+/>
 
 {#if error}
 	<div class="banner">
@@ -340,6 +414,7 @@
 	     persistent "Reconnecting…" banner when the WS drops. Treats "no socket
 	     yet" (initial load) as connected so it doesn't flash on first paint. -->
 	<ConnectionOverlay connected={socket?.connected ?? true} />
+	<ToastContainer />
 
 	<div class="room-body">
 		{#if screenDisabled}
@@ -354,6 +429,10 @@
 				{present}
 				canManage={caps?.can_manage_room ?? false}
 				onClose={() => (sidebarOpen = false)}
+				{roomId}
+				{screen}
+				onPlayMedia={playMedia}
+				onStopMedia={stopMedia}
 			/>
 
 			<div class="layout">
@@ -435,15 +514,53 @@
 				<Icon name="stop-circle" />
 			</button>
 		{:else}
-			<button
-				class="ctrl"
-				onclick={() => screen.startSharing()}
-				disabled={!screen.connected}
-				title="Share screen"
-				aria-label="Share screen"
-			>
-				<Icon name="desktop" />
-			</button>
+			<!-- Reference (decoded from the protradingroom Angular bundle main.*.js, the
+			     HPe template): a "Start/Stop Screen Sharing" control opening a menu with
+			     "Share Screen" → startScreenSharing(512000) = browser getDisplayMedia, and
+			     "OBS / XSPLIT/ Share Virtual Cam" → startScreenSharing("camera") =
+			     getUserMedia on the virtual-cam device. Labels are verbatim from the bundle. -->
+			<div class="ctrl-menu" bind:this={screenMenuEl}>
+				<button
+					class="ctrl"
+					onclick={(e) => toggleShareMenu(e.currentTarget)}
+					disabled={!screen.connected}
+					title="Start/Stop Screen Sharing"
+					aria-label="Start/Stop Screen Sharing"
+					aria-haspopup="menu"
+					aria-expanded={screenMenuOpen}
+				>
+					<Icon name="desktop" /><Icon name="caret-down" size={10} />
+				</button>
+				{#if screenMenuOpen}
+					<div
+						class="share-menu"
+						role="menu"
+						style:top="{shareMenuPos.top}px"
+						style:left="{shareMenuPos.left}px"
+					>
+						<button
+							type="button"
+							role="menuitem"
+							onclick={() => {
+								screenMenuOpen = false;
+								void screen.startSharing();
+							}}
+						>
+							<Icon name="desktop" size={14} /> Share Screen
+						</button>
+						<button
+							type="button"
+							role="menuitem"
+							onclick={() => {
+								screenMenuOpen = false;
+								void screen.startSharingExternalCam();
+							}}
+						>
+							<Icon name="video" size={14} /> OBS / XSPLIT/ Share Virtual Cam
+						</button>
+					</div>
+				{/if}
+			</div>
 		{/if}
 		{#if screen.cameraPublishing}
 			<button
@@ -496,8 +613,8 @@
 		{/if}
 		<button
 			class="ctrl"
-			class:live-on={captionsOn}
-			onclick={() => (captionsOn = !captionsOn)}
+			class:live-on={prefs.captionsOverlay}
+			onclick={() => setPref('captionsOverlay', !prefs.captionsOverlay)}
 			title="Captions (CC)"
 			aria-label="Captions"
 		>
@@ -541,6 +658,7 @@
 	<AlertsChatDock
 		{alerts}
 		{messages}
+		{offTopicMessages}
 		{present}
 		{channel}
 		reactions={reactionsByTarget}
@@ -553,6 +671,7 @@
 		canPostMessage={canChat}
 		onPostAlert={postAlert}
 		onPostMessage={postMessage}
+		onPostOffTopic={(body) => postMessageTo('off_topic', body)}
 		onChannel={selectChannel}
 	/>
 {/snippet}
@@ -565,7 +684,7 @@
 		connected={screen.connected}
 		{webcamPublishers}
 		onWebcamClose={() => screen.stopCamera()}
-		captionsActive={captionsOn}
+		captionsActive={prefs.captionsOverlay}
 		{screenLocked}
 	/>
 {/snippet}
@@ -622,6 +741,43 @@
 	.ctrl.live-on {
 		color: var(--negative);
 		border-color: var(--negative);
+	}
+	/* Screen-share source picker (Browser / OBS-XSplit). */
+	.ctrl-menu {
+		position: relative;
+		display: inline-flex;
+		flex-shrink: 0;
+	}
+	.share-menu {
+		/* Fixed (not absolute) so it escapes the .nav-controls scroll container's
+		   overflow clipping; anchored to the trigger rect via inline top/left. */
+		position: fixed;
+		z-index: 50;
+		min-width: 11rem;
+		display: flex;
+		flex-direction: column;
+		background: var(--bg-elev-2);
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+		padding: 0.25rem;
+	}
+	.share-menu button {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		background: transparent;
+		border: none;
+		color: var(--text);
+		font-size: 0.85rem;
+		text-align: left;
+		padding: 0.45rem 0.6rem;
+		border-radius: 6px;
+		cursor: pointer;
+		white-space: nowrap;
+	}
+	.share-menu button:hover {
+		background: var(--accent-hover);
 	}
 	.layout {
 		height: 100%;

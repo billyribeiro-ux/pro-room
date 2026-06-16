@@ -14,6 +14,7 @@ pub mod messages;
 pub mod notes;
 pub mod oauth;
 pub mod polls;
+pub mod private_messages;
 pub mod questions;
 pub mod reactions;
 pub mod rooms;

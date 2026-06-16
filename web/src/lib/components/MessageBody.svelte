@@ -49,7 +49,9 @@
 		font-style: italic;
 	}
 	.message-body a {
-		color: var(--ptr-link-color, #45a2ff);
+		/* Reference body URLs use the .linkColor class = #025aa8 (a darker blue),
+		   NOT the app link #45a2ff. */
+		color: #025aa8;
 		text-decoration: underline;
 		word-break: break-all;
 	}

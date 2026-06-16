@@ -56,6 +56,27 @@
 		}
 	}
 
+	// Read an optional start offset (whole seconds) from a YouTube URL's `t` or
+	// `start` param. Accepts plain seconds ("90", "90s") or YouTube's h/m/s form
+	// ("1m30s", "1h2m3s"). The presenter's "Start at" choice rides along in the
+	// broadcast URL as `t=<sec>` (see PlayYouTubeModal), so the embed can seek to it.
+	function youtubeStart(url: string): number | null {
+		try {
+			const params = new URL(url).searchParams;
+			const raw = params.get('start') ?? params.get('t');
+			if (!raw) return null;
+			const sec = raw.match(/^(\d+)s?$/);
+			if (sec) return Number(sec[1]) || null;
+			const m = raw.toLowerCase().match(/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/);
+			if (m && (m[1] || m[2] || m[3])) {
+				return Number(m[1] || 0) * 3600 + Number(m[2] || 0) * 60 + Number(m[3] || 0) || null;
+			}
+			return null;
+		} catch {
+			return null;
+		}
+	}
+
 	// Build the embed src for whichever iframe provider is active. `null` means
 	// either this isn't an iframe kind, or we can't build a valid embed (e.g. a
 	// malformed YouTube URL) — the template renders nothing in that case rather
@@ -67,7 +88,9 @@
 		}
 		if (media.kind === 'youtube') {
 			const id = youtubeId(media.url);
-			return id ? `https://www.youtube.com/embed/${id}?autoplay=1` : null;
+			if (!id) return null;
+			const start = youtubeStart(media.url);
+			return `https://www.youtube.com/embed/${id}?autoplay=1${start ? `&start=${start}` : ''}`;
 		}
 		return null;
 	});

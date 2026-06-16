@@ -68,6 +68,11 @@ async fn room_socket(
 ) {
     let (mut sink, mut stream) = socket.split();
     let mut rx = state.hub.subscribe(room);
+    // Private-message channel for THIS connection's (room, user): only payloads
+    // targeted at this user via `publish_to_user` arrive here. The room-wide `rx`
+    // above never carries a `PrivateMessage` frame, so the privacy boundary is the
+    // separation of these two receivers.
+    let mut pm_rx = state.hub.subscribe_user(room, user);
 
     // Register this connection so kick-duplicates can target it and so presence
     // is ref-counted (closing one of a user's tabs must not drop their presence).
@@ -88,8 +93,20 @@ async fn room_socket(
         tokio::select! {
             // Kicked as a duplicate session: shut this socket down.
             () = &mut closed => break,
-            // Fan-out from Redis → this client.
+            // Room-wide fan-out from Redis → this client.
             event = rx.recv() => match event {
+                Ok(payload) => {
+                    if sink.send(Message::Text(payload.into())).await.is_err() {
+                        break;
+                    }
+                }
+                Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => {}
+                Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
+            },
+            // Per-user (private-message) fan-out → only this user's sockets. A
+            // `PrivateMessage` reaches the sender and recipient exclusively through
+            // this arm; no other room member's socket subscribes to this channel.
+            event = pm_rx.recv() => match event {
                 Ok(payload) => {
                     if sink.send(Message::Text(payload.into())).await.is_err() {
                         break;

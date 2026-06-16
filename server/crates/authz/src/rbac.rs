@@ -21,6 +21,8 @@ pub const fn required_permission(action: Action) -> Permission {
         Action::SubscribeScreen => Permission::ScreenSubscribe,
         Action::PostMessage => Permission::MessageCreate,
         Action::ReadMessage => Permission::MessageRead,
+        Action::SendPrivateMessage => Permission::PrivateMessageSend,
+        Action::ReadAllPrivateMessages => Permission::PrivateMessageReadAll,
         Action::JoinRoom => Permission::ScreenSubscribe,
         Action::ManageRoom => Permission::RoomManage,
         Action::ManageMembers => Permission::MemberManage,
@@ -41,23 +43,27 @@ pub const fn role_has(role: Role, permission: Permission) -> bool {
 }
 
 const fn member_has(permission: Permission) -> bool {
+    // Members may send 1:1 private messages within a room (v1). The ABAC layer
+    // still gates this on room access (membership or a public room).
     matches!(
         permission,
         Permission::AlertRead
             | Permission::ScreenSubscribe
             | Permission::MessageCreate
             | Permission::MessageRead
+            | Permission::PrivateMessageSend
     )
 }
 
 const fn admin_has(permission: Permission) -> bool {
-    // Admins add alert posting, screen publishing, and room/member management
-    // on top of everything a member can do.
+    // Admins add alert posting, screen publishing, room/member management, and
+    // reading every private message (moderation) on top of a member's caps.
     member_has(permission)
         || matches!(
             permission,
             Permission::AlertCreate
                 | Permission::ScreenPublish
+                | Permission::PrivateMessageReadAll
                 | Permission::RoomManage
                 | Permission::MemberManage
         )
@@ -74,6 +80,8 @@ pub fn permissions_for(role: Role) -> Vec<Permission> {
         Permission::ScreenSubscribe,
         Permission::MessageCreate,
         Permission::MessageRead,
+        Permission::PrivateMessageSend,
+        Permission::PrivateMessageReadAll,
         Permission::RoomManage,
         Permission::MemberManage,
         Permission::UserManage,
@@ -103,6 +111,14 @@ mod tests {
 
     #[test]
     fn super_admin_holds_everything() {
-        assert_eq!(permissions_for(Role::SuperAdmin).len(), 9);
+        assert_eq!(permissions_for(Role::SuperAdmin).len(), 11);
+    }
+
+    #[test]
+    fn members_send_pms_but_cannot_read_all() {
+        // v1: members may send 1:1 PMs; only admins/super admins may read all.
+        assert!(role_has(Role::Member, Permission::PrivateMessageSend));
+        assert!(!role_has(Role::Member, Permission::PrivateMessageReadAll));
+        assert!(role_has(Role::Admin, Permission::PrivateMessageReadAll));
     }
 }

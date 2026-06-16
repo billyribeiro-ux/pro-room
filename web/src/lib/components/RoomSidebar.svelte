@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PresentUser } from '$lib/types';
+	import type { ScreenShareRoom } from '$lib/livekit.svelte';
 	import Icon from './Icon.svelte';
 	import MobileAppInfoModal from './modals/MobileAppInfoModal.svelte';
 	import ConnectivityCheckModal from './modals/ConnectivityCheckModal.svelte';
@@ -13,14 +14,31 @@
 	import SessionControlModal from './modals/SessionControlModal.svelte';
 	import DebugLogModal from './modals/DebugLogModal.svelte';
 	import AllUserPmModal from './modals/AllUserPmModal.svelte';
+	import { debugLogText, logEvent } from '$lib/stores/sessionLog.svelte';
 
 	interface Props {
 		open: boolean;
 		present: PresentUser[];
 		canManage?: boolean;
 		onClose?: () => void;
+		roomId: string;
+		/** Live LiveKit room — lets AV Settings apply device changes to the call. */
+		screen?: ScreenShareRoom;
+		/** Broadcast a YouTube video to the room (Play YouTube modal → media-for-all). */
+		onPlayMedia?: (kind: 'youtube', url: string) => void;
+		/** Stop the room-wide video for everyone. */
+		onStopMedia?: () => void;
 	}
-	let { open, present, canManage = false, onClose }: Props = $props();
+	let {
+		open,
+		present,
+		canManage = false,
+		onClose,
+		roomId,
+		screen,
+		onPlayMedia,
+		onStopMedia
+	}: Props = $props();
 
 	let mobileAppOpen = $state(false);
 	let connectivityOpen = $state(false);
@@ -205,7 +223,10 @@
 							class="sub-item"
 							aria-label="Debug Log"
 							title="Debug Log"
-							onclick={() => (debugLogOpen = true)}
+							onclick={() => {
+								logEvent('Debug log opened');
+								debugLogOpen = true;
+							}}
 						>
 							<Icon name="bug" size={14} /><span class="label">Debug Log</span>
 						</button>
@@ -253,16 +274,34 @@
 
 <MobileAppInfoModal open={mobileAppOpen} onClose={() => (mobileAppOpen = false)} />
 <ConnectivityCheckModal open={connectivityOpen} onClose={() => (connectivityOpen = false)} />
-<AVSettingsModal open={avSettingsOpen} onClose={() => (avSettingsOpen = false)} />
-<AlertLogsModal open={alertLogsOpen} onClose={() => (alertLogsOpen = false)} />
-<ChatLogsModal open={chatLogsOpen} onClose={() => (chatLogsOpen = false)} />
+<AVSettingsModal
+	open={avSettingsOpen}
+	onClose={() => (avSettingsOpen = false)}
+	onChangeDevices={(audioInputId, videoInputId) => {
+		if (audioInputId) screen?.switchDevice('audioinput', audioInputId);
+		if (videoInputId) screen?.switchDevice('videoinput', videoInputId);
+	}}
+	onSave={({ speakerId, audioInputId, videoInputId }) => {
+		if (audioInputId) screen?.switchDevice('audioinput', audioInputId);
+		if (videoInputId) screen?.switchDevice('videoinput', videoInputId);
+		if (speakerId) screen?.switchDevice('audiooutput', speakerId);
+	}}
+/>
+<AlertLogsModal open={alertLogsOpen} onClose={() => (alertLogsOpen = false)} {roomId} />
+<ChatLogsModal open={chatLogsOpen} onClose={() => (chatLogsOpen = false)} {roomId} />
 <MutedUsersModal open={mutedUsersOpen} onClose={() => (mutedUsersOpen = false)} />
 <FollowedUsersModal open={followedUsersOpen} onClose={() => (followedUsersOpen = false)} />
 <SettingsModal open={settingsOpen} onClose={() => (settingsOpen = false)} />
-<PlayYouTubeModal open={playYoutubeOpen} onClose={() => (playYoutubeOpen = false)} />
+<PlayYouTubeModal
+	open={playYoutubeOpen}
+	onClose={() => (playYoutubeOpen = false)}
+	{roomId}
+	onPlay={onPlayMedia}
+	onStop={onStopMedia}
+/>
 <SessionControlModal open={sessionControlOpen} onClose={() => (sessionControlOpen = false)} />
-<DebugLogModal open={debugLogOpen} onClose={() => (debugLogOpen = false)} />
-<AllUserPmModal open={allPmOpen} onClose={() => (allPmOpen = false)} />
+<DebugLogModal open={debugLogOpen} onClose={() => (debugLogOpen = false)} log={debugLogText()} />
+<AllUserPmModal open={allPmOpen} onClose={() => (allPmOpen = false)} {roomId} {present} />
 
 <style>
 	/* In-flow push rail (matches the reference room-sidebar): when open it takes
@@ -432,15 +471,13 @@
 	.item-ps {
 		padding-left: 4px;
 	}
-	/* Reference .sidebar-menu:hover only shifts the text color toward
-	   --lighter-gray (#eee on the dark skin) with a 1px transparent border and
-	   NO background fill. On this light skin the equivalent prominence shift is
-	   toward a darker readable gray (#212529, the file's existing dark token).
+	/* Reference .sidebar-item:hover (presenter-deep matchedRule): a #e9ecef
+	   background fill, and the text color STAYS the resting #676767 (the
+	   .sidebar-item rule is color:inherit !important, so hover does not darken it).
 	   Border stays transparent (reserved in the base rule, no geometry shift). */
 	.item:hover:not(:disabled) {
-		color: #212529;
+		background: #e9ecef;
 		border-color: transparent;
-		background: transparent;
 	}
 	.item:disabled {
 		opacity: 0.6;

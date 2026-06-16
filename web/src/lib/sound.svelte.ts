@@ -25,6 +25,7 @@
  */
 import { browser } from '$app/environment';
 import { dnd, isMuted, type DndKey } from './stores/dnd.svelte';
+import { prefs } from './stores/prefs.svelte';
 
 /** A notification sound cue. */
 export type SoundKind = 'alert' | 'qa' | 'chat' | 'nta' | 'reaction' | 'recordStart' | 'recordStop';
@@ -62,6 +63,18 @@ const CHANNEL: Record<SoundKind, DndKey | null> = {
 	reaction: 'chat',
 	recordStart: null,
 	recordStop: null
+};
+
+/**
+ * Per-sound preference gate (the General Settings "sound on" toggles, reference
+ * preferences.recordingStartSound / recordingStopSound / reactionsPopup). Only
+ * the kinds with a dedicated toggle are listed; the rest are gated by DND alone.
+ * A `false` pref suppresses that cue regardless of DND.
+ */
+const PREF: Partial<Record<SoundKind, 'startRecordingSound' | 'stopRecordingSound' | 'reactionsResponse'>> = {
+	recordStart: 'startRecordingSound',
+	recordStop: 'stopRecordingSound',
+	reaction: 'reactionsResponse'
 };
 
 /**
@@ -103,6 +116,10 @@ function getContext(): AudioContext | null {
  */
 export function playSound(kind: SoundKind): void {
 	if (!browser) return;
+
+	// User turned this specific sound off in Settings — suppress regardless of DND.
+	const prefKey = PREF[kind];
+	if (prefKey && !prefs[prefKey]) return;
 
 	const channel = CHANNEL[kind];
 	// Cues with a dedicated channel are gated via `isMuted` (which also folds in

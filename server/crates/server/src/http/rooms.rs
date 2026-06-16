@@ -49,6 +49,8 @@ struct RoomDetail {
     room: Room,
     your_role: Option<Role>,
     is_member: bool,
+    /// The caller's own user id (so the client can mark its messages / target PMs).
+    viewer_id: domain::UserId,
     capabilities: RoomCapabilities,
 }
 
@@ -57,6 +59,7 @@ fn detail_from(ctx: &RoomContext) -> RoomDetail {
         room: ctx.room.clone(),
         your_role: ctx.membership.as_ref().map(|m| m.role),
         is_member: ctx.membership.is_some(),
+        viewer_id: ctx.viewer_id(),
         capabilities: RoomCapabilities {
             can_manage_room: ctx.allows(Action::ManageRoom),
             can_manage_members: ctx.allows(Action::ManageMembers),

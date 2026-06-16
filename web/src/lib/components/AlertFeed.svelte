@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import type { Alert, PresentUser, ReactionTally, ReactionTarget } from '$lib/types';
 	import { formatStamp, dayKey, formatDayLabel } from '$lib/message';
 	import MessageBody from './MessageBody.svelte';
@@ -11,6 +12,8 @@
 	import ScheduledAlertsModal from './modals/ScheduledAlertsModal.svelte';
 	import AlertSendReportModal from './modals/AlertSendReportModal.svelte';
 	import Icon from './Icon.svelte';
+	import { prefs } from '$lib/stores/prefs.svelte';
+	import { shouldThrottle } from '$lib/stores/visibility.svelte';
 
 	export type AlertItem = Alert & {
 		author_name?: string;
@@ -59,8 +62,29 @@
 	// Trader options for the Advanced Search multi-select = the present roster.
 	const traderOptions = $derived(present.map((p) => ({ value: p.user_id, label: p.display_name })));
 
-	// Which row's ⠿ menu is open (alert id), or null when none.
+	// Which row's ⠇ menu is open (alert id), or null when none.
 	let openMenuId = $state<string | null>(null);
+
+	// The scrollable feed; auto-scrolls to the newest alert (the bottom) when one
+	// arrives — but only if the viewer is already near the bottom, so reading
+	// older alerts isn't interrupted. Measured BEFORE the DOM updates ($effect.pre,
+	// the canonical Svelte 5 chat-autoscroll pattern). `stickNext` is a one-shot
+	// override set when WE post, so our own alert always scrolls into view even if
+	// we'd scrolled up. It's a plain (non-reactive) let so toggling it doesn't
+	// re-run the effect — only an alerts change does.
+	let feedEl = $state<HTMLUListElement | undefined>();
+	let stickNext = false;
+	$effect.pre(() => {
+		if (!feedEl) return; // not yet mounted
+		alerts.length; // re-run whenever an alert is added/removed
+		// "Tab sleep optimization": skip autoscroll layout work while hidden.
+		if (shouldThrottle()) return;
+		const atBottom = feedEl.offsetHeight + feedEl.scrollTop > feedEl.scrollHeight - 40;
+		if (atBottom || stickNext) {
+			stickNext = false;
+			tick().then(() => feedEl?.scrollTo(0, feedEl.scrollHeight));
+		}
+	});
 
 	// The alert whose Q&A thread modal is open, or null when closed. Self-
 	// contained: opening the modal requires no new props from the parent.
@@ -82,6 +106,9 @@
 		e.preventDefault();
 		if (!symbol.trim()) return;
 		posting = true;
+		// Always scroll our own alert into view when it lands (bypasses the
+		// near-bottom guard), even if we'd scrolled up to read history.
+		stickNext = true;
 		try {
 			await onPost(symbol, side, note);
 			symbol = '';
@@ -205,7 +232,12 @@
 		</div>
 	</header>
 
-	<ul class="feed">
+	<ul
+		class="feed"
+		class:compact={prefs.alertMode === 'compact'}
+		class:small-images={prefs.smallImagePreview}
+		bind:this={feedEl}
+	>
 		{#each alerts as a, i (a.id)}
 			{@const prev = alerts[i - 1]}
 			{@const newDay = !prev || dayKey(prev.created_at) !== dayKey(a.created_at)}
@@ -225,9 +257,11 @@
 							aria-expanded={openMenuId === a.id}
 							onclick={() => toggleMenu(a.id)}
 						>
-							<!-- Same ⠿ glyph as the chat row menu (reference uses the same kebab on
-							     both); alerts keep it on the LEFT. -->
-							<span class="ellipsis" aria-hidden="true">⠿</span>
+							<!-- Reference kebab is "⠇" (U+2807, the single braille column: 3 dots
+							     filled on the left, 3 empty on the right) — confirmed by the
+							     reference CSS `menuTriger::after { content: "⠇" }`. Alerts keep it
+							     on the LEFT. -->
+							<span class="ellipsis" aria-hidden="true">⠇</span>
 						</button>
 						{#if openMenuId === a.id}
 							<div class="menu" role="menu">
@@ -357,7 +391,11 @@
 />
 <AlertFilterModal open={filterOpen} onClose={() => (filterOpen = false)} />
 <ScheduledAlertsModal open={scheduledOpen} onClose={() => (scheduledOpen = false)} />
-<PostAlertModal open={postAlertOpen} onClose={() => (postAlertOpen = false)} />
+<PostAlertModal
+	open={postAlertOpen}
+	onClose={() => (postAlertOpen = false)}
+	onPosted={() => (stickNext = true)}
+/>
 <AlertSendReportModal
 	open={reportAlert !== null}
 	alertId={reportAlert?.id}
@@ -492,7 +530,7 @@
 		justify-content: center;
 		background: transparent;
 		border: none;
-		/* Reference .msgMenu: the ⠿ glyph at 20px / weight 600, flat (no radius),
+		/* Reference .msgMenu: the ⠇ glyph at 20px / weight 600, flat (no radius),
 		   hover #8c8686. Same kebab as the chat row (alerts keep it on the left). */
 		color: var(--username-color);
 		font-weight: 600;
@@ -631,8 +669,11 @@
 	}
 
 	.body {
-		/* Reference body div.text-formated.ml-2.mr-2 = 8px left + right margin. */
-		margin: 0.35rem 8px 0 8px;
+		/* Reference body (div.text-formated) sits in the content column to the RIGHT
+		   of the avatar gutter, aligned under the username (capture: body x=66 ≈
+		   username x=62, both past the avatar) — NOT flush-left under the avatar.
+		   Left indent ≈ kebab + avatar + row gaps; right margin stays mr-2 (8px). */
+		margin: 0.35rem 8px 0 71px;
 		color: #676767;
 		/* Reference .text-formated body is font-weight 100 (Open Sans Thin, now
 		   loaded). Very thin per the capture. */
@@ -650,6 +691,23 @@
 		margin-top: 0.5rem;
 		border-radius: 6px;
 		object-fit: cover;
+	}
+	/* "Smaller image preview" (reference smallImagePreview): shrink the inline
+	   posted alert image. */
+	.feed.small-images .alert-img {
+		max-width: 120px;
+	}
+	/* "Compact Mode" (reference switchAlertMode 'c'): denser alert rows. */
+	.feed.compact .msg-box {
+		padding-top: 0.15rem;
+		padding-bottom: 0.1rem;
+	}
+	.feed.compact .row1 {
+		gap: 0.35rem;
+	}
+	.feed.compact .body {
+		font-size: 0.82em;
+		line-height: 1.25;
 	}
 
 	form {

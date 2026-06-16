@@ -40,7 +40,12 @@ export default defineConfig({
 		viewport: { width: 1680, height: 950 },
 		screenshot: 'only-on-failure',
 		trace: 'retain-on-failure',
-		...devices['Desktop Chrome']
+		...devices['Desktop Chrome'],
+		launchOptions: {
+			// Synthetic camera/mic so getUserMedia resolves headlessly (AV E2E) and
+			// permission is auto-granted — required for the camera/mic lifecycle specs.
+			args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream']
+		}
 	},
 	webServer: {
 		command: 'vite dev --port 5174 --strictPort',

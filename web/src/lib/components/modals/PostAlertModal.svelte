@@ -39,10 +39,13 @@
 	let uploading = $state(false);
 	let error = $state<string | null>(null);
 
-	// Appended when "Add Legal Disclosure?" is checked (the "not financial
-	// advice" disclaimer the reference room attaches to alerts).
-	const DISCLOSURE =
-		'\n\n— Not financial advice. For educational and informational purposes only; trade at your own risk.';
+	// The default "not financial advice" disclaimer the reference room attaches to
+	// alerts. When "Add Legal Disclosure?" is checked an editable box appears
+	// pre-filled with this text; the poster can change the wording and the
+	// (possibly edited) text is what gets appended to the note.
+	const DEFAULT_DISCLOSURE =
+		'— Not financial advice. For educational and informational purposes only; trade at your own risk.';
+	let disclosureText = $state(DEFAULT_DISCLOSURE);
 
 	/** The text that becomes the alert note for the active tab. */
 	function composeNote(): string {
@@ -111,7 +114,8 @@
 			error = 'Enter alert content before posting.';
 			return;
 		}
-		const note = legalDisclosure ? baseNote + DISCLOSURE : baseNote;
+		const disclosure = disclosureText.trim();
+		const note = legalDisclosure && disclosure ? `${baseNote}\n\n${disclosure}` : baseNote;
 		error = null;
 		posting = true;
 		try {
@@ -262,6 +266,22 @@
 			</div>
 		{/if}
 
+		{#if legalDisclosure}
+			<!-- Revealed when "Add Legal Disclosure?" is ticked: an editable box
+			     pre-filled with the default disclaimer (the poster can change it). The
+			     edited text is appended to the alert note on post. -->
+			<div class="field disclosure">
+				<label for="alert-disclosure">Legal Disclosure</label>
+				<textarea
+					id="alert-disclosure"
+					name="alert-disclosure"
+					aria-label="Legal disclosure text"
+					bind:value={disclosureText}
+					rows="3"
+				></textarea>
+			</div>
+		{/if}
+
 		{#if error}<p class="err" role="alert">{error}</p>{/if}
 	</div>
 
@@ -327,6 +347,11 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.3rem;
+	}
+	.disclosure label {
+		font-size: 0.78rem;
+		font-weight: 600;
+		color: var(--text-dim);
 	}
 	/* Reference url/media inputs sit in a Bootstrap input-group with an fa-link prepend. */
 	.input-group {

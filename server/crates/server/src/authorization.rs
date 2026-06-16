@@ -27,6 +27,12 @@ pub struct RoomContext {
 }
 
 impl RoomContext {
+    /// The viewer's (caller's) user id — used by the client to mark its own
+    /// messages and target private messages.
+    pub fn viewer_id(&self) -> domain::UserId {
+        self.subject.user_id
+    }
+
     /// Load the room (404 if missing) and the caller's membership.
     pub async fn load(state: &AppState, user: &SessionUser, room_id: RoomId) -> AppResult<Self> {
         let room = db::rooms::find_by_id(&state.db, room_id)
@@ -144,6 +150,8 @@ const fn action_name(action: Action) -> &'static str {
         Action::SubscribeScreen => "subscribe_screen",
         Action::PostMessage => "post_message",
         Action::ReadMessage => "read_message",
+        Action::SendPrivateMessage => "send_private_message",
+        Action::ReadAllPrivateMessages => "read_all_private_messages",
         Action::JoinRoom => "join_room",
         Action::ManageRoom => "manage_room",
         Action::ManageMembers => "manage_members",

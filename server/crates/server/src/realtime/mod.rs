@@ -6,6 +6,19 @@
 //! single background dispatcher subscribes to all room channels and relays each
 //! message into the matching local broadcast channel. Because publishes always
 //! round-trip through Redis, local and remote clients receive events uniformly.
+//!
+//! ## Per-user targeted delivery (private messages)
+//!
+//! Room fan-out reaches every client in a room, which is wrong for 1:1 private
+//! messages — those must reach only the two participants. A parallel path exists
+//! for that: a per-`(room, user)` Redis channel `proom:pmuser:{room}:{user}` with
+//! its own in-process broadcast map. [`RealtimeHub::publish_to_user`] writes there
+//! (Redis fan-out, so a recipient connected to a *different* instance is still
+//! reached), and each WebSocket subscribes to its own `(room, user)` channel via
+//! [`RealtimeHub::subscribe_user`]. A single dispatcher psubscribes to both
+//! patterns and routes each message into the matching room or user channel. No
+//! payload published with `publish_to_user` ever touches the room channel, so the
+//! rest of the room never sees a private message.
 
 pub mod event;
 
@@ -25,6 +38,19 @@ const CHANNEL_CAPACITY: usize = 256;
 
 const CHANNEL_PREFIX: &str = "proom:room:";
 const CHANNEL_PATTERN: &str = "proom:room:*";
+
+/// Per-user (private-message) channel prefix and pattern. The channel name is
+/// `proom:pmuser:{room}:{user}` — both ids are plain UUIDs, so `room_user_from_channel`
+/// splits on the single `:` that separates them after this prefix.
+const USER_CHANNEL_PREFIX: &str = "proom:pmuser:";
+const USER_CHANNEL_PATTERN: &str = "proom:pmuser:*";
+
+/// Shared map of room-wide local broadcast senders, keyed by room.
+type RoomChannels = Arc<Mutex<HashMap<RoomId, broadcast::Sender<String>>>>;
+
+/// Shared map of per-user (private-message) local broadcast senders, keyed by the
+/// `(room, user)` pair so a private payload can never land on a room-wide channel.
+type UserChannels = Arc<Mutex<HashMap<(RoomId, UserId), broadcast::Sender<String>>>>;
 
 /// One live WebSocket connection registered with the hub. `id` is a process-wide
 /// monotonic counter, so a higher `id` means a newer connection — that's how
@@ -130,7 +156,11 @@ impl ConnRegistry {
 
 #[derive(Clone)]
 pub struct RealtimeHub {
-    rooms: Arc<Mutex<HashMap<RoomId, broadcast::Sender<String>>>>,
+    rooms: RoomChannels,
+    /// Per-`(room, user)` in-process broadcast channels for private-message
+    /// delivery. Separate from `rooms` so a private payload can never be routed
+    /// onto a room-wide channel.
+    user_rooms: UserChannels,
     registry: Arc<ConnRegistry>,
     cache: Cache,
 }
@@ -139,27 +169,35 @@ impl RealtimeHub {
     pub fn new(cache: Cache) -> Self {
         Self {
             rooms: Arc::new(Mutex::new(HashMap::new())),
+            user_rooms: Arc::new(Mutex::new(HashMap::new())),
             registry: Arc::new(ConnRegistry::default()),
             cache,
         }
     }
 
-    /// Spawn the Redis→local dispatcher. Must be called once at startup.
+    /// Spawn the Redis→local dispatcher. Must be called once at startup. It
+    /// subscribes to both the room-wide pattern and the per-user (private-message)
+    /// pattern, routing each message into the matching local channel.
     pub async fn start(&self) -> anyhow::Result<()> {
         let subscriber = self.cache.subscriber().await?;
         subscriber
             .psubscribe(CHANNEL_PATTERN)
             .await
             .context("psubscribe room pattern")?;
+        subscriber
+            .psubscribe(USER_CHANNEL_PATTERN)
+            .await
+            .context("psubscribe user pattern")?;
 
         let rooms = self.rooms.clone();
+        let user_rooms = self.user_rooms.clone();
         let mut rx = subscriber.message_rx();
         tokio::spawn(async move {
             // Keep the subscriber alive for the lifetime of the task.
             let _subscriber = subscriber;
             loop {
                 match rx.recv().await {
-                    Ok(message) => dispatch(&rooms, &message),
+                    Ok(message) => dispatch(&rooms, &user_rooms, &message),
                     Err(broadcast::error::RecvError::Lagged(n)) => {
                         tracing::warn!(lagged = n, "realtime dispatcher lagged");
                     }
@@ -179,6 +217,31 @@ impl RealtimeHub {
     /// Publish an event to a room (fanned out via Redis to all instances).
     pub async fn publish(&self, room: RoomId, payload: &str) -> anyhow::Result<()> {
         let channel = format!("{CHANNEL_PREFIX}{room}");
+        self.cache.publish(&channel, payload).await
+    }
+
+    /// Subscribe to a single `(room, user)` private-message channel, creating it
+    /// if needed. Each WebSocket subscribes to its own pair so it receives only
+    /// payloads targeted at that user.
+    pub fn subscribe_user(&self, room: RoomId, user: UserId) -> broadcast::Receiver<String> {
+        self.user_local_sender(room, user).subscribe()
+    }
+
+    /// Publish a payload to exactly one user in a room (the private-message path).
+    /// Fanned out via Redis so a recipient connected to a *different* instance is
+    /// still reached — this must not rely on the in-memory [`ConnRegistry`], which
+    /// is local to this instance and would silently drop cross-instance recipients.
+    ///
+    /// PRIVACY-CRITICAL: the channel is `proom:pmuser:{room}:{user}`, which the
+    /// dispatcher routes only into that user's local channel. It never touches the
+    /// room-wide channel, so no other room member can receive this payload.
+    pub async fn publish_to_user(
+        &self,
+        room: RoomId,
+        user: UserId,
+        payload: &str,
+    ) -> anyhow::Result<()> {
+        let channel = format!("{USER_CHANNEL_PREFIX}{room}:{user}");
         self.cache.publish(&channel, payload).await
     }
 
@@ -217,13 +280,37 @@ impl RealtimeHub {
             .or_insert_with(|| broadcast::channel(CHANNEL_CAPACITY).0)
             .clone()
     }
+
+    fn user_local_sender(&self, room: RoomId, user: UserId) -> broadcast::Sender<String> {
+        let mut user_rooms = self.user_rooms.lock().expect("hub user mutex poisoned");
+        user_rooms
+            .entry((room, user))
+            .or_insert_with(|| broadcast::channel(CHANNEL_CAPACITY).0)
+            .clone()
+    }
 }
 
-fn dispatch(rooms: &Arc<Mutex<HashMap<RoomId, broadcast::Sender<String>>>>, message: &Message) {
-    let Some(room) = room_from_channel(&message.channel) else {
+fn dispatch(rooms: &RoomChannels, user_rooms: &UserChannels, message: &Message) {
+    let Some(payload) = message.value.as_string() else {
         return;
     };
-    let Some(payload) = message.value.as_string() else {
+    // Per-user (private-message) channels are checked first: their prefix is a
+    // strict superset shape of the room prefix only by coincidence of the
+    // `proom:` namespace, so we match the more specific `pmuser:` form before the
+    // room form. A user payload routes ONLY into that user's local channel.
+    if let Some((room, user)) = room_user_from_channel(&message.channel) {
+        let sender = {
+            let user_rooms = user_rooms.lock().expect("hub user mutex poisoned");
+            user_rooms.get(&(room, user)).cloned()
+        };
+        if let Some(sender) = sender {
+            // Err means no active receivers; that's fine.
+            let _ = sender.send(payload);
+        }
+        return;
+    }
+
+    let Some(room) = room_from_channel(&message.channel) else {
         return;
     };
     // Only deliver to rooms that have local subscribers; if none, drop.
@@ -242,6 +329,16 @@ fn room_from_channel(channel: &str) -> Option<RoomId> {
     suffix.parse::<uuid::Uuid>().ok().map(RoomId::from_uuid)
 }
 
+/// Parse a `proom:pmuser:{room}:{user}` channel into its `(room, user)` pair.
+/// Returns `None` for any other channel shape (e.g. the room-wide channel).
+fn room_user_from_channel(channel: &str) -> Option<(RoomId, UserId)> {
+    let suffix = channel.strip_prefix(USER_CHANNEL_PREFIX)?;
+    let (room, user) = suffix.split_once(':')?;
+    let room = room.parse::<uuid::Uuid>().ok().map(RoomId::from_uuid)?;
+    let user = user.parse::<uuid::Uuid>().ok().map(UserId::from_uuid)?;
+    Some((room, user))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -252,6 +349,24 @@ mod tests {
     }
     fn user() -> UserId {
         UserId::from_uuid(uuid::Uuid::new_v4())
+    }
+
+    #[test]
+    fn channel_parsers_do_not_cross_contaminate() {
+        let r = room();
+        let u = user();
+        let room_ch = format!("{CHANNEL_PREFIX}{r}");
+        let user_ch = format!("{USER_CHANNEL_PREFIX}{r}:{u}");
+
+        // The room-wide channel never parses as a per-user channel (so a room
+        // payload can't be misrouted into one user's private stream)…
+        assert_eq!(room_from_channel(&room_ch), Some(r));
+        assert_eq!(room_user_from_channel(&room_ch), None);
+
+        // …and the per-user channel never parses as a room channel (so a private
+        // payload can't be fanned out room-wide).
+        assert_eq!(room_user_from_channel(&user_ch), Some((r, u)));
+        assert_eq!(room_from_channel(&user_ch), None);
     }
 
     /// A connection's close signal fires iff its `notified()` resolves promptly

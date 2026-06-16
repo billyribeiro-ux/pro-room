@@ -18,6 +18,8 @@ pub fn evaluate(subject: &Subject, action: Action, resource: &Resource, ctx: &Co
             room_access(subject, resource, ctx)
         }
         Action::PostMessage => post_message(subject, resource, ctx),
+        Action::SendPrivateMessage => send_private_message(subject, resource, ctx),
+        Action::ReadAllPrivateMessages => read_all_private_messages(subject, resource, ctx),
         Action::ManageRoom => manage_room(subject, resource),
         Action::ManageMembers => manage_members(subject, resource),
         // Account-wide; RBAC (super-admin only) already settled it.
@@ -98,6 +100,44 @@ fn post_message(subject: &Subject, resource: &Resource, ctx: &Context) -> Decisi
     }
 }
 
+/// Sending a 1:1 private message: same room-access gate as posting chat. Super
+/// admins always; otherwise the sender must be a member or in a public room.
+/// RBAC has already confirmed the role may send PMs at all (members may, v1).
+///
+/// v1 note: the upstream reference additionally gates member↔member PMs behind a
+/// per-room `user_pm` flag. That flag is deferred — this policy permits any
+/// room-accessing member to PM. When the flag lands it becomes an extra check
+/// here (and on `RoomResource`), not a role change.
+fn send_private_message(subject: &Subject, resource: &Resource, ctx: &Context) -> Decision {
+    if is_super(subject) {
+        return Decision::Allow;
+    }
+    let permitted = match resource {
+        Resource::Room(room) => has_room_access(room, ctx),
+        Resource::PrivateMessage(_) => ctx.is_room_member,
+        _ => false,
+    };
+    if permitted {
+        Decision::Allow
+    } else {
+        Decision::deny("policy: not a member of the room")
+    }
+}
+
+/// Reading every private message for a peer (admin moderation). RBAC has already
+/// restricted this to admins and super admins; here a non-super admin must be a
+/// member of the room, while a super admin may read across any room. Mirrors the
+/// `present_action` moderation gate.
+fn read_all_private_messages(subject: &Subject, resource: &Resource, ctx: &Context) -> Decision {
+    if !matches!(resource, Resource::Room(_) | Resource::PrivateMessage(_)) {
+        return Decision::deny("policy: expected a room or private-message resource");
+    }
+    if is_super(subject) || ctx.is_room_member {
+        return Decision::Allow;
+    }
+    Decision::deny("policy: not a member of the room")
+}
+
 /// A non-admin may access a room if they are a member or the room is public.
 fn has_room_access(room: &RoomResource, ctx: &Context) -> bool {
     ctx.is_room_member || room.visibility == RoomVisibility::Public
@@ -119,4 +159,3 @@ fn manage_members(subject: &Subject, resource: &Resource) -> Decision {
     // Reuse the room-management constraint: owner or super admin.
     manage_room(subject, resource)
 }
-

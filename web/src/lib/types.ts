@@ -49,6 +49,8 @@ export interface RoomDetail {
 	room: Room;
 	your_role: Role | null;
 	is_member: boolean;
+	/** The caller's own user id — used to mark own messages and target PMs. */
+	viewer_id: string;
 	capabilities: RoomCapabilities;
 }
 
@@ -81,6 +83,10 @@ export interface Message {
 	channel: ChatChannel;
 	created_at: string;
 	author_name?: string;
+	/** The author's effective room role; present on listed messages (MessageView)
+	 * and merged onto live messages from the chat event. Clients style
+	 * admin/super_admin messages distinctly (kebab on the right + grey row). */
+	author_role?: Role;
 }
 
 export interface PresentUser {
@@ -147,9 +153,30 @@ export interface PresenceEntry {
 }
 
 // Realtime events pushed over the room WebSocket (discriminated by `type`).
+/** A 1:1 private message (matches the Rust `PrivateMessageView`). */
+export interface PrivateMessageView {
+	id: string;
+	room_id: string;
+	sender_id: string;
+	recipient_id: string;
+	body: string;
+	created_at: string;
+	sender_name: string;
+	recipient_name: string;
+}
+
+/** One PM conversation summary for the inbox (matches `PrivateThreadSummary`). */
+export interface PrivateThreadSummary {
+	peer_id: string;
+	peer_name: string;
+	last_body: string;
+	last_at: string;
+}
+
 export type RoomEvent =
 	| { type: 'alert'; alert: Alert; author_name: string }
-	| { type: 'chat'; message: Message; author_name: string }
+	| { type: 'chat'; message: Message; author_name: string; author_role: Role }
+	| { type: 'private_message'; message: PrivateMessageView }
 	| { type: 'presence'; users: PresentUser[] }
 	| { type: 'live'; is_live: boolean }
 	| { type: 'poll'; poll: PollDetail }

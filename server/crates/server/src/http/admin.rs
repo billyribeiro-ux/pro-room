@@ -12,17 +12,19 @@
 //! - lock-screen        → [`Action::ManageRoom`]
 //! - delete message     → [`Action::ManageRoom`]
 //! - delete alert       → [`Action::ManageRoom`]
+//! - read all PMs       → [`Action::ReadAllPrivateMessages`]
 
 use crate::auth::session::CurrentUser;
 use crate::authorization::RoomContext;
 use crate::db;
+use crate::db::private_messages::PrivateMessageView;
 use crate::error::{AppError, AppResult};
 use crate::realtime::event::RoomEvent;
 use crate::state::AppState;
 use axum::Json;
 use axum::Router;
 use axum::extract::{Path, State};
-use axum::routing::{delete, post};
+use axum::routing::{delete, get, post};
 use domain::{Action, AlertId, MessageId, Role, RoomId, UserId};
 use serde::Deserialize;
 
@@ -42,7 +44,11 @@ pub fn router() -> Router<AppState> {
             delete(delete_message),
         )
         .route("/api/rooms/{id}/alerts/{alert_id}", delete(delete_alert))
+        .route("/api/rooms/{id}/admin/pm/{peer_id}", get(all_user_pm))
 }
+
+/// Newest-first cap on the admin "all PMs for a peer" read.
+const MAX_ADMIN_PM: i64 = 200;
 
 /// An "ok" acknowledgement body shared by the commands that have no richer
 /// payload to return. The broadcast WS event carries the live state; the HTTP
@@ -260,6 +266,24 @@ async fn delete_alert(
     let event = RoomEvent::AlertDeleted { id: alert_id };
     let _ = state.hub.publish(id, &event.to_json()).await;
     Ok(ok())
+}
+
+/// Read every private message in the room involving `peer_id` (sent or received),
+/// newest-first — the admin moderation view of a user's PMs. RBAC:
+/// [`Action::ReadAllPrivateMessages`] (admins / super admins only; the ABAC layer
+/// additionally requires a non-super admin to be a member of the room). Ordinary
+/// members can never reach this — `SendPrivateMessage` only lets them read their
+/// own pair via `http::private_messages::thread`.
+async fn all_user_pm(
+    State(state): State<AppState>,
+    CurrentUser(user): CurrentUser,
+    Path((id, peer_id)): Path<(RoomId, UserId)>,
+) -> AppResult<Json<Vec<PrivateMessageView>>> {
+    let ctx = RoomContext::load(&state, &user, id).await?;
+    ctx.ensure(&state, Action::ReadAllPrivateMessages).await?;
+    Ok(Json(
+        db::private_messages::all_for_peer(&state.db, id, peer_id, MAX_ADMIN_PM).await?,
+    ))
 }
 
 /// Whether `role` may join a locked room. Admins and super admins always may;

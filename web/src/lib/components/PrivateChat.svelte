@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { tick } from 'svelte';
 	import Icon from './Icon.svelte';
+	import { privateChat, sendPrivate, isMine } from '$lib/privateChat.svelte';
 
 	interface Peer {
 		display_name?: string;
@@ -11,15 +12,10 @@
 		open: boolean;
 		onClose: () => void;
 		peer?: Peer;
-		onSend?: (text: string) => void;
 	}
-	let { open, onClose, peer, onSend }: Props = $props();
+	let { open, onClose, peer }: Props = $props();
 
-	type PrivateMessage = { id: number; mine: boolean; body: string };
-
-	let messages = $state<PrivateMessage[]>([]);
 	let body = $state('');
-	let nextId = 0;
 	let textareaEl = $state<HTMLTextAreaElement | null>(null);
 	let listEl = $state<HTMLUListElement | null>(null);
 
@@ -30,7 +26,7 @@
 	// the documented Svelte pattern: $effect.pre tracking messages.length + tick().
 	$effect.pre(() => {
 		if (!listEl) return;
-		void messages.length; // track so this re-runs when a message is added
+		void privateChat.messages.length; // track so this re-runs when a message is added
 		const atBottom = listEl.offsetHeight + listEl.scrollTop >= listEl.scrollHeight - 40;
 		if (atBottom) {
 			tick().then(() => listEl?.scrollTo(0, listEl.scrollHeight));
@@ -48,8 +44,9 @@
 	function send() {
 		const text = body.trim();
 		if (!text) return;
-		messages.push({ id: nextId++, mine: true, body: text });
-		onSend?.(text);
+		// Persist + deliver via the backend; the POST result + WS echo are de-duped
+		// by id in the store, so the bubble appears once.
+		void sendPrivate(text);
 		body = '';
 		autogrow();
 	}
@@ -84,8 +81,8 @@
 		</header>
 
 		<ul class="messages" bind:this={listEl}>
-			{#each messages as m (m.id)}
-				<li class="msg-row" class:mine={m.mine}>
+			{#each privateChat.messages as m (m.id)}
+				<li class="msg-row" class:mine={isMine(m)}>
 					<span class="bubble">{m.body}</span>
 				</li>
 			{:else}

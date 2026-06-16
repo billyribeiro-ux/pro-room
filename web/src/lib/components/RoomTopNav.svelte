@@ -294,7 +294,9 @@
 	.users {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.3rem;
+		/* Reference span.users computed gap is `normal` (no flex gap) — the fa-user +
+		   count spacing is intrinsic, keeping the pill at its true ~24px width. */
+		gap: normal;
 		/* Reference span.users: fa-user + count, 14px / 21px weight 300, padding
 		   1px 5px, margin 0 5px, with a 1px SOLID WHITE border box
 		   (--users-color #fff, --users-border-color #fff). */

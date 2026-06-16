@@ -2,6 +2,7 @@
 	import Modal from '../Modal.svelte';
 	import Icon from '../Icon.svelte';
 	import { openPrivateChat } from '$lib/privateChat.svelte';
+	import { muted, followed } from '$lib/stores/social.svelte';
 
 	interface User {
 		display_name?: string;
@@ -19,6 +20,9 @@
 	const name = $derived(user?.display_name?.trim() || user?.user_id || 'Unknown user');
 	const initial = $derived(name.charAt(0).toUpperCase() || '?');
 	const online = $derived(user?.online ?? false);
+	// Client-side follow / mute (per-device list; mute hides this user's chat).
+	const isFollowed = $derived(followed.has(user?.user_id));
+	const isMuted = $derived(muted.has(user?.user_id));
 </script>
 
 {#snippet header()}
@@ -47,11 +51,27 @@
 	>
 		<Icon name="comment" size={15} /> Private Chat
 	</button>
-	<button type="button" class="action" aria-label="Follow this user">
-		<Icon name="user-plus" size={15} /> <span>Follow</span>
+	<button
+		type="button"
+		class="action"
+		class:active={isFollowed}
+		aria-label={isFollowed ? 'Unfollow this user' : 'Follow this user'}
+		aria-pressed={isFollowed}
+		onclick={() => followed.toggle({ user_id: user?.user_id, display_name: user?.display_name })}
+	>
+		<Icon name={isFollowed ? 'user-check' : 'user-plus'} size={15} />
+		<span>{isFollowed ? 'Following' : 'Follow'}</span>
 	</button>
-	<button type="button" class="action" aria-label="Mute this user">
-		<Icon name="bell-slash" size={15} /> <span>Mute</span>
+	<button
+		type="button"
+		class="action"
+		class:active={isMuted}
+		aria-label={isMuted ? 'Unmute this user' : 'Mute this user'}
+		aria-pressed={isMuted}
+		onclick={() => muted.toggle({ user_id: user?.user_id, display_name: user?.display_name })}
+	>
+		<Icon name={isMuted ? 'bell' : 'bell-slash'} size={15} />
+		<span>{isMuted ? 'Muted' : 'Mute'}</span>
 	</button>
 	<button type="button" class="close-btn" onclick={onClose}>Close</button>
 {/snippet}
@@ -215,6 +235,12 @@
 	.action:hover {
 		border-color: var(--accent);
 		color: var(--accent);
+	}
+	/* Toggled-on state for Follow/Mute (user is followed / muted). */
+	.action.active {
+		background: var(--accent);
+		border-color: var(--accent);
+		color: #fff;
 	}
 	.close-btn {
 		background: var(--modal-btn-secondary, #444);

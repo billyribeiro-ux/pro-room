@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { API_URL } from '$lib/config';
+	import { playSound } from '$lib/sound.svelte';
 	import Icon from './Icon.svelte';
 
 	interface Props {
@@ -63,6 +64,9 @@
 			};
 			recorder.start(1000);
 			recording = true;
+			// Recording-start cue (reference recordingStartSound), gated by the
+			// Settings "Start recording sound" preference inside playSound.
+			playSound('recordStart');
 			elapsed = 0;
 			timer = setInterval(() => (elapsed += 1), 1000);
 		} catch (err) {
@@ -75,8 +79,12 @@
 	}
 
 	function stop() {
+		const wasRecording = !!recorder && recorder.state !== 'inactive';
 		if (recorder && recorder.state !== 'inactive') recorder.stop();
 		stopTracks();
+		// Recording-stop cue (reference recordingStopSound), gated by the Settings
+		// "Stop recording sound" preference inside playSound.
+		if (wasRecording) playSound('recordStop');
 	}
 
 	function download() {

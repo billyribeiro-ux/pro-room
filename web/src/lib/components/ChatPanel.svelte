@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import type {
 		Message,
 		ChatChannel,
@@ -7,6 +8,9 @@
 		ReactionTarget
 	} from '$lib/types';
 	import { formatStamp, dayKey, formatDayLabel } from '$lib/message';
+	import { muted } from '$lib/stores/social.svelte';
+	import { prefs } from '$lib/stores/prefs.svelte';
+	import { shouldThrottle } from '$lib/stores/visibility.svelte';
 	import MessageBody from './MessageBody.svelte';
 	import ReactionBar from './ReactionBar.svelte';
 	import UserInfoModal from './modals/UserInfoModal.svelte';
@@ -53,11 +57,49 @@
 	let body = $state('');
 	let sending = $state(false);
 
+	// Hide chat from muted users (client-side, per-device list) — matches the
+	// reference, where muting filters that user's messages locally.
+	const filteredMessages = $derived(messages.filter((m) => !muted.has(m.author_id)));
+
+	// "Reduce Chatlog Memory" (reference trimChatLogs): when on, only keep the most
+	// recent TRIM_SIZE rows in view — fewer DOM nodes + less retained state. Mirrors
+	// the reference, which shift()s the oldest entries past globals.trimLogSize.
+	const TRIM_SIZE = 300;
+	const visibleMessages = $derived(
+		prefs.trimChatLogs && filteredMessages.length > TRIM_SIZE
+			? filteredMessages.slice(-TRIM_SIZE)
+			: filteredMessages
+	);
+
 	// Trader options for the Advanced Search multi-select = the present roster.
 	const traderOptions = $derived(present.map((p) => ({ value: p.user_id, label: p.display_name })));
 
-	// Which row's ⠿ menu is open (message id), or null when none.
+	// Which row's ⠇ menu is open (message id), or null when none.
 	let openMenuId = $state<string | null>(null);
+
+	// The scrollable message list; auto-scrolls to the newest message (the bottom)
+	// when one arrives — but only if the viewer is already near the bottom, so
+	// scrolling up to read history isn't interrupted. Measured BEFORE the DOM
+	// updates ($effect.pre — the canonical Svelte 5 chat-autoscroll pattern).
+	let messagesEl = $state<HTMLUListElement | undefined>();
+	// One-shot override set when WE send, so our own message always scrolls into
+	// view even if we'd scrolled up. Plain (non-reactive) let — only a messages
+	// change re-runs the effect, not toggling this flag.
+	let stickNext = false;
+	$effect.pre(() => {
+		if (!messagesEl) return; // not yet mounted
+		visibleMessages.length; // re-run whenever the (filtered) list changes
+		// "Tab sleep optimization": skip the autoscroll DOM write while the tab is
+		// hidden so a backgrounded room doesn't do layout work.
+		if (shouldThrottle()) return;
+		const atBottom = messagesEl.offsetHeight + messagesEl.scrollTop > messagesEl.scrollHeight - 40;
+		// "Always Scroll To Bottom" (reference alwaysScrollToBottom) overrides the
+		// near-bottom guard so the log always snaps to the newest message.
+		if (atBottom || stickNext || prefs.alwaysScrollToBottom) {
+			stickNext = false;
+			tick().then(() => messagesEl?.scrollTo(0, messagesEl.scrollHeight));
+		}
+	});
 
 	// User-info modal target (a row's author), or null when closed.
 	let infoUser = $state<{ display_name?: string; user_id?: string; online?: boolean } | null>(null);
@@ -78,8 +120,11 @@
 
 	async function send() {
 		const text = body.trim();
-		if (!text) return;
+		if (!text || sending) return;
 		sending = true;
+		// Always scroll our own message into view when it lands (bypasses the
+		// near-bottom guard).
+		stickNext = true;
 		try {
 			await onPost(text);
 			body = '';
@@ -178,16 +223,21 @@
 		</div>
 	</header>
 
-	<ul class="messages">
-		{#each messages as m, i (m.id)}
-			{@const prev = messages[i - 1]}
+	<ul
+		class="messages"
+		class:compact={prefs.chatMode === 'compact'}
+		class:small-images={prefs.smallImagePreview}
+		bind:this={messagesEl}
+	>
+		{#each visibleMessages as m, i (m.id)}
+			{@const prev = visibleMessages[i - 1]}
 			{@const newDay = !prev || dayKey(prev.created_at) !== dayKey(m.created_at)}
 			{#if newDay}
 				<li class="separator-row">
 					<span class="separator">{formatDayLabel(m.created_at)}</span>
 				</li>
 			{/if}
-			<li class="msg-box">
+			<li class="msg-box" class:elevated={!!m.author_role && m.author_role !== 'member'}>
 				<div class="row1">
 					<div class="msg-menu">
 						<button
@@ -198,10 +248,11 @@
 							aria-expanded={openMenuId === m.id}
 							onclick={() => toggleMenu(m.id)}
 						>
-							<!-- Reference row menu is the DOUBLE-column dots kebab "⠿" (U+283F,
-							     2 cols × 3 dots), 20px / weight 600 in the username colour —
-							     not the single-column ⠇ and not a FA icon. -->
-							<span class="ellipsis" aria-hidden="true">⠿</span>
+							<!-- Reference row menu is the single-column dots kebab "⠇" (U+2807:
+							     3 dots filled on the left, 3 empty on the right), 20px / weight 600
+							     in the username colour — confirmed by the reference CSS
+							     `menuTriger::after { content: "⠇" }`. -->
+							<span class="ellipsis" aria-hidden="true">⠇</span>
 						</button>
 						{#if openMenuId === m.id}
 							<div class="menu" role="menu">
@@ -237,7 +288,7 @@
 						<span class="avatar" aria-hidden="true">{initials(m.author_name)}</span>
 					{/if}
 
-					<span class="username" style:color={m.author_color ?? '#000'}
+					<span class="username" style:color={m.author_color ?? 'var(--username-color)'}
 						>{m.author_name ?? 'trader'}</span
 					>
 
@@ -260,25 +311,52 @@
 	</ul>
 
 	{#if canPost}
+		<!-- Reference #textAreaHolder.textSendDiv: a flat white 8px-radius holder with
+		     a flex-fill textarea (div.px-0.flex-fill) and a centered icon column
+		     (div.textAreaBtnsCol) of span.textAreaBtns — Add Emojis (far fa-smile),
+		     Upload an Image (fas fa-image), Search for GIFs (12px "GIF"). There is NO
+		     Send button: Enter sends, Shift+Enter inserts a newline. -->
 		<form onsubmit={onSubmit}>
 			<div class="pill">
-				<textarea
-					id="chat-composer"
-					name="message"
-					bind:this={textareaEl}
-					bind:value={body}
-					rows="1"
-					maxlength="2000"
-					placeholder="Type your message here.."
-					oninput={autogrow}
-					onkeydown={onComposerKeydown}
-				></textarea>
-				<button type="button" class="ic" aria-label="Emoji"><Icon name="smile" size={18} /></button>
-				<button type="button" class="ic" aria-label="Image"><Icon name="image" size={18} /></button>
-
-				<button type="button" class="ic gif" aria-label="GIF">GIF</button>
+				<div class="txt-wrap">
+					<textarea
+						id="chat-composer"
+						name="message"
+						bind:this={textareaEl}
+						bind:value={body}
+						rows="1"
+						spellcheck="true"
+						maxlength="2000"
+						placeholder="Type your message here.."
+						oninput={autogrow}
+						onkeydown={onComposerKeydown}
+					></textarea>
+				</div>
+				<div class="textAreaBtnsCol">
+					<button
+						type="button"
+						class="textAreaBtns"
+						aria-label="Add Emojis"
+						title="Add Emojis"
+					>
+						<Icon name="smile" family="regular" size={18} />
+					</button>
+					<button
+						type="button"
+						class="textAreaBtns"
+						aria-label="Upload an Image"
+						title="Upload an Image"
+					>
+						<Icon name="image" size={18} />
+					</button>
+					<button
+						type="button"
+						class="textAreaBtns gif"
+						aria-label="Search for GIFs"
+						title="Search for GIFs">GIF</button
+					>
+				</div>
 			</div>
-			<button type="submit" class="send" disabled={sending}>Send</button>
 		</form>
 	{:else}
 		<p class="readonly">You can read the chat. Join the room to participate.</p>
@@ -392,8 +470,10 @@
 		padding: 0;
 		flex: 1;
 		overflow-y: auto;
-		/* Reference chat scroll bg matches the rows (--msgs-bg light = #f1f1f1). */
-		background: #f1f1f1;
+		/* Reference chat scroll bg matches the regular rows: the computed
+		   --lightTheme-msgs-bg is #fff (the JSON cssVariables.root, authoritative
+		   over the conflicting #f1f1f1 !important source). */
+		background: #ffffff;
 	}
 	.empty {
 		padding: 0.6rem 0.85rem;
@@ -426,11 +506,35 @@
 	.msg-box {
 		position: relative;
 		padding: 0.6rem 0.85rem 0.25rem;
-		/* Reference chat .msg-box: bg --msgs-bg (light) = #f1f1f1, flat, with a top
-		   divider --msg-border-color = #d9d9d9. */
-		background: #f1f1f1;
+		/* Reference chat .msg-box: bg --msgs-bg (light, computed) = #fff, flat, with
+		   a top divider --msg-border-color = #d9d9d9. */
+		background: #ffffff;
 		border-top: 1px solid #d9d9d9;
 		font-size: var(--msg-font-size);
+	}
+	/* Reference .msg-box-adm: messages from an admin/super-admin (the author's
+	   effective room role) get the grey row --msgs-bg-adm = #f4f4f4. */
+	.msg-box.elevated {
+		background: #f4f4f4;
+	}
+	/* "Compact Mode" (reference switchChatDisplayMode 'c'): denser rows — tighter
+	   vertical padding + smaller body, so more messages fit on screen. */
+	.messages.compact .msg-box {
+		padding-top: 0.3rem;
+		padding-bottom: 0.1rem;
+	}
+	.messages.compact .row1 {
+		gap: 0.35rem;
+	}
+	.messages.compact .body {
+		font-size: 0.82em;
+		line-height: 1.25;
+	}
+	/* "Smaller image preview" (reference smallImagePreview): inline body images
+	   render at a reduced max size. The avatar is unaffected. */
+	.messages.small-images :global(.body img) {
+		max-width: 120px;
+		max-height: 120px;
 	}
 	.row1 {
 		display: flex;
@@ -438,17 +542,18 @@
 		gap: 0.5rem;
 	}
 
-	/* Reference chat rows are ALL left-aligned with the menu on the left
-	   (`.msg-left` + `.msgMenu.dropright`) — verified across 250+ rows in 6
-	   snapshots; `.msg-right`/`.presenter-msg-right` exist in CSS but are never
-	   applied. So chat does NOT bubble — every message renders left, like alerts. */
+	/* Reference chat rows: a REGULAR member's row is left-aligned with the ⠇ menu
+	   on the LEFT (like alerts). An admin/super-admin row (`.msg-box-adm`) puts the
+	   menu on the RIGHT and tints the row grey. The body stays left-aligned in both. */
 
 	.msg-menu {
 		position: relative;
 		flex-shrink: 0;
-		/* Reference CHAT row: the ⠿ menu sits on the RIGHT of the row (the message
-		   body still renders left-aligned). order:1 pushes it past the
-		   right-floated timestamp to the far right edge. (Alerts keep it on the left.) */
+		/* Regular rows: menu first → left edge (default flex order). */
+	}
+	/* Admin/super-admin rows: order:1 pushes the menu past the right-floated
+	   timestamp to the far right edge. */
+	.msg-box.elevated .msg-menu {
 		order: 1;
 	}
 	.menu-trigger {
@@ -457,7 +562,7 @@
 		justify-content: center;
 		background: transparent;
 		border: none;
-		/* Reference .msgMenu: the "⠿" glyph at 20px / weight 600 in the username
+		/* Reference .msgMenu: the "⠇" glyph at 20px / weight 600 in the username
 		   colour (light-theme --username-color resolves to #000), flat (no radius);
 		   hover #8c8686 (--light-brown) at weight 900. */
 		color: #000;
@@ -477,9 +582,10 @@
 	.menu {
 		position: absolute;
 		top: 100%;
-		/* Menu is on the right of the chat row, so the dropdown opens from the right edge. */
-		right: 0;
-		left: auto;
+		/* Regular rows: the kebab is on the left, so the dropdown opens from the
+		   left edge. Admin/super-admin rows flip it (see .elevated .menu below). */
+		left: 0;
+		right: auto;
 		z-index: 5;
 		min-width: 9rem;
 		margin-top: 0.2rem;
@@ -490,6 +596,12 @@
 		padding: 0.25rem;
 		display: flex;
 		flex-direction: column;
+	}
+	/* Admin/super-admin rows: kebab is on the right, so the dropdown opens from
+	   the right edge instead. */
+	.msg-box.elevated .menu {
+		right: 0;
+		left: auto;
 	}
 	.menu button {
 		display: flex;
@@ -539,10 +651,11 @@
 	.username {
 		font-size: 14px;
 		font-weight: 900;
-		/* Reference chat .username colour is the light-theme --username-color = #000
-		   (a per-user author_color still wins via the inline style); cursor:pointer
+		/* Reference chat .username computed colour is --lightTheme-username-color =
+		   #0a6db1 (room link-blue), per the presenter-deep matchedRule — NOT #000.
+		   A per-user author_color still wins via the inline style; cursor:pointer
 		   matches the reference (the name opens user info). */
-		color: #000;
+		color: var(--username-color);
 		cursor: pointer;
 		/* Reference .username (mx-1) has 4px horizontal margin. */
 		margin: 0 4px;
@@ -561,22 +674,36 @@
 	}
 
 	.body {
-		margin: 0.35rem 0 0 8px;
-		/* Reference chat body (.msg-left/.msg-right) colour --msg-color (light) =
-		   #1a1a1a; 13px with line-height 1.5 (19.5px). */
-		color: #1a1a1a;
+		/* Body lines up under the USERNAME (the content column past the avatar), like
+		   the alert rows — not flush-left under the avatar. A regular member row has
+		   the kebab on the LEFT (kebab + avatar + gaps push the username to ~86px), so
+		   the body indents ~72px. Admin/super-admin rows move the kebab to the RIGHT,
+		   so only the avatar pushes the username (~62px) → smaller indent (see
+		   .elevated below). */
+		margin: 0.35rem 0 0 72px;
+		/* Reference chat body (div.msg-left) computed colour --lightTheme-msg-color =
+		   #676767 (per the presenter-deep computed style) — NOT #1a1a1a; 13px /
+		   line-height 1.5 (19.5px). */
+		color: #676767;
 		line-height: 1.5;
 		word-break: break-word;
 		white-space: pre-wrap;
 		font-size: var(--msg-font-size);
 	}
+	/* Admin/super-admin rows: kebab is on the right, so only the avatar offsets the
+	   username — the body lines up under it at a smaller indent. */
+	.msg-box.elevated .body {
+		margin-left: 48px;
+	}
 	form {
 		display: flex;
 		align-items: center;
 		gap: 0.45rem;
-		padding: 0.6rem 0.65rem;
+		/* Reference textSendDiv sits on the white chat surface with a 5px margin;
+		   no separate gray bar (the #textAreaHolder bg is #fff). */
+		padding: 5px;
 		border-top: 1px solid #e3e5ec;
-		background: #f7f8fa;
+		background: #ffffff;
 		flex-shrink: 0;
 	}
 	.pill {
@@ -585,65 +712,71 @@
 		gap: 0.2rem;
 		flex: 1;
 		min-width: 0;
+		/* Reference #textAreaHolder.textSendDiv: white, BORDERLESS, 8px radius
+		   (not a 999px pill with a gray border) — presenter-deep chatHolder. */
 		background: #ffffff;
-		border: 1px solid #d3d7e0;
-		border-radius: 999px;
+		border: none;
+		border-radius: 8px;
 		padding: 0.15rem 0.5rem;
 	}
-	.pill textarea {
+	/* Reference div.px-0.flex-fill: the textarea grows to fill, no h-padding. */
+	.txt-wrap {
 		flex: 1;
 		min-width: 0;
+		padding: 0;
+	}
+	.pill textarea {
+		width: 100%;
+		box-sizing: border-box;
 		border: none;
 		outline: none;
 		background: transparent;
-		/* Reference --lightTheme-textarea-color. */
+		/* Reference .txt-area.form-control.border-0: --lightTheme-textarea-color
+		   #676767, 14px / weight 400 / line-height 21px, min-height 35, max-height
+		   300, padding 6px 5px (presenter-deep chatTextarea computed). */
 		color: #676767;
-		font-size: 0.85rem;
-		padding: 0.35rem 0.25rem;
+		font-size: 14px;
+		font-weight: 400;
+		padding: 6px 5px;
 		resize: none;
 		overflow-y: auto;
-		max-height: 120px;
-		line-height: 1.4;
+		min-height: 35px;
+		max-height: 300px;
+		line-height: 21px;
 		font-family: inherit;
 	}
-	.ic {
+	/* Reference div.textAreaBtnsCol: a centered row of the emoji/image/GIF buttons. */
+	.textAreaBtnsCol {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+		padding: 0;
+		margin: 0;
+		gap: 0.2rem;
+		flex-shrink: 0;
+	}
+	/* Reference span.textAreaBtns: icon-only button, --textarea-holder-btns-color
+	   #676767, hover --textarea-holder-btns-hover-color #0a6db1. */
+	.textAreaBtns {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
 		background: transparent;
 		border: none;
-		/* Reference --textarea-holder-btns-color. */
 		color: #676767;
 		cursor: pointer;
 		padding: 0.25rem;
 		border-radius: 6px;
 	}
-	.ic:hover {
-		/* Reference --textarea-holder-btns-hover-color. */
+	.textAreaBtns:hover {
 		color: #0a6db1;
 	}
-	.gif {
-		font-size: 0.72rem;
+	.textAreaBtns.gif {
+		/* Reference GIF button: 12px text. */
+		font-size: 12px;
 		font-weight: 800;
 		letter-spacing: 0.02em;
-	}
-	.send {
-		background: #0a6db1;
-		color: #fff;
-		border: none;
-		border-radius: 999px;
-		padding: 0.45rem 0.9rem;
-		font-weight: 600;
-		font-size: 0.82rem;
-		cursor: pointer;
-		flex-shrink: 0;
-	}
-	.send:hover {
-		background: #095a93;
-	}
-	.send:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
 	}
 	.readonly {
 		margin: 0;

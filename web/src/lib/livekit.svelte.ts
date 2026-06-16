@@ -8,6 +8,7 @@ import {
 	type RemoteTrackPublication,
 	type TrackPublication
 } from 'livekit-client';
+import { logEvent } from './stores/sessionLog.svelte';
 
 /** A participant currently sharing their screen, plus the attachable track. */
 export interface SharePublisher {
@@ -36,8 +37,17 @@ export class ScreenShareRoom {
 	/** Identities of participants currently speaking (includes local). */
 	activeSpeakers = $state<string[]>([]);
 	error = $state<string | null>(null);
+	/** True when the browser blocked autoplay of remote audio (presenter mic /
+	    screen audio). The first in-room user gesture calls resumeAudio() to unlock. */
+	audioBlocked = $state(false);
 
 	#room: Room | null = null;
+	/** When sharing via an external encoder (OBS Virtual Camera / XSplit VCam), the
+	   feed is a getUserMedia video track published with the ScreenShare source, so it
+	   renders in the main stage like a browser share. Tracked here so stopSharing can
+	   unpublish it and release the device. Null when sharing via the browser. */
+	#externalPub: LocalTrackPublication | null = null;
+	#externalStream: MediaStream | null = null;
 
 	async connect(url: string, token: string): Promise<void> {
 		const room = new Room({ adaptiveStream: true, dynacast: true });
@@ -68,15 +78,40 @@ export class ScreenShareRoom {
 					.filter((s) => s.audioLevel > 0 || s.isSpeaking)
 					.map((s) => s.identity);
 			})
+			.on(RoomEvent.AudioPlaybackStatusChanged, () => {
+				// The browser blocks autoplay of remote audio (presenter mic / screen
+				// audio) until the user gestures. Surface it so the first in-room click
+				// can unlock it via resumeAudio() — otherwise listeners hear nothing.
+				this.audioBlocked = this.#room ? !this.#room.canPlaybackAudio : false;
+			})
 			.on(RoomEvent.Disconnected, () => {
+				logEvent('LiveKit disconnected');
 				this.connected = false;
 				this.#refresh();
 			});
 
+		logEvent('LiveKit connecting');
 		await room.connect(url, token);
 		this.#room = room;
 		this.connected = true;
+		this.audioBlocked = !room.canPlaybackAudio;
+		logEvent('LiveKit connected');
 		this.#refresh();
+	}
+
+	/**
+	 * Resume blocked remote-audio playback. MUST be called from a user-gesture
+	 * handler (click/tap) or the browser re-blocks it. Members never publish, so
+	 * without this the presenter's mic is silently autoplay-blocked for them.
+	 */
+	async resumeAudio(): Promise<void> {
+		if (!this.#room) return;
+		try {
+			await this.#room.startAudio();
+			this.audioBlocked = !this.#room.canPlaybackAudio;
+		} catch (e) {
+			logEvent(`startAudio failed: ${e instanceof Error ? e.message : String(e)}`);
+		}
 	}
 
 	/** Start sharing this user's screen (admins/super admins only). */
@@ -87,13 +122,68 @@ export class ScreenShareRoom {
 			this.publishing = true;
 			this.#refresh();
 		} catch (e) {
+			logEvent(`Screen-share error: ${e instanceof Error ? e.message : String(e)}`);
 			this.error = e instanceof Error ? e.message : 'failed to start sharing';
+		}
+	}
+
+	/**
+	 * Share via an external encoder (OBS Virtual Camera / XSplit VCam). These
+	 * present as ordinary video-input devices; we capture the virtual cam with
+	 * getUserMedia and publish it as a ScreenShare-source track so it shows in the
+	 * main stage exactly like a browser share. Sets a helpful error if no virtual
+	 * camera is running.
+	 */
+	async startSharingExternalCam(): Promise<void> {
+		if (!this.#room) return;
+		try {
+			// A getUserMedia grant is required before device labels are readable.
+			let stream = await navigator.mediaDevices.getUserMedia({ video: true });
+			const devices = await navigator.mediaDevices.enumerateDevices();
+			const vcam = devices.find(
+				(d) => d.kind === 'videoinput' && /obs|xsplit|vcam|virtual\s*cam/i.test(d.label)
+			);
+			if (!vcam) {
+				stream.getTracks().forEach((t) => t.stop());
+				this.error =
+					'No OBS / XSplit virtual camera found. Start "OBS Virtual Camera" or "XSplit VCam" first, then try again.';
+				return;
+			}
+			// Re-acquire the exact virtual-cam device if the default grant wasn't it.
+			if (stream.getVideoTracks()[0]?.getSettings().deviceId !== vcam.deviceId) {
+				stream.getTracks().forEach((t) => t.stop());
+				stream = await navigator.mediaDevices.getUserMedia({
+					video: { deviceId: { exact: vcam.deviceId } }
+				});
+			}
+			this.#externalStream = stream;
+			this.#externalPub = await this.#room.localParticipant.publishTrack(
+				stream.getVideoTracks()[0],
+				{ source: Track.Source.ScreenShare, name: 'screen' }
+			);
+			this.publishing = true;
+			this.#refresh();
+		} catch (e) {
+			this.#externalStream?.getTracks().forEach((t) => t.stop());
+			this.#externalStream = null;
+			logEvent(`OBS/XSplit cam error: ${e instanceof Error ? e.message : String(e)}`);
+			this.error = e instanceof Error ? e.message : 'failed to start OBS/XSplit cam';
 		}
 	}
 
 	async stopSharing(): Promise<void> {
 		if (!this.#room) return;
-		await this.#room.localParticipant.setScreenShareEnabled(false);
+		if (this.#externalPub) {
+			// External-encoder share: unpublish the track and release the device.
+			if (this.#externalPub.track) {
+				await this.#room.localParticipant.unpublishTrack(this.#externalPub.track);
+			}
+			this.#externalStream?.getTracks().forEach((t) => t.stop());
+			this.#externalPub = null;
+			this.#externalStream = null;
+		} else {
+			await this.#room.localParticipant.setScreenShareEnabled(false);
+		}
 		this.publishing = false;
 		this.#refresh();
 	}
@@ -106,13 +196,22 @@ export class ScreenShareRoom {
 			this.cameraPublishing = true;
 			this.#refresh();
 		} catch (e) {
+			logEvent(`Camera error: ${e instanceof Error ? e.message : String(e)}`);
 			this.error = e instanceof Error ? e.message : 'failed to start camera';
 		}
 	}
 
 	async stopCamera(): Promise<void> {
 		if (!this.#room) return;
-		await this.#room.localParticipant.setCameraEnabled(false);
+		// setCameraEnabled(false) only MUTES the camera in livekit-client — it stops
+		// the device but LEAVES the publication in trackPublications with a non-null
+		// (now-ended) track, so #refresh keeps the tile and it renders BLACK (the
+		// reported bug). Unpublish so the publication is removed and the tile clears;
+		// unpublish also fires LocalTrackUnpublished -> a second #refresh for free.
+		const pub = this.#room.localParticipant.getTrackPublication(Track.Source.Camera);
+		if (pub?.track) {
+			await this.#room.localParticipant.unpublishTrack(pub.track);
+		}
 		this.cameraPublishing = false;
 		this.#refresh();
 	}
@@ -124,13 +223,19 @@ export class ScreenShareRoom {
 			await this.#room.localParticipant.setMicrophoneEnabled(true);
 			this.micPublishing = true;
 		} catch (e) {
+			logEvent(`Mic error: ${e instanceof Error ? e.message : String(e)}`);
 			this.error = e instanceof Error ? e.message : 'failed to start microphone';
 		}
 	}
 
 	async stopMic(): Promise<void> {
 		if (!this.#room) return;
-		await this.#room.localParticipant.setMicrophoneEnabled(false);
+		// Same mute-not-unpublish defect as the camera: unpublish so the mic
+		// publication is actually removed, not left published-but-muted.
+		const pub = this.#room.localParticipant.getTrackPublication(Track.Source.Microphone);
+		if (pub?.track) {
+			await this.#room.localParticipant.unpublishTrack(pub.track);
+		}
 		this.micPublishing = false;
 		this.micMuted = false;
 	}
@@ -149,12 +254,42 @@ export class ScreenShareRoom {
 		}
 	}
 
+	/**
+	 * Apply a device selection (mic/camera/speaker) to the LIVE call. LiveKit
+	 * performs the underlying WebRTC replaceTrack internally, so the published
+	 * track switches input without dropping the tile. For 'audiooutput' it routes
+	 * playback where setSinkId is supported, else resolves false. No-op without a
+	 * connected room or a real device id.
+	 */
+	async switchDevice(kind: MediaDeviceKind, deviceId: string): Promise<void> {
+		if (!this.#room || !deviceId) return;
+		try {
+			// exact=false: store the device as an `ideal` preference, NOT `{exact:id}`.
+			// The AV-Settings modal enumerates devices WITHOUT a getUserMedia grant, so
+			// its ids can be stale/empty; an exact constraint would make the next
+			// startMic/startCamera getUserMedia throw OverconstrainedError (the "mic not
+			// working at all" regression). `ideal` lets acquisition fall back to default.
+			await this.#room.switchActiveDevice(kind, deviceId, false);
+		} catch (e) {
+			logEvent(`Device switch error: ${e instanceof Error ? e.message : String(e)}`);
+			this.error = e instanceof Error ? e.message : 'failed to switch device';
+		}
+	}
+
+	/** The active device id for a kind, or undefined — used to preselect the modal. */
+	getActiveDevice(kind: MediaDeviceKind): string | undefined {
+		return this.#room?.getActiveDevice(kind);
+	}
+
 	/** Whether the given participant identity is currently speaking. */
 	isSpeaking(identity: string): boolean {
 		return this.activeSpeakers.includes(identity);
 	}
 
 	async disconnect(): Promise<void> {
+		this.#externalStream?.getTracks().forEach((t) => t.stop());
+		this.#externalStream = null;
+		this.#externalPub = null;
 		await this.#room?.disconnect();
 		this.#room = null;
 		this.connected = false;

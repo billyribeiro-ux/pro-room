@@ -245,8 +245,9 @@
 		position: relative;
 	}
 
-	/* Bootstrap .btn .btn-sm .btn-dark — a LIGHT-gray pill (dim only via container
-	   opacity .5), NOT navy. */
+	/* Bootstrap 5 .btn .btn-sm .btn-dark — the reference COMPUTED fill is
+	   --bs-dark #212529 with white text (admin-room capture), NOT the app's
+	   --dark #adb5bd light gray (that was the wrong token). */
 	.btn {
 		display: inline-flex;
 		align-items: center;
@@ -265,9 +266,9 @@
 		border-radius: 0.2rem;
 	}
 	.btn-dark {
-		color: rgb(34, 34, 34);
-		background-color: rgb(173, 181, 189);
-		border-color: rgb(173, 181, 189);
+		color: #ffffff;
+		background-color: #212529;
+		border-color: #212529;
 	}
 	/* The three control icons: FA 14px, white (currentColor overridden white). */
 	.zoom-controls-container :global(.icon) {
