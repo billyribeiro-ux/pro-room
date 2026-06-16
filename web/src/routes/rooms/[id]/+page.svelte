@@ -160,7 +160,11 @@
 		const key = `${targetKind}:${targetId}`;
 		try {
 			const summary = await toggleReaction(roomId, targetKind, targetId, emoji);
-			myReactions.set(key, new Set(summary.reactions.filter((t) => t.mine).map((t) => t.emoji)));
+			const mine = new Set(summary.reactions.filter((t) => t.mine).map((t) => t.emoji));
+			// Reaction cue (reference reactionsPopup) when WE add a reaction — gated by
+			// the Settings "Reactions Response" preference inside playSound.
+			if (mine.has(emoji) && !myReactions.get(key)?.has(emoji)) playSound('reaction');
+			myReactions.set(key, mine);
 			reactionsByTarget = { ...reactionsByTarget, [key]: summary.reactions };
 		} catch (err) {
 			error = err instanceof ApiError ? err.message : 'Could not react';
