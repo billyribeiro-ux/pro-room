@@ -49,6 +49,11 @@ pub enum Action {
     SubscribeScreen,
     PostMessage,
     ReadMessage,
+    /// Send a 1:1 private message to another user in a room.
+    SendPrivateMessage,
+    /// Read every private message involving a given peer in a room (admin
+    /// moderation: the manage-room tier).
+    ReadAllPrivateMessages,
     JoinRoom,
     ManageRoom,
     ManageMembers,
@@ -61,6 +66,8 @@ pub enum Resource {
     Room(RoomResource),
     Alert(RoomId),
     Message(RoomId),
+    /// A 1:1 private message exchanged within the given room.
+    PrivateMessage(RoomId),
     User(UserId),
     /// Account-wide actions not scoped to a single object (e.g. user listing).
     System,

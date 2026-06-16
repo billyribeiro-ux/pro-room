@@ -1,6 +1,7 @@
 //! Events broadcast to a room's connected clients over WebSocket. These are
 //! serialized to JSON both for Redis fan-out and for delivery to browsers.
 
+use crate::db::private_messages::PrivateMessageView;
 use domain::entities::{Alert, Message, PollDetail, ReactionSummary};
 use domain::{AlertId, MessageId, Role, UserId};
 use serde::Serialize;
@@ -64,6 +65,14 @@ pub enum RoomEvent {
     /// An admin deleted a single alert. Clients remove the alert with this `id`
     /// from their local feed.
     AlertDeleted { id: AlertId },
+    /// A 1:1 private message was sent. PRIVACY-CRITICAL: this variant is **never**
+    /// delivered via [`crate::realtime::RealtimeHub::publish`] (the room-wide
+    /// channel that fans out to every client). It is delivered **only** via the
+    /// per-user targeted path
+    /// ([`crate::realtime::RealtimeHub::publish_to_user`]) to the sender and the
+    /// recipient. Sending it on the room channel would leak the message to the
+    /// whole room — do not do that.
+    PrivateMessage { message: PrivateMessageView },
 }
 
 /// The payload of a [`RoomEvent::Media`] event: the kind of media and, unless

@@ -144,6 +144,8 @@ const fn action_name(action: Action) -> &'static str {
         Action::SubscribeScreen => "subscribe_screen",
         Action::PostMessage => "post_message",
         Action::ReadMessage => "read_message",
+        Action::SendPrivateMessage => "send_private_message",
+        Action::ReadAllPrivateMessages => "read_all_private_messages",
         Action::JoinRoom => "join_room",
         Action::ManageRoom => "manage_room",
         Action::ManageMembers => "manage_members",

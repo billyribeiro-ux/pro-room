@@ -19,6 +19,10 @@ pub enum Permission {
     MessageCreate,
     /// Read chat messages.
     MessageRead,
+    /// Send a 1:1 private message to another user in a room.
+    PrivateMessageSend,
+    /// Read all private messages in a room (admin moderation).
+    PrivateMessageReadAll,
     /// Create / update / delete rooms and manage their settings.
     RoomManage,
     /// Add / remove members and set their per-room roles.
@@ -37,6 +41,8 @@ impl Permission {
             Self::ScreenSubscribe => "screen.subscribe",
             Self::MessageCreate => "message.create",
             Self::MessageRead => "message.read",
+            Self::PrivateMessageSend => "private_message.send",
+            Self::PrivateMessageReadAll => "private_message.read_all",
             Self::RoomManage => "room.manage",
             Self::MemberManage => "member.manage",
             Self::UserManage => "user.manage",
