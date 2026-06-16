@@ -8,6 +8,7 @@ import {
 	type RemoteTrackPublication,
 	type TrackPublication
 } from 'livekit-client';
+import { logEvent } from './stores/sessionLog.svelte';
 
 /** A participant currently sharing their screen, plus the attachable track. */
 export interface SharePublisher {
@@ -75,13 +76,16 @@ export class ScreenShareRoom {
 					.map((s) => s.identity);
 			})
 			.on(RoomEvent.Disconnected, () => {
+				logEvent('LiveKit disconnected');
 				this.connected = false;
 				this.#refresh();
 			});
 
+		logEvent('LiveKit connecting');
 		await room.connect(url, token);
 		this.#room = room;
 		this.connected = true;
+		logEvent('LiveKit connected');
 		this.#refresh();
 	}
 
@@ -93,6 +97,7 @@ export class ScreenShareRoom {
 			this.publishing = true;
 			this.#refresh();
 		} catch (e) {
+			logEvent(`Screen-share error: ${e instanceof Error ? e.message : String(e)}`);
 			this.error = e instanceof Error ? e.message : 'failed to start sharing';
 		}
 	}
@@ -136,6 +141,7 @@ export class ScreenShareRoom {
 		} catch (e) {
 			this.#externalStream?.getTracks().forEach((t) => t.stop());
 			this.#externalStream = null;
+			logEvent(`OBS/XSplit cam error: ${e instanceof Error ? e.message : String(e)}`);
 			this.error = e instanceof Error ? e.message : 'failed to start OBS/XSplit cam';
 		}
 	}
@@ -165,6 +171,7 @@ export class ScreenShareRoom {
 			this.cameraPublishing = true;
 			this.#refresh();
 		} catch (e) {
+			logEvent(`Camera error: ${e instanceof Error ? e.message : String(e)}`);
 			this.error = e instanceof Error ? e.message : 'failed to start camera';
 		}
 	}
@@ -183,6 +190,7 @@ export class ScreenShareRoom {
 			await this.#room.localParticipant.setMicrophoneEnabled(true);
 			this.micPublishing = true;
 		} catch (e) {
+			logEvent(`Mic error: ${e instanceof Error ? e.message : String(e)}`);
 			this.error = e instanceof Error ? e.message : 'failed to start microphone';
 		}
 	}
@@ -220,6 +228,7 @@ export class ScreenShareRoom {
 		try {
 			await this.#room.switchActiveDevice(kind, deviceId);
 		} catch (e) {
+			logEvent(`Device switch error: ${e instanceof Error ? e.message : String(e)}`);
 			this.error = e instanceof Error ? e.message : 'failed to switch device';
 		}
 	}

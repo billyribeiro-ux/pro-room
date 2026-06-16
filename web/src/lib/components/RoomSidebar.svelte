@@ -14,6 +14,7 @@
 	import SessionControlModal from './modals/SessionControlModal.svelte';
 	import DebugLogModal from './modals/DebugLogModal.svelte';
 	import AllUserPmModal from './modals/AllUserPmModal.svelte';
+	import { debugLogText, logEvent } from '$lib/stores/sessionLog.svelte';
 
 	interface Props {
 		open: boolean;
@@ -222,7 +223,10 @@
 							class="sub-item"
 							aria-label="Debug Log"
 							title="Debug Log"
-							onclick={() => (debugLogOpen = true)}
+							onclick={() => {
+								logEvent('Debug log opened');
+								debugLogOpen = true;
+							}}
 						>
 							<Icon name="bug" size={14} /><span class="label">Debug Log</span>
 						</button>
@@ -296,7 +300,7 @@
 	onStop={onStopMedia}
 />
 <SessionControlModal open={sessionControlOpen} onClose={() => (sessionControlOpen = false)} />
-<DebugLogModal open={debugLogOpen} onClose={() => (debugLogOpen = false)} />
+<DebugLogModal open={debugLogOpen} onClose={() => (debugLogOpen = false)} log={debugLogText()} />
 <AllUserPmModal open={allPmOpen} onClose={() => (allPmOpen = false)} />
 
 <style>

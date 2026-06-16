@@ -1,4 +1,5 @@
 import { WS_URL } from './config';
+import { logEvent } from './stores/sessionLog.svelte';
 import type { RoomEvent } from './types';
 
 /**
@@ -37,6 +38,9 @@ export class RoomSocket {
 		this.#ws = ws;
 
 		ws.onopen = () => {
+			// Log before resetting #retry so a reconnect reads as one (reference parity:
+			// I("Connected to server... is reconnect:")).
+			logEvent(this.#retry > 0 ? `WS reconnected to room ${this.roomId}` : `WS connected to room ${this.roomId}`);
 			this.connected = true;
 			this.#retry = 0;
 			this.#startHeartbeat();
@@ -49,15 +53,20 @@ export class RoomSocket {
 			}
 		};
 		ws.onclose = () => {
+			logEvent(this.#closed ? 'WS disconnected (closed by client)' : 'WS disconnected from server');
 			this.connected = false;
 			this.#stopHeartbeat();
 			if (!this.#closed) this.#scheduleReconnect();
 		};
-		ws.onerror = () => ws.close();
+		ws.onerror = () => {
+			logEvent('WS error');
+			ws.close();
+		};
 	}
 
 	#scheduleReconnect(): void {
 		const delay = Math.min(1000 * 2 ** this.#retry, 15000);
+		logEvent(`WS reconnect scheduled in ${delay}ms (attempt ${this.#retry + 1})`);
 		this.#retry += 1;
 		setTimeout(() => {
 			if (!this.#closed) this.#connect();
