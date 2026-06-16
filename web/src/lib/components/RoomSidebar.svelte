@@ -20,8 +20,20 @@
 		canManage?: boolean;
 		onClose?: () => void;
 		roomId: string;
+		/** Broadcast a YouTube video to the room (Play YouTube modal → media-for-all). */
+		onPlayMedia?: (kind: 'youtube', url: string) => void;
+		/** Stop the room-wide video for everyone. */
+		onStopMedia?: () => void;
 	}
-	let { open, present, canManage = false, onClose, roomId }: Props = $props();
+	let {
+		open,
+		present,
+		canManage = false,
+		onClose,
+		roomId,
+		onPlayMedia,
+		onStopMedia
+	}: Props = $props();
 
 	let mobileAppOpen = $state(false);
 	let connectivityOpen = $state(false);
@@ -260,7 +272,13 @@
 <MutedUsersModal open={mutedUsersOpen} onClose={() => (mutedUsersOpen = false)} />
 <FollowedUsersModal open={followedUsersOpen} onClose={() => (followedUsersOpen = false)} />
 <SettingsModal open={settingsOpen} onClose={() => (settingsOpen = false)} />
-<PlayYouTubeModal open={playYoutubeOpen} onClose={() => (playYoutubeOpen = false)} />
+<PlayYouTubeModal
+	open={playYoutubeOpen}
+	onClose={() => (playYoutubeOpen = false)}
+	{roomId}
+	onPlay={onPlayMedia}
+	onStop={onStopMedia}
+/>
 <SessionControlModal open={sessionControlOpen} onClose={() => (sessionControlOpen = false)} />
 <DebugLogModal open={debugLogOpen} onClose={() => (debugLogOpen = false)} />
 <AllUserPmModal open={allPmOpen} onClose={() => (allPmOpen = false)} />

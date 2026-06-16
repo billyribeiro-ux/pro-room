@@ -386,6 +386,8 @@
 				canManage={caps?.can_manage_room ?? false}
 				onClose={() => (sidebarOpen = false)}
 				{roomId}
+				onPlayMedia={playMedia}
+				onStopMedia={stopMedia}
 			/>
 
 			<div class="layout">
