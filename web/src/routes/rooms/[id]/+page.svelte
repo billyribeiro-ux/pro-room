@@ -165,6 +165,18 @@
 		return id ? (present.find((u) => u.user_id === id)?.display_name ?? null) : null;
 	});
 
+	// Surface AV failures (mic/cam/screen-share permission or device errors). The
+	// LiveKit wrapper sets `screen.error` but renders it nowhere — so a blocked mic
+	// just looked dead. Toast it (with the actionable message) + consume it so a
+	// retry that fails the same way re-toasts.
+	$effect(() => {
+		if (screen.error) {
+			const msg = screen.error;
+			screen.error = null;
+			showToast('Audio / Video', msg, 9000);
+		}
+	});
+
 	// Toggle an emoji reaction on a message/alert. The POST response's `mine` is
 	// authoritative for us, so we rebuild our local set from it.
 	async function onReact(targetKind: ReactionTarget, targetId: string, emoji: string) {

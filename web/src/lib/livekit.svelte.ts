@@ -19,6 +19,35 @@ export interface SharePublisher {
 }
 
 /**
+ * Turn a getUserMedia/getDisplayMedia/device error into an ACTIONABLE message.
+ * Without this, a blocked mic just throws "failed to start microphone" (or is
+ * swallowed) and the control looks dead — the user has no idea permission was
+ * denied. `what` is the human label ("Microphone", "Camera", "Screen share").
+ */
+function avErrorMessage(e: unknown, what: string): string {
+	const name = e instanceof Error ? e.name : '';
+	switch (name) {
+		case 'NotAllowedError':
+		case 'SecurityError':
+			return `${what} access was blocked. Click the camera/mic icon in your browser's address bar (or Site settings), allow it, then try again.`;
+		case 'NotFoundError':
+		case 'DevicesNotFoundError':
+			return `No ${what.toLowerCase()} device found. Connect one (or check it isn't disabled) and try again.`;
+		case 'NotReadableError':
+		case 'TrackStartError':
+			return `Your ${what.toLowerCase()} is in use by another app. Close that app and try again.`;
+		case 'OverconstrainedError':
+			return `The selected ${what.toLowerCase()} device isn't available. Pick another in Audio/Video Settings.`;
+		case 'AbortError':
+			return `${what} could not start (the request was interrupted). Try again.`;
+		default:
+			return e instanceof Error && e.message
+				? `${what}: ${e.message}`
+				: `Could not start ${what.toLowerCase()}.`;
+	}
+}
+
+/**
  * Wraps a LiveKit `Room` and exposes reactive state for the screen-share stage:
  * the set of active publishers (for one/split layout) and whether we are
  * currently publishing. Multiple admins can publish simultaneously.
@@ -123,7 +152,7 @@ export class ScreenShareRoom {
 			this.#refresh();
 		} catch (e) {
 			logEvent(`Screen-share error: ${e instanceof Error ? e.message : String(e)}`);
-			this.error = e instanceof Error ? e.message : 'failed to start sharing';
+			this.error = avErrorMessage(e, 'Screen share');
 		}
 	}
 
@@ -167,7 +196,7 @@ export class ScreenShareRoom {
 			this.#externalStream?.getTracks().forEach((t) => t.stop());
 			this.#externalStream = null;
 			logEvent(`OBS/XSplit cam error: ${e instanceof Error ? e.message : String(e)}`);
-			this.error = e instanceof Error ? e.message : 'failed to start OBS/XSplit cam';
+			this.error = avErrorMessage(e, 'OBS/XSplit virtual camera');
 		}
 	}
 
@@ -197,7 +226,7 @@ export class ScreenShareRoom {
 			this.#refresh();
 		} catch (e) {
 			logEvent(`Camera error: ${e instanceof Error ? e.message : String(e)}`);
-			this.error = e instanceof Error ? e.message : 'failed to start camera';
+			this.error = avErrorMessage(e, 'Camera');
 		}
 	}
 
@@ -224,7 +253,7 @@ export class ScreenShareRoom {
 			this.micPublishing = true;
 		} catch (e) {
 			logEvent(`Mic error: ${e instanceof Error ? e.message : String(e)}`);
-			this.error = e instanceof Error ? e.message : 'failed to start microphone';
+			this.error = avErrorMessage(e, 'Microphone');
 		}
 	}
 
