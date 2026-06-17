@@ -187,19 +187,38 @@ test('send chat messages and switch channels', async ({ page }) => {
 });
 
 test('react to an alert with an emoji', async ({ page }) => {
-	const firstAlert = page.locator('.alerts-pane li.msg-box').first();
-	await expect(firstAlert).toBeVisible();
+	// React to a FRESHLY-posted alert. Reactions persist in the DB, so reacting to a
+	// pre-existing alert toggles non-deterministically (a prior run may have already
+	// added 🚀 → this click would remove it). A unique fresh alert has no prior
+	// reaction, so the 🚀 toggle deterministically lands as "mine".
+	const symbol = `RX${Date.now() % 1_000_000}`;
+	await page.evaluate(
+		async ({ rid, sym }) => {
+			await fetch(`http://localhost:8081/api/rooms/${rid}/alerts`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				credentials: 'include',
+				body: JSON.stringify({ symbol: sym, side: 'buy', note: 'react-test' })
+			});
+		},
+		{ rid: roomId, sym: symbol }
+	);
 
-	await firstAlert.getByRole('button', { name: 'Add reaction' }).click();
+	const row = page.locator('.alerts-pane li.msg-box', { hasText: symbol });
+	await expect(row).toBeVisible({ timeout: 10_000 });
+
+	await row.getByRole('button', { name: 'Add reaction' }).click();
 	const picker = page.locator("[role='menu'][aria-label='Pick a reaction']");
 	await expect(picker).toBeVisible();
 	await shot(page, '11-reaction-picker');
 
 	await picker.getByRole('menuitem', { name: '🚀' }).click();
-	// Pills are server-aggregated (not optimistic) — wait for the broadcast.
-	const pill = firstAlert.locator("button[class*='pill']", { hasText: '🚀' });
+	// Pills are server-aggregated (not optimistic) — wait for the broadcast, then for
+	// the mine state to settle (WS echo can render mine=false a beat before the POST
+	// response sets it true).
+	const pill = row.locator("button[class*='pill']", { hasText: '🚀' });
 	await expect(pill).toBeVisible({ timeout: 10_000 });
-	await expect(pill).toHaveClass(/mine/);
+	await expect(pill).toHaveClass(/mine/, { timeout: 7_000 });
 	await shot(page, '12-reaction-added');
 });
 
