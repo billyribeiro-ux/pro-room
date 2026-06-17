@@ -188,7 +188,7 @@
 						{#each questions as q (q.id)}
 							<li class="q">
 								<div class="q-head">
-									<span class="author">{q.author_id}</span>
+									<span class="author">{q.author_name}</span>
 									<time class="stamp">{formatStamp(q.created_at)}</time>
 								</div>
 								<p class="q-body">
