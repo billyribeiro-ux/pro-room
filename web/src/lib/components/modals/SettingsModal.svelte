@@ -8,6 +8,7 @@
 	} from '$lib/stores/layout.svelte';
 	import { dnd, setDnd } from '$lib/stores/dnd.svelte';
 	import { prefs, setPref } from '$lib/stores/prefs.svelte';
+	import { openFilter } from '$lib/stores/alertFilter.svelte';
 	import Modal from '../Modal.svelte';
 	import Icon from '../Icon.svelte';
 
@@ -383,7 +384,11 @@
 				<span class="state">{prefs.longerAlertPopup ? 'on' : 'off'}</span>
 			</label>
 			<!-- Filter out alerts — integration phase points this at AlertFilterModal. -->
-			<button class="btn ghost wide" type="button" onclick={() => onFilterAlerts?.()}>
+			<button class="btn ghost wide" type="button" onclick={() => {
+					onFilterAlerts?.();
+					onClose();
+					openFilter();
+				}}>
 				<Icon name="filter" size={15} /> Filter out alerts
 			</button>
 		</div>
