@@ -1,7 +1,7 @@
 //! Room CRUD, membership management, live toggle, and `LiveKit` token minting.
 
 use crate::auth::session::CurrentUser;
-use crate::authorization::RoomContext;
+use crate::authorization::{RoomContext, ensure_system_action};
 use crate::db;
 use crate::error::{AppError, AppResult};
 use crate::realtime::event::RoomEvent;
@@ -91,10 +91,13 @@ async fn create(
     CurrentUser(user): CurrentUser,
     Json(body): Json<CreateRoomBody>,
 ) -> AppResult<Json<RoomDetail>> {
-    // Only administrators may create rooms.
-    if !user.global_role.is_admin() {
-        return Err(AppError::Forbidden("only admins may create rooms"));
-    }
+    // Creating a room is an account-wide privileged action. Route it through the
+    // audited system-action gate (RBAC: admin+; writes an audit_log row) rather
+    // than a bare role check — this was the one mutating handler that bypassed the
+    // ensure()/ensure_system_action convention and left zero audit trail.
+    // Action::CreateRoom (NOT ManageRoom: manage_room's policy requires a concrete
+    // room resource and would deny a system-scoped create).
+    ensure_system_action(&state, &user, Action::CreateRoom).await?;
     let name = body.name.trim();
     if name.is_empty() {
         return Err(AppError::BadRequest("room name is required".into()));

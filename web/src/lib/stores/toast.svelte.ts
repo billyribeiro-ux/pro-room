@@ -28,7 +28,11 @@ export function dismissToast(id: string): void {
 export function showToast(title: string, body: string, timeoutMs = 5000): void {
 	if (!browser) return;
 	if (toasts.some((t) => t.title === title && t.body === body)) return;
-	const id = crypto.randomUUID();
+	// crypto.randomUUID requires a secure context — undefined on a plain-HTTP LAN
+	// origin, where it would THROW and kill the toast (e.g. the AV-error toast meant
+	// to explain a blocked mic). Fall back to a time+random id off the secure path.
+	const id =
+		globalThis.crypto?.randomUUID?.() ?? `t-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 	toasts.push({ id, title, body, timeoutMs });
 	setTimeout(() => dismissToast(id), timeoutMs);
 }

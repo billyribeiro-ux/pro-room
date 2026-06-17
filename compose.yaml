@@ -34,6 +34,26 @@ services:
       timeout: 5s
       retries: 10
 
+  # Self-hosted LiveKit SFU for local dev — replaces LiveKit Cloud. The Rust API
+  # mints a room JWT (livekit.rs) signed with LIVEKIT_API_SECRET and hands the
+  # browser LIVEKIT_URL=ws://localhost:7880 to connect here. Config + the matching
+  # key pair live in ./livekit.yaml. No `depends_on`, so
+  # `docker compose up -d livekit` starts ONLY this service (won't touch the
+  # postgres/redis you may already run under another compose project).
+  livekit:
+    # Pinned to 1.13.1 — the version LiveKit Cloud ran (protocol 17). Older 1.8.x
+    # lacks the `/rtc/v1` path that livekit-client 2.19 prefers, which causes a
+    # noisy "v1 RTC path not found – Retrying" warning on every connect.
+    image: livekit/livekit-server:v1.13.1
+    command: ["--config", "/etc/livekit.yaml"]
+    ports:
+      - "7880:7880" # signaling (HTTP/WS) — browser + API connect here
+      - "7881:7881" # TCP ICE fallback
+      - "7882:7882/udp" # WebRTC media (single UDP mux port, see livekit.yaml)
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml:ro
+    restart: unless-stopped
+
 volumes:
   pgdata:
   redisdata:

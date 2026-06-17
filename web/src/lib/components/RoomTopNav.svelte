@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import Icon from './Icon.svelte';
+	import { dnd, setDnd } from '$lib/stores/dnd.svelte';
+	import { prefs, setPref } from '$lib/stores/prefs.svelte';
 
 	interface Props {
 		/** Room display name shown in the brand slot. Integration phase passes the real room name. */
@@ -31,6 +33,11 @@
 		 * talking indicator and the volume dropdown, so the group renders there.
 		 */
 		actions?: Snippet;
+		/** Set the remote-audio output level for this listener (0..1). Wired to
+		    ScreenShareRoom.setRemoteAudioVolume in the room page. */
+		onVolume?: (v: number) => void;
+		/** Mute/unmute remote audio for this listener. Wired to muteRemoteAudio. */
+		onMuteAudio?: (muted: boolean) => void;
 	}
 	let {
 		roomName = 'Trading Room',
@@ -40,27 +47,35 @@
 		onMobileInfo,
 		speaker = null,
 		recording = false,
-		actions
+		actions,
+		onVolume,
+		onMuteAudio
 	}: Props = $props();
 
-	// Local-only UI state — no backend wiring yet.
-	//
-	// POLARITY NOTE (do not invert): the reference app models each sound toggle as a
-	// `*-donot-disturb` checkbox where CHECKED = SUPPRESS the sound. We deliberately keep
-	// these as POSITIVE "sound on" booleans (default true = the user hears the sound) so the
-	// UX status word reads truthfully. When these get backend-wired, the mapping is:
-	//   sound on (true)  === NOT do-not-disturb
-	//   sound off (false) === do-not-disturb / suppressed
-	// Wire it through that identity — do NOT pass these booleans straight into a mute/DND flag.
+	// Volume slider (0..100) + local mute are UI state owned here; their EFFECT on the
+	// presenter audio flows through onVolume/onMuteAudio. Default 100 = full volume so
+	// the displayed slider matches the actual output (no silent attenuation).
 	let volumeOpen = $state(false);
-	let volume = $state(80);
+	let volume = $state(100);
 	let muted = $state(false);
-	let alertSound = $state(true);
-	let qaSound = $state(true);
-	let ntaSound = $state(true);
-	let chatSound = $state(true);
-	let subtitles = $state(false);
-	let dontDisturb = $state(false);
+
+	// The six sound rows are NOW backed by the real stores (no local shadow state).
+	//
+	// POLARITY (the reference's inverted *-donot-disturb model): a dnd flag is
+	// `true = SUPPRESSED`. The checkbox reads as the POSITIVE "sound on" state, so
+	// `checked = !dnd[key]` and toggling it writes `setDnd(key, !checked)`. The status
+	// word is therefore the inverse of the flag (`dnd[key] ? 'off' : 'on'`). The master
+	// "Don't Disturb" row maps straight to `dnd.app` (checked = DND on). Subtitles maps
+	// to the `captionsOverlay` pref (the speech-recognition overlay toggle).
+	function liveVolume(e: Event) {
+		const v = Number((e.currentTarget as HTMLInputElement).value);
+		volume = v;
+		onVolume?.(v / 100);
+	}
+	function toggleMute() {
+		muted = !muted;
+		onMuteAudio?.(muted);
+	}
 </script>
 
 <nav class="topnav">
@@ -153,12 +168,13 @@
 					type="range"
 					min="0"
 					max="100"
-					bind:value={volume}
+					value={volume}
+					oninput={liveVolume}
 					disabled={muted}
 					aria-label="Volume"
 				/>
 
-				<button class="mute" class:on={muted} onclick={() => (muted = !muted)} title="Mute Audio">
+				<button class="mute" class:on={muted} onclick={toggleMute} title="Mute Audio">
 					{muted ? 'Unmute' : 'Mute'}
 				</button>
 
@@ -166,35 +182,66 @@
 
 				<div class="sound-options">
 					<label>
-						<input id="snd-alert" name="alertSound" type="checkbox" bind:checked={alertSound} />
-						Alert sound <span class="status">{alertSound ? 'on' : 'off'}</span>
+						<input
+							id="snd-alert"
+							name="alertSound"
+							type="checkbox"
+							checked={!dnd.alert}
+							onchange={(e) => setDnd('alert', !e.currentTarget.checked)}
+						/>
+						Alert sound <span class="status">{dnd.alert ? 'off' : 'on'}</span>
 					</label>
 					<label>
-						<input id="snd-qa" name="qaSound" type="checkbox" bind:checked={qaSound} />
-						QA sound <span class="status">{qaSound ? 'on' : 'off'}</span>
+						<input
+							id="snd-qa"
+							name="qaSound"
+							type="checkbox"
+							checked={!dnd.qa}
+							onchange={(e) => setDnd('qa', !e.currentTarget.checked)}
+						/>
+						QA sound <span class="status">{dnd.qa ? 'off' : 'on'}</span>
 					</label>
 					<label>
-						<input id="snd-nta" name="ntaSound" type="checkbox" bind:checked={ntaSound} />
-						NTA sound <span class="status">{ntaSound ? 'on' : 'off'}</span>
+						<input
+							id="snd-nta"
+							name="ntaSound"
+							type="checkbox"
+							checked={!dnd.nonTradeAlert}
+							onchange={(e) => setDnd('nonTradeAlert', !e.currentTarget.checked)}
+						/>
+						NTA sound <span class="status">{dnd.nonTradeAlert ? 'off' : 'on'}</span>
 					</label>
 					<label>
-						<input id="snd-chat" name="chatSound" type="checkbox" bind:checked={chatSound} />
-						Chat sound <span class="status">{chatSound ? 'on' : 'off'}</span>
+						<input
+							id="snd-chat"
+							name="chatSound"
+							type="checkbox"
+							checked={!dnd.chat}
+							onchange={(e) => setDnd('chat', !e.currentTarget.checked)}
+						/>
+						Chat sound <span class="status">{dnd.chat ? 'off' : 'on'}</span>
 					</label>
 					<label title="Show Speech Recognition Overlay">
 						<input
 							id="snd-subtitles"
 							name="subtitles"
 							type="checkbox"
-							bind:checked={subtitles}
+							checked={prefs.captionsOverlay}
+							onchange={(e) => setPref('captionsOverlay', e.currentTarget.checked)}
 							aria-label="Show Speech Recognition Overlay"
 						/>
 						<Icon name="closed-captioning" size={14} />
-						Subtitles <span class="status">{subtitles ? 'on' : 'off'}</span>
+						Subtitles <span class="status">{prefs.captionsOverlay ? 'on' : 'off'}</span>
 					</label>
 					<label>
-						<input id="snd-dnd" name="dontDisturb" type="checkbox" bind:checked={dontDisturb} />
-						Don't Disturb <span class="status">{dontDisturb ? 'on' : 'off'}</span>
+						<input
+							id="snd-dnd"
+							name="dontDisturb"
+							type="checkbox"
+							checked={dnd.app}
+							onchange={(e) => setDnd('app', e.currentTarget.checked)}
+						/>
+						Don't Disturb <span class="status">{dnd.app ? 'on' : 'off'}</span>
 					</label>
 				</div>
 			</div>

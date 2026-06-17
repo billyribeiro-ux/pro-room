@@ -18,6 +18,9 @@
 	import SettingsModal from './modals/SettingsModal.svelte';
 	import EditProfileModal from './modals/EditProfileModal.svelte';
 	import Icon from './Icon.svelte';
+	import { API_URL } from '$lib/config';
+	import { showToast } from '$lib/stores/toast.svelte';
+	import type { Attachment } from 'svelte/attachments';
 
 	export type ChatItem = Message & {
 		author_name?: string;
@@ -27,6 +30,8 @@
 	};
 
 	interface Props {
+		/** Room id — used by the composer's inline image upload endpoint. */
+		roomId: string;
 		messages: ChatItem[];
 		channel: ChatChannel;
 		present?: PresentUser[];
@@ -42,6 +47,7 @@
 		onDelete?: (id: string) => void;
 	}
 	let {
+		roomId,
 		messages,
 		channel,
 		present = [],
@@ -185,6 +191,123 @@
 		body = body ? `${body} @${name} ` : `@${name} `;
 		openMenuId = null;
 	}
+
+	// ─── Composer affordances (reference: Add Emojis / Upload an Image / GIF) ──────
+	let fileInputEl = $state<HTMLInputElement | null>(null);
+	let emojiOpen = $state(false);
+	let uploading = $state(false);
+
+	// Curated native-Unicode set — the reference uses OS color-emoji glyphs (no
+	// emoji-mart/twemoji dependency), same approach as ReactionBar.svelte.
+	const EMOJI = [
+		'😀', '😂', '😅', '😍', '😎', '🤔', '😮', '😢', '😡', '👍',
+		'👎', '👏', '🙏', '🔥', '🚀', '💯', '✅', '❌', '🎯', '💪',
+		'📈', '📉', '💰', '🐂', '🐻', '⚡', '👀', '❤️', '🎉', '⭐'
+	] as const;
+
+	/**
+	 * Splice `text` into the composer at the caret (fallback to append), then
+	 * refocus and re-grow — the caret-aware sibling of mention(). Used by both the
+	 * emoji picker and the image-upload result.
+	 */
+	function insertAtCaret(text: string) {
+		const el = textareaEl;
+		if (!el) {
+			body = body ? `${body} ${text} ` : `${text} `;
+			return;
+		}
+		const start = el.selectionStart ?? body.length;
+		const end = el.selectionEnd ?? body.length;
+		body = body.slice(0, start) + text + body.slice(end);
+		const caret = start + text.length;
+		void tick().then(() => {
+			el.focus();
+			el.setSelectionRange(caret, caret);
+			autogrow();
+		});
+	}
+
+	function pickEmoji(glyph: string) {
+		insertAtCaret(glyph);
+		emojiOpen = false;
+	}
+
+	/**
+	 * Upload a chat image to the member inline-upload endpoint and splice its URL
+	 * into the message body. The field name MUST be `file`; the endpoint is
+	 * image-only (400 otherwise) and capped at 25 MB (413). Errors surface via toast
+	 * (never swallowed — CLAUDE.md). The URL goes out as normal message text.
+	 */
+	async function onPickImage(e: Event) {
+		const input = e.currentTarget as HTMLInputElement;
+		const file = input.files?.[0];
+		input.value = ''; // allow re-picking the same file later
+		if (!file || uploading) return;
+		uploading = true;
+		try {
+			const form = new FormData();
+			form.append('file', file);
+			const res = await fetch(`${API_URL}/api/rooms/${roomId}/uploads`, {
+				method: 'POST',
+				credentials: 'include',
+				body: form
+			});
+			if (!res.ok) {
+				const msg =
+					res.status === 413
+						? 'That image is larger than the 25 MB limit.'
+						: res.status === 400
+							? 'Only image files can be uploaded here.'
+							: 'Could not upload the image. Please try again.';
+				showToast('Upload failed', msg, 6000);
+				return;
+			}
+			const { url } = (await res.json()) as { url: string };
+			insertAtCaret(url);
+		} catch {
+			showToast('Upload failed', 'Could not reach the server to upload the image.', 6000);
+		} finally {
+			uploading = false;
+		}
+	}
+
+	/** Close the emoji popover on Escape or an outside click (reuses ReactionBar's pattern). */
+	const dismissEmoji: Attachment<HTMLElement> = (node) => {
+		function onKeydown(e: KeyboardEvent) {
+			if (e.key === 'Escape') emojiOpen = false;
+		}
+		function onPointerdown(e: PointerEvent) {
+			if (e.target instanceof Node && !node.contains(e.target)) emojiOpen = false;
+		}
+		document.addEventListener('keydown', onKeydown);
+		document.addEventListener('pointerdown', onPointerdown, true);
+		return () => {
+			document.removeEventListener('keydown', onKeydown);
+			document.removeEventListener('pointerdown', onPointerdown, true);
+		};
+	};
+
+	// Reference (odds-and-ends.html:9684): the MAIN chat composer collapses the
+	// emoji/image/GIF buttons behind a single "+" ("Show message options"); they
+	// reveal on toggle. (The reply/QA modals show them inline — different
+	// components, unchanged.) `dismissOptions` is attached to the whole button
+	// column so a click on the "+" itself stays "inside" (toggle works) while a
+	// click elsewhere closes the row.
+	let optionsOpen = $state(false);
+	const dismissOptions: Attachment<HTMLElement> = (node) => {
+		function onKeydown(e: KeyboardEvent) {
+			if (e.key === 'Escape') optionsOpen = false;
+		}
+		function onPointerdown(e: PointerEvent) {
+			if (optionsOpen && e.target instanceof Node && !node.contains(e.target)) optionsOpen = false;
+		}
+		document.addEventListener('keydown', onKeydown);
+		document.addEventListener('pointerdown', onPointerdown, true);
+		return () => {
+			document.removeEventListener('keydown', onKeydown);
+			document.removeEventListener('pointerdown', onPointerdown, true);
+		};
+	};
 </script>
 
 <svelte:window onkeydown={(e) => e.key === 'Escape' && (openMenuId = null)} />
@@ -334,29 +457,87 @@
 						onkeydown={onComposerKeydown}
 					></textarea>
 				</div>
-				<div class="textAreaBtnsCol">
+				<div class="textAreaBtnsCol" {@attach dismissOptions}>
+					<!-- Reference main chat: a single "+" reveals the message-options row. -->
 					<button
 						type="button"
-						class="textAreaBtns"
-						aria-label="Add Emojis"
-						title="Add Emojis"
+						class="textAreaBtns plus"
+						aria-label="Show message options"
+						title="Show message options"
+						aria-haspopup="true"
+						aria-expanded={optionsOpen}
+						onclick={() => (optionsOpen = !optionsOpen)}
 					>
-						<Icon name="smile" family="regular" size={18} />
+						<Icon name="plus" size={18} />
 					</button>
-					<button
-						type="button"
-						class="textAreaBtns"
-						aria-label="Upload an Image"
-						title="Upload an Image"
-					>
-						<Icon name="image" size={18} />
-					</button>
-					<button
-						type="button"
-						class="textAreaBtns gif"
-						aria-label="Search for GIFs"
-						title="Search for GIFs">GIF</button
-					>
+
+					{#if optionsOpen}
+						<div class="options-row">
+							<!-- Add Emojis → native-Unicode picker popover (inserts at the caret). -->
+							<div class="emoji-wrap">
+								<button
+									type="button"
+									class="textAreaBtns"
+									aria-label="Add Emojis"
+									title="Add Emojis"
+									aria-haspopup="menu"
+									aria-expanded={emojiOpen}
+									onclick={() => (emojiOpen = !emojiOpen)}
+								>
+									<Icon name="smile" family="regular" size={18} />
+								</button>
+								{#if emojiOpen}
+									<div
+										class="emoji-pop"
+										role="menu"
+										aria-label="Pick an emoji"
+										{@attach dismissEmoji}
+									>
+										{#each EMOJI as glyph (glyph)}
+											<button
+												type="button"
+												class="emoji-cell"
+												role="menuitem"
+												aria-label="Insert {glyph}"
+												onclick={() => pickEmoji(glyph)}
+											>
+												{glyph}
+											</button>
+										{/each}
+									</div>
+								{/if}
+							</div>
+
+							<!-- Upload an Image → hidden file input → /uploads → URL spliced in. -->
+							<button
+								type="button"
+								class="textAreaBtns"
+								aria-label="Upload an Image"
+								title="Upload an Image"
+								disabled={uploading}
+								onclick={() => fileInputEl?.click()}
+							>
+								<Icon name="image" size={18} />
+							</button>
+							<input
+								bind:this={fileInputEl}
+								type="file"
+								accept="image/*"
+								hidden
+								onchange={onPickImage}
+							/>
+
+							<!-- Search for GIFs → reference uses GIPHY (needs an API key the app
+							     doesn't ship). Rendered disabled rather than half-wired. -->
+							<button
+								type="button"
+								class="textAreaBtns gif"
+								aria-label="Search for GIFs"
+								title="GIF search is unavailable (requires a GIPHY API key)"
+								disabled>GIF</button
+							>
+						</div>
+					{/if}
 				</div>
 			</div>
 		</form>
@@ -779,14 +960,62 @@
 		padding: 0.25rem;
 		border-radius: 6px;
 	}
-	.textAreaBtns:hover {
+	.textAreaBtns:hover:not(:disabled) {
 		color: #0a6db1;
+	}
+	.textAreaBtns:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
 	}
 	.textAreaBtns.gif {
 		/* Reference GIF button: 12px text. */
 		font-size: 12px;
 		font-weight: 800;
 		letter-spacing: 0.02em;
+	}
+	/* Emoji picker popover — opens above the button (the composer sits at the
+	   bottom of the panel), mirroring ReactionBar's native-glyph grid. */
+	.emoji-wrap {
+		position: relative;
+		display: inline-flex;
+	}
+	.emoji-pop {
+		position: absolute;
+		bottom: calc(100% + 0.3rem);
+		right: 0;
+		z-index: 20;
+		display: grid;
+		grid-template-columns: repeat(6, 1fr);
+		gap: 0.1rem;
+		width: max-content;
+		max-width: 14rem;
+		background: #ffffff;
+		border: 1px solid #e3e5ec;
+		border-radius: 10px;
+		box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+		padding: 0.3rem;
+	}
+	.emoji-cell {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		background: transparent;
+		border: none;
+		border-radius: 6px;
+		width: 1.7rem;
+		height: 1.7rem;
+		font-size: 1.05rem;
+		line-height: 1;
+		cursor: pointer;
+	}
+	.emoji-cell:hover {
+		background: #f0f4fb;
+	}
+	/* The emoji/image/GIF buttons revealed by the "+" — a tight inline row. */
+	.options-row {
+		display: flex;
+		align-items: center;
+		gap: 0.2rem;
 	}
 	.readonly {
 		margin: 0;

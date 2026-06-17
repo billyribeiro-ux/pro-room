@@ -55,6 +55,9 @@ pub enum Action {
     /// moderation: the manage-room tier).
     ReadAllPrivateMessages,
     JoinRoom,
+    /// Create a new room. Account-wide (no room exists yet), admin+; distinct from
+    /// `ManageRoom`, whose policy requires a concrete room resource.
+    CreateRoom,
     ManageRoom,
     ManageMembers,
     ManageUsers,

@@ -19,6 +19,68 @@ export interface SharePublisher {
 }
 
 /**
+ * Turn a getUserMedia/getDisplayMedia/device error into an ACTIONABLE message.
+ * Without this, a blocked mic just throws "failed to start microphone" (or is
+ * swallowed) and the control looks dead — the user has no idea permission was
+ * denied. `what` is the human label ("Microphone", "Camera", "Screen share").
+ */
+function avErrorMessage(e: unknown, what: string): string {
+	const name = e instanceof Error ? e.name : '';
+	switch (name) {
+		case 'NotAllowedError':
+		case 'SecurityError':
+			return `${what} access was blocked. Click the camera/mic icon in your browser's address bar (or Site settings), allow it, then try again.`;
+		case 'NotFoundError':
+		case 'DevicesNotFoundError':
+			return `No ${what.toLowerCase()} device found. Connect one (or check it isn't disabled) and try again.`;
+		case 'NotReadableError':
+		case 'TrackStartError':
+			return `Your ${what.toLowerCase()} is in use by another app. Close that app and try again.`;
+		case 'OverconstrainedError':
+			return `The selected ${what.toLowerCase()} device isn't available. Pick another in Audio/Video Settings.`;
+		case 'AbortError':
+			return `${what} could not start (the request was interrupted). Try again.`;
+		default:
+			return e instanceof Error && e.message
+				? `${what}: ${e.message}`
+				: `Could not start ${what.toLowerCase()}.`;
+	}
+}
+
+/**
+ * Module-level lifecycle lock. A SvelteKit route remount (Vite HMR, or a fast
+ * leave→rejoin of the same room) constructs a NEW ScreenShareRoom whose
+ * `connect()` can race the previous instance's fire-and-forget `disconnect()`.
+ * Both connect with the SAME participant identity, so the LiveKit SFU kicks the
+ * older session (DUPLICATE_IDENTITY); the kicked Room goes to Disconnected but
+ * its PeerConnection keeps receiving the live session's tracks and logs
+ * "skipping incoming track after Room disconnected" once per track — the exact
+ * console spam reported. Chaining every connect/disconnect through this shared
+ * promise guarantees a pending teardown fully completes before the next connect,
+ * closing the duplicate-identity window across instances.
+ */
+let lkLifecycle: Promise<unknown> = Promise.resolve();
+function serializeLifecycle<T>(task: () => Promise<T>): Promise<T> {
+	const result = lkLifecycle.then(task, task);
+	// Keep the chain alive whether the task resolves or rejects.
+	lkLifecycle = result.then(
+		() => undefined,
+		() => undefined
+	);
+	return result;
+}
+
+/**
+ * The single instance whose Room is currently (or about to be) connected. Svelte
+ * HMR mounts the NEW page component — and its NEW ScreenShareRoom — BEFORE the old
+ * component's onDestroy disconnect runs, so per-instance serialization isn't
+ * enough: the new connect must also tear down whatever OTHER instance still holds
+ * a live Room with our identity. Tracking it here lets connect() reclaim it first,
+ * closing the duplicate-identity window across instances (the console-spam fix).
+ */
+let activeInstance: ScreenShareRoom | null = null;
+
+/**
  * Wraps a LiveKit `Room` and exposes reactive state for the screen-share stage:
  * the set of active publishers (for one/split layout) and whether we are
  * currently publishing. Multiple admins can publish simultaneously.
@@ -48,8 +110,34 @@ export class ScreenShareRoom {
 	   unpublish it and release the device. Null when sharing via the browser. */
 	#externalPub: LocalTrackPublication | null = null;
 	#externalStream: MediaStream | null = null;
+	/** The hidden <audio> elements attached for remote audio tracks (presenter mic /
+	   screen audio). Tracked so the top-bar Volume/Mute control can set .volume/.muted
+	   on every one — LiveKit has no single "remote output volume" knob, so we drive the
+	   media elements directly. Newly-subscribed tracks inherit the current values. */
+	#audioEls = new Set<HTMLMediaElement>();
+	/** Current remote-audio output level (0..1) and mute, applied to every #audioEls
+	   element and to any track that subscribes later. Persist on the instance so a
+	   late-joining presenter's audio honors the listener's chosen volume. */
+	#remoteVolume = 1;
+	#remoteMuted = false;
 
 	async connect(url: string, token: string): Promise<void> {
+		// Serialize against any in-flight teardown (this or a remounted instance) so
+		// we never hold two same-identity sessions at once — see lkLifecycle above.
+		return serializeLifecycle(async () => {
+			// Re-entrant connect on the same instance: tear our own room down first.
+			if (this.#room) await this.#teardown();
+			// HMR / fast remount: a DIFFERENT instance may still hold a live Room with
+			// our identity (its onDestroy disconnect hasn't run yet). Reclaim it before
+			// connecting, or the SFU kicks one of the two same-identity sessions and the
+			// loser spams "skipping incoming track after Room disconnected".
+			if (activeInstance && activeInstance !== this) await activeInstance.#teardown();
+			activeInstance = this;
+			await this.#openRoom(url, token);
+		});
+	}
+
+	async #openRoom(url: string, token: string): Promise<void> {
 		const room = new Room({ adaptiveStream: true, dynacast: true });
 		room
 			.on(RoomEvent.TrackSubscribed, (track: RemoteTrack) => {
@@ -58,13 +146,27 @@ export class ScreenShareRoom {
 				if (track.kind === 'audio') {
 					const el = track.attach();
 					el.style.display = 'none';
+					// Honor the listener's current Volume/Mute choice on this new element.
+					el.volume = this.#remoteVolume;
+					el.muted = this.#remoteMuted;
+					this.#audioEls.add(el);
 					document.body.appendChild(el);
+					// Attempt playback immediately; if the browser blocks autoplay (the
+					// common case before a user gesture) flag it so the "Enable audio"
+					// affordance lights up — otherwise listeners hear nothing and have no
+					// idea a click is required. resumeAudio() (on the first gesture) unlocks.
+					el.play().catch(() => {
+						this.audioBlocked = this.#room ? !this.#room.canPlaybackAudio : true;
+					});
 				}
 				this.#refresh();
 			})
 			.on(RoomEvent.TrackUnsubscribed, (track: RemoteTrack) => {
 				if (track.kind === 'audio') {
-					track.detach().forEach((el) => el.remove());
+					track.detach().forEach((el) => {
+						el.remove();
+						this.#audioEls.delete(el);
+					});
 				}
 				this.#refresh();
 			})
@@ -91,8 +193,18 @@ export class ScreenShareRoom {
 			});
 
 		logEvent('LiveKit connecting');
-		await room.connect(url, token);
+		// Assign BEFORE connect: LiveKit subscribes to pre-existing tracks during
+		// connect, so TrackSubscribed/AudioPlaybackStatusChanged can fire mid-connect
+		// — if #room is still null those handlers read stale null and mis-flag
+		// audioBlocked / drop the publisher list. connect() only populates the room.
 		this.#room = room;
+		try {
+			await room.connect(url, token);
+		} catch (e) {
+			// Failed handshake: drop the half-open room so a retry starts clean.
+			this.#room = null;
+			throw e;
+		}
 		this.connected = true;
 		this.audioBlocked = !room.canPlaybackAudio;
 		logEvent('LiveKit connected');
@@ -114,6 +226,23 @@ export class ScreenShareRoom {
 		}
 	}
 
+	/**
+	 * Set the remote-audio output level for THIS listener (0..1). LiveKit exposes no
+	 * single output-volume knob, so we set .volume on every attached <audio> element
+	 * and remember it for tracks that subscribe later. Purely local — does not affect
+	 * what other participants hear. Clamped to [0,1].
+	 */
+	setRemoteAudioVolume(v: number): void {
+		this.#remoteVolume = Math.max(0, Math.min(1, v));
+		for (const el of this.#audioEls) el.volume = this.#remoteVolume;
+	}
+
+	/** Mute/unmute remote audio for THIS listener only (the top-bar Mute button). */
+	muteRemoteAudio(m: boolean): void {
+		this.#remoteMuted = m;
+		for (const el of this.#audioEls) el.muted = m;
+	}
+
 	/** Start sharing this user's screen (admins/super admins only). */
 	async startSharing(): Promise<void> {
 		if (!this.#room) return;
@@ -123,7 +252,7 @@ export class ScreenShareRoom {
 			this.#refresh();
 		} catch (e) {
 			logEvent(`Screen-share error: ${e instanceof Error ? e.message : String(e)}`);
-			this.error = e instanceof Error ? e.message : 'failed to start sharing';
+			this.error = avErrorMessage(e, 'Screen share');
 		}
 	}
 
@@ -167,25 +296,34 @@ export class ScreenShareRoom {
 			this.#externalStream?.getTracks().forEach((t) => t.stop());
 			this.#externalStream = null;
 			logEvent(`OBS/XSplit cam error: ${e instanceof Error ? e.message : String(e)}`);
-			this.error = e instanceof Error ? e.message : 'failed to start OBS/XSplit cam';
+			this.error = avErrorMessage(e, 'OBS/XSplit virtual camera');
 		}
 	}
 
 	async stopSharing(): Promise<void> {
 		if (!this.#room) return;
-		if (this.#externalPub) {
-			// External-encoder share: unpublish the track and release the device.
-			if (this.#externalPub.track) {
-				await this.#room.localParticipant.unpublishTrack(this.#externalPub.track);
+		// try/finally: a rejected unpublish/setScreenShareEnabled(false) must not
+		// escape as an unhandled promise (console error), and publishing must always
+		// reset so the share button doesn't stick on "stop". Always release the
+		// external device even if the unpublish throws.
+		try {
+			if (this.#externalPub) {
+				// External-encoder share: unpublish the track and release the device.
+				if (this.#externalPub.track) {
+					await this.#room.localParticipant.unpublishTrack(this.#externalPub.track);
+				}
+			} else {
+				await this.#room.localParticipant.setScreenShareEnabled(false);
 			}
+		} catch (e) {
+			logEvent(`Stop sharing error: ${e instanceof Error ? e.message : String(e)}`);
+		} finally {
 			this.#externalStream?.getTracks().forEach((t) => t.stop());
 			this.#externalPub = null;
 			this.#externalStream = null;
-		} else {
-			await this.#room.localParticipant.setScreenShareEnabled(false);
+			this.publishing = false;
+			this.#refresh();
 		}
-		this.publishing = false;
-		this.#refresh();
 	}
 
 	/** Start publishing this user's camera (admins/super admins only). */
@@ -197,7 +335,7 @@ export class ScreenShareRoom {
 			this.#refresh();
 		} catch (e) {
 			logEvent(`Camera error: ${e instanceof Error ? e.message : String(e)}`);
-			this.error = e instanceof Error ? e.message : 'failed to start camera';
+			this.error = avErrorMessage(e, 'Camera');
 		}
 	}
 
@@ -208,36 +346,63 @@ export class ScreenShareRoom {
 		// (now-ended) track, so #refresh keeps the tile and it renders BLACK (the
 		// reported bug). Unpublish so the publication is removed and the tile clears;
 		// unpublish also fires LocalTrackUnpublished -> a second #refresh for free.
-		const pub = this.#room.localParticipant.getTrackPublication(Track.Source.Camera);
-		if (pub?.track) {
-			await this.#room.localParticipant.unpublishTrack(pub.track);
+		// try/finally: if unpublishTrack rejects (track already ended, device race)
+		// the rejection must not escape as an unhandled promise (console error) and
+		// the UI state must still flip back so the button doesn't stick on "stop".
+		try {
+			const pub = this.#room.localParticipant.getTrackPublication(Track.Source.Camera);
+			if (pub?.track) {
+				await this.#room.localParticipant.unpublishTrack(pub.track);
+			}
+		} catch (e) {
+			logEvent(`Stop camera error: ${e instanceof Error ? e.message : String(e)}`);
+		} finally {
+			this.cameraPublishing = false;
+			this.#refresh();
 		}
-		this.cameraPublishing = false;
-		this.#refresh();
 	}
 
 	/** Start publishing this user's microphone (admins/super admins only). */
 	async startMic(): Promise<void> {
 		if (!this.#room) return;
+		// On an insecure origin (plain-HTTP LAN IP, not localhost/HTTPS) the browser
+		// makes navigator.mediaDevices.getUserMedia undefined — the mic CANNOT work
+		// and setMicrophoneEnabled throws an opaque error. Detect it up front and
+		// give the real reason instead of a generic failure.
+		if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+			this.error =
+				'Microphone needs a secure (https://) connection. Open the room over HTTPS (or localhost) and try again.';
+			return;
+		}
 		try {
 			await this.#room.localParticipant.setMicrophoneEnabled(true);
 			this.micPublishing = true;
+			// Match startCamera/startSharing: reconcile derived state synchronously
+			// rather than waiting only on the async LocalTrackPublished event.
+			this.#refresh();
 		} catch (e) {
 			logEvent(`Mic error: ${e instanceof Error ? e.message : String(e)}`);
-			this.error = e instanceof Error ? e.message : 'failed to start microphone';
+			this.error = avErrorMessage(e, 'Microphone');
 		}
 	}
 
 	async stopMic(): Promise<void> {
 		if (!this.#room) return;
 		// Same mute-not-unpublish defect as the camera: unpublish so the mic
-		// publication is actually removed, not left published-but-muted.
-		const pub = this.#room.localParticipant.getTrackPublication(Track.Source.Microphone);
-		if (pub?.track) {
-			await this.#room.localParticipant.unpublishTrack(pub.track);
+		// publication is actually removed, not left published-but-muted. try/finally
+		// so a rejected unpublish can't escape (unhandled-rejection console error)
+		// and micPublishing always resets (button never sticks on "stop").
+		try {
+			const pub = this.#room.localParticipant.getTrackPublication(Track.Source.Microphone);
+			if (pub?.track) {
+				await this.#room.localParticipant.unpublishTrack(pub.track);
+			}
+		} catch (e) {
+			logEvent(`Stop mic error: ${e instanceof Error ? e.message : String(e)}`);
+		} finally {
+			this.micPublishing = false;
+			this.micMuted = false;
 		}
-		this.micPublishing = false;
-		this.micMuted = false;
 	}
 
 	/** Mute/unmute the published mic without unpublishing it. No-op if unpublished. */
@@ -245,12 +410,18 @@ export class ScreenShareRoom {
 		if (!this.#room) return;
 		const pub = this.#room.localParticipant.getTrackPublication(Track.Source.Microphone);
 		if (!pub) return;
-		if (this.micMuted) {
-			await pub.unmute();
-			this.micMuted = false;
-		} else {
-			await pub.mute();
-			this.micMuted = true;
+		// try/catch so a rejected mute/unmute doesn't escape as an unhandled promise;
+		// only flip micMuted on success so the icon matches the real track state.
+		try {
+			if (this.micMuted) {
+				await pub.unmute();
+				this.micMuted = false;
+			} else {
+				await pub.mute();
+				this.micMuted = true;
+			}
+		} catch (e) {
+			logEvent(`Toggle mic mute error: ${e instanceof Error ? e.message : String(e)}`);
 		}
 	}
 
@@ -263,6 +434,28 @@ export class ScreenShareRoom {
 	 */
 	async switchDevice(kind: MediaDeviceKind, deviceId: string): Promise<void> {
 		if (!this.#room || !deviceId) return;
+
+		// Input kinds (mic/cam) only matter when we already PUBLISH that source —
+		// switchActiveDevice is a replaceTrack on the live track. A member never
+		// publishes, so switching their mic/cam is a no-op that, with a stale id, can
+		// throw and surface a spurious error toast (or drop a live track). Skip unless
+		// the matching local publication exists; the chosen id is applied at the next
+		// startMic/startCamera instead.
+		if (kind === 'audioinput' || kind === 'videoinput') {
+			const source = kind === 'audioinput' ? Track.Source.Microphone : Track.Source.Camera;
+			if (!this.#room.localParticipant.getTrackPublication(source)?.track) return;
+		}
+
+		// Speaker routing requires setSinkId; on Firefox/Safari switchActiveDevice
+		// throws "cannot switch audio output…". Don't surface an unsupported feature
+		// as an error toast — just no-op.
+		if (
+			kind === 'audiooutput' &&
+			typeof (HTMLMediaElement.prototype as { setSinkId?: unknown }).setSinkId !== 'function'
+		) {
+			return;
+		}
+
 		try {
 			// exact=false: store the device as an `ideal` preference, NOT `{exact:id}`.
 			// The AV-Settings modal enumerates devices WITHOUT a getUserMedia grant, so
@@ -287,16 +480,35 @@ export class ScreenShareRoom {
 	}
 
 	async disconnect(): Promise<void> {
+		// Route through the shared lifecycle lock so a remounting instance's connect()
+		// waits for this teardown to finish — see lkLifecycle.
+		return serializeLifecycle(() => this.#teardown());
+	}
+
+	/**
+	 * Tear down the LiveKit room and reset all reactive state. Detaches #room
+	 * BEFORE awaiting disconnect() so the Disconnected event's #refresh sees a null
+	 * room (empty lists) and any late track event is ignored. Idempotent.
+	 */
+	async #teardown(): Promise<void> {
+		if (activeInstance === this) activeInstance = null;
 		this.#externalStream?.getTracks().forEach((t) => t.stop());
 		this.#externalStream = null;
 		this.#externalPub = null;
-		await this.#room?.disconnect();
+		this.#audioEls.clear();
+		const room = this.#room;
 		this.#room = null;
+		try {
+			await room?.disconnect();
+		} catch (e) {
+			logEvent(`LiveKit teardown error: ${e instanceof Error ? e.message : String(e)}`);
+		}
 		this.connected = false;
 		this.publishing = false;
 		this.cameraPublishing = false;
 		this.micPublishing = false;
 		this.micMuted = false;
+		this.audioBlocked = false;
 		this.activeSpeakers = [];
 		this.publishers = [];
 		this.cameraPublishers = [];

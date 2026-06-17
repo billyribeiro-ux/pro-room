@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
+	import { goto } from '$app/navigation';
 	import { onMount, onDestroy } from 'svelte';
 	import { MediaQuery } from 'svelte/reactivity';
 	import { api, ApiError } from '$lib/api';
@@ -165,6 +166,22 @@
 		return id ? (present.find((u) => u.user_id === id)?.display_name ?? null) : null;
 	});
 
+	// Surface AV failures (mic/cam/screen-share permission or device errors). The
+	// LiveKit wrapper sets `screen.error` but renders it nowhere — so a blocked mic
+	// just looked dead. Toast it (with the actionable message). `lastShownError` is a
+	// PLAIN (non-reactive) guard: the effect must NOT write the same `screen.error`
+	// it reads, or it self-triggers (state_unsafe_mutation — a CLAUDE.md landmine and
+	// the source of a console error). De-duping by value also stops a re-render from
+	// re-toasting the same message; a genuinely different error still surfaces.
+	let lastShownError: string | null = null;
+	$effect(() => {
+		const e = screen.error;
+		if (e && e !== lastShownError) {
+			lastShownError = e;
+			showToast('Audio / Video', e, 9000);
+		}
+	});
+
 	// Toggle an emoji reaction on a message/alert. The POST response's `mine` is
 	// authoritative for us, so we rebuild our local set from it.
 	async function onReact(targetKind: ReactionTarget, targetId: string, emoji: string) {
@@ -215,17 +232,21 @@
 				// (matches chat + the reference: latest is always at the bottom). Keep the
 				// last 100. The feed auto-scrolls to it when the viewer is at the bottom.
 				alerts = [...alerts, { ...ev.alert, author_name: ev.author_name }].slice(-100);
-				// DND-aware chime (suppressed by the matching Do-Not-Disturb flag).
-				playSound('alert');
-				// Top-right toast (reference toastr.warning on new alert): 10s when the
-				// "Longer alert popup" pref is on, else 5s; suppressed by the alertPopup
-				// DND flag (isMuted folds in the master dnd.app switch too).
-				if (!isMuted('alertPopup')) {
-					showToast(
-						`Alert from @${ev.author_name ?? 'Trader'}`,
-						alertBody(ev.alert),
-						prefs.longerAlertPopup ? 10000 : 5000
-					);
+				// The server echoes the alert back to its author too; don't self-notify
+				// (no chime, no "Alert from @you" toast) — only notify on others' alerts.
+				if (ev.alert.author_id !== detail?.viewer_id) {
+					// DND-aware chime (suppressed by the matching Do-Not-Disturb flag).
+					playSound('alert');
+					// Top-right toast (reference toastr.warning on new alert): 10s when the
+					// "Longer alert popup" pref is on, else 5s; suppressed by the alertPopup
+					// DND flag (isMuted folds in the master dnd.app switch too).
+					if (!isMuted('alertPopup')) {
+						showToast(
+							`Alert from @${ev.author_name ?? 'Trader'}`,
+							alertBody(ev.alert),
+							prefs.longerAlertPopup ? 10000 : 5000
+						);
+					}
 				}
 				break;
 			case 'chat': {
@@ -235,7 +256,9 @@
 				} else {
 					mainMessages = [...mainMessages, item].slice(-100);
 				}
-				playSound('chat');
+				// The server broadcasts the message back to its sender; don't chime on
+				// your own echo (matches the private_message guard below).
+				if (ev.message.author_id !== detail?.viewer_id) playSound('chat');
 				break;
 			}
 			case 'private_message':
@@ -281,7 +304,18 @@
 				alerts = alerts.filter((a) => a.id !== ev.id);
 				break;
 			case 'kicked':
-				present = present.filter((u) => u.user_id !== ev.user_id);
+				if (ev.user_id === detail?.viewer_id) {
+					// It's us: the server already removed us from membership + presence.
+					// Tear down our own connections (close() flips RoomSocket's closed flag
+					// so it does NOT auto-reconnect), tell the user why, and leave the room.
+					socket?.close();
+					void screen.disconnect();
+					showToast('Removed from room', ev.message ?? 'You were removed from this room.', 8000);
+					void goto(resolve('/rooms'));
+				} else {
+					// Another user was kicked: drop them from the roster.
+					present = present.filter((u) => u.user_id !== ev.user_id);
+				}
 				break;
 			case 'room_locked':
 				// Enforced server-side at join; no client-visible change needed here.
@@ -395,6 +429,11 @@
 	}}
 />
 
+<!-- Mounted unconditionally (NOT inside {:else if detail}) so an AV-error toast
+     fired during the connect/load window is never dropped before its container
+     exists — the toast store is SSR-safe and no-ops on the server. -->
+<ToastContainer />
+
 {#if error}
 	<div class="banner">
 		<a href={resolve('/rooms')}><Icon name="arrow-left" /> Rooms</a> <span>{error}</span>
@@ -408,13 +447,25 @@
 		onMobileInfo={() => (showMobileInfo = true)}
 		onReload={() => location.reload()}
 		actions={stageActions}
+		onVolume={(v) => screen.setRemoteAudioVolume(v)}
+		onMuteAudio={(m) => screen.muteRemoteAudio(m)}
 	/>
 
 	<!-- Surfaces the realtime socket state: green "Connected" flash on reconnect,
 	     persistent "Reconnecting…" banner when the WS drops. Treats "no socket
 	     yet" (initial load) as connected so it doesn't flash on first paint. -->
 	<ConnectionOverlay connected={socket?.connected ?? true} />
-	<ToastContainer />
+
+	<!-- Browsers block autoplay of the presenter's mic/screen audio until a user
+	     gesture. A passing click unblocks it (svelte:window onclick), but a listener
+	     who just sits and listens never clicks — so they'd hear nothing. This visible
+	     one-tap affordance is the reliable path; it appears only while audio is
+	     actually blocked and disappears the moment playback is unlocked. -->
+	{#if screen.audioBlocked}
+		<button type="button" class="audio-unblock" onclick={() => void screen.resumeAudio()}>
+			<Icon name="volume-up" /> Click to enable presenter audio
+		</button>
+	{/if}
 
 	<div class="room-body">
 		{#if screenDisabled}
@@ -507,7 +558,7 @@
 		{#if screen.publishing}
 			<button
 				class="ctrl stop"
-				onclick={() => screen.stopSharing()}
+				onclick={() => void screen.stopSharing()}
 				title="Stop sharing"
 				aria-label="Stop sharing"
 			>
@@ -565,7 +616,7 @@
 		{#if screen.cameraPublishing}
 			<button
 				class="ctrl stop"
-				onclick={() => screen.stopCamera()}
+				onclick={() => void screen.stopCamera()}
 				title="Stop camera"
 				aria-label="Stop camera"
 			>
@@ -574,7 +625,7 @@
 		{:else}
 			<button
 				class="ctrl"
-				onclick={() => screen.startCamera()}
+				onclick={() => void screen.startCamera()}
 				disabled={!screen.connected}
 				title="Camera"
 				aria-label="Camera"
@@ -586,7 +637,7 @@
 			<button
 				class="ctrl"
 				class:stop={!screen.micMuted}
-				onclick={() => screen.toggleMicMute()}
+				onclick={() => void screen.toggleMicMute()}
 				title={screen.micMuted ? 'Unmute microphone' : 'Mute microphone'}
 				aria-label={screen.micMuted ? 'Unmute microphone' : 'Mute microphone'}
 			>
@@ -594,7 +645,7 @@
 			</button>
 			<button
 				class="ctrl"
-				onclick={() => screen.stopMic()}
+				onclick={() => void screen.stopMic()}
 				title="Stop microphone"
 				aria-label="Stop microphone"
 			>
@@ -603,7 +654,7 @@
 		{:else}
 			<button
 				class="ctrl"
-				onclick={() => screen.startMic()}
+				onclick={() => void screen.startMic()}
 				disabled={!screen.connected}
 				title="Microphone"
 				aria-label="Microphone"
@@ -656,6 +707,7 @@
      order that depends on the chosen Room Layout. -->
 {#snippet dockPane()}
 	<AlertsChatDock
+		{roomId}
 		{alerts}
 		{messages}
 		{offTopicMessages}
@@ -665,8 +717,18 @@
 		canReact={caps?.can_post_message ?? false}
 		{onReact}
 		canManage={caps?.can_manage_room ?? false}
-		onDeleteAlert={(id) => deleteAlert(roomId, id)}
-		onDeleteMessage={(id) => deleteMessage(roomId, id)}
+		onDeleteAlert={(id) =>
+			deleteAlert(roomId, id).catch((e) =>
+				showToast('Delete failed', e instanceof ApiError ? e.message : 'Could not delete alert', 6000)
+			)}
+		onDeleteMessage={(id) =>
+			deleteMessage(roomId, id).catch((e) =>
+				showToast(
+					'Delete failed',
+					e instanceof ApiError ? e.message : 'Could not delete message',
+					6000
+				)
+			)}
 		canPostAlert={caps?.can_post_alert ?? false}
 		canPostMessage={canChat}
 		onPostAlert={postAlert}
@@ -829,6 +891,25 @@
 		border-radius: 8px;
 		font-size: 0.85rem;
 		margin-bottom: 1rem;
+	}
+	/* One-tap affordance to unblock autoplay-blocked presenter audio. Shown only
+	   while screen.audioBlocked is true (full-width, hard to miss). */
+	.audio-unblock {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.45rem;
+		width: 100%;
+		padding: 0.5rem 0.75rem;
+		border: 1px solid var(--accent, #2563eb);
+		background: color-mix(in srgb, var(--accent, #2563eb) 16%, transparent);
+		color: var(--text, #fff);
+		font-size: 0.85rem;
+		font-weight: 600;
+		cursor: pointer;
+	}
+	.audio-unblock:hover {
+		background: color-mix(in srgb, var(--accent, #2563eb) 26%, transparent);
 	}
 	.banner {
 		display: flex;

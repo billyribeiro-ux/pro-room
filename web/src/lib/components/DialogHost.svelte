@@ -62,6 +62,8 @@
 			>
 				<p class="message">{request.message}</p>
 				<input
+					id="dialog-prompt"
+					name="dialog-prompt"
 					class="field"
 					type="text"
 					bind:value={inputValue}
