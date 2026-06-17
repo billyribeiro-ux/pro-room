@@ -69,13 +69,7 @@
 				</button>
 			{/if}
 			<p class="powered-by">
-				Powered by:
-				<a
-					class="ptr-website-link"
-					href="https://www.protradingroom.com"
-					target="_blank"
-					rel="noopener noreferrer">ProTradingRoom.com</a
-				>
+				Powered by: <span class="ptr-website-link">Pro Room</span>
 			</p>
 			<p class="version">Version: v0.0.1</p>
 			<p class="powered-cta">
