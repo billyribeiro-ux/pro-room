@@ -45,6 +45,80 @@
 			void node.requestFullscreen?.();
 		}
 	}
+
+	// --- Stage controls: zoom (+ drag-to-pan), snapshot, fullscreen -----------
+	let videoEl = $state<HTMLVideoElement | null>(null);
+	let panEl = $state<HTMLElement | null>(null);
+	let zoom = $state(1);
+	let panX = $state(0);
+	let panY = $state(0);
+
+	const ZOOM_STEPS = [1, 1.5, 2, 3];
+	/** Search/zoom icon cycles the zoom level; resets pan at 1×. */
+	function cycleZoom() {
+		const i = ZOOM_STEPS.indexOf(zoom);
+		zoom = ZOOM_STEPS[(i + 1) % ZOOM_STEPS.length];
+		if (zoom === 1) {
+			panX = 0;
+			panY = 0;
+		}
+	}
+
+	// Reset zoom/pan when the active screen changes.
+	$effect(() => {
+		void active?.identity;
+		zoom = 1;
+		panX = 0;
+		panY = 0;
+	});
+
+	// Drag-to-pan once zoomed in. Plain (non-reactive) refs — only read in handlers.
+	let dragging = false;
+	let startX = 0;
+	let startY = 0;
+	let baseX = 0;
+	let baseY = 0;
+	function onPanDown(e: PointerEvent) {
+		if (zoom <= 1) return;
+		dragging = true;
+		startX = e.clientX;
+		startY = e.clientY;
+		baseX = panX;
+		baseY = panY;
+		(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+	}
+	function onPanMove(e: PointerEvent) {
+		if (!dragging) return;
+		panX = baseX + (e.clientX - startX);
+		panY = baseY + (e.clientY - startY);
+	}
+	function onPanUp() {
+		dragging = false;
+	}
+
+	/** Snapshot the current video frame → download a PNG. */
+	function snapshot() {
+		const v = videoEl;
+		if (!v || !v.videoWidth) return;
+		const canvas = document.createElement('canvas');
+		canvas.width = v.videoWidth;
+		canvas.height = v.videoHeight;
+		const ctx = canvas.getContext('2d');
+		if (!ctx) return;
+		ctx.drawImage(v, 0, 0);
+		canvas.toBlob((blob) => {
+			if (!blob) return;
+			const a = document.createElement('a');
+			a.href = URL.createObjectURL(blob);
+			a.download = `proom-screenshot-${new Date().toISOString().replace(/[:.]/g, '-')}.png`;
+			a.click();
+			URL.revokeObjectURL(a.href);
+		}, 'image/png');
+	}
+
+	function toggleFullscreen() {
+		if (panEl) fullScreen(panEl);
+	}
 </script>
 
 <div class="screens">
@@ -75,13 +149,31 @@
 		{#if active}
 			<li class="nav-item ms-auto" role="presentation">
 				<div class="zoom-controls-container">
-					<button class="btn btn-sm btn-dark" type="button" title="Zoom">
+					<button
+						class="btn btn-sm btn-dark"
+						type="button"
+						title="Zoom ({zoom}×)"
+						aria-label="Zoom"
+						onclick={cycleZoom}
+					>
 						<Icon name="search" size={14} class="icon" />
 					</button>
-					<button class="btn btn-sm btn-dark" type="button" title="Snapshot">
+					<button
+						class="btn btn-sm btn-dark"
+						type="button"
+						title="Snapshot"
+						aria-label="Snapshot"
+						onclick={snapshot}
+					>
 						<Icon name="camera" size={14} class="icon" />
 					</button>
-					<button class="btn btn-sm btn-dark" type="button" title="Fullscreen">
+					<button
+						class="btn btn-sm btn-dark"
+						type="button"
+						title="Fullscreen"
+						aria-label="Fullscreen"
+						onclick={toggleFullscreen}
+					>
 						<Icon name="expand" size={14} class="icon" />
 					</button>
 				</div>
@@ -94,8 +186,15 @@
 	<div class="tabs-content">
 		{#if active}
 			{#key active.identity}
+				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				<div
 					class="screencast-pan"
+					class:zoomed={zoom > 1}
+					bind:this={panEl}
+					onpointerdown={onPanDown}
+					onpointermove={onPanMove}
+					onpointerup={onPanUp}
+					onpointercancel={onPanUp}
 					{@attach (node) => {
 						const ondbl = () => fullScreen(node);
 						node.addEventListener('dblclick', ondbl);
@@ -107,8 +206,17 @@
 							<div class="zoom-element"></div>
 						</div>
 					</div>
-					<div class="video-screen-container">
-						<video {@attach track(active.track)} autoplay muted playsinline></video>
+					<div
+						class="video-screen-container"
+						style:transform="translate({panX}px, {panY}px) scale({zoom})"
+					>
+						<video
+							bind:this={videoEl}
+							{@attach track(active.track)}
+							autoplay
+							muted
+							playsinline
+						></video>
 					</div>
 				</div>
 			{/key}
@@ -299,8 +407,14 @@
 		position: relative;
 		height: 100%;
 		overflow: hidden;
-		cursor: grab;
+		cursor: default;
 		background: #000;
+	}
+	.screencast-pan.zoomed {
+		cursor: grab;
+	}
+	.screencast-pan.zoomed:active {
+		cursor: grabbing;
 	}
 	.pan-zoom-frame {
 		position: static;
@@ -325,6 +439,9 @@
 		z-index: 1999;
 		width: inherit;
 		height: inherit;
+		/* Zoom/pan from the centre, applied via inline transform on this box. */
+		transform-origin: center center;
+		transition: transform 0.12s ease-out;
 	}
 	/* video.webcamScreen — fills, contains, no own pointer events. */
 	video {
