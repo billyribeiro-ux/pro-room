@@ -116,6 +116,11 @@
 					</h5>
 				</div>
 
+				<!-- DELIBERATE parity decision: the reference renders the close × on every
+				     tile, but for a MEMBER that's their OWN camera tile (a member can only
+				     stop their own cam; stopping a remote presenter's feed is an admin
+				     action on a different surface). So we gate the × to the local tile —
+				     showing it on remote tiles would be a dead/incorrect control. -->
 				{#if onClose && publisher.isLocal}
 					<button
 						class="close"
@@ -156,6 +161,13 @@
 	}
 
 	.card {
+		/* DELIBERATE parity decision: the reference cards are position:absolute;
+		   z-index:105, floating in the holder. We get the same user-visible result —
+		   webcams float over the stage (the parent .webcam-overlay is absolute, see
+		   MainStage) and each card is freely draggable (transform offset, lifting via
+		   z-index while dragging) — but keep position:relative inside a flex .holder so
+		   multiple tiles auto-center and wrap instead of overlapping at the same
+		   absolute origin. Equivalent behavior, more robust layout. */
 		position: relative;
 		/* Reference card.webcamsHolder: fixed 320x240 (4:3), 5px margin, black
 		   card, 1px yellowgreen active border, 6px radius, Open Sans 300/16. */
