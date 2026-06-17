@@ -221,8 +221,10 @@
 				</div>
 			{/key}
 		{:else}
+			<!-- Reference presenter-absent copy (h3.text-center): "No one is presenting
+			     right now...". -->
 			<div class="empty">
-				{connected ? 'Waiting for a presenter to share their screen…' : 'Connecting…'}
+				{connected ? 'No one is presenting right now...' : 'Connecting…'}
 			</div>
 		{/if}
 	</div>

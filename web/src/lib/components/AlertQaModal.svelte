@@ -182,7 +182,7 @@
 				{:else if error}
 					<p class="status err">{error}</p>
 				{:else if questions.length === 0}
-					<p class="status">No questions yet. Be the first to ask.</p>
+					<p class="status">There are no questions.</p>
 				{:else}
 					<ul>
 						{#each questions as q (q.id)}
