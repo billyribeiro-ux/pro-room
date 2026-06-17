@@ -160,7 +160,7 @@
 
 {#snippet footer()}
 	<button class="btn primary" type="button" onclick={startTest} disabled={running}>
-		{running ? 'Testing…' : 'Start Test'}
+		<Icon name="play" size={14} /> {running ? 'Testing…' : 'Start Test'}
 	</button>
 	<button class="btn success" type="button" onclick={copyResults}>
 		<Icon name="copy" size={14} /> Copy Results

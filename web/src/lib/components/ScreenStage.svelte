@@ -221,8 +221,10 @@
 				</div>
 			{/key}
 		{:else}
+			<!-- Reference presenter-absent copy (h3.text-center): "No one is presenting
+			     right now...". -->
 			<div class="empty">
-				{connected ? 'Waiting for a presenter to share their screen…' : 'Connecting…'}
+				{connected ? 'No one is presenting right now...' : 'Connecting…'}
 			</div>
 		{/if}
 	</div>
@@ -393,12 +395,15 @@
 	.empty {
 		height: 100%;
 		display: grid;
-		place-items: center;
+		/* Reference is an <h3 class="text-center mt-4"> — a heading near the TOP,
+		   horizontally centered (not vertically centered in the viewport). */
+		place-items: start center;
 		/* presentation-box bg: var(--presenter-area-bg) #0f2e43. */
 		background: #0f2e43;
 		color: var(--text-dim);
-		font-size: 0.9rem;
-		padding: 2rem;
+		font-size: 1.3rem;
+		font-weight: 400;
+		padding: 2rem 2rem 0;
 		text-align: center;
 	}
 

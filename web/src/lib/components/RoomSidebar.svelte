@@ -113,17 +113,6 @@
 			<div class="nav-item">
 				<button
 					class="item"
-					aria-label="Audio/Video Settings"
-					title="Audio/Video Settings"
-					onclick={() => (avSettingsOpen = true)}
-				>
-					<Icon name="video" size={14} /><span class="label">Audio/Video Settings</span>
-				</button>
-			</div>
-
-			<div class="nav-item">
-				<button
-					class="item"
 					aria-label="General Settings"
 					title="General Settings"
 					onclick={() => (settingsOpen = true)}
@@ -195,6 +184,14 @@
 				<div class="nav-item">
 					<div class="group">
 						<span class="group-head"><Icon name="shield-alt" size={14} /> Admin</span>
+						<button
+							class="sub-item"
+							aria-label="Audio/Video Settings"
+							title="Audio/Video Settings"
+							onclick={() => (avSettingsOpen = true)}
+						>
+							<Icon name="video" size={14} /><span class="label">Audio/Video Settings</span>
+						</button>
 						<button
 							class="sub-item"
 							aria-label="All Private Messages"

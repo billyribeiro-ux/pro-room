@@ -21,6 +21,7 @@ struct QuestionRow {
     alert_id: uuid::Uuid,
     room_id: uuid::Uuid,
     author_id: uuid::Uuid,
+    author_name: String,
     body: String,
     answer: Option<String>,
     answered_by: Option<uuid::Uuid>,
@@ -36,6 +37,7 @@ impl From<QuestionRow> for Question {
             alert_id: AlertId::from_uuid(row.alert_id),
             room_id: RoomId::from_uuid(row.room_id),
             author_id: UserId::from_uuid(row.author_id),
+            author_name: row.author_name,
             body: row.body,
             answer: row.answer,
             answered_by: row.answered_by.map(UserId::from_uuid),
@@ -70,11 +72,19 @@ pub async fn create(
     author_id: UserId,
     body: &str,
 ) -> anyhow::Result<Question> {
+    // CTE: INSERT then re-select with the users join (RETURNING can't JOIN), so the
+    // row carries the author's display_name like list_for_alert.
     let row: QuestionRow = sqlx::query_as(
-        "INSERT INTO questions (alert_id, room_id, author_id, body) \
-         VALUES ($1, $2, $3, $4) \
-         RETURNING id, alert_id, room_id, author_id, body, answer, \
-                   answered_by, resolved, created_at, answered_at",
+        "WITH ins AS ( \
+             INSERT INTO questions (alert_id, room_id, author_id, body) \
+             VALUES ($1, $2, $3, $4) \
+             RETURNING id, alert_id, room_id, author_id, body, answer, \
+                       answered_by, resolved, created_at, answered_at \
+         ) \
+         SELECT ins.id, ins.alert_id, ins.room_id, ins.author_id, ins.body, ins.answer, \
+                ins.answered_by, ins.resolved, ins.created_at, ins.answered_at, \
+                u.display_name AS author_name \
+         FROM ins JOIN users u ON u.id = ins.author_id",
     )
     .bind(alert_id.as_uuid())
     .bind(room_id.as_uuid())
@@ -93,10 +103,11 @@ pub async fn list_for_alert(
     alert_id: AlertId,
 ) -> anyhow::Result<Vec<Question>> {
     let rows: Vec<QuestionRow> = sqlx::query_as(
-        "SELECT id, alert_id, room_id, author_id, body, answer, \
-                answered_by, resolved, created_at, answered_at \
-         FROM questions \
-         WHERE alert_id = $1 AND room_id = $2 ORDER BY created_at ASC",
+        "SELECT q.id, q.alert_id, q.room_id, q.author_id, q.body, q.answer, \
+                q.answered_by, q.resolved, q.created_at, q.answered_at, \
+                u.display_name AS author_name \
+         FROM questions q JOIN users u ON u.id = q.author_id \
+         WHERE q.alert_id = $1 AND q.room_id = $2 ORDER BY q.created_at ASC",
     )
     .bind(alert_id.as_uuid())
     .bind(room_id.as_uuid())
@@ -116,11 +127,17 @@ pub async fn resolve(
     answer: &str,
 ) -> anyhow::Result<Option<Question>> {
     let row: Option<QuestionRow> = sqlx::query_as(
-        "UPDATE questions \
-         SET answer = $3, answered_by = $4, answered_at = now(), resolved = true \
-         WHERE id = $1 AND room_id = $2 \
-         RETURNING id, alert_id, room_id, author_id, body, answer, \
-                   answered_by, resolved, created_at, answered_at",
+        "WITH upd AS ( \
+             UPDATE questions \
+             SET answer = $3, answered_by = $4, answered_at = now(), resolved = true \
+             WHERE id = $1 AND room_id = $2 \
+             RETURNING id, alert_id, room_id, author_id, body, answer, \
+                       answered_by, resolved, created_at, answered_at \
+         ) \
+         SELECT upd.id, upd.alert_id, upd.room_id, upd.author_id, upd.body, upd.answer, \
+                upd.answered_by, upd.resolved, upd.created_at, upd.answered_at, \
+                u.display_name AS author_name \
+         FROM upd JOIN users u ON u.id = upd.author_id",
     )
     .bind(question_id.as_uuid())
     .bind(room_id.as_uuid())

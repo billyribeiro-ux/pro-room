@@ -218,6 +218,9 @@ pub struct Question {
     pub alert_id: AlertId,
     pub room_id: RoomId,
     pub author_id: UserId,
+    /// Display name of the author, joined from `users` (mirrors `Alert.author_name`)
+    /// so the Q&A UI shows a username instead of a raw UUID.
+    pub author_name: String,
     pub body: String,
     pub answer: Option<String>,
     pub answered_by: Option<UserId>,

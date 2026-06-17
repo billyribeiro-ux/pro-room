@@ -14,6 +14,8 @@ export interface Question {
 	alert_id: string;
 	room_id: string;
 	author_id: string;
+	/** Author's display name (joined from users) — shown instead of the UUID. */
+	author_name: string;
 	body: string;
 	answer: string | null;
 	answered_by: string | null;

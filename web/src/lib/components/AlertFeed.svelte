@@ -213,7 +213,7 @@
 					aria-expanded={settingsOpen}
 					onclick={() => (settingsOpen = !settingsOpen)}
 				>
-					<Icon name="cog" /><Icon name="caret-down" size={10} />
+					<Icon name="cog" />
 				</button>
 				{#if settingsOpen}
 					<div class="menu settings-dropdown" role="menu">
@@ -275,7 +275,7 @@
 							<span class="ellipsis" aria-hidden="true">⠇</span>
 						</button>
 						{#if openMenuId === a.id}
-							<div class="menu" role="menu">
+							<div class="menu row-menu" role="menu">
 								<button type="button" role="menuitem" onclick={() => openUserInfo(a)}>
 									<Icon name="user" size={14} /> User Info
 								</button>
@@ -575,6 +575,16 @@
 		padding: 0.25rem;
 		display: flex;
 		flex-direction: column;
+	}
+	/* Reference per-row kebab is a `dropright` (msgMenu.dropright): the ⠇ sits in the
+	   far-left gutter, so its menu flies out to the RIGHT of the trigger rather than
+	   dropping down over the row content. (The header gear keeps its drop-down via
+	   the .menu.settings-dropdown rule.) */
+	.menu.row-menu {
+		top: 0;
+		left: 100%;
+		margin-top: 0;
+		margin-left: 0.3rem;
 	}
 	.menu button {
 		display: flex;

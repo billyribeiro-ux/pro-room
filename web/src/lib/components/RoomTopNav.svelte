@@ -113,7 +113,13 @@
 
 	<span class="talking">
 		{#if speaker}
-			<Icon name="microphone" size={16} class="talking-mic" />
+			<!-- Reference shows an animated <img class="talkingWaveform"> equalizer next
+			     to the speaker name (max 30x25px), NOT a static mic glyph. Inline SVG
+			     equalizer (asset-free): 4 bars pulsing on a stagger. -->
+			<span class="talking-wave" aria-hidden="true">
+				<span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"
+				></span>
+			</span>
 			<span class="talking-string">( {speaker} is speaking )</span>
 		{:else}
 			<span class="talking-string">( No one is speaking )</span>
@@ -396,10 +402,49 @@
 		white-space: nowrap;
 		overflow: hidden;
 	}
-	/* Active-speaker mic glyph (i.fa-microphone, white, ~11x16) — present only
-	   when a speaker is active in the reference. */
-	.talking :global(.talking-mic) {
-		color: var(--text);
+	/* Active-speaker animated equalizer (reference .talkingWaveform, max 30x25px).
+	   4 white bars pulsing on a stagger — an inline, asset-free waveform. */
+	.talking-wave {
+		display: inline-flex;
+		align-items: flex-end;
+		gap: 2px;
+		width: 22px;
+		height: 16px;
+		margin: 0 2px;
+	}
+	.talking-wave .bar {
+		flex: 1;
+		background: var(--text);
+		border-radius: 1px;
+		transform-origin: bottom;
+		animation: talking-eq 0.9s ease-in-out infinite;
+	}
+	.talking-wave .bar:nth-child(1) {
+		animation-delay: 0s;
+	}
+	.talking-wave .bar:nth-child(2) {
+		animation-delay: 0.2s;
+	}
+	.talking-wave .bar:nth-child(3) {
+		animation-delay: 0.4s;
+	}
+	.talking-wave .bar:nth-child(4) {
+		animation-delay: 0.15s;
+	}
+	@keyframes talking-eq {
+		0%,
+		100% {
+			height: 30%;
+		}
+		50% {
+			height: 100%;
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.talking-wave .bar {
+			animation: none;
+			height: 60%;
+		}
 	}
 	/* Reference li.recIndicator > a: --presenter-recording-color #45a2ff,
 	   line-height 41px, max-width 117px, display:inline-block, margin 0 5px. */
