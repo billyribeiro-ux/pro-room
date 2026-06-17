@@ -103,7 +103,12 @@ async fn register(
     }
 
     let role = account::bootstrap_role(&state).await?;
-    let hash = crypto::hash_password(&body.password)?;
+    // Argon2 is ~10-40ms of pure CPU; run it on a blocking thread so it doesn't
+    // park a Tokio async worker (which would stall every other in-flight request).
+    let password = body.password.clone();
+    let hash = tokio::task::spawn_blocking(move || crypto::hash_password(&password))
+        .await
+        .map_err(|e| AppError::Internal(anyhow::Error::new(e)))??;
     let user = db::users::create(&state.db, &email, display_name, Some(&hash), role).await?;
     db::identities::link(&state.db, user.id, "password", &email).await?;
 
@@ -131,11 +136,13 @@ async fn login(
     let record = db::users::find_by_email(&state.db, &email)
         .await?
         .ok_or(AppError::Unauthorized)?;
-    let hash = record
-        .password_hash
-        .as_deref()
-        .ok_or(AppError::Unauthorized)?;
-    if !crypto::verify_password(&body.password, hash)? {
+    let hash = record.password_hash.clone().ok_or(AppError::Unauthorized)?;
+    // Verify off the async worker — Argon2 verification is CPU-bound (~10-40ms).
+    let password = body.password.clone();
+    let ok = tokio::task::spawn_blocking(move || crypto::verify_password(&password, &hash))
+        .await
+        .map_err(|e| AppError::Internal(anyhow::Error::new(e)))??;
+    if !ok {
         return Err(AppError::Unauthorized);
     }
 
