@@ -693,6 +693,14 @@
 			<Icon name="music" />
 		</button>
 	{/if}
+	{#if caps?.can_post_alert}
+		<!-- New poll → opens the create-poll modal (PollModal). Gated on can_post_alert
+		     (the same cap that lets admins close polls in PollPanel). Was a dead modal
+		     with no trigger; this wires it. -->
+		<button class="ctrl" onclick={() => (showCreatePoll = true)} title="New poll" aria-label="New poll">
+			<Icon name="poll" />
+		</button>
+	{/if}
 	{#if caps?.can_manage_room}
 		<button class="ctrl" onclick={() => (showRecPreview = true)} title="Record" aria-label="Record">
 			<Icon name="dot-circle" />

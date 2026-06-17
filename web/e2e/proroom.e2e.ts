@@ -222,29 +222,22 @@ test('react to an alert with an emoji', async ({ page }) => {
 	await shot(page, '12-reaction-added');
 });
 
-// SKIP: the poll-create modal (PollModal) is fully built but currently has NO UI
-// trigger — nothing in +page sets `showCreatePoll = true`. The reference puts "New
-// poll" in the Alerts section; the exact placement is a product decision, so the
-// trigger isn't wired yet. Re-enable once the New-poll button is added.
-test.skip('create, vote on, and close a poll', async ({ page }) => {
+// The "New poll" broadcast control (top-nav, can_post_alert) opens PollModal —
+// previously a dead modal with no trigger; now wired in +page stageActions.
+test('create, vote on, and close a poll', async ({ page }) => {
 	await clickAction(page, 'New poll');
-	const dialog = page.getByRole('dialog');
-	await expect(dialog).toBeVisible();
-	await expect(dialog.getByText('Create a poll')).toBeVisible();
-
-	await dialog
-		.locator("input[placeholder='What do you want to ask?']")
-		.fill('Best setup for tomorrow? $SPY');
-	// Target the option <input>s directly — getByLabel('Option 1') also matches the
-	// "Remove option 1" button by substring.
-	await dialog.locator("input[aria-label='Option 1']").fill('Breakout');
-	await dialog.locator("input[aria-label='Option 2']").fill('Pullback');
-	await dialog.getByRole('button', { name: 'Add option' }).click();
-	await dialog.locator("input[aria-label='Option 3']").fill('Range-bound');
+	// PollModal is a draggable floating "Polls" panel (not a role=dialog).
+	const panel = page.locator("section[aria-label='Polls']");
+	await expect(panel).toBeVisible();
+	await panel.locator('#pollQuestionTxt').fill('Best setup for tomorrow? $SPY');
+	// Choices are added one at a time via the choice input + "Add Choice".
+	for (const choice of ['Breakout', 'Pullback', 'Range-bound']) {
+		await panel.locator('#pollChoiceTxt').fill(choice);
+		await panel.getByRole('button', { name: 'Add Choice' }).click();
+	}
 	await shot(page, '13-poll-modal');
 
-	await dialog.getByRole('button', { name: 'Send' }).click();
-	await expect(dialog).toBeHidden();
+	await panel.getByRole('button', { name: 'Send Poll' }).click();
 
 	const poll = page.locator("section[aria-label='Poll']", { hasText: 'Best setup for tomorrow' });
 	await expect(poll).toBeVisible({ timeout: 10_000 });
