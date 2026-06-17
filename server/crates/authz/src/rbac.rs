@@ -24,6 +24,9 @@ pub const fn required_permission(action: Action) -> Permission {
         Action::SendPrivateMessage => Permission::PrivateMessageSend,
         Action::ReadAllPrivateMessages => Permission::PrivateMessageReadAll,
         Action::JoinRoom => Permission::ScreenSubscribe,
+        // Room creation reuses the RoomManage permission (admin+ hold it), so a
+        // member can't create rooms while every admin can.
+        Action::CreateRoom => Permission::RoomManage,
         Action::ManageRoom => Permission::RoomManage,
         Action::ManageMembers => Permission::MemberManage,
         Action::ManageUsers => Permission::UserManage,

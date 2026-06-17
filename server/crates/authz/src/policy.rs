@@ -22,8 +22,10 @@ pub fn evaluate(subject: &Subject, action: Action, resource: &Resource, ctx: &Co
         Action::ReadAllPrivateMessages => read_all_private_messages(subject, resource, ctx),
         Action::ManageRoom => manage_room(subject, resource),
         Action::ManageMembers => manage_members(subject, resource),
-        // Account-wide; RBAC (super-admin only) already settled it.
-        Action::ManageUsers => Decision::Allow,
+        // Account-wide actions: RBAC already settled the role (CreateRoom: admin+;
+        // ManageUsers: super-admin only) and there's no room resource to scope an
+        // ABAC check against, so allow once the RBAC permission check has passed.
+        Action::CreateRoom | Action::ManageUsers => Decision::Allow,
     }
 }
 
