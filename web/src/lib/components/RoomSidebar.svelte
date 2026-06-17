@@ -10,6 +10,7 @@
 	import MutedUsersModal from './modals/MutedUsersModal.svelte';
 	import FollowedUsersModal from './modals/FollowedUsersModal.svelte';
 	import SettingsModal from './modals/SettingsModal.svelte';
+	import EditProfileModal from './modals/EditProfileModal.svelte';
 	import PlayYouTubeModal from './modals/PlayYouTubeModal.svelte';
 	import SessionControlModal from './modals/SessionControlModal.svelte';
 	import DebugLogModal from './modals/DebugLogModal.svelte';
@@ -48,6 +49,7 @@
 	let mutedUsersOpen = $state(false);
 	let followedUsersOpen = $state(false);
 	let settingsOpen = $state(false);
+	let editProfileOpen = $state(false);
 	let playYoutubeOpen = $state(false);
 	let sessionControlOpen = $state(false);
 	let debugLogOpen = $state(false);
@@ -291,7 +293,15 @@
 <ChatLogsModal open={chatLogsOpen} onClose={() => (chatLogsOpen = false)} {roomId} />
 <MutedUsersModal open={mutedUsersOpen} onClose={() => (mutedUsersOpen = false)} />
 <FollowedUsersModal open={followedUsersOpen} onClose={() => (followedUsersOpen = false)} />
-<SettingsModal open={settingsOpen} onClose={() => (settingsOpen = false)} />
+<SettingsModal
+	open={settingsOpen}
+	onClose={() => (settingsOpen = false)}
+	onEditProfile={() => {
+		settingsOpen = false;
+		editProfileOpen = true;
+	}}
+/>
+<EditProfileModal open={editProfileOpen} onClose={() => (editProfileOpen = false)} />
 <PlayYouTubeModal
 	open={playYoutubeOpen}
 	onClose={() => (playYoutubeOpen = false)}

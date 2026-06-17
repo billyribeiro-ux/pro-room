@@ -24,13 +24,13 @@ Legend: ✅ wired + live-verified · ⛔ blocked on an un-built feature (honest 
 | **Reactions Response / QA** | `reactionsPopup`/`reactionsPopupQA` | `playSound('reaction')` gated by `reactionsResponse`, fired from `onReact` | ✅ |
 | **Tab sleep optimization** | `visibilityChangeEnabled` | `visibility.svelte.ts` `shouldThrottle()` → `ChatPanel`/`AlertFeed` skip autoscroll while hidden | ✅ |
 | **Extra chat column** | `extraChatColumn` (2nd `offTopic` getChatLog) | `AlertsChatDock` renders a 2nd `ChatPanel` locked to off-topic; `+page` feeds `offTopicMessages` + off-topic post | ✅ |
-| **Filter out alerts** | `app-alert-filter-modal` | — `AlertFilterModal` is a **stub** (no filter logic). Wiring would open an empty modal. | ⛔ |
-| **Edit my Info & Avatar** | profile editor | — no self-profile editor exists in our app (its own feature). | ⛔ |
-| **Longer alert popup** | `longerAlertPopup` (10s vs 5s toast) | — our app has **no alert-popup/toast** mechanism to lengthen. Pref is stored, inert. | ⛔ |
+| **Filter out alerts** | `app-alert-filter-modal` (`alertFilterFor` + `showAlertsFrom`) | `alertFilter.svelte.ts` store + rewritten `AlertFilterModal` (trader checklist, allow/block-list) → `AlertFeed` derived `visibleAlerts`. Live: block Dev Admin → 37→1; allow-list → 1→36 | ✅ |
+| **Edit my Info & Avatar** | `editUsername`/`emailHash` | `EditProfileModal` (name + gravatar via SHA-256) + backend `PATCH /api/auth/me`. Live: Save → name updated app-wide + toast | ✅ |
+| **Longer alert popup** | `toastr.warning(…,{timeOut: longerAlertPopup?1e4:5e3})` | `toast.svelte.ts` + `ToastContainer` → `+page` case `'alert'` fires a top-right toast (10s/5s), `alertPopup`-gated, preventDuplicates. Live: alert → toast; 2 identical → 1 | ✅ |
 
 ## Summary
-**13 of 16** General Settings surfaces are wired to a real consumer and
-live-verified (persist to `ptr.pref.*`, observable effect). The **3 blocked** are
-not toggle-wiring gaps — they require building a feature that doesn't exist yet
-(an alert-filter engine, a profile editor, an alert-popup system). Each is flagged
-in the modal/code rather than faked, per the evidence bar.
+**16 of 16** General Settings surfaces are now wired to a real consumer and
+live-verified. The three that were previously deferred (alert-filter engine,
+profile editor, alert-popup system) were each built as its own feature from the
+mined reference evidence — see commits `3285fb4` (popup), `3d2b404` (filter),
+`081318e` (edit-info). Nothing is faked.

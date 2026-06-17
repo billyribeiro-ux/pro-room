@@ -13,6 +13,7 @@
 	import AlertSendReportModal from './modals/AlertSendReportModal.svelte';
 	import Icon from './Icon.svelte';
 	import { prefs } from '$lib/stores/prefs.svelte';
+	import { alertFilter, isAlertVisible, type FilterTrader } from '$lib/stores/alertFilter.svelte';
 	import { shouldThrottle } from '$lib/stores/visibility.svelte';
 
 	export type AlertItem = Alert & {
@@ -62,6 +63,17 @@
 	// Trader options for the Advanced Search multi-select = the present roster.
 	const traderOptions = $derived(present.map((p) => ({ value: p.user_id, label: p.display_name })));
 
+	// Filter-checklist source: present roster ∪ distinct alert authors (so a trader
+	// who posted but isn't currently present stays selectable), keyed by author_id.
+	const filterTraders = $derived.by<FilterTrader[]>(() => {
+		const map = new Map<string, string>();
+		for (const p of present) map.set(p.user_id, p.display_name);
+		for (const a of alerts) if (a.author_id) map.set(a.author_id, a.author_name ?? 'Trader');
+		return [...map].map(([id, name]) => ({ id, name }));
+	});
+	// Apply the trader filter to the feed (reference doFilteredAlerts predicate).
+	const visibleAlerts = $derived(alerts.filter((a) => isAlertVisible(a.author_id)));
+
 	// Which row's ⠇ menu is open (alert id), or null when none.
 	let openMenuId = $state<string | null>(null);
 
@@ -76,7 +88,7 @@
 	let stickNext = false;
 	$effect.pre(() => {
 		if (!feedEl) return; // not yet mounted
-		alerts.length; // re-run whenever an alert is added/removed
+		visibleAlerts.length; // re-run whenever the (filtered) list changes
 		// "Tab sleep optimization": skip autoscroll layout work while hidden.
 		if (shouldThrottle()) return;
 		const atBottom = feedEl.offsetHeight + feedEl.scrollTop > feedEl.scrollHeight - 40;
@@ -97,7 +109,6 @@
 	let searchOpen = $state(false);
 	let settingsOpen = $state(false);
 	let postAlertOpen = $state(false);
-	let filterOpen = $state(false);
 	let scheduledOpen = $state(false);
 	// The alert whose delivery report is open (admin), or null.
 	let reportAlert = $state<AlertItem | null>(null);
@@ -211,7 +222,7 @@
 							role="menuitem"
 							onclick={() => {
 								settingsOpen = false;
-								filterOpen = true;
+								alertFilter.open = true;
 							}}
 						>
 							<Icon name="filter" size={14} /> Filter alerts
@@ -238,8 +249,8 @@
 		class:small-images={prefs.smallImagePreview}
 		bind:this={feedEl}
 	>
-		{#each alerts as a, i (a.id)}
-			{@const prev = alerts[i - 1]}
+		{#each visibleAlerts as a, i (a.id)}
+			{@const prev = visibleAlerts[i - 1]}
 			{@const newDay = !prev || dayKey(prev.created_at) !== dayKey(a.created_at)}
 			{#if newDay}
 				<li class="separator-row">
@@ -389,7 +400,11 @@
 	traders={traderOptions}
 	onClose={() => (searchOpen = false)}
 />
-<AlertFilterModal open={filterOpen} onClose={() => (filterOpen = false)} />
+<AlertFilterModal
+	open={alertFilter.open}
+	onClose={() => (alertFilter.open = false)}
+	traders={filterTraders}
+/>
 <ScheduledAlertsModal open={scheduledOpen} onClose={() => (scheduledOpen = false)} />
 <PostAlertModal
 	open={postAlertOpen}
