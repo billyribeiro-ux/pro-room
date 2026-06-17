@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Icon from '../Icon.svelte';
 	import Modal from '../Modal.svelte';
+	import { env } from '$env/dynamic/public';
 
 	interface Props {
 		open: boolean;
@@ -27,25 +28,23 @@
 	]);
 	let running = $state(false);
 
-	// ICE config copied VERBATIM from the reference bundle (chat.protradingroom.com
-	// main.*.js): two Google public STUN servers plus protradingroom's own coturn
-	// relay over udp+tcp, with the creds shipped in their public bundle. Matching
-	// the reference's exact servers keeps this a faithful 1:1 probe. (LiveKit Cloud
-	// injects its own TURN at signaling time, invisible to app code, so there is no
-	// "our" relay to test — the reference's relay is the closest faithful target.)
+	// Public Google STUN servers for the host/srflx reachability probe. A TURN
+	// (relay) server can be added here via env when one is provisioned for the
+	// self-hosted LiveKit (PUBLIC_TURN_URL / username / credential); until then the
+	// probe tests STUN only and the relay row reports honestly. (No third-party
+	// relay is referenced — the probe must not depend on any external service.)
 	const ICE_SERVERS: RTCIceServer[] = [
 		{ urls: 'stun:stun.l.google.com:19302' },
 		{ urls: 'stun:stun1.l.google.com:19302' },
-		{
-			urls: 'turn:flash.protradingroom.com:3478?transport=udp',
-			username: 'ptrUser',
-			credential: 'ptr123'
-		},
-		{
-			urls: 'turn:flash.protradingroom.com:3478?transport=tcp',
-			username: 'ptrUser',
-			credential: 'ptr123'
-		}
+		...(env.PUBLIC_TURN_URL
+			? [
+					{
+						urls: env.PUBLIC_TURN_URL,
+						username: env.PUBLIC_TURN_USERNAME ?? '',
+						credential: env.PUBLIC_TURN_CREDENTIAL ?? ''
+					}
+				]
+			: [])
 	];
 
 	// Imperative WebRTC handles — NOT $state (they are not rendered, only driven).

@@ -24,8 +24,13 @@ psql_q() {
 		-U "${PGUSER:-proroom}" -d "${PGDB:-proroom}" -tA -c "$1"
 }
 
-# email | display_name | global_role
+# email | display_name (the "username" shown in-app) | global_role
+# Login is by EMAIL + password (the app has no separate username field; the
+# display_name is what renders as the username). The first two are the crisp
+# "an admin" / "a member" pair.
 USERS=(
+	"admin@ptr.test|Admin|admin"
+	"member@ptr.test|Member|member"
 	"super@proroom.dev|Super Admin|super_admin"
 	"presenter@proroom.dev|Presenter Pat|admin"
 	"member1@proroom.dev|Member One|member"
@@ -57,4 +62,4 @@ done
 echo ""
 echo "Done. All seed users share password: ${PASSWORD}"
 echo "Log in at the web /login page; a real session overrides AUTH_DEV_BYPASS."
-psql_q "select email||'  '||global_role||'  ('||display_name||')' from users where email like '%@proroom.dev' order by global_role desc, email;" | sed 's/^/  /'
+psql_q "select email||'  '||global_role||'  ('||display_name||')' from users where email like '%@proroom.dev' or email like '%@ptr.test' order by global_role desc, email;" | sed 's/^/  /'

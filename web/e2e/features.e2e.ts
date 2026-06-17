@@ -66,12 +66,22 @@ test.beforeEach(async ({ page }) => {
 	await enterRoom(page);
 });
 
-test('alert popup toast fires on a new alert', async ({ page }) => {
+test('alert popup toast fires on another user’s new alert', async ({ page }) => {
+	// The alert popup is now self-notify-aware: you do NOT get a toast for your OWN
+	// alert (ev.alert.author_id !== detail.viewer_id). Under AUTH_DEV_BYPASS every
+	// unauthenticated request is the SAME super-admin, so to exercise the toast the
+	// viewer must be a different user from the author. View as the seeded member
+	// (real session overrides the bypass), then post the alert WITHOUT credentials so
+	// the bypass authors it as the admin — a different user → the toast fires.
+	await page.request.post('http://localhost:8081/api/auth/login', {
+		data: { email: 'member@ptr.test', password: 'proom1234' }
+	});
+	await enterRoom(page); // re-enter now that the member session cookie is set
 	await page.evaluate(async (rid) => {
 		await fetch(`http://localhost:8081/api/rooms/${rid}/alerts`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			credentials: 'include',
+			credentials: 'omit', // no member cookie → dev-bypass admin authors it
 			body: JSON.stringify({ symbol: 'E2ETOAST', side: 'buy', note: 'popup' })
 		});
 	}, roomId);

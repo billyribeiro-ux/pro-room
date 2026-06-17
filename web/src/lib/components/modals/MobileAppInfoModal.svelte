@@ -17,27 +17,18 @@
 <Modal {open} {onClose} title="Download our mobile apps" {footer}>
 	<!-- Reference body: a single flex row (justify-content-evenly) with the store
 	     badges, Google Play FIRST then App Store (files/file2.html). No intro line. -->
+	<!-- Store badges are non-linked placeholders until this app has its own listings
+	     (the reference's links pointed at the original vendor's apps and were removed).
+	     Wire each badge's href to your own Google Play / App Store URL when published. -->
 	<div class="badges">
-		<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-		<a
-			class="badge"
-			href="https://play.google.com/store/apps/details?id=com.bellesoft.stprotradingroom&hl=en&gl=US"
-			target="_blank"
-			rel="noopener noreferrer"
-		>
+		<span class="badge" aria-disabled="true">
 			<Icon name="google-play" size={26} family="brands" />
 			<span class="txt"><small>Get it on</small><strong>Google Play</strong></span>
-		</a>
-		<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-		<a
-			class="badge"
-			href="https://apps.apple.com/us/app/simpler-trading-mobile/id1278652736"
-			target="_blank"
-			rel="noopener noreferrer"
-		>
+		</span>
+		<span class="badge" aria-disabled="true">
 			<Icon name="apple" size={28} family="brands" />
 			<span class="txt"><small>Download on the</small><strong>App Store</strong></span>
-		</a>
+		</span>
 	</div>
 </Modal>
 

@@ -135,6 +135,21 @@ async fn detail(
 ) -> AppResult<Json<RoomDetail>> {
     let ctx = RoomContext::load(&state, &user, id).await?;
     ctx.ensure(&state, Action::JoinRoom).await?;
+    // Locked-room parity with the WS upgrade (ws.rs): without this, a locked-out
+    // non-admin gets a 200 RoomDetail and renders a full room while only the socket
+    // 403s — stranding them in a silent infinite reconnect. Reject the detail too so
+    // the client can show a clean "room is locked" state. Effective role mirrors
+    // Subject::effective_role (super-admin wins, else room role, else global).
+    if ctx.room.locked {
+        let role = if user.global_role == Role::SuperAdmin {
+            Role::SuperAdmin
+        } else {
+            ctx.membership.as_ref().map_or(user.global_role, |m| m.role)
+        };
+        if !crate::http::admin::may_enter_locked(role) {
+            return Err(AppError::Forbidden("room is locked"));
+        }
+    }
     Ok(Json(detail_from(&ctx)))
 }
 
