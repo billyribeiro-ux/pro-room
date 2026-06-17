@@ -87,12 +87,19 @@ async fn send(
         return Err(AppError::BadRequest("message is too long".into()));
     }
 
-    // The recipient must be a real, room-accessible user. `effective_role` returns
-    // `None` when the user does not exist; resolving it through the room also means
-    // a non-existent recipient maps to 404 rather than a foreign-key 500.
+    // The recipient must be a real user (→ 404 if absent). `effective_role`'s LEFT
+    // JOIN returns Some for ANY existing user, so it proves existence only.
     db::members::effective_role(&state.db, id, recipient)
         .await?
         .ok_or(AppError::NotFound)?;
+    // Existence isn't access: also require the recipient to be IN this room — a
+    // member, or anyone if the room is public. Without this, a PM could be addressed
+    // to a user who isn't a participant of a PRIVATE room.
+    let recipient_has_access = ctx.room.visibility == domain::entities::RoomVisibility::Public
+        || db::members::get(&state.db, id, recipient).await?.is_some();
+    if !recipient_has_access {
+        return Err(AppError::Forbidden("recipient is not in this room"));
+    }
 
     let message =
         db::private_messages::create(&state.db, id, user.user_id, recipient, body).await?;
