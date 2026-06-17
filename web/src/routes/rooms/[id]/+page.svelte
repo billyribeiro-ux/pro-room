@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
+	import { goto } from '$app/navigation';
 	import { onMount, onDestroy } from 'svelte';
 	import { MediaQuery } from 'svelte/reactivity';
 	import { api, ApiError } from '$lib/api';
@@ -303,7 +304,18 @@
 				alerts = alerts.filter((a) => a.id !== ev.id);
 				break;
 			case 'kicked':
-				present = present.filter((u) => u.user_id !== ev.user_id);
+				if (ev.user_id === detail?.viewer_id) {
+					// It's us: the server already removed us from membership + presence.
+					// Tear down our own connections (close() flips RoomSocket's closed flag
+					// so it does NOT auto-reconnect), tell the user why, and leave the room.
+					socket?.close();
+					void screen.disconnect();
+					showToast('Removed from room', ev.message ?? 'You were removed from this room.', 8000);
+					void goto(resolve('/rooms'));
+				} else {
+					// Another user was kicked: drop them from the roster.
+					present = present.filter((u) => u.user_id !== ev.user_id);
+				}
 				break;
 			case 'room_locked':
 				// Enforced server-side at join; no client-visible change needed here.
@@ -435,6 +447,8 @@
 		onMobileInfo={() => (showMobileInfo = true)}
 		onReload={() => location.reload()}
 		actions={stageActions}
+		onVolume={(v) => screen.setRemoteAudioVolume(v)}
+		onMuteAudio={(m) => screen.muteRemoteAudio(m)}
 	/>
 
 	<!-- Surfaces the realtime socket state: green "Connected" flash on reconnect,
@@ -693,6 +707,7 @@
      order that depends on the chosen Room Layout. -->
 {#snippet dockPane()}
 	<AlertsChatDock
+		{roomId}
 		{alerts}
 		{messages}
 		{offTopicMessages}

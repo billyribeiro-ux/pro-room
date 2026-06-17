@@ -110,6 +110,16 @@ export class ScreenShareRoom {
 	   unpublish it and release the device. Null when sharing via the browser. */
 	#externalPub: LocalTrackPublication | null = null;
 	#externalStream: MediaStream | null = null;
+	/** The hidden <audio> elements attached for remote audio tracks (presenter mic /
+	   screen audio). Tracked so the top-bar Volume/Mute control can set .volume/.muted
+	   on every one — LiveKit has no single "remote output volume" knob, so we drive the
+	   media elements directly. Newly-subscribed tracks inherit the current values. */
+	#audioEls = new Set<HTMLMediaElement>();
+	/** Current remote-audio output level (0..1) and mute, applied to every #audioEls
+	   element and to any track that subscribes later. Persist on the instance so a
+	   late-joining presenter's audio honors the listener's chosen volume. */
+	#remoteVolume = 1;
+	#remoteMuted = false;
 
 	async connect(url: string, token: string): Promise<void> {
 		// Serialize against any in-flight teardown (this or a remounted instance) so
@@ -136,6 +146,10 @@ export class ScreenShareRoom {
 				if (track.kind === 'audio') {
 					const el = track.attach();
 					el.style.display = 'none';
+					// Honor the listener's current Volume/Mute choice on this new element.
+					el.volume = this.#remoteVolume;
+					el.muted = this.#remoteMuted;
+					this.#audioEls.add(el);
 					document.body.appendChild(el);
 					// Attempt playback immediately; if the browser blocks autoplay (the
 					// common case before a user gesture) flag it so the "Enable audio"
@@ -149,7 +163,10 @@ export class ScreenShareRoom {
 			})
 			.on(RoomEvent.TrackUnsubscribed, (track: RemoteTrack) => {
 				if (track.kind === 'audio') {
-					track.detach().forEach((el) => el.remove());
+					track.detach().forEach((el) => {
+						el.remove();
+						this.#audioEls.delete(el);
+					});
 				}
 				this.#refresh();
 			})
@@ -207,6 +224,23 @@ export class ScreenShareRoom {
 		} catch (e) {
 			logEvent(`startAudio failed: ${e instanceof Error ? e.message : String(e)}`);
 		}
+	}
+
+	/**
+	 * Set the remote-audio output level for THIS listener (0..1). LiveKit exposes no
+	 * single output-volume knob, so we set .volume on every attached <audio> element
+	 * and remember it for tracks that subscribe later. Purely local — does not affect
+	 * what other participants hear. Clamped to [0,1].
+	 */
+	setRemoteAudioVolume(v: number): void {
+		this.#remoteVolume = Math.max(0, Math.min(1, v));
+		for (const el of this.#audioEls) el.volume = this.#remoteVolume;
+	}
+
+	/** Mute/unmute remote audio for THIS listener only (the top-bar Mute button). */
+	muteRemoteAudio(m: boolean): void {
+		this.#remoteMuted = m;
+		for (const el of this.#audioEls) el.muted = m;
 	}
 
 	/** Start sharing this user's screen (admins/super admins only). */
@@ -461,6 +495,7 @@ export class ScreenShareRoom {
 		this.#externalStream?.getTracks().forEach((t) => t.stop());
 		this.#externalStream = null;
 		this.#externalPub = null;
+		this.#audioEls.clear();
 		const room = this.#room;
 		this.#room = null;
 		try {

@@ -5,6 +5,8 @@
 	import { prefs } from '$lib/stores/prefs.svelte';
 
 	interface Props {
+		/** Room id — forwarded to the chat composers for inline image uploads. */
+		roomId: string;
 		alerts: AlertItem[];
 		messages: ChatItem[];
 		/** Off-topic channel history — rendered as the second column when the
@@ -29,6 +31,7 @@
 		onChannel: (channel: ChatChannel) => void;
 	}
 	let {
+		roomId,
 		alerts,
 		messages,
 		offTopicMessages = [],
@@ -137,6 +140,7 @@
 	<div class="chat-pane" class:two-col={prefs.extraChatColumn}>
 		<div class="chat-col">
 			<ChatPanel
+				{roomId}
 				{messages}
 				{present}
 				{channel}
@@ -155,6 +159,7 @@
 			     the Off-Topic channel, shown alongside the main one. -->
 			<div class="chat-col">
 				<ChatPanel
+					{roomId}
 					messages={offTopicMessages}
 					{present}
 					channel="off_topic"
