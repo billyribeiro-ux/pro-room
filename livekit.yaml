@@ -1,0 +1,33 @@
+# Local-dev LiveKit SFU config (NOT production — see server/.env.example for the
+# prod notes: TLS/wss, a public IP, TURN, and a real secret via env).
+#
+# CRITICAL: the `keys` map below (api_key: api_secret) MUST match
+# LIVEKIT_API_KEY / LIVEKIT_API_SECRET in server/.env — that pair is what signs
+# and validates the room JWT minted in server/crates/server/src/livekit.rs
+# (iss = api_key, HMAC-SHA256 over the claims with api_secret). A mismatch =
+# every room connect is rejected with an auth error.
+
+port: 7880 # HTTP/WS signaling — the browser and the API reach LiveKit here.
+
+rtc:
+  tcp_port: 7881 # TCP ICE/TURN fallback.
+  # Single UDP mux port for all WebRTC media, instead of a 50000-60000 range.
+  # Docker Desktop on macOS is extremely slow to map large port ranges, so a
+  # single muxed port is the right local-dev choice.
+  udp_port: 7882
+  use_external_ip: false
+  # CRITICAL for Docker-on-localhost: without this, LiveKit advertises its internal
+  # bridge IP (e.g. 172.x.x.x) as the ICE candidate, which the host browser can't
+  # reach -> "NegotiationError: negotiation timed out" and media never connects.
+  # Pin the advertised IP to loopback so the browser sends media to the mapped
+  # host port 7882. (Host networking would also fix this but is broken on Mac.)
+  node_ip: 127.0.0.1
+
+# Single-node dev needs no Redis (Redis is only for multi-node LiveKit).
+keys:
+  # Local-dev key pair. Override with real secrets via env for any shared/prod
+  # deployment. >= 32 chars is a LiveKit requirement.
+  devkey: proom_local_livekit_dev_secret_0123456789
+
+logging:
+  level: info
