@@ -16,6 +16,7 @@
 	import UserInfoModal from './modals/UserInfoModal.svelte';
 	import AdvancedSearchModal from './modals/AdvancedSearchModal.svelte';
 	import SettingsModal from './modals/SettingsModal.svelte';
+	import EditProfileModal from './modals/EditProfileModal.svelte';
 	import Icon from './Icon.svelte';
 
 	export type ChatItem = Message & {
@@ -107,6 +108,7 @@
 	// Header affordances (were dead): advanced-search modal + the settings gear.
 	let searchOpen = $state(false);
 	let settingsOpen = $state(false);
+	let editProfileOpen = $state(false);
 
 	let textareaEl = $state<HTMLTextAreaElement | null>(null);
 
@@ -373,7 +375,15 @@
 	traders={traderOptions}
 	onClose={() => (searchOpen = false)}
 />
-<SettingsModal open={settingsOpen} onClose={() => (settingsOpen = false)} />
+<SettingsModal
+	open={settingsOpen}
+	onClose={() => (settingsOpen = false)}
+	onEditProfile={() => {
+		settingsOpen = false;
+		editProfileOpen = true;
+	}}
+/>
+<EditProfileModal open={editProfileOpen} onClose={() => (editProfileOpen = false)} />
 
 <style>
 	.panel {

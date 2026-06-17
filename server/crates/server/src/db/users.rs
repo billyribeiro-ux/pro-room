@@ -149,6 +149,20 @@ pub async fn set_role(pool: &PgPool, id: UserId, role: Role) -> anyhow::Result<(
     Ok(())
 }
 
+/// Update a user's display name. Mirrors `set_role`; uses a runtime-checked query
+/// (no sqlx macro cache needed for the bare UPDATE).
+pub async fn set_display_name(pool: &PgPool, id: UserId, name: &str) -> anyhow::Result<()> {
+    let affected = sqlx::query("UPDATE users SET display_name = $1, updated_at = now() WHERE id = $2")
+        .bind(name)
+        .bind(id.as_uuid())
+        .execute(pool)
+        .await
+        .context("set display name")?
+        .rows_affected();
+    anyhow::ensure!(affected == 1, "user not found");
+    Ok(())
+}
+
 pub async fn set_status(pool: &PgPool, id: UserId, status: UserStatus) -> anyhow::Result<()> {
     let affected = sqlx::query!(
         "UPDATE users SET status = $2::text::user_status, updated_at = now() WHERE id = $1",

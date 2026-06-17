@@ -23,7 +23,7 @@ pub fn router() -> Router<AppState> {
         .route("/api/auth/register", post(register))
         .route("/api/auth/login", post(login))
         .route("/api/auth/logout", post(logout))
-        .route("/api/auth/me", get(me))
+        .route("/api/auth/me", get(me).patch(update_me))
         .route("/api/auth/magic/request", post(magic_request))
         .route("/api/auth/magic/verify", get(magic_verify))
         .route("/api/auth/oauth/{provider}/start", get(oauth_start))
@@ -154,6 +154,32 @@ async fn logout(
 
 async fn me(CurrentUser(user): CurrentUser) -> Json<MeResponse> {
     Json(me_response(&user))
+}
+
+#[derive(Deserialize)]
+struct UpdateMeBody {
+    display_name: String,
+}
+
+/// Update the caller's OWN display name (reference "Edit my Info"). Self-scoped via
+/// `CurrentUser` — a user may only edit their own profile, so no RBAC policy beyond
+/// authentication is required. Returns the refreshed `me` view.
+async fn update_me(
+    State(state): State<AppState>,
+    CurrentUser(mut user): CurrentUser,
+    Json(body): Json<UpdateMeBody>,
+) -> AppResult<Json<MeResponse>> {
+    let name = body.display_name.trim();
+    // Validate server-side (never trust the client): alphanumeric, >= 3 chars
+    // (reference "Username can only contain letters and numbers").
+    if name.len() < 3 || !name.chars().all(|c| c.is_ascii_alphanumeric()) {
+        return Err(AppError::BadRequest(
+            "Display name must be at least 3 letters or numbers (no spaces).".into(),
+        ));
+    }
+    db::users::set_display_name(&state.db, user.user_id, name).await?;
+    user.display_name = name.to_owned();
+    Ok(Json(me_response(&user)))
 }
 
 #[derive(Deserialize)]
