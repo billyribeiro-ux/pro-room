@@ -41,6 +41,7 @@
 	import { deleteAlert, deleteMessage } from '$lib/admin';
 	import { playSound } from '$lib/sound.svelte';
 	import { isMuted } from '$lib/stores/dnd.svelte';
+	import { logEvent } from '$lib/stores/sessionLog.svelte';
 	import { showToast } from '$lib/stores/toast.svelte';
 	import { alertBody } from '$lib/alertText';
 	import type { ReactionTally, ReactionTarget, MediaKind } from '$lib/types';
@@ -380,29 +381,46 @@
 		}
 	}
 
+	// (Re)hydrate the HTTP-backed lists (alerts, chat, polls). Called on mount and
+	// again on every WS RE-connect, so anything broadcast while the socket was down
+	// is recovered. A full refetch REPLACES each list with the server's truth, so
+	// missed/duplicate events self-heal (no manual de-dupe needed).
+	async function resyncRoomState() {
+		const [a, m, p] = await Promise.all([
+			api.get<AlertItem[]>(`/api/rooms/${roomId}/alerts`),
+			api.get<ChatItem[]>(`/api/rooms/${roomId}/messages?channel=main`),
+			listPolls(roomId)
+		]);
+		// The API returns alerts newest-first; reverse so the newest sits at the
+		// BOTTOM of the feed (same ordering as chat — latest always at the bottom).
+		alerts = [...a].reverse();
+		mainMessages = [...m].reverse();
+		polls = p;
+		loaded = { ...loaded, main: true };
+		// The off-topic channel is lazy; only refetch it if it was already loaded.
+		if (loaded.off_topic) {
+			const o = await api.get<ChatItem[]>(`/api/rooms/${roomId}/messages?channel=off_topic`);
+			offTopicMessages = [...o].reverse();
+		}
+	}
+
 	onMount(async () => {
 		try {
 			detail = await api.get<RoomDetail>(`/api/rooms/${roomId}`);
 			// Wire PM context so deep callers (UserInfoModal) can open/send threads and
 			// we can mark our own messages.
 			setPmContext(roomId, detail.viewer_id);
-			const [a, m, p] = await Promise.all([
-				api.get<AlertItem[]>(`/api/rooms/${roomId}/alerts`),
-				api.get<ChatItem[]>(`/api/rooms/${roomId}/messages?channel=main`),
-				listPolls(roomId)
-			]);
-			// The API returns alerts newest-first; reverse so the newest sits at the
-			// BOTTOM of the feed (same ordering as chat — latest always at the bottom).
-			alerts = [...a].reverse();
-			mainMessages = [...m].reverse();
-			polls = p;
-			loaded = { ...loaded, main: true };
+			await resyncRoomState();
 		} catch (err) {
 			error = err instanceof ApiError ? err.message : 'Failed to load room';
 			return;
 		}
 
-		socket = new RoomSocket(roomId, handleEvent);
+		// On reconnect, resync state (best-effort) — recovers events missed during the
+		// outage; the next live frame would otherwise be the first thing we see.
+		socket = new RoomSocket(roomId, handleEvent, () => {
+			void resyncRoomState().catch(() => logEvent('Room state resync after reconnect failed'));
+		});
 		socket.open();
 		await connectLiveKit();
 	});

@@ -17,7 +17,11 @@ export class RoomSocket {
 
 	constructor(
 		private roomId: string,
-		private onEvent: (event: RoomEvent) => void
+		private onEvent: (event: RoomEvent) => void,
+		/** Fired on a RE-connect (not the first connect) so the page can resync state
+		    that was hydrated over HTTP — any alert/chat/poll broadcast during the
+		    outage is otherwise lost (the socket only carries live frames). */
+		private onReconnect?: () => void
 	) {}
 
 	open(): void {
@@ -40,10 +44,13 @@ export class RoomSocket {
 		ws.onopen = () => {
 			// Log before resetting #retry so a reconnect reads as one (reference parity:
 			// I("Connected to server... is reconnect:")).
-			logEvent(this.#retry > 0 ? `WS reconnected to room ${this.roomId}` : `WS connected to room ${this.roomId}`);
+			const isReconnect = this.#retry > 0;
+			logEvent(isReconnect ? `WS reconnected to room ${this.roomId}` : `WS connected to room ${this.roomId}`);
 			this.connected = true;
 			this.#retry = 0;
 			this.#startHeartbeat();
+			// Resync HTTP-hydrated state to recover anything broadcast during the gap.
+			if (isReconnect) this.onReconnect?.();
 		};
 		ws.onmessage = (ev) => {
 			try {
