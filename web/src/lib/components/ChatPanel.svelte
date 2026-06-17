@@ -286,6 +286,28 @@
 			document.removeEventListener('pointerdown', onPointerdown, true);
 		};
 	};
+
+	// Reference (odds-and-ends.html:9684): the MAIN chat composer collapses the
+	// emoji/image/GIF buttons behind a single "+" ("Show message options"); they
+	// reveal on toggle. (The reply/QA modals show them inline — different
+	// components, unchanged.) `dismissOptions` is attached to the whole button
+	// column so a click on the "+" itself stays "inside" (toggle works) while a
+	// click elsewhere closes the row.
+	let optionsOpen = $state(false);
+	const dismissOptions: Attachment<HTMLElement> = (node) => {
+		function onKeydown(e: KeyboardEvent) {
+			if (e.key === 'Escape') optionsOpen = false;
+		}
+		function onPointerdown(e: PointerEvent) {
+			if (optionsOpen && e.target instanceof Node && !node.contains(e.target)) optionsOpen = false;
+		}
+		document.addEventListener('keydown', onKeydown);
+		document.addEventListener('pointerdown', onPointerdown, true);
+		return () => {
+			document.removeEventListener('keydown', onKeydown);
+			document.removeEventListener('pointerdown', onPointerdown, true);
+		};
+	};
 </script>
 
 <svelte:window onkeydown={(e) => e.key === 'Escape' && (openMenuId = null)} />
@@ -435,65 +457,87 @@
 						onkeydown={onComposerKeydown}
 					></textarea>
 				</div>
-				<div class="textAreaBtnsCol">
-					<!-- Add Emojis → native-Unicode picker popover (inserts at the caret). -->
-					<div class="emoji-wrap">
-						<button
-							type="button"
-							class="textAreaBtns"
-							aria-label="Add Emojis"
-							title="Add Emojis"
-							aria-haspopup="menu"
-							aria-expanded={emojiOpen}
-							onclick={() => (emojiOpen = !emojiOpen)}
-						>
-							<Icon name="smile" family="regular" size={18} />
-						</button>
-						{#if emojiOpen}
-							<div class="emoji-pop" role="menu" aria-label="Pick an emoji" {@attach dismissEmoji}>
-								{#each EMOJI as glyph (glyph)}
-									<button
-										type="button"
-										class="emoji-cell"
-										role="menuitem"
-										aria-label="Insert {glyph}"
-										onclick={() => pickEmoji(glyph)}
-									>
-										{glyph}
-									</button>
-								{/each}
-							</div>
-						{/if}
-					</div>
-
-					<!-- Upload an Image → hidden file input → /uploads → URL spliced in. -->
+				<div class="textAreaBtnsCol" {@attach dismissOptions}>
+					<!-- Reference main chat: a single "+" reveals the message-options row. -->
 					<button
 						type="button"
-						class="textAreaBtns"
-						aria-label="Upload an Image"
-						title="Upload an Image"
-						disabled={uploading}
-						onclick={() => fileInputEl?.click()}
+						class="textAreaBtns plus"
+						aria-label="Show message options"
+						title="Show message options"
+						aria-haspopup="true"
+						aria-expanded={optionsOpen}
+						onclick={() => (optionsOpen = !optionsOpen)}
 					>
-						<Icon name="image" size={18} />
+						<Icon name="plus" size={18} />
 					</button>
-					<input
-						bind:this={fileInputEl}
-						type="file"
-						accept="image/*"
-						hidden
-						onchange={onPickImage}
-					/>
 
-					<!-- Search for GIFs → reference uses GIPHY (needs an API key the app
-					     doesn't ship). Rendered disabled rather than half-wired. -->
-					<button
-						type="button"
-						class="textAreaBtns gif"
-						aria-label="Search for GIFs"
-						title="GIF search is unavailable (requires a GIPHY API key)"
-						disabled>GIF</button
-					>
+					{#if optionsOpen}
+						<div class="options-row">
+							<!-- Add Emojis → native-Unicode picker popover (inserts at the caret). -->
+							<div class="emoji-wrap">
+								<button
+									type="button"
+									class="textAreaBtns"
+									aria-label="Add Emojis"
+									title="Add Emojis"
+									aria-haspopup="menu"
+									aria-expanded={emojiOpen}
+									onclick={() => (emojiOpen = !emojiOpen)}
+								>
+									<Icon name="smile" family="regular" size={18} />
+								</button>
+								{#if emojiOpen}
+									<div
+										class="emoji-pop"
+										role="menu"
+										aria-label="Pick an emoji"
+										{@attach dismissEmoji}
+									>
+										{#each EMOJI as glyph (glyph)}
+											<button
+												type="button"
+												class="emoji-cell"
+												role="menuitem"
+												aria-label="Insert {glyph}"
+												onclick={() => pickEmoji(glyph)}
+											>
+												{glyph}
+											</button>
+										{/each}
+									</div>
+								{/if}
+							</div>
+
+							<!-- Upload an Image → hidden file input → /uploads → URL spliced in. -->
+							<button
+								type="button"
+								class="textAreaBtns"
+								aria-label="Upload an Image"
+								title="Upload an Image"
+								disabled={uploading}
+								onclick={() => fileInputEl?.click()}
+							>
+								<Icon name="image" size={18} />
+							</button>
+							<input
+								bind:this={fileInputEl}
+								type="file"
+								accept="image/*"
+								hidden
+								onchange={onPickImage}
+							/>
+
+							<!-- Search for GIFs → reference uses GIPHY (needs an API key the app
+							     doesn't ship). Rendered disabled rather than half-wired. -->
+							<button
+								type="button"
+								class="textAreaBtns gif"
+								aria-label="Search for GIFs"
+								title="GIF search is unavailable (requires a GIPHY API key)"
+								disabled>GIF</button
+							>
+						</div>
+					{/if}
 				</div>
 			</div>
 		</form>
@@ -966,6 +1010,12 @@
 	}
 	.emoji-cell:hover {
 		background: #f0f4fb;
+	}
+	/* The emoji/image/GIF buttons revealed by the "+" — a tight inline row. */
+	.options-row {
+		display: flex;
+		align-items: center;
+		gap: 0.2rem;
 	}
 	.readonly {
 		margin: 0;

@@ -8,7 +8,7 @@
  */
 
 /** The discriminant tags a parsed segment can carry. */
-export type SegmentKind = 'text' | 'ticker' | 'mention' | 'link';
+export type SegmentKind = 'text' | 'ticker' | 'mention' | 'link' | 'image';
 
 /**
  * One parsed piece of a message body.
@@ -27,7 +27,25 @@ export type Segment =
 	| { kind: 'text'; value: string }
 	| { kind: 'ticker'; value: string }
 	| { kind: 'mention'; value: string; handle: string }
-	| { kind: 'link'; href: string; value: string };
+	| { kind: 'link'; href: string; value: string }
+	// `image` — a URL that points at an image (renders inline as a thumbnail
+	// instead of a link). `gif` flags an animated GIF (muted-by-default when the
+	// "Animated GIFs in chat" DND flag is set). `value` stays the original text so
+	// the concatenation invariant holds.
+	| { kind: 'image'; href: string; value: string; gif: boolean };
+
+// A URL is treated as an image when its path ends in an image extension (the
+// reference's CDN images + GIPHY .gif URLs) OR it is one of our own inline-upload
+// download URLs (`/api/rooms/{id}/files/{uuid}/download`, which the server only
+// serves for image uploads via the chat composer). Optional query string allowed.
+const IMG_EXT_RE = /\.(?:png|jpe?g|gif|webp|avif)(?:\?[^\s]*)?$/i;
+const UPLOAD_DOWNLOAD_RE = /\/api\/rooms\/[^/\s]+\/files\/[^/\s]+\/download(?:\?[^\s]*)?$/i;
+function isImageUrl(href: string): boolean {
+	return IMG_EXT_RE.test(href) || UPLOAD_DOWNLOAD_RE.test(href);
+}
+function isGifUrl(href: string): boolean {
+	return /\.gif(?:\?[^\s]*)?$/i.test(href);
+}
 
 // Bare http/https URLs. Trailing punctuation is trimmed back into a text
 // segment so e.g. "see https://x.com." doesn't swallow the period into href.
@@ -63,7 +81,9 @@ export function parseMessage(body: string): Segment[] {
 		matches.push({
 			start,
 			end: start + raw.length,
-			seg: { kind: 'link', href: raw, value: raw }
+			seg: isImageUrl(raw)
+				? { kind: 'image', href: raw, value: raw, gif: isGifUrl(raw) }
+				: { kind: 'link', href: raw, value: raw }
 		});
 	}
 
