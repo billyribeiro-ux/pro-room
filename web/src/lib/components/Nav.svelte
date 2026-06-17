@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { auth } from '$lib/stores/auth.svelte';
+	import { brand } from '$lib/stores/brand.svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import Icon from './Icon.svelte';
@@ -12,8 +13,8 @@
 
 <nav>
 	<a class="brand" href={resolve('/rooms')}>
-		<Icon name="chart-line" size={22} />
-		<span>ProTradingRoom</span>
+		<img class="brand-logo" src={brand.logo} alt={brand.name} />
+		<span>{brand.name}</span>
 	</a>
 
 	{#if auth.user}
@@ -51,9 +52,10 @@
 		font-weight: 700;
 		letter-spacing: -0.01em;
 	}
-	.brand :global(svg),
-	.brand :global(i) {
-		color: var(--accent);
+	.brand-logo {
+		height: 26px;
+		width: auto;
+		display: block;
 	}
 	.links {
 		display: flex;

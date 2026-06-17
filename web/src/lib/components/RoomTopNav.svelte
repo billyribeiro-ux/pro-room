@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import Icon from './Icon.svelte';
-	import { BRAND } from '$lib/brand';
+	import { brand } from '$lib/stores/brand.svelte';
 	import { dnd, setDnd } from '$lib/stores/dnd.svelte';
 	import { prefs, setPref } from '$lib/stores/prefs.svelte';
 
@@ -104,7 +104,7 @@
 	</button>
 
 	<span class="brand">
-		<img class="brand-logo" src={BRAND.logo} alt={BRAND.name} />
+		<img class="brand-logo" src={brand.logo} alt={brand.name} />
 		<span class="room-name">{roomName}</span>
 	</span>
 

@@ -15,7 +15,9 @@
 	import SessionControlModal from './modals/SessionControlModal.svelte';
 	import DebugLogModal from './modals/DebugLogModal.svelte';
 	import AllUserPmModal from './modals/AllUserPmModal.svelte';
+	import BrandingModal from './modals/BrandingModal.svelte';
 	import { debugLogText, logEvent } from '$lib/stores/sessionLog.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
 
 	interface Props {
 		open: boolean;
@@ -54,6 +56,12 @@
 	let sessionControlOpen = $state(false);
 	let debugLogOpen = $state(false);
 	let allPmOpen = $state(false);
+	let brandingOpen = $state(false);
+
+	// Branding is account-wide: gate on the global RoomManage capability (admin+),
+	// mirroring the backend Action::ManageBranding gate — NOT on `canManage` (which
+	// is room-scoped to the owner/super-admin), so any global admin can reach it.
+	const canManageBranding = $derived(auth.can('room.manage'));
 
 	function initialOf(name: string): string {
 		return name.trim().charAt(0).toUpperCase() || '?';
@@ -226,6 +234,22 @@
 					</div>
 				</div>
 			{/if}
+
+			{#if canManageBranding}
+				<div class="nav-item">
+					<div class="group">
+						<span class="group-head"><Icon name="palette" size={14} /> App</span>
+						<button
+							class="sub-item"
+							aria-label="Branding"
+							title="Branding (logo & app name)"
+							onclick={() => (brandingOpen = true)}
+						>
+							<Icon name="image" size={14} /><span class="label">Branding</span>
+						</button>
+					</div>
+				</div>
+			{/if}
 		</nav>
 
 		<div class="roster">
@@ -303,6 +327,7 @@
 <SessionControlModal open={sessionControlOpen} onClose={() => (sessionControlOpen = false)} />
 <DebugLogModal open={debugLogOpen} onClose={() => (debugLogOpen = false)} log={debugLogText()} />
 <AllUserPmModal open={allPmOpen} onClose={() => (allPmOpen = false)} {roomId} {present} />
+<BrandingModal open={brandingOpen} onClose={() => (brandingOpen = false)} />
 
 <style>
 	/* In-flow push rail (matches the reference room-sidebar): when open it takes

@@ -33,3 +33,6 @@ dump.rdb
 evidence-folder/_slices/
 evidence-folder/_report-sections/
 evidence-folder/*.json
+
+# Runtime upload storage (brand logos, chat/file uploads) — not source.
+server/uploads/

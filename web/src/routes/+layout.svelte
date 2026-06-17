@@ -14,6 +14,7 @@
 	import Nav from '$lib/components/Nav.svelte';
 	import DialogHost from '$lib/components/DialogHost.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
+	import { loadBrand } from '$lib/stores/brand.svelte';
 	import { theme } from '$lib/stores/theme.svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
@@ -31,7 +32,9 @@
 
 	onMount(async () => {
 		theme.apply();
-		await auth.refresh();
+		// Resolve the session and the server-configured branding together; both are
+		// independent first-paint reads. loadBrand never rejects (it keeps defaults).
+		await Promise.all([auth.refresh(), loadBrand()]);
 		booted = true;
 	});
 
