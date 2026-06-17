@@ -56,6 +56,13 @@
 		<div class="avatar-row">
 			{#await gravatarUrl(email, 80) then src}
 				<img class="avatar" {src} alt="Your avatar" width="80" height="80" />
+			{:catch}
+				<!-- Defense-in-depth: gravatarUrl falls back internally on an insecure
+				     context, but a :catch guarantees a rejection can never bubble to the
+				     console. Show the first initial as a placeholder. -->
+				<span class="avatar avatar-fallback" aria-hidden="true"
+					>{(name || email || '?').trim().charAt(0).toUpperCase()}</span
+				>
 			{/await}
 			<span class="hint">Your avatar comes from your email's Gravatar.</span>
 		</div>
@@ -113,6 +120,14 @@
 		background: var(--bg-elev);
 		object-fit: cover;
 		flex: 0 0 auto;
+	}
+	.avatar-fallback {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 2rem;
+		font-weight: 600;
+		color: var(--text-dim);
 	}
 	.hint {
 		font-size: 0.78rem;

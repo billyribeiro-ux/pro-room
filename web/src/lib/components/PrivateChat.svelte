@@ -93,6 +93,8 @@
 		<form onsubmit={onSubmit}>
 			<div class="pill">
 				<textarea
+					id="pm-composer"
+					name="private-message"
 					bind:this={textareaEl}
 					bind:value={body}
 					rows="1"

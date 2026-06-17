@@ -90,6 +90,8 @@
 				/>
 			</div>
 			<input
+				id="adv-search-term"
+				name="search-term"
 				class="term"
 				type="search"
 				bind:value={term}

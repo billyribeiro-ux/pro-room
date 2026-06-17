@@ -172,7 +172,13 @@
 		<div class="tools">
 			<div class="search">
 				<Icon name="search" size={15} />
-				<input placeholder="Search files…" bind:value={query} />
+				<input
+					id="files-search"
+					name="files-search"
+					type="search"
+					placeholder="Search files…"
+					bind:value={query}
+				/>
 			</div>
 			<button type="button" class="ic" onclick={load} disabled={busy} aria-label="Refresh">
 				<Icon name="sync" />
