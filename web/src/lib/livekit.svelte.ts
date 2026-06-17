@@ -495,6 +495,14 @@ export class ScreenShareRoom {
 		this.#externalStream?.getTracks().forEach((t) => t.stop());
 		this.#externalStream = null;
 		this.#externalPub = null;
+		// Detach + remove the hidden <audio> nodes (a deliberate disconnect doesn't
+		// always fire TrackUnsubscribed for every remote track, so clearing the Set
+		// alone would orphan them in document.body across leave→rejoin / reconnect).
+		for (const el of this.#audioEls) {
+			el.pause();
+			el.srcObject = null;
+			el.remove();
+		}
 		this.#audioEls.clear();
 		const room = this.#room;
 		this.#room = null;

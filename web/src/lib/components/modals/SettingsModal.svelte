@@ -67,37 +67,12 @@
 	}
 
 	// --- Do-Not-Disturb sound/popup toggles (route to the dnd store) ----------
-	// These checkboxes are "sound/popup ON" (checked = enabled) — the INVERSE of
-	// the `dnd` store flags (true = suppressed). Initialised from the persisted
-	// store; the sync effect below pushes changes back (inverted) so they take
-	// real effect via the room's playSound()/popup gating. Every OTHER toggle is
-	// a real preference read straight from the `prefs` store (setPref persists it).
-	let appDnd = $state({ dontDisturb: dnd.app });
-	let alertDnd = $state({
-		alertQaPopup: !dnd.alertPopup,
-		alertSound: !dnd.alert,
-		qaSound: !dnd.qa,
-		nonTradeAlertSound: !dnd.nonTradeAlert
-	});
-	let chatDnd = $state({
-		gif: !dnd.chatGif,
-		badges: !dnd.chatBadges,
-		chatPmPopup: !dnd.chatPopup,
-		chatSound: !dnd.chat
-	});
-
-	$effect(() => {
-		setDnd('app', appDnd.dontDisturb);
-		setDnd('alert', !alertDnd.alertSound);
-		setDnd('alertPopup', !alertDnd.alertQaPopup);
-		setDnd('qa', !alertDnd.qaSound);
-		setDnd('nonTradeAlert', !alertDnd.nonTradeAlertSound);
-		setDnd('chat', !chatDnd.chatSound);
-		setDnd('chatGif', !chatDnd.gif);
-		setDnd('chatBadges', !chatDnd.badges);
-		setDnd('chatPopup', !chatDnd.chatPmPopup);
-	});
-
+	// The DND sound/popup checkboxes bind DIRECTLY to the shared `dnd` store (read
+	// live, write via setDnd) — NOT local $state. Local state seeded once at init
+	// would (a) go stale when the top-nav volume panel changes the same flags, and
+	// (b) a bulk write-back effect would clobber those changes. Each checkbox is the
+	// POSITIVE "sound/popup ON" state (checked = !dnd[flag], since a dnd flag true =
+	// suppressed); "Don't Disturb" maps straight to dnd.app. Mirrors RoomTopNav.
 	function selectMode(mode: ThemeMode) {
 		theme.setMode(mode);
 	}
@@ -240,7 +215,11 @@
 			</div>
 			<div class="checks">
 				<label class="check">
-					<input type="checkbox" bind:checked={appDnd.dontDisturb} />
+					<input
+						type="checkbox"
+						checked={dnd.app}
+						onchange={(e) => setDnd('app', e.currentTarget.checked)}
+					/>
 					<span>Don't Disturb</span>
 				</label>
 				<label class="check">
@@ -344,22 +323,34 @@
 			</div>
 			<div class="checks">
 				<label class="check">
-					<input type="checkbox" bind:checked={alertDnd.alertQaPopup} />
+					<input
+						type="checkbox"
+						checked={!dnd.alertPopup}
+						onchange={(e) => setDnd('alertPopup', !e.currentTarget.checked)}
+					/>
 					<span>Alert / QA Popup</span>
-					<span class="state">{alertDnd.alertQaPopup ? 'on' : 'off'}</span>
+					<span class="state">{dnd.alertPopup ? 'off' : 'on'}</span>
 				</label>
 				<!-- Reference renders <hr/> after the Alert / QA Popup toggle to split
 				     the popup control from the sound toggles below. -->
 				<hr />
 				<label class="check">
-					<input type="checkbox" bind:checked={alertDnd.alertSound} />
+					<input
+						type="checkbox"
+						checked={!dnd.alert}
+						onchange={(e) => setDnd('alert', !e.currentTarget.checked)}
+					/>
 					<span>Alert sound</span>
-					<span class="state">{alertDnd.alertSound ? 'on' : 'off'}</span>
+					<span class="state">{dnd.alert ? 'off' : 'on'}</span>
 				</label>
 				<label class="check">
-					<input type="checkbox" bind:checked={alertDnd.qaSound} />
+					<input
+						type="checkbox"
+						checked={!dnd.qa}
+						onchange={(e) => setDnd('qa', !e.currentTarget.checked)}
+					/>
 					<span>QA sound</span>
-					<span class="state">{alertDnd.qaSound ? 'on' : 'off'}</span>
+					<span class="state">{dnd.qa ? 'off' : 'on'}</span>
 				</label>
 				<label class="check">
 					<input type="checkbox" checked={prefs.qaReactionsSound} onchange={(e) => setPref('qaReactionsSound', checked(e))} />
@@ -367,9 +358,13 @@
 					<span class="state">{prefs.qaReactionsSound ? 'on' : 'off'}</span>
 				</label>
 				<label class="check">
-					<input type="checkbox" bind:checked={alertDnd.nonTradeAlertSound} />
+					<input
+						type="checkbox"
+						checked={!dnd.nonTradeAlert}
+						onchange={(e) => setDnd('nonTradeAlert', !e.currentTarget.checked)}
+					/>
 					<span>Non-trade alert sound</span>
-					<span class="state">{alertDnd.nonTradeAlertSound ? 'on' : 'off'}</span>
+					<span class="state">{dnd.nonTradeAlert ? 'off' : 'on'}</span>
 				</label>
 			</div>
 
@@ -428,27 +423,43 @@
 			</div>
 			<div class="checks">
 				<label class="check">
-					<input type="checkbox" bind:checked={chatDnd.gif} />
+					<input
+						type="checkbox"
+						checked={!dnd.chatGif}
+						onchange={(e) => setDnd('chatGif', !e.currentTarget.checked)}
+					/>
 					<span>Gif</span>
-					<span class="state">{chatDnd.gif ? 'on' : 'off'}</span>
+					<span class="state">{dnd.chatGif ? 'off' : 'on'}</span>
 				</label>
 				<label class="check">
-					<input type="checkbox" bind:checked={chatDnd.badges} />
+					<input
+						type="checkbox"
+						checked={!dnd.chatBadges}
+						onchange={(e) => setDnd('chatBadges', !e.currentTarget.checked)}
+					/>
 					<span>Badges</span>
-					<span class="state">{chatDnd.badges ? 'on' : 'off'}</span>
+					<span class="state">{dnd.chatBadges ? 'off' : 'on'}</span>
 				</label>
 				<label class="check">
-					<input type="checkbox" bind:checked={chatDnd.chatPmPopup} />
+					<input
+						type="checkbox"
+						checked={!dnd.chatPopup}
+						onchange={(e) => setDnd('chatPopup', !e.currentTarget.checked)}
+					/>
 					<span>Chat / PM Popup</span>
-					<span class="state">{chatDnd.chatPmPopup ? 'on' : 'off'}</span>
+					<span class="state">{dnd.chatPopup ? 'off' : 'on'}</span>
 				</label>
 				<!-- Reference renders <hr/> after the Chat / PM Popup toggle to split
 				     the popup control from the chat sound toggle below. -->
 				<hr />
 				<label class="check">
-					<input type="checkbox" bind:checked={chatDnd.chatSound} />
+					<input
+						type="checkbox"
+						checked={!dnd.chat}
+						onchange={(e) => setDnd('chat', !e.currentTarget.checked)}
+					/>
 					<span>Chat sound</span>
-					<span class="state">{chatDnd.chatSound ? 'on' : 'off'}</span>
+					<span class="state">{dnd.chat ? 'off' : 'on'}</span>
 				</label>
 			</div>
 

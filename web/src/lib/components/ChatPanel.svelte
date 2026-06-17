@@ -263,7 +263,11 @@
 				return;
 			}
 			const { url } = (await res.json()) as { url: string };
-			insertAtCaret(url);
+			// The server returns a RELATIVE download path (/api/rooms/.../download).
+			// parseMessage's URL matcher only tokenizes absolute http(s) URLs, so insert
+			// the absolute form — otherwise the link is never recognized and the image
+			// never renders inline (it'd sit in the body as plain text).
+			insertAtCaret(url.startsWith('http') ? url : `${API_URL}${url}`);
 		} catch {
 			showToast('Upload failed', 'Could not reach the server to upload the image.', 6000);
 		} finally {
