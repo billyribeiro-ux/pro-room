@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import Icon from './Icon.svelte';
+	import { BRAND } from '$lib/brand';
 	import { dnd, setDnd } from '$lib/stores/dnd.svelte';
 	import { prefs, setPref } from '$lib/stores/prefs.svelte';
 
@@ -102,7 +103,10 @@
 		<Icon name="mobile" size={16} />
 	</button>
 
-	<span class="brand">{roomName}</span>
+	<span class="brand">
+		<img class="brand-logo" src={BRAND.logo} alt={BRAND.name} />
+		<span class="room-name">{roomName}</span>
+	</span>
 
 	<!-- Reference: navbar-brand carries mr-auto and the action group is
 	     ul.navbar-nav.ml-auto, so everything actionable is pinned RIGHT. The
@@ -368,13 +372,24 @@
 	}
 	.brand {
 		/* Reference brand slot is an <img class="brand-logo"> (200x18, line-height
-		   30px). OUR brand is text — keep it but match the logo's Open Sans light,
-		   20px, weight 300 typography and placement. See FLAG: brand is a logo image
-		   in the reference, not text. */
+		   30px). We now render the configurable BRAND logo (see $lib/brand) followed
+		   by the room name in the reference's Open Sans light, 20px, weight 300. */
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+		white-space: nowrap;
+	}
+	.brand-logo {
+		/* Scale any drop-in logo to the navbar height; width follows the asset. */
+		height: 32px;
+		width: auto;
+		display: block;
+		flex: 0 0 auto;
+	}
+	.room-name {
 		font-weight: 300;
 		font-size: 20px;
 		line-height: 30px;
-		white-space: nowrap;
 	}
 	.talking {
 		/* Reference a inside li.talkingIndicator: pure white (#fff = --text,

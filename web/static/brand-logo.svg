@@ -1,0 +1,39 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Trading Room">
+  <defs>
+    <radialGradient id="trGold" cx="40%" cy="34%" r="75%">
+      <stop offset="0%" stop-color="#f7e9ad" />
+      <stop offset="52%" stop-color="#e3c668" />
+      <stop offset="100%" stop-color="#b58c2c" />
+    </radialGradient>
+  </defs>
+
+  <!-- Gold disc -->
+  <circle cx="256" cy="256" r="202" fill="url(#trGold)" />
+
+  <!-- White line chart: enters lower-left and exits upper-right, both segments
+       breaking past the disc edge. -->
+  <polyline
+    points="34,322 138,358 214,266 290,352 360,232 480,232"
+    fill="none"
+    stroke="#ffffff"
+    stroke-width="17"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <!-- Nodes: white discs with a soft gold center. -->
+  <g>
+    <circle cx="34" cy="322" r="17" fill="#ffffff" />
+    <circle cx="138" cy="358" r="25" fill="#ffffff" />
+    <circle cx="214" cy="266" r="25" fill="#ffffff" />
+    <circle cx="290" cy="352" r="25" fill="#ffffff" />
+    <circle cx="360" cy="232" r="25" fill="#ffffff" />
+    <circle cx="480" cy="232" r="17" fill="#ffffff" />
+  </g>
+  <g fill="url(#trGold)">
+    <circle cx="138" cy="358" r="8.5" />
+    <circle cx="214" cy="266" r="8.5" />
+    <circle cx="290" cy="352" r="8.5" />
+    <circle cx="360" cy="232" r="8.5" />
+  </g>
+</svg>
