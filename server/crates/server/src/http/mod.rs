@@ -5,6 +5,7 @@ pub mod alerts;
 pub mod auth;
 pub mod badges;
 pub mod branding;
+pub mod captions;
 pub mod files;
 pub mod messages;
 pub mod notes;
@@ -34,6 +35,7 @@ pub fn router(state: AppState) -> Router {
         .merge(admin::router())
         .merge(badges::router())
         .merge(branding::router())
+        .merge(captions::router())
         .merge(alerts::router())
         .merge(files::router())
         .merge(messages::router())

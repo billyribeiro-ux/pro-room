@@ -27,6 +27,10 @@ pub enum RoomEvent {
         author_role: Role,
         author_badges: AuthorBadges,
     },
+    /// A live closed-caption phrase from the presenter. Ephemeral (not persisted):
+    /// members joining later won't see past captions. Clients render it in the
+    /// stage caption bar when their captions overlay is on.
+    Caption { speaker_name: String, text: String },
     /// The set of present users changed.
     Presence { users: Vec<PresentUser> },
     /// The room's live/broadcasting state changed.

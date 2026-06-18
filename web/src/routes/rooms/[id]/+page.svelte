@@ -89,6 +89,23 @@
 	let mutedAll = $state(false);
 	// Presenter "lock this screen" broadcast — holds non-admin viewers on Screens.
 	let screenLocked = $state(false);
+	// Live closed-caption from the presenter (speaker + latest phrase). Cleared a
+	// few seconds after the last phrase so a stale caption doesn't linger.
+	let liveCaption = $state<{ speaker: string; text: string } | null>(null);
+	let captionTimer: ReturnType<typeof setTimeout> | undefined;
+	function showCaption(speaker: string, text: string) {
+		liveCaption = { speaker, text };
+		clearTimeout(captionTimer);
+		captionTimer = setTimeout(() => (liveCaption = null), 8000);
+	}
+	// Broadcast a finalized caption phrase (presenter only; best-effort).
+	async function postCaption(text: string) {
+		try {
+			await api.post(`/api/rooms/${roomId}/captions`, { text });
+		} catch {
+			// Captions are ephemeral + best-effort; a dropped phrase is non-fatal.
+		}
+	}
 	let mediaVolume = $state(70);
 	// Presenter media-for-all currently playing for the room (SoundCloud/YouTube
 	// iframe, or a direct mp3/video file).
@@ -275,6 +292,10 @@
 				// into the open thread, or pop the panel for an incoming PM.
 				receivePrivate(ev.message);
 				if (ev.message.sender_id !== detail?.viewer_id) playSound('chat');
+				break;
+			case 'caption':
+				// Live presenter caption — shown in the stage bar when CC is on.
+				showCaption(ev.speaker_name, ev.text);
 				break;
 			case 'presence':
 				present = ev.users;
@@ -781,6 +802,10 @@
 		{webcamPublishers}
 		onWebcamClose={() => screen.stopCamera()}
 		captionsActive={prefs.captionsOverlay}
+		captionSpeaker={liveCaption?.speaker}
+		captionText={liveCaption?.text}
+		captureCaptions={screen.publishing && prefs.captionsOverlay}
+		onCaption={postCaption}
 		{screenLocked}
 	/>
 {/snippet}

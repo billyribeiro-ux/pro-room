@@ -28,8 +28,15 @@
 		webcamPublishers?: WebcamPublisher[];
 		/** Turn off the local user's camera (the × on their own tile). */
 		onWebcamClose?: (id: string) => void;
-		/** When true, the live speech-recognition captions overlay is shown. */
+		/** When true, the captions overlay is shown (the viewer's CC toggle). */
 		captionsActive?: boolean;
+		/** Live caption broadcast from the presenter (speaker + text), via the WS. */
+		captionSpeaker?: string;
+		captionText?: string;
+		/** When true, capture local speech + emit finalized phrases (presenter). */
+		captureCaptions?: boolean;
+		/** Emit a finalized caption phrase (the room page POSTs it to broadcast). */
+		onCaption?: (text: string) => void;
 		/**
 		 * Presenter "lock this screen": while true, non-admin viewers are held on
 		 * the Screens tab and the other tabs are disabled. Admins (`canManage`) are
@@ -45,6 +52,10 @@
 		webcamPublishers = [],
 		onWebcamClose,
 		captionsActive = false,
+		captionSpeaker,
+		captionText,
+		captureCaptions = false,
+		onCaption,
 		screenLocked = false
 	}: Props = $props();
 
@@ -95,7 +106,13 @@
 		{:else}
 			<FilesPanel {roomId} {canManage} />
 		{/if}
-		<CaptionsOverlay active={captionsActive} />
+		<CaptionsOverlay
+			active={captionsActive}
+			capture={captureCaptions}
+			speaker={captionSpeaker}
+			text={captionText}
+			{onCaption}
+		/>
 
 		{#if webcamPublishers.length > 0}
 			<!-- Reference app-webcam-holder floats ABSOLUTE at the bottom of the
