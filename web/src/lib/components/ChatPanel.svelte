@@ -118,12 +118,15 @@
 
 	let textareaEl = $state<HTMLTextAreaElement | null>(null);
 
-	// Auto-grow the composer up to a few lines, matching the reference textarea.
+	// Auto-grow the composer; cap at 300px to match the reference textarea's
+	// computed max-height (reference-divergences.md:351-357) and our own
+	// `.pill textarea { max-height: 300px }`. The prior 120px clamp silently
+	// overrode the CSS, capping growth at ~5 lines instead of the reference's ~14.
 	function autogrow() {
 		const el = textareaEl;
 		if (!el) return;
 		el.style.height = 'auto';
-		el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+		el.style.height = `${Math.min(el.scrollHeight, 300)}px`;
 	}
 
 	async function send() {
@@ -895,9 +898,10 @@
 		align-items: center;
 		gap: 0.45rem;
 		/* Reference textSendDiv sits on the white chat surface with a 5px margin;
-		   no separate gray bar (the #textAreaHolder bg is #fff). */
+		   no separate gray bar (the #textAreaHolder bg is #fff) and NO top divider —
+		   the prior `border-top: 1px #e3e5ec` contradicted this comment and the
+		   reference (reference-divergences.md:343-381: white holder, no bar). */
 		padding: 5px;
-		border-top: 1px solid #e3e5ec;
 		background: #ffffff;
 		flex-shrink: 0;
 	}
