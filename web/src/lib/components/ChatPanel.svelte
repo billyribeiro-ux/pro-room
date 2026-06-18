@@ -35,6 +35,8 @@
 		roomId: string;
 		messages: ChatItem[];
 		channel: ChatChannel;
+		/** Per-channel unread counts for the tab badges (reference "Off Topic (3)"). */
+		unread?: Record<ChatChannel, number>;
 		present?: PresentUser[];
 		canPost: boolean;
 		onPost: (body: string) => Promise<void>;
@@ -51,6 +53,7 @@
 		roomId,
 		messages,
 		channel,
+		unread,
 		present = [],
 		canPost,
 		onPost,
@@ -312,15 +315,19 @@
 				role="tab"
 				aria-selected={channel === 'main'}
 				class:active={channel === 'main'}
-				onclick={() => onChannel('main')}>Main Chat</button
-			>
+				onclick={() => onChannel('main')}
+				>Main Chat{#if (unread?.main ?? 0) > 0}<span class="unread">{unread?.main}</span
+					>{/if}</button
+				>
 			<button
 				type="button"
 				role="tab"
 				aria-selected={channel === 'off_topic'}
 				class:active={channel === 'off_topic'}
-				onclick={() => onChannel('off_topic')}>Off Topic</button
-			>
+				onclick={() => onChannel('off_topic')}
+				>Off Topic{#if (unread?.off_topic ?? 0) > 0}<span class="unread">{unread?.off_topic}</span
+					>{/if}</button
+				>
 		</div>
 		<div class="actions">
 			<button type="button" aria-label="Search chat" onclick={() => (searchOpen = true)}
@@ -596,6 +603,22 @@
 	}
 	.tabs button:hover:not(.active) {
 		color: #ffffff;
+	}
+	/* Per-channel unread count (reference "Off Topic (3)") — a small pill on the
+	   inactive tab, cleared when you switch to that channel. */
+	.unread {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 1.1em;
+		margin-left: 5px;
+		padding: 0 4px;
+		border-radius: 999px;
+		background: var(--negative);
+		color: #ffffff;
+		font-size: 10px;
+		font-weight: 700;
+		line-height: 1.4;
 	}
 	.actions {
 		display: flex;

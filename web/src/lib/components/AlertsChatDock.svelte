@@ -13,6 +13,8 @@
 		    "Extra chat column" preference is on. */
 		offTopicMessages?: ChatItem[];
 		channel: ChatChannel;
+		/** Per-channel unread counts for the chat tab badges. */
+		unread?: Record<ChatChannel, number>;
 		present: PresentUser[];
 		/** Aggregated reactions keyed `${target_kind}:${target_id}`. */
 		reactions?: Record<string, ReactionTally[]>;
@@ -36,6 +38,7 @@
 		messages,
 		offTopicMessages = [],
 		channel,
+		unread,
 		present,
 		reactions = {},
 		canReact = false,
@@ -144,6 +147,7 @@
 				{messages}
 				{present}
 				{channel}
+				{unread}
 				{reactions}
 				{canReact}
 				{onReact}

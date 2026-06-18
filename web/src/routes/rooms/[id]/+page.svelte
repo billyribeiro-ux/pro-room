@@ -57,6 +57,9 @@
 	let mainMessages = $state<ChatItem[]>([]);
 	let offTopicMessages = $state<ChatItem[]>([]);
 	let channel = $state<ChatChannel>('main');
+	// Per-channel unread counts (the reference's "Off Topic (3)" badge): incremented
+	// when a message lands on the NON-active channel, reset when you switch to it.
+	let unread = $state<Record<ChatChannel, number>>({ main: 0, off_topic: 0 });
 	let present = $state<PresentUser[]>([]);
 	let error = $state<string | null>(null);
 	let screenDisabled = $state(false);
@@ -282,6 +285,11 @@
 				} else {
 					mainMessages = [...mainMessages, item].slice(-100);
 				}
+				// Bump the unread badge on the OTHER tab (not the one you're viewing, and
+				// not for your own echo) — the reference's "Off Topic (3)" indicator.
+				if (ev.message.channel !== channel && ev.message.author_id !== detail?.viewer_id) {
+					unread[ev.message.channel] += 1;
+				}
 				// The server broadcasts the message back to its sender; don't chime on
 				// your own echo (matches the private_message guard below).
 				if (ev.message.author_id !== detail?.viewer_id) playSound('chat');
@@ -368,6 +376,7 @@
 
 	async function selectChannel(ch: ChatChannel) {
 		channel = ch;
+		unread[ch] = 0; // viewing a channel clears its unread badge
 		if (!loaded[ch]) {
 			loaded = { ...loaded, [ch]: true };
 			try {
@@ -768,6 +777,7 @@
 		{offTopicMessages}
 		{present}
 		{channel}
+		{unread}
 		reactions={reactionsByTarget}
 		canReact={caps?.can_post_message ?? false}
 		{onReact}
