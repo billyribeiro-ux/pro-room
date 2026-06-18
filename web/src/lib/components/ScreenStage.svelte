@@ -234,7 +234,7 @@
 		height: 100%;
 		min-height: 360px;
 		/* presentation-box bg: var(--presenter-area-bg) #0f2e43 (idle/letterbox base). */
-		background: #0f2e43;
+		background: var(--bg-elev);
 		overflow: hidden;
 	}
 
@@ -248,7 +248,7 @@
 		list-style: none;
 		min-height: 40px;
 		/* var(--notes-tabs-bg) #0c2434; flat (transparent border); above video (z 1). */
-		background-color: #0c2434;
+		background-color: var(--bg);
 		border-color: transparent;
 		position: relative;
 		z-index: 1;
@@ -278,14 +278,15 @@
 			border-color 0.15s ease-in-out;
 	}
 	.nav-link:hover {
-		/* hover (inactive): 1px solid var(--tabs-border-color) #0a6db1; radius 3px. */
-		border-color: #0a6db1;
+		/* hover (inactive): 1px solid var(--tabs-border-color) var(--accent); radius 3px. */
+		border-color: var(--accent);
 	}
 	.nav-link.active {
-		/* active: var(--tab-active-bg) #45a2ff; border transparent; #fff text. */
-		background-color: #45a2ff;
+		/* active screen pill: #222 fill (--tab-active-bg) + teal text
+		   (--note-tabs-color). The old #45a2ff was wrong-room navy. */
+		background-color: var(--bg-elev-2);
 		border-color: transparent;
-		color: #ffffff;
+		color: var(--accent);
 	}
 	.nav-link.active:hover {
 		cursor: default;
@@ -397,7 +398,7 @@
 		   horizontally centered (not vertically centered in the viewport). */
 		place-items: start center;
 		/* presentation-box bg: var(--presenter-area-bg) #0f2e43. */
-		background: #0f2e43;
+		background: var(--bg-elev);
 		color: var(--text-dim);
 		font-size: 1.3rem;
 		font-weight: 400;

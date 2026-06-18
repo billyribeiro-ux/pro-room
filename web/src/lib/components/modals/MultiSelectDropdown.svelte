@@ -153,7 +153,7 @@
 		justify-content: center;
 		width: 14px;
 		flex-shrink: 0;
-		color: #0a6db1;
+		color: var(--accent);
 	}
 	.empty {
 		padding: 0.35rem 0.75rem;

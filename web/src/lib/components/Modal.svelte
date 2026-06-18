@@ -113,7 +113,7 @@
 		--border: var(--modal-border);
 		--accent: var(--modal-active-tab);
 		/* Accent hover is the darker room link-blue (active accent is #45a2ff). */
-		--accent-hover: #0a6db1;
+		--accent-hover: var(--accent);
 		--positive: var(--modal-success);
 		--text: var(--modal-color);
 		--text-dim: #b8c9d8;

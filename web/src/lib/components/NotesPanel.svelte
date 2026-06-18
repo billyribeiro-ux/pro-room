@@ -257,8 +257,8 @@
 		flex-wrap: wrap;
 		align-items: center;
 		justify-content: center;
-		background: #0c2434;
-		border-top: 1px solid #0a6db1;
+		background: var(--bg);
+		border-top: 1px solid var(--accent);
 		flex-shrink: 0;
 	}
 	.subtabs button {
@@ -277,12 +277,12 @@
 		cursor: pointer;
 	}
 	.subtabs button.active {
-		background: #45a2ff;
+		background: var(--accent);
 		border-color: transparent;
 		color: #ffffff;
 	}
 	.subtabs button:hover:not(.active) {
-		border: 1px solid #0a6db1;
+		border: 1px solid var(--accent);
 		border-radius: 3px;
 	}
 	.subtabs .new {
@@ -367,7 +367,7 @@
 		min-height: 0.6em;
 	}
 	.rendered :global(a) {
-		color: #45a2ff;
+		color: var(--accent);
 		text-decoration: underline;
 	}
 	.rendered :global(ul),

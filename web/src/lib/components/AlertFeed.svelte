@@ -445,7 +445,7 @@
 		/* Reference chat-nav header padding is 4px (p-1). */
 		padding: 4px;
 		min-height: 48px;
-		background: #0a6db1;
+		background: var(--content-header-bg);
 		color: #ffffff;
 		flex-shrink: 0;
 	}
@@ -806,7 +806,7 @@
 		min-width: 0;
 	}
 	form button {
-		background: #0a6db1;
+		background: var(--accent);
 		color: #fff;
 		border: none;
 		/* Small button: keep a subtle radius (~4px) per the flat-surface rule. */

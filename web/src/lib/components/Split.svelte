@@ -164,8 +164,8 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		/* Reference as-split-gutter is rgb(10, 109, 177) = #0a6db1. */
-		background: #0a6db1;
+		/* Reference as-split-gutter is the dark split gutter (--split-gutter-bg #000). */
+		background: var(--bg);
 		/* Prevent the browser from hijacking the drag as a scroll/zoom gesture. */
 		touch-action: none;
 		user-select: none;

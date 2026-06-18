@@ -214,11 +214,12 @@
 		cursor: not-allowed;
 	}
 	.tabbar button.active {
-		/* Reference active main-tab is a flat #45a2ff PILL — confirmed by the
-		   captured computed style of #screens-tab.active: bg rgb(69,162,255),
-		   white text, transparent border, 3px radius (NOT the dark folder). */
-		color: #fff;
-		background: var(--accent, #45a2ff);
+		/* Reference active main-tab (.mainTabset .nav-link.active): a subtle #222
+		   fill (--tab-active-bg) with TEAL text (--note-tabs-color #00bc8c),
+		   transparent border, 3px radius. NOT a bright pill — that #45a2ff was the
+		   wrong (navy "Mastering The Trade") room; protradingroom.com is Darkly. */
+		color: var(--accent);
+		background: var(--bg-elev-2);
 		font-weight: 300;
 		border-color: transparent;
 		border-radius: 3px;

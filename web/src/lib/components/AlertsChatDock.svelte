@@ -244,9 +244,9 @@
 		align-items: center;
 		justify-content: center;
 		cursor: row-resize;
-		/* Reference as-split-gutter is rgb(10, 109, 177) = #0a6db1, same as the
+		/* Reference as-split-gutter is the dark split gutter (--split-gutter-bg #000), same as the
 		   outer <Split> gutter — a solid blue bar, not a grey divider. */
-		background: #0a6db1;
+		background: var(--bg);
 		touch-action: none;
 		user-select: none;
 	}

@@ -66,7 +66,7 @@
 		align-items: center;
 		justify-content: center;
 		border-radius: 50%;
-		background: var(--bg-elev, #0f2e43);
+		background: var(--bg-elev);
 		color: var(--modal-color, #f4f4f4);
 		font-size: 0.78rem;
 		font-weight: 700;
@@ -105,8 +105,8 @@
 		cursor: pointer;
 	}
 	.btn.primary {
-		background: var(--modal-btn-primary, #0a6db1);
-		border-color: var(--modal-btn-primary, #0a6db1);
+		background: var(--modal-btn-primary, var(--accent));
+		border-color: var(--modal-btn-primary, var(--accent));
 		color: #fff;
 	}
 	.btn.primary:hover {

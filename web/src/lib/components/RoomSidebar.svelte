@@ -409,7 +409,7 @@
 	}
 	/* Reference a.ptr-website-link: #45a2ff, margin 0 5px, always underlined. */
 	.ptr-website-link {
-		color: #45a2ff;
+		color: var(--accent);
 		margin: 0 5px;
 		text-decoration: underline;
 	}
@@ -621,7 +621,7 @@
 	/* Reference reload btn-default: bg #f4f4f4, icon #45a2ff. */
 	.mini-reload {
 		background: #f4f4f4;
-		color: #45a2ff;
+		color: var(--accent);
 	}
 	/* Reference sort btn-secondary: bg #6c757d, icon #fff. */
 	.mini-sort {
@@ -631,7 +631,7 @@
 	/* Reference search btn-default: bg #45a2ff, icon #f4f4f4, margin-left 0
 	   (leftmost float-right button in the reference toolbar). */
 	.mini-search {
-		background: #45a2ff;
+		background: var(--accent);
 		color: #f4f4f4;
 		margin-left: 0;
 	}

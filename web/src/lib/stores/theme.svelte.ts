@@ -29,21 +29,21 @@ export type ThemeTokens = {
 
 export type ThemeTokenKey = keyof ThemeTokens;
 
-/** Defaults copied verbatim from layout.css `:root` — the navy "Revolution
- * Trading Room" palette that matches the reference app. */
+/** Defaults copied verbatim from layout.css `:root` — the Pro Trading Room
+ * Bootswatch "Darkly" chrome palette that matches chat.protradingroom.com. */
 const DEFAULTS: ThemeTokens = {
-	'--bg': '#0c2434',
-	'--bg-elev': '#0f2e43',
-	'--bg-elev-2': '#103d5c',
-	'--border': '#1a4f74',
+	'--bg': '#000000',
+	'--bg-elev': '#111111',
+	'--bg-elev-2': '#222222',
+	'--border': '#444444',
 	'--text': '#ffffff',
-	'--text-dim': '#9fc4dd',
-	'--accent': '#45a2ff',
-	'--accent-hover': '#0a6db1',
-	'--positive': '#92d528',
-	'--negative': '#bb352a',
+	'--text-dim': '#cccccc',
+	'--accent': '#00bc8c',
+	'--accent-hover': '#008e6a',
+	'--positive': '#00bc8c',
+	'--negative': '#e74c3c',
 	'--warn': '#f39c12',
-	'--username-color': '#0a6db1',
+	'--username-color': '#1a1a1a',
 	'--ticker-color': '#1a1a1a'
 };
 
@@ -70,24 +70,24 @@ export type ThemePreset = {
 /** Built-in presets. "Midnight" is the current default palette. */
 export const PRESETS: ThemePreset[] = [
 	{
-		// Faithful dark-blue brand palette captured from the live trading-room app
-		// (dark blue over a bright link/accent), shipped as the Revolution Trading
-		// Room theme.
-		id: 'revolution',
-		name: 'Revolution Trading Room',
+		// Exact Bootswatch "Darkly" chrome captured from the live
+		// chat.protradingroom.com styles bundle (black nav, #111 stage, teal
+		// accent). This is the default — a 1:1 color clone of the original app.
+		id: 'protradingroom',
+		name: 'Pro Trading Room',
 		tokens: {
-			'--bg': '#0c2434',
-			'--bg-elev': '#0f2e43',
-			'--bg-elev-2': '#103d5c',
-			'--border': '#1a4f74',
+			'--bg': '#000000',
+			'--bg-elev': '#111111',
+			'--bg-elev-2': '#222222',
+			'--border': '#444444',
 			'--text': '#ffffff',
-			'--text-dim': '#9fc4dd',
-			'--accent': '#45a2ff',
-			'--accent-hover': '#0a6db1',
-			'--positive': '#92d528',
-			'--negative': '#bb352a',
+			'--text-dim': '#cccccc',
+			'--accent': '#00bc8c',
+			'--accent-hover': '#008e6a',
+			'--positive': '#00bc8c',
+			'--negative': '#e74c3c',
 			'--warn': '#f39c12',
-			'--username-color': '#0a6db1',
+			'--username-color': '#1a1a1a',
 			'--ticker-color': '#1a1a1a'
 		}
 	},

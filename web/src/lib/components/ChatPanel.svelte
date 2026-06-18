@@ -206,6 +206,7 @@
 
 	// Curated native-Unicode set — the reference uses OS color-emoji glyphs (no
 	// emoji-mart/twemoji dependency), same approach as ReactionBar.svelte.
+	// prettier-ignore
 	const EMOJI = [
 		'😀', '😂', '😅', '😍', '😎', '🤔', '😮', '😢', '😡', '👍',
 		'👎', '👏', '🙏', '🔥', '🚀', '💯', '✅', '❌', '🎯', '💪',
@@ -318,7 +319,7 @@
 				onclick={() => onChannel('main')}
 				>Main Chat{#if (unread?.main ?? 0) > 0}<span class="unread">{unread?.main}</span
 					>{/if}</button
-				>
+			>
 			<button
 				type="button"
 				role="tab"
@@ -327,7 +328,7 @@
 				onclick={() => onChannel('off_topic')}
 				>Off Topic{#if (unread?.off_topic ?? 0) > 0}<span class="unread">{unread?.off_topic}</span
 					>{/if}</button
-				>
+			>
 		</div>
 		<div class="actions">
 			<button type="button" aria-label="Search chat" onclick={() => (searchOpen = true)}
@@ -498,7 +499,13 @@
 					>
 						<Icon name="image" size={18} />
 					</button>
-					<input bind:this={fileInputEl} type="file" accept="image/*" hidden onchange={onPickImage} />
+					<input
+						bind:this={fileInputEl}
+						type="file"
+						accept="image/*"
+						hidden
+						onchange={onPickImage}
+					/>
 
 					<!-- Search for GIFs (12px "GIF") → reference uses GIPHY (needs an API key the
 					     app doesn't ship). Rendered disabled rather than half-wired. -->
@@ -556,7 +563,7 @@
 		/* Reference chat-nav header padding is 4px (p-1). */
 		padding: 4px;
 		min-height: 48px;
-		background: #0a6db1;
+		background: var(--content-header-bg);
 		color: #ffffff;
 		flex-shrink: 0;
 	}
@@ -575,7 +582,7 @@
 		   eyedropped #46A2FF, visually identical). */
 		flex: 1;
 		justify-content: center;
-		border-bottom: 1px solid var(--accent, #45a2ff);
+		border-bottom: 1px solid var(--accent);
 	}
 	.tabs button {
 		background: transparent;
@@ -594,12 +601,12 @@
 		cursor: pointer;
 	}
 	.tabs button.active {
-		/* Reference active tab (a.nav-link.active): accent-blue fill + 1px accent
-		   border on ALL sides, so its bottom edge merges seamlessly into the tab-bar
-		   underline (the folder-tab effect). */
-		background: var(--accent, #45a2ff);
-		border-color: var(--accent, #45a2ff);
-		color: #ffffff;
+		/* Reference active tab (.nav-tabs .nav-link.active): #222 fill
+		   (--tab-active-bg) + teal text, 3px radius. The old accent-blue fill was
+		   the wrong-room navy palette. */
+		background: var(--bg-elev-2);
+		border-color: transparent;
+		color: var(--accent);
 	}
 	.tabs button:hover:not(.active) {
 		color: #ffffff;
@@ -821,7 +828,7 @@
 		font-size: 14px;
 		font-weight: 900;
 		/* Reference chat .username computed colour is --lightTheme-username-color =
-		   #0a6db1 (room link-blue), per the presenter-deep matchedRule — NOT #000.
+		   var(--accent) (room link-blue), per the presenter-deep matchedRule — NOT #000.
 		   A per-user author_color still wins via the inline style; cursor:pointer
 		   matches the reference (the name opens user info). */
 		color: var(--username-color);
@@ -941,7 +948,7 @@
 		flex-shrink: 0;
 	}
 	/* Reference span.textAreaBtns: icon-only button, --textarea-holder-btns-color
-	   #676767, hover --textarea-holder-btns-hover-color #0a6db1. */
+	   #676767, hover --textarea-holder-btns-hover-color var(--accent). */
 	.textAreaBtns {
 		display: inline-flex;
 		align-items: center;
@@ -954,7 +961,7 @@
 		border-radius: 6px;
 	}
 	.textAreaBtns:hover:not(:disabled) {
-		color: #0a6db1;
+		color: var(--accent);
 	}
 	.textAreaBtns:disabled {
 		opacity: 0.4;
