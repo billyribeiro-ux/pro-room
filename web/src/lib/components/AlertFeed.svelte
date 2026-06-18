@@ -315,7 +315,7 @@
 					</div>
 
 					{#if a.image_url}
-						<img class="avatar-img" src={a.image_url} alt="" width="35" height="35" />
+						<img class="avatar-img" src={a.image_url} alt="" width="32" height="32" />
 					{:else}
 						<span class="avatar" aria-hidden="true">{initials(a.author_name)}</span>
 					{/if}
@@ -608,9 +608,9 @@
 
 	.avatar,
 	.avatar-img {
-		/* Reference avatar img is 35x35, round. */
-		width: 35px;
-		height: 35px;
+		/* Reference in-message avatar is 32x32, round. */
+		width: 32px;
+		height: 32px;
 		flex-shrink: 0;
 		/* Square avatars — reference gravatars are square (Bootstrap "Darkly",
 		   --rosterImg-border-radius: 0); object-fit crops the image to the box. */
@@ -662,7 +662,8 @@
 		   (border-box) — icon stays centered, box matches. */
 		min-height: 19px;
 		padding: 1px 3px;
-		border-radius: 4px;
+		/* Reference btn-sm radius is 0.2rem (3.2px). */
+		border-radius: 0.2rem;
 		cursor: pointer;
 	}
 	.alert-qa:hover {

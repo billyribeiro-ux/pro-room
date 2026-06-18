@@ -153,9 +153,9 @@
 			title="Volume settings"
 		>
 			{#if muted}
-				<Icon name="volume-mute" size={32} class="nav-muted-icon" />
+				<Icon name="volume-mute" size={18} class="nav-muted-icon" />
 			{:else}
-				<Icon name="volume-up" size={32} class="nav-muted-icon" />
+				<Icon name="volume-up" size={18} class="nav-muted-icon" />
 			{/if}
 		</button>
 
@@ -261,7 +261,7 @@
 	</div>
 
 	<button class="icon-btn nav-link-btn" onclick={onReload} aria-label="Reload" title="Reload">
-		<Icon name="sync" size={32} class="nav-muted-icon" />
+		<Icon name="sync" size={18} class="nav-muted-icon" />
 	</button>
 </nav>
 
@@ -395,15 +395,15 @@
 	}
 	.talking {
 		/* Reference a inside li.talkingIndicator: pure white (#fff = --text,
-		   --presenter-noRecording-color), 16px, line-height 41px, margin 0 5px,
-		   display:inline-flex align-items:center (so the mic glyph + waveform
-		   sit on the text baseline). max-width 400px, ellipsis. */
+		   --presenter-noRecording-color), 12px (.talkingIndicator a font-size:12px),
+		   line-height 41px, margin 0 5px, display:inline-flex align-items:center (so
+		   the mic glyph + waveform sit on the text baseline). max-width 400px, ellipsis. */
 		display: inline-flex;
 		align-items: center;
 		max-width: 400px;
 		max-height: 47px;
 		color: var(--text);
-		font-size: 16px;
+		font-size: 12px;
 		line-height: 41px;
 		margin: 0 5px;
 		white-space: nowrap;
@@ -538,7 +538,8 @@
 		text-align: center;
 		background: #111;
 		border: 1px solid rgb(250, 250, 250);
-		border-radius: var(--radius);
+		/* Reference dropdown-menu border-radius .25rem ≈ 4px. */
+		border-radius: 4px;
 		padding: 0.7rem;
 		color: #abb0b5;
 		z-index: 41;
@@ -567,9 +568,12 @@
 	.panel-close:hover {
 		color: #fff;
 	}
-	/* Reference input.volCtrl range slider, full width, then a <br>. */
+	/* Reference input.volCtrl range slider: 129x32px, then a <br>. (We keep our
+	   accent-color slider styling — the reference's #111 track is a color and
+	   intentionally NOT adopted here.) */
 	.vol-ctrl {
-		width: 100%;
+		width: 129px;
+		height: 32px;
 		margin: 0.3rem 0 0.6rem;
 		accent-color: var(--accent);
 	}

@@ -882,7 +882,9 @@
 	.pill textarea {
 		width: 100%;
 		box-sizing: border-box;
-		border: none;
+		/* Resting border is transparent (not `none`) so the :focus border below
+		   doesn't shift layout. */
+		border: 1px solid transparent;
 		outline: none;
 		background: transparent;
 		/* Reference .txt-area.form-control.border-0: --lightTheme-textarea-color
@@ -898,6 +900,12 @@
 		max-height: 300px;
 		line-height: 21px;
 		font-family: inherit;
+	}
+	/* Reference .txt-area:focus: 1px border + 1px box-shadow. Reuses the existing
+	   --border theme token (keeps our color, introduces no new literal). */
+	.pill textarea:focus {
+		border: 1px solid var(--border);
+		box-shadow: 1px 1px 1px var(--border);
 	}
 	/* Reference div.textAreaBtnsCol: a centered row of the emoji/image/GIF buttons. */
 	.textAreaBtnsCol {
