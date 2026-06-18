@@ -115,20 +115,22 @@
 	     placeholders) → [ REC ] → volume (dropstart) → reload. -->
 	<span class="spacer"></span>
 
-	<span class="talking">
-		{#if speaker}
-			<!-- Reference shows an animated <img class="talkingWaveform"> equalizer next
-			     to the speaker name (max 30x25px), NOT a static mic glyph. Inline SVG
-			     equalizer (asset-free): 4 bars pulsing on a stagger. -->
+	<!-- Reference li.talkingIndicator > a.talking (verified live DOM):
+	     fa-microphone + the bare speaker name + the animated talkingWaveform, in
+	     that order — and the whole indicator is *ngIf'd (ng-star-inserted), i.e. it
+	     renders ONLY while someone is speaking (no "( No one is speaking )" idle
+	     text). Our waveform is an asset-free inline SVG equalizer standing in for
+	     the reference's /assets/images/talking.gif. -->
+	{#if speaker}
+		<span class="talking">
+			<Icon name="microphone" size={14} />
+			<span class="talking-string">{speaker}</span>
 			<span class="talking-wave" aria-hidden="true">
 				<span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"
 				></span>
 			</span>
-			<span class="talking-string">( {speaker} is speaking )</span>
-		{:else}
-			<span class="talking-string">( No one is speaking )</span>
-		{/if}
-	</span>
+		</span>
+	{/if}
 
 	<!-- Presenter broadcast controls. In the reference these are the 14 *ngIf
 	     placeholders between the talking indicator and the volume dropdown, so
