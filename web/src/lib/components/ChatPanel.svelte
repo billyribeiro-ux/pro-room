@@ -695,19 +695,16 @@
 		gap: 0.5rem;
 	}
 
-	/* Reference chat rows: a REGULAR member's row is left-aligned with the ⠇ menu
-	   on the LEFT (like alerts). An admin/super-admin row (`.msg-box-adm`) puts the
-	   menu on the RIGHT and tints the row grey. The body stays left-aligned in both. */
+	/* Reference chat rows: EVERY row is left-aligned with the ⠇ menu on the LEFT
+	   (the reference does not flip the kebab by role). An admin/super-admin row
+	   (`.msg-box-adm`) only differs by a grey row tint; the menu stays on the left. */
 
 	.msg-menu {
 		position: relative;
 		flex-shrink: 0;
-		/* Regular rows: menu first → left edge (default flex order). */
-	}
-	/* Admin/super-admin rows: order:1 pushes the menu past the right-floated
-	   timestamp to the far right edge. */
-	.msg-box.elevated .msg-menu {
-		order: 1;
+		/* The kebab is the first child → left edge for ALL rows. The reference does
+		   NOT flip the kebab by role; admin/super-admin rows keep it on the left too
+		   (only the row tint differs). */
 	}
 	.menu-trigger {
 		display: inline-flex;
@@ -735,8 +732,8 @@
 	.menu {
 		position: absolute;
 		top: 100%;
-		/* Regular rows: the kebab is on the left, so the dropdown opens from the
-		   left edge. Admin/super-admin rows flip it (see .elevated .menu below). */
+		/* The kebab is on the left for every row, so the dropdown opens from the
+		   left edge (no role-based flip). */
 		left: 0;
 		right: auto;
 		z-index: 5;
@@ -749,12 +746,6 @@
 		padding: 0.25rem;
 		display: flex;
 		flex-direction: column;
-	}
-	/* Admin/super-admin rows: kebab is on the right, so the dropdown opens from
-	   the right edge instead. */
-	.msg-box.elevated .menu {
-		right: 0;
-		left: auto;
 	}
 	.menu button {
 		display: flex;
@@ -828,11 +819,9 @@
 
 	.body {
 		/* Body lines up under the USERNAME (the content column past the avatar), like
-		   the alert rows — not flush-left under the avatar. A regular member row has
-		   the kebab on the LEFT (kebab + avatar + gaps push the username to ~86px), so
-		   the body indents ~72px. Admin/super-admin rows move the kebab to the RIGHT,
-		   so only the avatar pushes the username (~62px) → smaller indent (see
-		   .elevated below). */
+		   the alert rows — not flush-left under the avatar. The kebab is on the LEFT
+		   for every row (kebab + avatar + gaps push the username to ~86px), so the
+		   body indents ~72px uniformly (admin/super-admin rows no longer flip). */
 		margin: 0.35rem 0 0 72px;
 		/* Reference chat body (div.msg-left) computed colour --lightTheme-msg-color =
 		   #676767 (per the presenter-deep computed style) — NOT #1a1a1a; 13px /
@@ -842,11 +831,6 @@
 		word-break: break-word;
 		white-space: pre-wrap;
 		font-size: var(--msg-font-size);
-	}
-	/* Admin/super-admin rows: kebab is on the right, so only the avatar offsets the
-	   username — the body lines up under it at a smaller indent. */
-	.msg-box.elevated .body {
-		margin-left: 48px;
 	}
 	form {
 		display: flex;

@@ -153,9 +153,9 @@
 			title="Volume settings"
 		>
 			{#if muted}
-				<Icon name="volume-mute" size={18} class="nav-muted-icon" />
+				<Icon name="volume-mute" size={15} class="nav-muted-icon" />
 			{:else}
-				<Icon name="volume-up" size={18} class="nav-muted-icon" />
+				<Icon name="volume-up" size={15} class="nav-muted-icon" />
 			{/if}
 		</button>
 
@@ -261,7 +261,7 @@
 	</div>
 
 	<button class="icon-btn nav-link-btn" onclick={onReload} aria-label="Reload" title="Reload">
-		<Icon name="sync" size={18} class="nav-muted-icon" />
+		<Icon name="sync" size={15} class="nav-muted-icon" />
 	</button>
 </nav>
 
