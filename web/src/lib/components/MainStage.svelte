@@ -91,6 +91,13 @@
 			</button>
 		{/each}
 
+		<!-- Reference ships a "Streams" tab hidden behind its streaming infra
+		     (<li hidden>). Mirrored as a hidden, inert placeholder for DOM parity;
+		     un-hide and wire it when streaming lands. -->
+		<button type="button" class="stream-tab-placeholder" hidden tabindex="-1" aria-hidden="true">
+			<Icon name="broadcast-tower" size={12} /> Streams
+		</button>
+
 		{#if locked}
 			<span class="locked-pill" title="The presenter has locked the screen">
 				<Icon name="lock" size={14} /> Screen locked

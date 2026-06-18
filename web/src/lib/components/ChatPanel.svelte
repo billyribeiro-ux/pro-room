@@ -828,6 +828,19 @@
 		cursor: pointer;
 		/* Reference .username (mx-1) has 4px horizontal margin. */
 		margin: 0 4px;
+		/* Truncate a long name instead of letting it crowd the right-pinned
+		   timestamp at narrow chat widths (the badge/timestamp collision). The
+		   created-at keeps flex-shrink:0, so the name side yields first. */
+		min-width: 0;
+		flex-shrink: 1;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	/* Badges sit after the username and must not be squeezed — only the name
+	   truncates. (Badges renders an inline cluster as the row's next child.) */
+	.row1 :global(.badges) {
+		flex-shrink: 0;
 	}
 
 	.created-at {

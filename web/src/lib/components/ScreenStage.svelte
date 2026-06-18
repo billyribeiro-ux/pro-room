@@ -174,7 +174,9 @@
 						aria-label="Fullscreen"
 						onclick={toggleFullscreen}
 					>
-						<Icon name="expand" size={14} class="icon" />
+						<!-- Reference fullscreen control uses fa-compress-arrows-alt (the
+						     four-arrows-inward glyph), not fa-expand — matched to the bundle. -->
+						<Icon name="compress-arrows-alt" size={14} class="icon" />
 					</button>
 				</div>
 			</li>
@@ -210,12 +212,7 @@
 						class="video-screen-container"
 						style:transform="translate({panX}px, {panY}px) scale({zoom})"
 					>
-						<video
-							bind:this={videoEl}
-							{@attach track(active.track)}
-							autoplay
-							muted
-							playsinline
+						<video bind:this={videoEl} {@attach track(active.track)} autoplay muted playsinline
 						></video>
 					</div>
 				</div>
@@ -371,7 +368,8 @@
 	}
 	.btn-sm {
 		padding: 0.25rem 0.5rem;
-		font-size: 0.820312rem;
+		/* Bootstrap 5 .btn-sm default (bundle: .btn-sm{font-size:.875rem}). */
+		font-size: 0.875rem;
 		line-height: 1.5;
 		border-radius: 0.2rem;
 	}
@@ -441,7 +439,8 @@
 		position: relative;
 		top: 0;
 		left: 0;
-		z-index: 1999;
+		/* Reference has no high z-index here; as the last positioned child of
+		   .screencast-pan it naturally stacks above the pan/zoom scaffold. */
 		width: inherit;
 		height: inherit;
 		/* Zoom/pan from the centre, applied via inline transform on this box. */
