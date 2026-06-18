@@ -13,7 +13,7 @@
 
 <nav>
 	<a class="brand" href={resolve('/rooms')}>
-		<img class="brand-logo" src={brand.logo} alt={brand.name} />
+		<img class="brand-logo" src={brand.logo} alt={brand.name} width="26" height="26" />
 		<span>{brand.name}</span>
 	</a>
 

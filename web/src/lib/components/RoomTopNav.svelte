@@ -104,7 +104,7 @@
 	</button>
 
 	<span class="brand">
-		<img class="brand-logo" src={brand.logo} alt={brand.name} />
+		<img class="brand-logo" src={brand.logo} alt={brand.name} width="32" height="32" />
 		<span class="room-name">{roomName}</span>
 	</span>
 

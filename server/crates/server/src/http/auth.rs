@@ -8,15 +8,17 @@ use crate::crypto;
 use crate::db;
 use crate::error::{AppError, AppResult};
 use crate::state::AppState;
+use crate::util;
 use axum::Json;
 use axum::Router;
-use axum::extract::{Path, Query, State};
+use axum::extract::{ConnectInfo, Path, Query, State};
 use axum::http::HeaderMap;
 use axum::response::Redirect;
 use axum::routing::{get, post};
 use axum_extra::extract::cookie::CookieJar;
 use domain::entities::User;
 use serde::{Deserialize, Serialize};
+use std::net::SocketAddr;
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -85,6 +87,7 @@ async fn register(
     State(state): State<AppState>,
     jar: CookieJar,
     headers: HeaderMap,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
     Json(body): Json<RegisterBody>,
 ) -> AppResult<(CookieJar, Json<MeResponse>)> {
     let email = normalize_email(&body.email)?;
@@ -113,7 +116,9 @@ async fn register(
     db::identities::link(&state.db, user.id, "password", &email).await?;
 
     let session_user = session_user(user);
-    let cookie = session::issue(&state, session_user.user_id, user_agent(&headers), None).await?;
+    let ip = util::client_ip(&headers, Some(peer));
+    let cookie =
+        session::issue(&state, session_user.user_id, user_agent(&headers), ip.as_deref()).await?;
     Ok((jar.add(cookie), Json(me_response(&session_user))))
 }
 
@@ -121,6 +126,7 @@ async fn login(
     State(state): State<AppState>,
     jar: CookieJar,
     headers: HeaderMap,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
     Json(body): Json<LoginBody>,
 ) -> AppResult<(CookieJar, Json<MeResponse>)> {
     let email = normalize_email(&body.email)?;
@@ -147,7 +153,9 @@ async fn login(
     }
 
     let session_user = session_user(record.user);
-    let cookie = session::issue(&state, session_user.user_id, user_agent(&headers), None).await?;
+    let ip = util::client_ip(&headers, Some(peer));
+    let cookie =
+        session::issue(&state, session_user.user_id, user_agent(&headers), ip.as_deref()).await?;
     Ok((jar.add(cookie), Json(me_response(&session_user))))
 }
 
@@ -220,6 +228,7 @@ async fn magic_verify(
     State(state): State<AppState>,
     jar: CookieJar,
     headers: HeaderMap,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
     Query(query): Query<MagicVerifyQuery>,
 ) -> AppResult<(CookieJar, Json<MeResponse>)> {
     let user_id = magic::verify(&state, &query.token).await?;
@@ -227,7 +236,8 @@ async fn magic_verify(
         .await?
         .ok_or(AppError::Unauthorized)?;
     let session_user = session_user(user);
-    let cookie = session::issue(&state, user_id, user_agent(&headers), None).await?;
+    let ip = util::client_ip(&headers, Some(peer));
+    let cookie = session::issue(&state, user_id, user_agent(&headers), ip.as_deref()).await?;
     Ok((jar.add(cookie), Json(me_response(&session_user))))
 }
 
@@ -257,6 +267,7 @@ async fn oauth_callback(
     State(state): State<AppState>,
     jar: CookieJar,
     headers: HeaderMap,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
     Path(provider): Path<String>,
     Query(query): Query<OAuthCallbackQuery>,
 ) -> AppResult<(CookieJar, Redirect)> {
@@ -272,7 +283,8 @@ async fn oauth_callback(
         .ok_or(AppError::BadRequest("missing state".into()))?;
 
     let (user_id, redirect_to) = oauth::callback(&state, provider, &code, &returned_state).await?;
-    let cookie = session::issue(&state, user_id, user_agent(&headers), None).await?;
+    let ip = util::client_ip(&headers, Some(peer));
+    let cookie = session::issue(&state, user_id, user_agent(&headers), ip.as_deref()).await?;
 
     let web = state.config.public_web_url.trim_end_matches('/');
     let target = redirect_to
