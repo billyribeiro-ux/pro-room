@@ -3,6 +3,7 @@
 	import type { Alert, PresentUser, ReactionTally, ReactionTarget } from '$lib/types';
 	import { formatStamp, dayKey, formatDayLabel } from '$lib/message';
 	import MessageBody from './MessageBody.svelte';
+	import Badges from './Badges.svelte';
 	import ReactionBar from './ReactionBar.svelte';
 	import PostAlertModal from './modals/PostAlertModal.svelte';
 	import AlertQaModal from './AlertQaModal.svelte';
@@ -323,6 +324,7 @@
 					<span class="username" style:color={a.author_color ?? 'var(--username-color)'}
 						>{a.author_name ?? 'Trader'}</span
 					>
+					<Badges data={a.author_badges} />
 
 					<!-- Reference .alert-qa button: shown on EVERY row (the "ask a question"
 					     affordance) — optional (N) count + fa-question-circle (10px) +

@@ -12,6 +12,7 @@
 	import { prefs } from '$lib/stores/prefs.svelte';
 	import { shouldThrottle } from '$lib/stores/visibility.svelte';
 	import MessageBody from './MessageBody.svelte';
+	import Badges from './Badges.svelte';
 	import ReactionBar from './ReactionBar.svelte';
 	import UserInfoModal from './modals/UserInfoModal.svelte';
 	import AdvancedSearchModal from './modals/AdvancedSearchModal.svelte';
@@ -406,6 +407,7 @@
 					<span class="username" style:color={m.author_color ?? 'var(--username-color)'}
 						>{m.author_name ?? 'trader'}</span
 					>
+					<Badges data={m.author_badges} />
 
 					<time class="created-at">{formatStamp(m.created_at)}</time>
 				</div>
