@@ -1,5 +1,6 @@
 //! Chat message repository.
 
+use super::badges::AuthorBadges;
 use anyhow::Context as _;
 use domain::entities::Message;
 use domain::{MessageId, Role, RoomId, UserId};
@@ -23,6 +24,9 @@ pub struct MessageView {
     /// the per-room membership role, then their global role). Clients style
     /// admin/super-admin messages distinctly (kebab on the right + grey row).
     pub author_role: Role,
+    /// The author's badges plus trial / new / tenure indicators — the reference
+    /// renders these next to the username.
+    pub author_badges: AuthorBadges,
 }
 
 /// Row shape for [`list_recent`]. Uses the runtime `query_as` API rather than the
@@ -129,7 +133,8 @@ pub async fn list_recent(
     .fetch_all(pool)
     .await
     .context("list messages")?;
-    rows.into_iter()
+    let mut views = rows
+        .into_iter()
         .map(|row| {
             let global_role: Role = row.global_role.parse().context("parse global role")?;
             let room_role = row
@@ -154,7 +159,18 @@ pub async fn list_recent(
                 created_at: row.created_at,
                 author_name: row.author_name,
                 author_role,
+                author_badges: AuthorBadges::default(),
             })
         })
-        .collect()
+        .collect::<anyhow::Result<Vec<MessageView>>>()?;
+    // Resolve each author's badges in one batch and attach (the same author may
+    // appear on many rows, so clone the shared entry per row).
+    let author_ids: Vec<UserId> = views.iter().map(|v| v.author_id).collect();
+    let badges = super::badges::for_authors(pool, &author_ids).await?;
+    for v in &mut views {
+        if let Some(b) = badges.get(&v.author_id) {
+            v.author_badges = b.clone();
+        }
+    }
+    Ok(views)
 }

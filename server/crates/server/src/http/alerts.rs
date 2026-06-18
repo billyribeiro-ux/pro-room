@@ -80,9 +80,11 @@ async fn create(
         no_push,
     )
     .await?;
+    let author_badges = db::badges::for_author(&state.db, user.user_id).await?;
     let event = RoomEvent::Alert {
         alert: alert.clone(),
         author_name: user.display_name.clone(),
+        author_badges,
     };
     let _ = state.hub.publish(id, &event.to_json()).await;
     Ok(Json(alert))

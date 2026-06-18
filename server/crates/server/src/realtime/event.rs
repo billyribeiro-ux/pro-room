@@ -1,6 +1,7 @@
 //! Events broadcast to a room's connected clients over WebSocket. These are
 //! serialized to JSON both for Redis fan-out and for delivery to browsers.
 
+use crate::db::badges::AuthorBadges;
 use crate::db::private_messages::PrivateMessageView;
 use domain::entities::{Alert, Message, PollDetail, ReactionSummary};
 use domain::{AlertId, MessageId, Role, UserId};
@@ -9,15 +10,22 @@ use serde::Serialize;
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum RoomEvent {
-    /// A new trade alert was posted.
-    Alert { alert: Alert, author_name: String },
+    /// A new trade alert was posted. `author_badges` carries the poster's badges +
+    /// trial/new/tenure indicators so the live row renders them inline.
+    Alert {
+        alert: Alert,
+        author_name: String,
+        author_badges: AuthorBadges,
+    },
     /// A new chat message was posted. `author_role` is the poster's effective
     /// room role so clients can style admin/super-admin messages distinctly
-    /// without a follow-up lookup.
+    /// without a follow-up lookup. `author_badges` carries the badge data for the
+    /// live row.
     Chat {
         message: Message,
         author_name: String,
         author_role: Role,
+        author_badges: AuthorBadges,
     },
     /// The set of present users changed.
     Presence { users: Vec<PresentUser> },

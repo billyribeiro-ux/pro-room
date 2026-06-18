@@ -6,6 +6,7 @@
 
 pub mod alerts;
 pub mod audit;
+pub mod badges;
 pub mod branding;
 pub mod files;
 pub mod identities;
