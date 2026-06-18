@@ -163,13 +163,17 @@
 		/* Reference idle main-tab computed text is rgb(204,204,204) = #ccc. */
 		color: #ccc;
 		font-size: 12px;
-		font-weight: 300;
+		font-weight: 400;
 		line-height: 12px;
 		/* Reference idle .nav-link: 8px padding all sides, 5px margins all sides. */
 		padding: 8px;
 		margin: 5px;
-		/* Reference idle main tabs: 6px radius, transparent (no fill until hover/active). */
-		border-radius: 6px;
+		/* Reference .nav-tabs .nav-link: folder shape — only the TOP corners are
+		   rounded (.25rem ≈ 4px), bottom corners square. */
+		border-top-left-radius: 4px;
+		border-top-right-radius: 4px;
+		border-bottom-left-radius: 0;
+		border-bottom-right-radius: 0;
 		cursor: pointer;
 		flex-shrink: 0;
 		white-space: nowrap;

@@ -26,7 +26,10 @@ pub fn evaluate(subject: &Subject, action: Action, resource: &Resource, ctx: &Co
         // ManageBranding: admin+; ManageUsers: super-admin only) and there's no room
         // resource to scope an ABAC check against, so allow once the RBAC permission
         // check has passed.
-        Action::CreateRoom | Action::ManageUsers | Action::ManageBranding => Decision::Allow,
+        Action::CreateRoom
+        | Action::ManageUsers
+        | Action::ManageBranding
+        | Action::ManageBadges => Decision::Allow,
     }
 }
 

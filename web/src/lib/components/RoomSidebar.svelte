@@ -16,6 +16,7 @@
 	import DebugLogModal from './modals/DebugLogModal.svelte';
 	import AllUserPmModal from './modals/AllUserPmModal.svelte';
 	import BrandingModal from './modals/BrandingModal.svelte';
+	import BadgesModal from './modals/BadgesModal.svelte';
 	import { debugLogText, logEvent } from '$lib/stores/sessionLog.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
 
@@ -57,6 +58,7 @@
 	let debugLogOpen = $state(false);
 	let allPmOpen = $state(false);
 	let brandingOpen = $state(false);
+	let badgesOpen = $state(false);
 
 	// Branding is account-wide: gate on the global RoomManage capability (admin+),
 	// mirroring the backend Action::ManageBranding gate — NOT on `canManage` (which
@@ -247,6 +249,14 @@
 						>
 							<Icon name="image" size={14} /><span class="label">Branding</span>
 						</button>
+						<button
+							class="sub-item"
+							aria-label="Badges"
+							title="Badges (rank/role badges)"
+							onclick={() => (badgesOpen = true)}
+						>
+							<Icon name="star" size={14} /><span class="label">Badges</span>
+						</button>
 					</div>
 				</div>
 			{/if}
@@ -328,6 +338,9 @@
 <DebugLogModal open={debugLogOpen} onClose={() => (debugLogOpen = false)} log={debugLogText()} />
 <AllUserPmModal open={allPmOpen} onClose={() => (allPmOpen = false)} {roomId} {present} />
 <BrandingModal open={brandingOpen} onClose={() => (brandingOpen = false)} />
+{#if badgesOpen}
+	<BadgesModal open onClose={() => (badgesOpen = false)} {present} />
+{/if}
 
 <style>
 	/* In-flow push rail (matches the reference room-sidebar): when open it takes
@@ -475,7 +488,7 @@
 		padding: 0 2px;
 	}
 	/* Reference a.nav-link.sidebar-item: padding 8px 0, margin 0 5px, 14px,
-	   weight 700, color #676767, full-width (236px inside 250). */
+	   weight 300, color #676767, full-width (236px inside 250). */
 	.item {
 		display: flex;
 		align-items: center;
@@ -490,7 +503,7 @@
 		padding: 8px 0;
 		margin: 0 5px;
 		font-size: 14px;
-		font-weight: 700;
+		font-weight: 300;
 		cursor: pointer;
 	}
 	/* Reference a.nav-link.sidebar-item.ps-1: padding-left 4px. */
@@ -539,7 +552,7 @@
 		border-radius: 0;
 		padding: 8px 0.6rem 8px 1.4rem;
 		font-size: 14px;
-		font-weight: 700;
+		font-weight: 300;
 		cursor: pointer;
 	}
 	/* Reference .sidebar-menu:hover: text→darker readable gray, transparent
@@ -574,11 +587,11 @@
 		display: inline-flex;
 		align-items: center;
 		font-size: 14px;
-		font-weight: 700;
+		font-weight: 300;
 		color: #676767;
 	}
 	.roster-count {
-		font-weight: 700;
+		font-weight: 300;
 		color: #676767;
 		padding-left: 4px;
 	}
@@ -661,7 +674,7 @@
 		font-weight: 700;
 	}
 	.roster-name {
-		font-size: 0.85rem;
+		font-size: 14px;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;

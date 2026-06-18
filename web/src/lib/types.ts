@@ -64,6 +64,27 @@ export interface MemberView {
 
 export type ChatChannel = 'main' | 'off_topic';
 
+/** A registry badge. Rendered as an <img> when image_url is set, else a coloured
+ * text pill (label on bg_color/text_color — admin-set, so theme-configurable). */
+export interface Badge {
+	id: string;
+	slug: string;
+	label: string;
+	image_url: string | null;
+	bg_color: string;
+	text_color: string;
+	position: number;
+}
+
+/** The author badge data attached to a message/alert (mirrors the reference's
+ * per-message badges + isFT/isNew/years). */
+export interface AuthorBadges {
+	badges: Badge[];
+	is_trial: boolean;
+	is_new: boolean;
+	years: number | null;
+}
+
 export interface Alert {
 	id: string;
 	room_id: string;
@@ -76,6 +97,8 @@ export interface Alert {
 	/** Author's delivery-intent flags from the Post Alert form (backend Option<bool>). */
 	post_to_x: boolean | null;
 	no_push: boolean | null;
+	/** Author's badges + trial/new/tenure indicators, rendered next to the name. */
+	author_badges?: AuthorBadges;
 }
 
 export interface Message {
@@ -90,6 +113,8 @@ export interface Message {
 	 * and merged onto live messages from the chat event. Clients style
 	 * admin/super_admin messages distinctly (kebab on the right + grey row). */
 	author_role?: Role;
+	/** Author's badges + trial/new/tenure indicators, rendered next to the name. */
+	author_badges?: AuthorBadges;
 }
 
 export interface PresentUser {
@@ -177,8 +202,14 @@ export interface PrivateThreadSummary {
 }
 
 export type RoomEvent =
-	| { type: 'alert'; alert: Alert; author_name: string }
-	| { type: 'chat'; message: Message; author_name: string; author_role: Role }
+	| { type: 'alert'; alert: Alert; author_name: string; author_badges?: AuthorBadges }
+	| {
+			type: 'chat';
+			message: Message;
+			author_name: string;
+			author_role: Role;
+			author_badges?: AuthorBadges;
+	  }
 	| { type: 'private_message'; message: PrivateMessageView }
 	| { type: 'presence'; users: PresentUser[] }
 	| { type: 'live'; is_live: boolean }

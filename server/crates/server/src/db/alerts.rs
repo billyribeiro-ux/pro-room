@@ -7,6 +7,7 @@
 //! to compile offline. The runtime API needs no cache and is checked by the
 //! `FromRow` impls below. (Same rationale as the polls/reactions repos.)
 
+use super::badges::AuthorBadges;
 use anyhow::Context as _;
 use domain::entities::Alert;
 use domain::{AlertId, RoomId, UserId};
@@ -60,6 +61,9 @@ pub struct AlertView {
     pub post_to_x: Option<bool>,
     pub no_push: Option<bool>,
     pub author_name: String,
+    /// Author badges plus trial / new / tenure indicators — rendered next to the
+    /// username.
+    pub author_badges: AuthorBadges,
 }
 
 /// `Uuid`-typed decode target for [`list_recent`], mapped into [`AlertView`].
@@ -90,6 +94,7 @@ impl From<AlertViewRow> for AlertView {
             post_to_x: row.post_to_x,
             no_push: row.no_push,
             author_name: row.author_name,
+            author_badges: AuthorBadges::default(),
         }
     }
 }
@@ -156,5 +161,14 @@ pub async fn list_recent(
     .fetch_all(pool)
     .await
     .context("list alerts")?;
-    Ok(rows.into_iter().map(Into::into).collect())
+    let mut views: Vec<AlertView> = rows.into_iter().map(Into::into).collect();
+    // Attach each author's badges in one batch (same author may post many alerts).
+    let author_ids: Vec<UserId> = views.iter().map(|v| v.author_id).collect();
+    let badges = super::badges::for_authors(pool, &author_ids).await?;
+    for v in &mut views {
+        if let Some(b) = badges.get(&v.author_id) {
+            v.author_badges = b.clone();
+        }
+    }
+    Ok(views)
 }

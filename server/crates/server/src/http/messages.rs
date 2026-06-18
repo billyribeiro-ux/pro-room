@@ -74,10 +74,12 @@ async fn create(
     let author_role = db::members::effective_role(&state.db, id, user.user_id)
         .await?
         .unwrap_or(Role::Member);
+    let author_badges = db::badges::for_author(&state.db, user.user_id).await?;
     let event = RoomEvent::Chat {
         message: message.clone(),
         author_name: user.display_name.clone(),
         author_role,
+        author_badges,
     };
     let _ = state.hub.publish(id, &event.to_json()).await;
     Ok(Json(message))
