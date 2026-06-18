@@ -108,3 +108,14 @@ button {
 	font: inherit;
 	cursor: pointer;
 }
+
+/* Global form-placeholder color. The reference ships a single global rule
+   `::placeholder{color:#999;opacity:1}` (verified in chat.protradingroom.com's
+   styles bundle). Without an explicit color, browsers DERIVE a blue-gray tint
+   from the text color (Chrome serializes it as oklch(...)), so every placeholder
+   — the chat composer "Type your message here..", the alert form, search, PMs,
+   modals — drifted from the reference's neutral #999. opacity:1 matches too. */
+::placeholder {
+	color: #999;
+	opacity: 1;
+}
