@@ -255,9 +255,6 @@
 		line-height: 1.4;
 		font-family: inherit;
 	}
-	.pill textarea::placeholder {
-		color: var(--text-dim);
-	}
 	.ic {
 		display: inline-flex;
 		align-items: center;

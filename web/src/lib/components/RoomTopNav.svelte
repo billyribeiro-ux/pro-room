@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import Icon from './Icon.svelte';
+	import { brand } from '$lib/stores/brand.svelte';
 	import { dnd, setDnd } from '$lib/stores/dnd.svelte';
 	import { prefs, setPref } from '$lib/stores/prefs.svelte';
 
@@ -102,7 +103,10 @@
 		<Icon name="mobile" size={16} />
 	</button>
 
-	<span class="brand">{roomName}</span>
+	<span class="brand">
+		<img class="brand-logo" src={brand.logo} alt={brand.name} width="32" height="32" />
+		<span class="room-name">{roomName}</span>
+	</span>
 
 	<!-- Reference: navbar-brand carries mr-auto and the action group is
 	     ul.navbar-nav.ml-auto, so everything actionable is pinned RIGHT. The
@@ -111,20 +115,22 @@
 	     placeholders) → [ REC ] → volume (dropstart) → reload. -->
 	<span class="spacer"></span>
 
-	<span class="talking">
-		{#if speaker}
-			<!-- Reference shows an animated <img class="talkingWaveform"> equalizer next
-			     to the speaker name (max 30x25px), NOT a static mic glyph. Inline SVG
-			     equalizer (asset-free): 4 bars pulsing on a stagger. -->
+	<!-- Reference li.talkingIndicator > a.talking (verified live DOM):
+	     fa-microphone + the bare speaker name + the animated talkingWaveform, in
+	     that order — and the whole indicator is *ngIf'd (ng-star-inserted), i.e. it
+	     renders ONLY while someone is speaking (no "( No one is speaking )" idle
+	     text). Our waveform is an asset-free inline SVG equalizer standing in for
+	     the reference's /assets/images/talking.gif. -->
+	{#if speaker}
+		<span class="talking">
+			<Icon name="microphone" size={14} />
+			<span class="talking-string">{speaker}</span>
 			<span class="talking-wave" aria-hidden="true">
 				<span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"
 				></span>
 			</span>
-			<span class="talking-string">( {speaker} is speaking )</span>
-		{:else}
-			<span class="talking-string">( No one is speaking )</span>
-		{/if}
-	</span>
+		</span>
+	{/if}
 
 	<!-- Presenter broadcast controls. In the reference these are the 14 *ngIf
 	     placeholders between the talking indicator and the volume dropdown, so
@@ -368,13 +374,24 @@
 	}
 	.brand {
 		/* Reference brand slot is an <img class="brand-logo"> (200x18, line-height
-		   30px). OUR brand is text — keep it but match the logo's Open Sans light,
-		   20px, weight 300 typography and placement. See FLAG: brand is a logo image
-		   in the reference, not text. */
+		   30px). We now render the configurable BRAND logo (see $lib/brand) followed
+		   by the room name in the reference's Open Sans light, 20px, weight 300. */
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+		white-space: nowrap;
+	}
+	.brand-logo {
+		/* Scale any drop-in logo to the navbar height; width follows the asset. */
+		height: 32px;
+		width: auto;
+		display: block;
+		flex: 0 0 auto;
+	}
+	.room-name {
 		font-weight: 300;
 		font-size: 20px;
 		line-height: 30px;
-		white-space: nowrap;
 	}
 	.talking {
 		/* Reference a inside li.talkingIndicator: pure white (#fff = --text,

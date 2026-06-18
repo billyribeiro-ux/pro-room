@@ -223,9 +223,6 @@
 		padding: 0.55rem 0.75rem;
 		font-size: 0.9rem;
 	}
-	.input::placeholder {
-		color: var(--text-dim);
-	}
 	.input:focus {
 		outline: none;
 		border-color: var(--accent);

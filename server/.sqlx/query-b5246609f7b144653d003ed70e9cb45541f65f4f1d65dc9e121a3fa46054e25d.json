@@ -1,0 +1,62 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT name, logo_storage_name, logo_content_type, updated_at FROM branding WHERE id = true",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "branding",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "logo_storage_name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "branding",
+            "name": "logo_storage_name"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "logo_content_type",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "branding",
+            "name": "logo_content_type"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "updated_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "branding",
+            "name": "updated_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "b5246609f7b144653d003ed70e9cb45541f65f4f1d65dc9e121a3fa46054e25d"
+}

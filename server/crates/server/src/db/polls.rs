@@ -250,20 +250,33 @@ pub async fn vote(
         return Ok(VoteOutcome::InvalidOption);
     }
 
-    // Atomic, idempotent upsert: one row per (poll, user). Changing the vote
-    // updates the existing row rather than inserting a second.
-    sqlx::query(
+    // Atomic, idempotent upsert GUARDED on the poll still being open. The
+    // `WHERE EXISTS (... status='open')` re-checks the status in the SAME
+    // statement as the write, closing the TOCTOU window between the status read
+    // above and this insert: if a concurrent close landed in that window the
+    // SELECT yields no row, 0 rows are affected, and we report Closed rather than
+    // recording a vote on a just-closed poll. (One row per (poll,user); changing
+    // the vote updates the existing row instead of inserting a second.)
+    let affected = sqlx::query(
         "INSERT INTO poll_votes (poll_id, option_id, user_id) \
-         VALUES ($1, $2, $3) \
+         SELECT $1, $2, $3 \
+         WHERE EXISTS (SELECT 1 FROM polls WHERE id = $1 AND room_id = $4 AND status = 'open') \
          ON CONFLICT (poll_id, user_id) \
          DO UPDATE SET option_id = EXCLUDED.option_id, created_at = now()",
     )
     .bind(poll_id.as_uuid())
     .bind(option_id.as_uuid())
     .bind(user_id.as_uuid())
+    .bind(room_id.as_uuid())
     .execute(pool)
     .await
-    .context("upsert poll vote")?;
+    .context("upsert poll vote")?
+    .rows_affected();
+
+    if affected == 0 {
+        // The poll was closed between the status check and the insert.
+        return Ok(VoteOutcome::Closed);
+    }
 
     // Re-read the detail so callers (and the WS broadcast) see fresh tallies.
     match get_detail(pool, room_id, poll_id).await? {

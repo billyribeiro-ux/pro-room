@@ -30,6 +30,9 @@ pub const fn required_permission(action: Action) -> Permission {
         Action::ManageRoom => Permission::RoomManage,
         Action::ManageMembers => Permission::MemberManage,
         Action::ManageUsers => Permission::UserManage,
+        // App-wide branding reuses RoomManage (admin+ hold it), like CreateRoom, so
+        // members can't change the logo while every admin can.
+        Action::ManageBranding => Permission::RoomManage,
     }
 }
 

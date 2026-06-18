@@ -157,5 +157,6 @@ const fn action_name(action: Action) -> &'static str {
         Action::ManageRoom => "manage_room",
         Action::ManageMembers => "manage_members",
         Action::ManageUsers => "manage_users",
+        Action::ManageBranding => "manage_branding",
     }
 }

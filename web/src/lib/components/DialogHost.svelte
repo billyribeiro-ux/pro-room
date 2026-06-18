@@ -102,9 +102,6 @@
 		outline: none;
 		border-color: var(--accent);
 	}
-	.field::placeholder {
-		color: var(--text-dim);
-	}
 	.btn {
 		display: inline-flex;
 		align-items: center;

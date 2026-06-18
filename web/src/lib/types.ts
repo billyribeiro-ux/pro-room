@@ -73,6 +73,9 @@ export interface Alert {
 	note: string | null;
 	created_at: string;
 	author_name?: string;
+	/** Author's delivery-intent flags from the Post Alert form (backend Option<bool>). */
+	post_to_x: boolean | null;
+	no_push: boolean | null;
 }
 
 export interface Message {

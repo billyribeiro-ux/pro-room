@@ -61,6 +61,9 @@ pub enum Action {
     ManageRoom,
     ManageMembers,
     ManageUsers,
+    /// Edit the account-wide branding (app name + logo). Account-wide (no room
+    /// resource); admin+, reusing the `RoomManage` capability like `CreateRoom`.
+    ManageBranding,
 }
 
 /// The thing being acted upon, carrying the attributes ABAC policies inspect.

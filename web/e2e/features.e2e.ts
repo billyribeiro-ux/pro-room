@@ -13,7 +13,7 @@ import { test, expect, type Page } from '@playwright/test';
 const API = 'http://localhost:8081';
 let roomId: string;
 
-test.beforeAll(async ({ request }) => {
+test.beforeAll(async ({ request, playwright }) => {
 	const res = await request.get(`${API}/api/rooms`);
 	expect(res.ok(), 'GET /api/rooms (is the Rust API up on :8081?)').toBeTruthy();
 	const rooms = (await res.json()) as Array<{ id: string; is_live: boolean }>;
@@ -22,6 +22,32 @@ test.beforeAll(async ({ request }) => {
 	roomId = room.id;
 	if (!room.is_live) {
 		await request.post(`${API}/api/rooms/${roomId}/live`, { data: { is_live: true } });
+	}
+
+	// Self-provision a 'Mike' member with chat history. The mute / Chat Logs / 1:1
+	// Private Chat tests address a chat row authored by 'Mike'; provisioning it here
+	// (instead of relying on the seed script) keeps the suite HERMETIC — it passes on
+	// a freshly-migrated DB. Mike can post in this PUBLIC room without membership.
+	await request
+		.post(`${API}/api/auth/register`, {
+			data: { email: 'mike@proroom.dev', password: 'proom1234', display_name: 'Mike' }
+		})
+		.catch(() => {}); // 409 on re-run is fine
+	const mike = await playwright.request.newContext();
+	try {
+		await mike.post(`${API}/api/auth/login`, {
+			data: { email: 'mike@proroom.dev', password: 'proom1234' }
+		});
+		const msgs = (await (await request.get(`${API}/api/rooms/${roomId}/messages`)).json()) as Array<{
+			author_name?: string;
+		}>;
+		if (!msgs.some((m) => m.author_name === 'Mike')) {
+			await mike.post(`${API}/api/rooms/${roomId}/messages`, {
+				data: { body: 'Mike here — watching SPY into the open' }
+			});
+		}
+	} finally {
+		await mike.dispose();
 	}
 });
 
