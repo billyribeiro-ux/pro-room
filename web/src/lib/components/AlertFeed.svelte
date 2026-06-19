@@ -116,18 +116,30 @@
 
 	async function submit(e: SubmitEvent) {
 		e.preventDefault();
-		if (!symbol.trim()) return;
+		const ticker = symbol.trim();
+		if (!ticker) return;
 		posting = true;
 		// Always scroll our own alert into view when it lands (bypasses the
 		// near-bottom guard), even if we'd scrolled up to read history.
 		stickNext = true;
 		try {
-			await onPost(symbol, side, note);
+			// Post the ticker with a leading "$" (the field strips it for editing and
+			// shows it as a fixed prefix). bodyText de-dupes, so this is safe.
+			await onPost(`$${ticker}`, side, note);
 			symbol = '';
 			note = '';
 		} finally {
 			posting = false;
 		}
+	}
+
+	// Ticker field: force UPPERCASE and strip non-ticker characters (including a
+	// typed "$", which is shown as a fixed prefix instead). Lets a trader type
+	// "aapl" and get "$AAPL" without Caps Lock. Same length on the common path
+	// (letters only), so the caret never jumps.
+	function onSymbolInput(e: Event) {
+		const el = e.currentTarget as HTMLInputElement;
+		symbol = el.value.toUpperCase().replace(/[^A-Z0-9.]/g, '');
 	}
 
 	function initials(name: string | undefined) {
@@ -138,9 +150,12 @@
 		return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 	}
 
-	// Full text body for an alert: "SYMBOL [side] note".
+	// Full text body for an alert: "$SYMBOL [side] note". The symbol is normalized
+	// to an UPPERCASE "$TICKER" (de-dupes any stored "$", so older or modal-posted
+	// alerts render consistently too).
 	function bodyText(a: AlertItem): string {
-		const head = a.side ? `${a.symbol} ${a.side}` : a.symbol;
+		const sym = a.symbol ? `$${a.symbol.replace(/^\$+/, '').toUpperCase()}` : '';
+		const head = a.side ? `${sym} ${a.side}` : sym;
 		return a.note ? `${head} ${a.note}` : head;
 	}
 
@@ -372,14 +387,22 @@
 
 	{#if canPost}
 		<form onsubmit={submit}>
-			<input
-				id="alert-symbol"
-				name="symbol"
-				class="sym"
-				placeholder="Symbol"
-				bind:value={symbol}
-				required
-			/>
+			<div class="sym-wrap">
+				<span class="sym-prefix" aria-hidden="true">$</span>
+				<input
+					id="alert-symbol"
+					name="symbol"
+					class="sym"
+					placeholder="Ticker"
+					value={symbol}
+					oninput={onSymbolInput}
+					autocapitalize="characters"
+					autocomplete="off"
+					autocorrect="off"
+					spellcheck="false"
+					required
+				/>
+			</div>
 			<select id="alert-side" name="side" bind:value={side} aria-label="Side">
 				<option value="buy">Buy</option>
 				<option value="sell">Sell</option>
@@ -798,8 +821,28 @@
 		padding: 0.4rem 0.5rem;
 		font-size: 0.82rem;
 	}
-	.sym {
+	/* Ticker field with a fixed "$" prefix adornment. */
+	.sym-wrap {
+		position: relative;
 		width: 5rem;
+		flex-shrink: 0;
+	}
+	.sym-prefix {
+		position: absolute;
+		left: 0.5rem;
+		top: 50%;
+		transform: translateY(-50%);
+		color: var(--content-text);
+		font-size: 0.82rem;
+		font-weight: 700;
+		pointer-events: none;
+	}
+	.sym {
+		width: 100%;
+		/* Room for the "$" prefix. */
+		padding-left: 1.05rem;
+		/* Belt-and-suspenders uppercase (onSymbolInput also uppercases the value). */
+		text-transform: uppercase;
 	}
 	.note {
 		flex: 1;
