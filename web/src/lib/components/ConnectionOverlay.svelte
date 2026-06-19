@@ -83,13 +83,13 @@
 	}
 
 	.banner.down {
-		background: var(--bg-elev-2, #103d5c);
+		background: var(--bg-elev-2);
 		border: 1px solid var(--warn, #f0b90b);
 		color: var(--warn, #f0b90b);
 	}
 
 	.banner.up {
-		background: var(--bg-elev-2, #103d5c);
+		background: var(--bg-elev-2);
 		border: 1px solid var(--positive, #92d528);
 		color: var(--positive, #92d528);
 	}

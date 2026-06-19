@@ -66,7 +66,7 @@
 		align-items: center;
 		justify-content: center;
 		border-radius: 50%;
-		background: var(--bg-elev, #0f2e43);
+		background: var(--bg-elev);
 		color: var(--modal-color, #f4f4f4);
 		font-size: 0.78rem;
 		font-weight: 700;
@@ -85,7 +85,7 @@
 		gap: 0.3rem;
 		flex-shrink: 0;
 		background: transparent;
-		border: 1px solid var(--modal-border, #103d5c);
+		border: 1px solid var(--modal-border);
 		color: var(--modal-color, #f4f4f4);
 		border-radius: var(--radius);
 		padding: 0.3rem 0.6rem;
@@ -94,8 +94,8 @@
 		cursor: pointer;
 	}
 	.unbtn:hover {
-		border-color: var(--accent, #45a2ff);
-		color: var(--accent, #45a2ff);
+		border-color: var(--accent);
+		color: var(--accent);
 	}
 	.btn {
 		border-radius: var(--radius);

@@ -57,6 +57,9 @@
 	let mainMessages = $state<ChatItem[]>([]);
 	let offTopicMessages = $state<ChatItem[]>([]);
 	let channel = $state<ChatChannel>('main');
+	// Per-channel unread counts (the reference's "Off Topic (3)" badge): incremented
+	// when a message lands on the NON-active channel, reset when you switch to it.
+	let unread = $state<Record<ChatChannel, number>>({ main: 0, off_topic: 0 });
 	let present = $state<PresentUser[]>([]);
 	let error = $state<string | null>(null);
 	let screenDisabled = $state(false);
@@ -89,6 +92,23 @@
 	let mutedAll = $state(false);
 	// Presenter "lock this screen" broadcast — holds non-admin viewers on Screens.
 	let screenLocked = $state(false);
+	// Live closed-caption from the presenter (speaker + latest phrase). Cleared a
+	// few seconds after the last phrase so a stale caption doesn't linger.
+	let liveCaption = $state<{ speaker: string; text: string } | null>(null);
+	let captionTimer: ReturnType<typeof setTimeout> | undefined;
+	function showCaption(speaker: string, text: string) {
+		liveCaption = { speaker, text };
+		clearTimeout(captionTimer);
+		captionTimer = setTimeout(() => (liveCaption = null), 8000);
+	}
+	// Broadcast a finalized caption phrase (presenter only; best-effort).
+	async function postCaption(text: string) {
+		try {
+			await api.post(`/api/rooms/${roomId}/captions`, { text });
+		} catch {
+			// Captions are ephemeral + best-effort; a dropped phrase is non-fatal.
+		}
+	}
 	let mediaVolume = $state(70);
 	// Presenter media-for-all currently playing for the room (SoundCloud/YouTube
 	// iframe, or a direct mp3/video file).
@@ -265,6 +285,11 @@
 				} else {
 					mainMessages = [...mainMessages, item].slice(-100);
 				}
+				// Bump the unread badge on the OTHER tab (not the one you're viewing, and
+				// not for your own echo) — the reference's "Off Topic (3)" indicator.
+				if (ev.message.channel !== channel && ev.message.author_id !== detail?.viewer_id) {
+					unread[ev.message.channel] += 1;
+				}
 				// The server broadcasts the message back to its sender; don't chime on
 				// your own echo (matches the private_message guard below).
 				if (ev.message.author_id !== detail?.viewer_id) playSound('chat');
@@ -275,6 +300,10 @@
 				// into the open thread, or pop the panel for an incoming PM.
 				receivePrivate(ev.message);
 				if (ev.message.sender_id !== detail?.viewer_id) playSound('chat');
+				break;
+			case 'caption':
+				// Live presenter caption — shown in the stage bar when CC is on.
+				showCaption(ev.speaker_name, ev.text);
 				break;
 			case 'presence':
 				present = ev.users;
@@ -347,6 +376,7 @@
 
 	async function selectChannel(ch: ChatChannel) {
 		channel = ch;
+		unread[ch] = 0; // viewing a channel clears its unread badge
 		if (!loaded[ch]) {
 			loaded = { ...loaded, [ch]: true };
 			try {
@@ -747,6 +777,7 @@
 		{offTopicMessages}
 		{present}
 		{channel}
+		{unread}
 		reactions={reactionsByTarget}
 		canReact={caps?.can_post_message ?? false}
 		{onReact}
@@ -781,6 +812,10 @@
 		{webcamPublishers}
 		onWebcamClose={() => screen.stopCamera()}
 		captionsActive={prefs.captionsOverlay}
+		captionSpeaker={liveCaption?.speaker}
+		captionText={liveCaption?.text}
+		captureCaptions={screen.publishing && prefs.captionsOverlay}
+		onCaption={postCaption}
 		{screenLocked}
 	/>
 {/snippet}

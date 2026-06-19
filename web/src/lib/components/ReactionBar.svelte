@@ -152,9 +152,9 @@
 	}
 	.pill.mine {
 		/* Accent tint for the current user's own reactions. */
-		background: color-mix(in srgb, var(--accent, #45a2ff) 16%, transparent);
-		border-color: var(--accent, #45a2ff);
-		color: var(--accent-hover, #0a6db1);
+		background: color-mix(in srgb, var(--accent) 16%, transparent);
+		border-color: var(--accent);
+		color: var(--accent-hover, var(--accent));
 	}
 	.pill .emoji {
 		font-size: 0.85rem;

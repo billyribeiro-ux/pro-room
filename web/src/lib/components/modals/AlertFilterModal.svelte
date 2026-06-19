@@ -157,8 +157,8 @@
 		color: var(--accent);
 	}
 	.btn.primary {
-		background: var(--modal-btn-primary, #0a6db1);
-		border-color: var(--modal-btn-primary, #0a6db1);
+		background: var(--modal-btn-primary, var(--accent));
+		border-color: var(--modal-btn-primary, var(--accent));
 		color: #fff;
 	}
 	.btn.primary:hover {

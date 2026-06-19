@@ -211,6 +211,7 @@ export type RoomEvent =
 			author_badges?: AuthorBadges;
 	  }
 	| { type: 'private_message'; message: PrivateMessageView }
+	| { type: 'caption'; speaker_name: string; text: string }
 	| { type: 'presence'; users: PresentUser[] }
 	| { type: 'live'; is_live: boolean }
 	| { type: 'poll'; poll: PollDetail }

@@ -28,8 +28,15 @@
 		webcamPublishers?: WebcamPublisher[];
 		/** Turn off the local user's camera (the × on their own tile). */
 		onWebcamClose?: (id: string) => void;
-		/** When true, the live speech-recognition captions overlay is shown. */
+		/** When true, the captions overlay is shown (the viewer's CC toggle). */
 		captionsActive?: boolean;
+		/** Live caption broadcast from the presenter (speaker + text), via the WS. */
+		captionSpeaker?: string;
+		captionText?: string;
+		/** When true, capture local speech + emit finalized phrases (presenter). */
+		captureCaptions?: boolean;
+		/** Emit a finalized caption phrase (the room page POSTs it to broadcast). */
+		onCaption?: (text: string) => void;
 		/**
 		 * Presenter "lock this screen": while true, non-admin viewers are held on
 		 * the Screens tab and the other tabs are disabled. Admins (`canManage`) are
@@ -45,6 +52,10 @@
 		webcamPublishers = [],
 		onWebcamClose,
 		captionsActive = false,
+		captionSpeaker,
+		captionText,
+		captureCaptions = false,
+		onCaption,
 		screenLocked = false
 	}: Props = $props();
 
@@ -80,6 +91,13 @@
 			</button>
 		{/each}
 
+		<!-- Reference ships a "Streams" tab hidden behind its streaming infra
+		     (<li hidden>). Mirrored as a hidden, inert placeholder for DOM parity;
+		     un-hide and wire it when streaming lands. -->
+		<button type="button" class="stream-tab-placeholder" hidden tabindex="-1" aria-hidden="true">
+			<Icon name="broadcast-tower" size={12} /> Streams
+		</button>
+
 		{#if locked}
 			<span class="locked-pill" title="The presenter has locked the screen">
 				<Icon name="lock" size={14} /> Screen locked
@@ -95,7 +113,13 @@
 		{:else}
 			<FilesPanel {roomId} {canManage} />
 		{/if}
-		<CaptionsOverlay active={captionsActive} />
+		<CaptionsOverlay
+			active={captionsActive}
+			capture={captureCaptions}
+			speaker={captionSpeaker}
+			text={captionText}
+			{onCaption}
+		/>
 
 		{#if webcamPublishers.length > 0}
 			<!-- Reference app-webcam-holder floats ABSOLUTE at the bottom of the
@@ -190,11 +214,12 @@
 		cursor: not-allowed;
 	}
 	.tabbar button.active {
-		/* Reference active main-tab is a flat #45a2ff PILL — confirmed by the
-		   captured computed style of #screens-tab.active: bg rgb(69,162,255),
-		   white text, transparent border, 3px radius (NOT the dark folder). */
-		color: #fff;
-		background: var(--accent, #45a2ff);
+		/* Reference active main-tab (.mainTabset .nav-link.active): a subtle #222
+		   fill (--tab-active-bg) with TEAL text (--note-tabs-color #00bc8c),
+		   transparent border, 3px radius. NOT a bright pill — that #45a2ff was the
+		   wrong (navy "Mastering The Trade") room; protradingroom.com is Darkly. */
+		color: var(--accent);
+		background: var(--bg-elev-2);
 		font-weight: 300;
 		border-color: transparent;
 		border-radius: 3px;

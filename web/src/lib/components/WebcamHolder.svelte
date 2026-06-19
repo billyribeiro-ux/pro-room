@@ -266,7 +266,7 @@
 		cursor: pointer;
 	}
 	.close:focus-visible {
-		outline: 2px solid var(--accent, #45a2ff);
+		outline: 2px solid var(--accent);
 		outline-offset: 1px;
 	}
 </style>

@@ -5,53 +5,77 @@
 /* Dark, focused "trading desk" palette exposed as CSS variables so component
    scoped styles can reference them without Tailwind. */
 :root {
-	/* Navy "Revolution Trading Room" palette — matches the reference app.
-	   Kept in sync with `DEFAULTS` in `lib/stores/theme.svelte.ts`. */
-	--bg: #0c2434;
-	--bg-elev: #0f2e43;
-	--bg-elev-2: #103d5c;
-	--border: #1a4f74;
+	/* ===================================================================
+	   Pro Trading Room palette — EXACT match to chat.protradingroom.com
+	   (Bootswatch "Darkly" chrome + light content panel). Every value below
+	   is the resolved token from the live styles bundle's global :root.
+	   Kept in sync with `DEFAULTS` in `lib/stores/theme.svelte.ts`.
+	   ------------------------------------------------------------------- */
+
+	/* --- Chrome (dark) --------------------------------------------------
+	   Black nav/sidebar/gutters, #111 stage/panels, #222 elevated tabs,
+	   #444 borders, teal accent. Maps:
+	     --bg       = --navbar-bg/--sidebar-menu-bg/--split-gutter-bg  #000
+	     --bg-elev  = --presenter-area-bg/--notes-tabs-bg/--msgs-header-bg #111
+	     --bg-elev-2= --tab-active-bg/--note-text-bg #222
+	     --border   = --tabs-border-color/--modal-content-border-color #444
+	     --accent   = --app-link-color/--success (teal) #00bc8c */
+	--bg: #000000;
+	--bg-elev: #111111;
+	--bg-elev-2: #222222;
+	--border: #444444;
 	--text: #ffffff;
-	--text-dim: #9fc4dd;
-	--accent: #45a2ff;
-	/* The reference pairs the bright accent #45a2ff with a darker link/header blue
-	   #0a6db1 (used for hovers, panel headers, usernames, active borders). */
-	--accent-hover: #0a6db1;
-	--positive: #92d528;
-	--negative: #bb352a;
+	--text-dim: #cccccc;
+	--accent: #00bc8c;
+	/* Darkly link-hover = darken(teal, 15%). */
+	--accent-hover: #008e6a;
+	--positive: #00bc8c;
+	--negative: #e74c3c;
 	--warn: #f39c12;
-	/* Message chrome (consumed by alert/chat rows + theme customizer preview).
-	   Both render on the WHITE message panel. Username is the darker room blue
-	   #0a6db1 (reference §06 line 149). The ticker `.stockColor` is NOT the
-	   username blue — the reference renders it near-black #1a1a1a, 700, italic,
-	   UPPERCASE (literal capture rule + computed §06 line 1341); the brighter
-	   #45a2ff stays reserved for autolinked URLs. */
-	--username-color: #0a6db1;
+	/* Reference accent states: recording red (--presenter-recording-color #f00)
+	   and the active/talking yellow (--presenter-noRecording-color /
+	   --sidebar-menu-active-color #f7fd37). */
+	--rec: #ff0000;
+	--highlight: #f7fd37;
+
+	/* --- Content panel (light) — chat / alerts / roster (--lightTheme-*) -
+	   The reference message panel is a light surface independent of the dark
+	   chrome. Surfaces #fff/#e1e1e1, body #676767, date #8394a9, borders
+	   #d9d9d9, separator #e8e8e8; the panel HEADER bar is dark #111/#ccc. */
+	--content-bg: #ffffff;
+	--content-bg-adm: #e1e1e1;
+	--content-text: #676767;
+	--content-meta: #8394a9;
+	--content-border: #d9d9d9;
+	--content-separator-bg: #e8e8e8;
+	--content-header-bg: #111111;
+	--content-header-color: #cccccc;
+	--composer-bg: #ffffff;
+	--composer-text: #555555;
+	--qa-badge-bg: #6c757d;
+	--kebab-color: #8c8686;
+	/* lightTheme username is near-black (#000 base; per-user colors override). */
+	--username-color: #1a1a1a;
+	/* Stock ticker `.stockColor` renders near-black, 700, italic, UPPERCASE. */
 	--ticker-color: #1a1a1a;
 	--msg-font-size: 13px;
 	--radius: 6px;
-	/* Reference modals are NAVY (the room palette), PROVEN by both Mastering-The-Trade
-	   captures: every --modal-* token holds a navy/room value, and the .modal-content
-	   CSS cascade resolves to var(--modal-content-bg-color) = #103d5c. The Darkly
-	   values (#303030 / #00bc8c / #e74c3c / #375a7f) that an earlier note used here are
-	   the Bootswatch BASE globals (--light / --success / --danger / --primary) which
-	   coexist in the same files but do NOT skin the modals. */
-	--modal-bg: #103d5c;
-	--modal-color: #f4f4f4;
-	--modal-border: #103d5c;
-	--modal-close-bg: #0a6db1;
-	--modal-success: #92d528;
-	--modal-danger: #bb352a;
-	--modal-active-tab: #45a2ff;
-	/* Modal input wells: a recessed darker navy (--modal-input-group-bg in the
-	   reference is #0a6db1, but the reference field bg is white BS form-control —
-	   matching that white-field + dark-text treatment is a tracked follow-up; for
-	   now keep readable light-on-dark-navy wells). */
-	--modal-input-bg: #0c2434;
-	/* Reference modal buttons: primary/close #0a6db1, success #92d528, danger
-	   #bb352a; secondary is the Bootswatch --secondary #444. */
-	--modal-btn-primary: #0a6db1;
-	--modal-btn-secondary: #444;
+
+	/* --- Modals (Bootswatch "Darkly": #303030 content, #444 borders) ----
+	   Maps: --modal-content-bg-color #303030, --modal-content-color #fff,
+	   --modal-content-border-color #444, --modal-btn-close-bg #375a7f,
+	   --modal-btn-success-bg #00bc8c, --modal-btn-danger-bg #e74c3c,
+	   --modal-active-tab-color #00bc8c, --modal-input-group-bg #444. */
+	--modal-bg: #303030;
+	--modal-color: #ffffff;
+	--modal-border: #444444;
+	--modal-close-bg: #375a7f;
+	--modal-success: #00bc8c;
+	--modal-danger: #e74c3c;
+	--modal-active-tab: #00bc8c;
+	--modal-input-bg: #444444;
+	--modal-btn-primary: #375a7f;
+	--modal-btn-secondary: #444444;
 	/* App font — Open Sans is the reference's effective app font; Lato fallback. */
 	--font-sans:
 		'Open Sans', 'Lato', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica,

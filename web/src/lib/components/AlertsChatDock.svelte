@@ -13,6 +13,8 @@
 		    "Extra chat column" preference is on. */
 		offTopicMessages?: ChatItem[];
 		channel: ChatChannel;
+		/** Per-channel unread counts for the chat tab badges. */
+		unread?: Record<ChatChannel, number>;
 		present: PresentUser[];
 		/** Aggregated reactions keyed `${target_kind}:${target_id}`. */
 		reactions?: Record<string, ReactionTally[]>;
@@ -36,6 +38,7 @@
 		messages,
 		offTopicMessages = [],
 		channel,
+		unread,
 		present,
 		reactions = {},
 		canReact = false,
@@ -144,6 +147,7 @@
 				{messages}
 				{present}
 				{channel}
+				{unread}
 				{reactions}
 				{canReact}
 				{onReact}
@@ -202,7 +206,7 @@
 		   children stay clipped to the panel box. No box-shadow in the reference. */
 		border-radius: 0;
 		overflow: hidden;
-		background: #ffffff;
+		background: var(--content-bg);
 	}
 	.dock.dragging {
 		user-select: none;
@@ -230,7 +234,7 @@
 		min-width: 0;
 	}
 	.chat-pane.two-col .chat-col + .chat-col {
-		border-left: 1px solid #d9d9d9;
+		border-left: 1px solid var(--content-border);
 	}
 
 	.hsplit {
@@ -240,9 +244,9 @@
 		align-items: center;
 		justify-content: center;
 		cursor: row-resize;
-		/* Reference as-split-gutter is rgb(10, 109, 177) = #0a6db1, same as the
+		/* Reference as-split-gutter is the dark split gutter (--split-gutter-bg #000), same as the
 		   outer <Split> gutter — a solid blue bar, not a grey divider. */
-		background: #0a6db1;
+		background: var(--bg);
 		touch-action: none;
 		user-select: none;
 	}

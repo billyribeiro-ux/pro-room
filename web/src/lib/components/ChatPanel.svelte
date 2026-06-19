@@ -35,6 +35,8 @@
 		roomId: string;
 		messages: ChatItem[];
 		channel: ChatChannel;
+		/** Per-channel unread counts for the tab badges (reference "Off Topic (3)"). */
+		unread?: Record<ChatChannel, number>;
 		present?: PresentUser[];
 		canPost: boolean;
 		onPost: (body: string) => Promise<void>;
@@ -51,6 +53,7 @@
 		roomId,
 		messages,
 		channel,
+		unread,
 		present = [],
 		canPost,
 		onPost,
@@ -203,6 +206,7 @@
 
 	// Curated native-Unicode set — the reference uses OS color-emoji glyphs (no
 	// emoji-mart/twemoji dependency), same approach as ReactionBar.svelte.
+	// prettier-ignore
 	const EMOJI = [
 		'😀', '😂', '😅', '😍', '😎', '🤔', '😮', '😢', '😡', '👍',
 		'👎', '👏', '🙏', '🔥', '🚀', '💯', '✅', '❌', '🎯', '💪',
@@ -312,14 +316,18 @@
 				role="tab"
 				aria-selected={channel === 'main'}
 				class:active={channel === 'main'}
-				onclick={() => onChannel('main')}>Main Chat</button
+				onclick={() => onChannel('main')}
+				>Main Chat{#if (unread?.main ?? 0) > 0}<span class="unread">{unread?.main}</span
+					>{/if}</button
 			>
 			<button
 				type="button"
 				role="tab"
 				aria-selected={channel === 'off_topic'}
 				class:active={channel === 'off_topic'}
-				onclick={() => onChannel('off_topic')}>Off Topic</button
+				onclick={() => onChannel('off_topic')}
+				>Off Topic{#if (unread?.off_topic ?? 0) > 0}<span class="unread">{unread?.off_topic}</span
+					>{/if}</button
 			>
 		</div>
 		<div class="actions">
@@ -491,7 +499,13 @@
 					>
 						<Icon name="image" size={18} />
 					</button>
-					<input bind:this={fileInputEl} type="file" accept="image/*" hidden onchange={onPickImage} />
+					<input
+						bind:this={fileInputEl}
+						type="file"
+						accept="image/*"
+						hidden
+						onchange={onPickImage}
+					/>
 
 					<!-- Search for GIFs (12px "GIF") → reference uses GIPHY (needs an API key the
 					     app doesn't ship). Rendered disabled rather than half-wired. -->
@@ -534,7 +548,7 @@
 	.panel {
 		display: flex;
 		flex-direction: column;
-		background: #ffffff;
+		background: var(--content-bg);
 		/* Flat: reference room-shell surfaces use border-radius: 0 (no bottom rounding). */
 		border-radius: 0;
 		overflow: hidden;
@@ -549,8 +563,8 @@
 		/* Reference chat-nav header padding is 4px (p-1). */
 		padding: 4px;
 		min-height: 48px;
-		background: #0a6db1;
-		color: #ffffff;
+		background: var(--content-header-bg);
+		color: var(--content-header-color);
 		flex-shrink: 0;
 	}
 	.lead {
@@ -568,7 +582,7 @@
 		   eyedropped #46A2FF, visually identical). */
 		flex: 1;
 		justify-content: center;
-		border-bottom: 1px solid var(--accent, #45a2ff);
+		border-bottom: 1px solid var(--accent);
 	}
 	.tabs button {
 		background: transparent;
@@ -587,15 +601,31 @@
 		cursor: pointer;
 	}
 	.tabs button.active {
-		/* Reference active tab (a.nav-link.active): accent-blue fill + 1px accent
-		   border on ALL sides, so its bottom edge merges seamlessly into the tab-bar
-		   underline (the folder-tab effect). */
-		background: var(--accent, #45a2ff);
-		border-color: var(--accent, #45a2ff);
-		color: #ffffff;
+		/* Reference active tab (.nav-tabs .nav-link.active): #222 fill
+		   (--tab-active-bg) + teal text, 3px radius. The old accent-blue fill was
+		   the wrong-room navy palette. */
+		background: var(--bg-elev-2);
+		border-color: transparent;
+		color: var(--accent);
 	}
 	.tabs button:hover:not(.active) {
 		color: #ffffff;
+	}
+	/* Per-channel unread count (reference "Off Topic (3)") — a small pill on the
+	   inactive tab, cleared when you switch to that channel. */
+	.unread {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 1.1em;
+		margin-left: 5px;
+		padding: 0 4px;
+		border-radius: 999px;
+		background: var(--negative);
+		color: #ffffff;
+		font-size: 10px;
+		font-weight: 700;
+		line-height: 1.4;
 	}
 	.actions {
 		display: flex;
@@ -628,7 +658,7 @@
 		/* Reference chat scroll bg matches the regular rows: the computed
 		   --lightTheme-msgs-bg is #fff (the JSON cssVariables.root, authoritative
 		   over the conflicting #f1f1f1 !important source). */
-		background: #ffffff;
+		background: var(--content-bg);
 	}
 	.empty {
 		padding: 0.6rem 0.85rem;
@@ -648,7 +678,7 @@
 		display: block;
 		width: 100%;
 		text-align: center;
-		background: #e8e8e8;
+		background: var(--content-separator-bg);
 		color: #373c42;
 		font-size: 13px;
 		font-weight: 300;
@@ -663,8 +693,8 @@
 		padding: 0.6rem 0.85rem 0.25rem;
 		/* Reference chat .msg-box: bg --msgs-bg (light, computed) = #fff, flat, with
 		   a top divider --msg-border-color = #d9d9d9. */
-		background: #ffffff;
-		border-top: 1px solid #d9d9d9;
+		background: var(--content-bg);
+		border-top: 1px solid var(--content-border);
 		font-size: var(--msg-font-size);
 	}
 	/* Reference .msg-box-adm: messages from an admin/super-admin (the author's
@@ -729,7 +759,7 @@
 	}
 	.menu-trigger:hover {
 		font-weight: 900;
-		color: #8c8686;
+		color: var(--kebab-color);
 	}
 	.menu {
 		position: absolute;
@@ -741,7 +771,7 @@
 		z-index: 5;
 		min-width: 9rem;
 		margin-top: 0.2rem;
-		background: #ffffff;
+		background: var(--content-bg);
 		border: 1px solid #e3e5ec;
 		border-radius: 8px;
 		box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
@@ -798,13 +828,26 @@
 		font-size: 14px;
 		font-weight: 900;
 		/* Reference chat .username computed colour is --lightTheme-username-color =
-		   #0a6db1 (room link-blue), per the presenter-deep matchedRule — NOT #000.
+		   var(--accent) (room link-blue), per the presenter-deep matchedRule — NOT #000.
 		   A per-user author_color still wins via the inline style; cursor:pointer
 		   matches the reference (the name opens user info). */
 		color: var(--username-color);
 		cursor: pointer;
 		/* Reference .username (mx-1) has 4px horizontal margin. */
 		margin: 0 4px;
+		/* Truncate a long name instead of letting it crowd the right-pinned
+		   timestamp at narrow chat widths (the badge/timestamp collision). The
+		   created-at keeps flex-shrink:0, so the name side yields first. */
+		min-width: 0;
+		flex-shrink: 1;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	/* Badges sit after the username and must not be squeezed — only the name
+	   truncates. (Badges renders an inline cluster as the row's next child.) */
+	.row1 :global(.badges) {
+		flex-shrink: 0;
 	}
 
 	.created-at {
@@ -814,7 +857,7 @@
 		/* Reference chat .created-at: 12px / 600, upright, colour --date-color
 		   (light theme) = #8394a9. */
 		font-style: normal;
-		color: #8394a9;
+		color: var(--content-meta);
 		white-space: nowrap;
 		flex-shrink: 0;
 	}
@@ -828,7 +871,7 @@
 		/* Reference chat body (div.msg-left) computed colour --lightTheme-msg-color =
 		   #676767 (per the presenter-deep computed style) — NOT #1a1a1a; 13px /
 		   line-height 1.5 (19.5px). */
-		color: #676767;
+		color: var(--content-text);
 		line-height: 1.5;
 		word-break: break-word;
 		white-space: pre-wrap;
@@ -843,7 +886,7 @@
 		   the prior `border-top: 1px #e3e5ec` contradicted this comment and the
 		   reference (reference-divergences.md:343-381: white holder, no bar). */
 		padding: 5px;
-		background: #ffffff;
+		background: var(--content-bg);
 		flex-shrink: 0;
 	}
 	.pill {
@@ -854,7 +897,7 @@
 		min-width: 0;
 		/* Reference #textAreaHolder.textSendDiv: white, BORDERLESS, 8px radius
 		   (not a 999px pill with a gray border) — presenter-deep chatHolder. */
-		background: #ffffff;
+		background: var(--content-bg);
 		border: none;
 		border-radius: 8px;
 		padding: 0.15rem 0.5rem;
@@ -876,7 +919,7 @@
 		/* Reference .txt-area.form-control.border-0: --lightTheme-textarea-color
 		   #676767, 14px / weight 400 / line-height 21px, min-height 35, max-height
 		   300, padding 6px 5px (presenter-deep chatTextarea computed). */
-		color: #676767;
+		color: var(--content-text);
 		font-size: 14px;
 		font-weight: 400;
 		padding: 6px 5px;
@@ -905,20 +948,20 @@
 		flex-shrink: 0;
 	}
 	/* Reference span.textAreaBtns: icon-only button, --textarea-holder-btns-color
-	   #676767, hover --textarea-holder-btns-hover-color #0a6db1. */
+	   #676767, hover --textarea-holder-btns-hover-color var(--accent). */
 	.textAreaBtns {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
 		background: transparent;
 		border: none;
-		color: #676767;
+		color: var(--content-text);
 		cursor: pointer;
 		padding: 0.25rem;
 		border-radius: 6px;
 	}
 	.textAreaBtns:hover:not(:disabled) {
-		color: #0a6db1;
+		color: var(--accent);
 	}
 	.textAreaBtns:disabled {
 		opacity: 0.4;
@@ -946,7 +989,7 @@
 		gap: 0.1rem;
 		width: max-content;
 		max-width: 14rem;
-		background: #ffffff;
+		background: var(--content-bg);
 		border: 1px solid #e3e5ec;
 		border-radius: 10px;
 		box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);

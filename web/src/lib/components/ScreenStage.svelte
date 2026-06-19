@@ -174,7 +174,9 @@
 						aria-label="Fullscreen"
 						onclick={toggleFullscreen}
 					>
-						<Icon name="expand" size={14} class="icon" />
+						<!-- Reference fullscreen control uses fa-compress-arrows-alt (the
+						     four-arrows-inward glyph), not fa-expand — matched to the bundle. -->
+						<Icon name="compress-arrows-alt" size={14} class="icon" />
 					</button>
 				</div>
 			</li>
@@ -210,12 +212,7 @@
 						class="video-screen-container"
 						style:transform="translate({panX}px, {panY}px) scale({zoom})"
 					>
-						<video
-							bind:this={videoEl}
-							{@attach track(active.track)}
-							autoplay
-							muted
-							playsinline
+						<video bind:this={videoEl} {@attach track(active.track)} autoplay muted playsinline
 						></video>
 					</div>
 				</div>
@@ -237,7 +234,7 @@
 		height: 100%;
 		min-height: 360px;
 		/* presentation-box bg: var(--presenter-area-bg) #0f2e43 (idle/letterbox base). */
-		background: #0f2e43;
+		background: var(--bg-elev);
 		overflow: hidden;
 	}
 
@@ -251,7 +248,7 @@
 		list-style: none;
 		min-height: 40px;
 		/* var(--notes-tabs-bg) #0c2434; flat (transparent border); above video (z 1). */
-		background-color: #0c2434;
+		background-color: var(--bg);
 		border-color: transparent;
 		position: relative;
 		z-index: 1;
@@ -281,14 +278,15 @@
 			border-color 0.15s ease-in-out;
 	}
 	.nav-link:hover {
-		/* hover (inactive): 1px solid var(--tabs-border-color) #0a6db1; radius 3px. */
-		border-color: #0a6db1;
+		/* hover (inactive): 1px solid var(--tabs-border-color) var(--accent); radius 3px. */
+		border-color: var(--accent);
 	}
 	.nav-link.active {
-		/* active: var(--tab-active-bg) #45a2ff; border transparent; #fff text. */
-		background-color: #45a2ff;
+		/* active screen pill: #222 fill (--tab-active-bg) + teal text
+		   (--note-tabs-color). The old #45a2ff was wrong-room navy. */
+		background-color: var(--bg-elev-2);
 		border-color: transparent;
-		color: #ffffff;
+		color: var(--accent);
 	}
 	.nav-link.active:hover {
 		cursor: default;
@@ -371,7 +369,8 @@
 	}
 	.btn-sm {
 		padding: 0.25rem 0.5rem;
-		font-size: 0.820312rem;
+		/* Bootstrap 5 .btn-sm default (bundle: .btn-sm{font-size:.875rem}). */
+		font-size: 0.875rem;
 		line-height: 1.5;
 		border-radius: 0.2rem;
 	}
@@ -399,7 +398,7 @@
 		   horizontally centered (not vertically centered in the viewport). */
 		place-items: start center;
 		/* presentation-box bg: var(--presenter-area-bg) #0f2e43. */
-		background: #0f2e43;
+		background: var(--bg-elev);
 		color: var(--text-dim);
 		font-size: 1.3rem;
 		font-weight: 400;
@@ -441,7 +440,8 @@
 		position: relative;
 		top: 0;
 		left: 0;
-		z-index: 1999;
+		/* Reference has no high z-index here; as the last positioned child of
+		   .screencast-pan it naturally stacks above the pan/zoom scaffold. */
 		width: inherit;
 		height: inherit;
 		/* Zoom/pan from the centre, applied via inline transform on this box. */

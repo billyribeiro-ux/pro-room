@@ -116,18 +116,30 @@
 
 	async function submit(e: SubmitEvent) {
 		e.preventDefault();
-		if (!symbol.trim()) return;
+		const ticker = symbol.trim();
+		if (!ticker) return;
 		posting = true;
 		// Always scroll our own alert into view when it lands (bypasses the
 		// near-bottom guard), even if we'd scrolled up to read history.
 		stickNext = true;
 		try {
-			await onPost(symbol, side, note);
+			// Post the ticker with a leading "$" (the field strips it for editing and
+			// shows it as a fixed prefix). bodyText de-dupes, so this is safe.
+			await onPost(`$${ticker}`, side, note);
 			symbol = '';
 			note = '';
 		} finally {
 			posting = false;
 		}
+	}
+
+	// Ticker field: force UPPERCASE and strip non-ticker characters (including a
+	// typed "$", which is shown as a fixed prefix instead). Lets a trader type
+	// "aapl" and get "$AAPL" without Caps Lock. Same length on the common path
+	// (letters only), so the caret never jumps.
+	function onSymbolInput(e: Event) {
+		const el = e.currentTarget as HTMLInputElement;
+		symbol = el.value.toUpperCase().replace(/[^A-Z0-9.]/g, '');
 	}
 
 	function initials(name: string | undefined) {
@@ -138,9 +150,12 @@
 		return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 	}
 
-	// Full text body for an alert: "SYMBOL [side] note".
+	// Full text body for an alert: "$SYMBOL [side] note". The symbol is normalized
+	// to an UPPERCASE "$TICKER" (de-dupes any stored "$", so older or modal-posted
+	// alerts render consistently too).
 	function bodyText(a: AlertItem): string {
-		const head = a.side ? `${a.symbol} ${a.side}` : a.symbol;
+		const sym = a.symbol ? `$${a.symbol.replace(/^\$+/, '').toUpperCase()}` : '';
+		const head = a.side ? `${sym} ${a.side}` : sym;
 		return a.note ? `${head} ${a.note}` : head;
 	}
 
@@ -259,105 +274,111 @@
 				</li>
 			{/if}
 			<li class="msg-box">
-				<div class="row1">
-					<div class="msg-menu">
-						<button
-							type="button"
-							class="menu-trigger"
-							aria-label="Message options"
-							aria-haspopup="menu"
-							aria-expanded={openMenuId === a.id}
-							onclick={() => toggleMenu(a.id)}
-						>
-							<!-- Reference kebab is "⠇" (U+2807, the single braille column: 3 dots
-							     filled on the left, 3 empty on the right) — confirmed by the
-							     reference CSS `menuTriger::after { content: "⠇" }`. Alerts keep it
-							     on the LEFT. -->
-							<span class="ellipsis" aria-hidden="true">⠇</span>
-						</button>
-						{#if openMenuId === a.id}
-							<div class="menu row-menu" role="menu">
-								<button type="button" role="menuitem" onclick={() => openUserInfo(a)}>
-									<Icon name="user" size={14} /> User Info
-								</button>
-								<button type="button" role="menuitem" onclick={() => mention(a)}>
-									<Icon name="reply" size={14} /> Mention
-								</button>
-								<button type="button" role="menuitem" onclick={() => copyBody(a)}>
-									<Icon name="copy" size={14} /> Copy
-								</button>
-								{#if canPost}
-									<button
-										type="button"
-										role="menuitem"
-										onclick={() => {
-											reportAlert = a;
-											openMenuId = null;
-										}}
-									>
-										<Icon name="chart-bar" size={14} /> Delivery report
+				<div class="msg-row">
+					<div class="gutter">
+						<div class="msg-menu">
+							<button
+								type="button"
+								class="menu-trigger"
+								aria-label="Message options"
+								aria-haspopup="menu"
+								aria-expanded={openMenuId === a.id}
+								onclick={() => toggleMenu(a.id)}
+							>
+								<!-- Reference kebab is "⠇" (U+2807, the single braille column). Reference
+							     CSS `menuTriger::after { content: "⠇" }`. Alerts keep it on the LEFT,
+							     beside the avatar in the gutter (dropright menu). -->
+								<span class="ellipsis" aria-hidden="true">⠇</span>
+							</button>
+							{#if openMenuId === a.id}
+								<div class="menu row-menu" role="menu">
+									<button type="button" role="menuitem" onclick={() => openUserInfo(a)}>
+										<Icon name="user" size={14} /> User Info
 									</button>
-								{/if}
-								{#if canManage && onDelete}
-									<button
-										type="button"
-										role="menuitem"
-										class="danger"
-										onclick={() => {
-											onDelete?.(a.id);
-											openMenuId = null;
-										}}
-									>
-										<Icon name="trash-alt" size={14} /> Delete
+									<button type="button" role="menuitem" onclick={() => mention(a)}>
+										<Icon name="reply" size={14} /> Mention
 									</button>
-								{/if}
-							</div>
-						{/if}
+									<button type="button" role="menuitem" onclick={() => copyBody(a)}>
+										<Icon name="copy" size={14} /> Copy
+									</button>
+									{#if canPost}
+										<button
+											type="button"
+											role="menuitem"
+											onclick={() => {
+												reportAlert = a;
+												openMenuId = null;
+											}}
+										>
+											<Icon name="chart-bar" size={14} /> Delivery report
+										</button>
+									{/if}
+									{#if canManage && onDelete}
+										<button
+											type="button"
+											role="menuitem"
+											class="danger"
+											onclick={() => {
+												onDelete?.(a.id);
+												openMenuId = null;
+											}}
+										>
+											<Icon name="trash-alt" size={14} /> Delete
+										</button>
+									{/if}
+								</div>
+							{/if}
+						</div>
+						<!-- Avatar is ALWAYS author identity (initials). The alert image_url is the
+						     ATTACHMENT, rendered inline in the body below — never as the avatar. -->
+						<span class="avatar" aria-hidden="true">{initials(a.author_name)}</span>
 					</div>
 
-					{#if a.image_url}
-						<img class="avatar-img" src={a.image_url} alt="" width="32" height="32" />
-					{:else}
-						<span class="avatar" aria-hidden="true">{initials(a.author_name)}</span>
-					{/if}
+					<div class="content">
+						<div class="meta-line">
+							<div class="name-wrap">
+								<span class="username" style:color={a.author_color ?? 'var(--username-color)'}
+									>{a.author_name ?? 'Trader'}</span
+								>
+								<Badges data={a.author_badges} />
+							</div>
+							<div class="meta-right">
+								<!-- Reference .alert-qa: optional (N) count + fa-question-circle (10px) +
+								     trailing ✅ when answered. Pinned right by the meta-line space-between. -->
+								<button
+									type="button"
+									class="alert-qa"
+									onclick={() => openQa(a)}
+									title="Ask a question"
+									aria-label="Ask a question"
+								>
+									{#if (a.question_count ?? 0) > 0}<span class="qa-count">({a.question_count})</span
+										>{/if}<Icon name="question-circle" size={10} />{#if a.answered}<span
+											class="qa-check">✅</span
+										>{/if}
+								</button>
+								<time class="created-at">{formatStamp(a.created_at)}</time>
+							</div>
+						</div>
 
-					<span class="username" style:color={a.author_color ?? 'var(--username-color)'}
-						>{a.author_name ?? 'Trader'}</span
-					>
-					<Badges data={a.author_badges} />
+						<!-- Body in the content column, aligned under the username (reference
+						     .msg-left.text-formated.ml-2); image nested INSIDE, not a sibling. -->
+						<div class="body">
+							<MessageBody text={bodyText(a)} />
+							{#if a.image_url}
+								<img class="alert-img" src={a.image_url} alt="" />
+							{/if}
+						</div>
 
-					<!-- Reference .alert-qa button: shown on EVERY row (the "ask a question"
-					     affordance) — optional (N) count + fa-question-circle (10px) +
-					     trailing ✅ emoji when answered. -->
-					<button
-						type="button"
-						class="alert-qa"
-						onclick={() => openQa(a)}
-						title="Ask a question"
-						aria-label="Ask a question"
-					>
-						{#if (a.question_count ?? 0) > 0}<span class="qa-count">({a.question_count})</span
-							>{/if}<Icon name="question-circle" size={10} />{#if a.answered}<span class="qa-check"
-								>✅</span
-							>{/if}
-					</button>
-
-					<time class="created-at">{formatStamp(a.created_at)}</time>
+						{#if onReact}
+							<ReactionBar
+								reactions={reactions[`alert:${a.id}`] ?? []}
+								{canReact}
+								onToggle={(emoji) => onReact?.('alert', a.id, emoji)}
+							/>
+						{/if}
+					</div>
 				</div>
-
-				<p class="body"><MessageBody text={bodyText(a)} /></p>
-
-				{#if a.image_url}
-					<img class="alert-img" src={a.image_url} alt="" />
-				{/if}
-
-				{#if onReact}
-					<ReactionBar
-						reactions={reactions[`alert:${a.id}`] ?? []}
-						{canReact}
-						onToggle={(emoji) => onReact?.('alert', a.id, emoji)}
-					/>
-				{/if}
 			</li>
 		{:else}
 			<li class="empty">No alerts yet.</li>
@@ -366,14 +387,22 @@
 
 	{#if canPost}
 		<form onsubmit={submit}>
-			<input
-				id="alert-symbol"
-				name="symbol"
-				class="sym"
-				placeholder="Symbol"
-				bind:value={symbol}
-				required
-			/>
+			<div class="sym-wrap">
+				<span class="sym-prefix" aria-hidden="true">$</span>
+				<input
+					id="alert-symbol"
+					name="symbol"
+					class="sym"
+					placeholder="Ticker"
+					value={symbol}
+					oninput={onSymbolInput}
+					autocapitalize="characters"
+					autocomplete="off"
+					autocorrect="off"
+					spellcheck="false"
+					required
+				/>
+			</div>
 			<select id="alert-side" name="side" bind:value={side} aria-label="Side">
 				<option value="buy">Buy</option>
 				<option value="sell">Sell</option>
@@ -423,7 +452,7 @@
 	.panel {
 		display: flex;
 		flex-direction: column;
-		background: #ffffff;
+		background: var(--content-bg);
 		/* Reference room-shell surfaces are flat (border-radius: 0). */
 		border-radius: 0;
 		overflow: hidden;
@@ -439,8 +468,8 @@
 		/* Reference chat-nav header padding is 4px (p-1). */
 		padding: 4px;
 		min-height: 48px;
-		background: #0a6db1;
-		color: #ffffff;
+		background: var(--content-header-bg);
+		color: var(--content-header-color);
 		flex-shrink: 0;
 	}
 	.title {
@@ -486,7 +515,7 @@
 		padding: 0;
 		flex: 1;
 		overflow-y: auto;
-		background: #ffffff;
+		background: var(--content-bg);
 	}
 	.empty {
 		padding: 0.6rem 0.85rem;
@@ -506,7 +535,7 @@
 		display: block;
 		width: 100%;
 		text-align: center;
-		background: #e8e8e8;
+		background: var(--content-separator-bg);
 		/* The date text is the reference's readable light-theme separator color
 		   (#373c42); the #ccc the capture shows is the container default, not the
 		   date link itself. */
@@ -526,15 +555,56 @@
 		   avatar gutter + body 8px margins). */
 		padding: 0.3rem 0.85rem 0.25rem;
 		/* Reference rows are white with a top divider (#e1e1e1) and flat corners. */
-		background: #ffffff;
-		border-top: 1px solid #e1e1e1;
+		background: var(--content-bg);
+		border-top: 1px solid var(--content-border);
 		border-radius: 0;
 		font-size: var(--msg-font-size);
 	}
-	.row1 {
+	/* Reference row: a flex-row of [gutter | content] (.mr-1.d-flex.flex-row). */
+	.msg-row {
+		display: flex;
+		flex-direction: row;
+		/* Reference gutter is align-items:start (.align-items-start) — the kebab +
+		   avatar stay pinned to the TOP so a multi-line body doesn't re-center them. */
+		align-items: flex-start;
+	}
+	/* Left gutter: kebab + avatar side by side, top-aligned, 4px down (.mt-1). */
+	.gutter {
+		display: flex;
+		flex-direction: row;
+		align-items: flex-start;
+		margin-top: 4px;
+		flex-shrink: 0;
+	}
+	/* Content column to the right of the gutter (.w-100): meta line + body stack. */
+	.content {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+	}
+	/* Meta line: username/badges (left) ↔ qa + timestamp (right). */
+	.meta-line {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		width: 100%;
+		gap: 0.5rem;
+	}
+	/* Username + badges; min-width:0 so a long name truncates BEFORE it can crowd
+	   the right-pinned timestamp (the narrow-width badge/timestamp collision). */
+	.name-wrap {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
+		min-width: 0;
+		overflow: hidden;
+	}
+	/* qa + timestamp; never compresses (the name side yields first). */
+	.meta-right {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		flex-shrink: 0;
 	}
 
 	.msg-menu {
@@ -561,7 +631,7 @@
 	}
 	.menu-trigger:hover {
 		font-weight: 900;
-		color: #8c8686;
+		color: var(--kebab-color);
 	}
 	.menu {
 		position: absolute;
@@ -570,7 +640,7 @@
 		z-index: 5;
 		min-width: 9rem;
 		margin-top: 0.2rem;
-		background: #ffffff;
+		background: var(--content-bg);
 		border: 1px solid #e3e5ec;
 		border-radius: 8px;
 		box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
@@ -608,30 +678,22 @@
 		color: var(--negative, #bb352a);
 	}
 
-	.avatar,
-	.avatar-img {
-		/* Reference in-message avatar is 32x32, round. */
-		width: 32px;
-		height: 32px;
-		flex-shrink: 0;
-		/* Square avatars — reference gravatars are square (Bootstrap "Darkly",
-		   --rosterImg-border-radius: 0); object-fit crops the image to the box. */
-		border-radius: 0;
-		object-fit: cover;
-	}
 	.avatar {
+		/* Reference in-message avatar is 32x32; square (Bootstrap "Darkly",
+		   --rosterImg-border-radius: 0). Sits in the gutter 4px right of the kebab
+		   (.avatar.pl-1). Always initials — the alert image is the body attachment. */
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
+		width: 32px;
+		height: 32px;
+		flex-shrink: 0;
+		margin-left: 4px;
 		border-radius: 0;
 		background: #e7e9ef;
 		color: #5a6273;
 		font-size: 0.78rem;
 		font-weight: 700;
-	}
-	.avatar-img {
-		border-radius: 0;
-		object-fit: cover;
 	}
 
 	.username {
@@ -640,21 +702,25 @@
 		color: var(--username-color);
 		/* Reference .username (mx-1) has 4px horizontal margin. */
 		margin: 0 4px;
+		/* Truncate (not wrap) so a long name yields to the right-pinned timestamp. */
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	.alert-qa {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.15rem;
-		/* The Q&A badge sits on the RIGHT, immediately before the date/time —
-		   auto margin pushes the badge + created-at cluster to the right edge. */
-		margin-left: auto;
+		/* Q&A badge sits in .meta-right (the right side of the space-between meta
+		   line), immediately before the timestamp — no auto-margin needed now. */
 		/* Reference button.alert-qa is a Bootstrap btn-sm.btn-secondary: gray bg
 		   rgb(108,117,125) #6c757d, white text, 400 10px/15px, padding 1px 3px,
 		   1px solid #6c757d border (= bg). report.md §06 line 150 (was a custom
 		   light-blue badge — the reference is BS secondary gray). */
-		background: #6c757d;
-		border: 1px solid #6c757d;
+		background: var(--qa-badge-bg);
+		border: 1px solid var(--qa-badge-bg);
 		color: #ffffff;
 		font-size: 10px;
 		font-weight: 400;
@@ -682,8 +748,7 @@
 	}
 
 	.created-at {
-		/* The .alert-qa before it now carries the auto margin (badge + date cluster
-		   right), so created-at just sits after the badge. */
+		/* Sits after the qa badge inside .meta-right. */
 		margin-left: 0;
 		/* Reference .created-at mr-2 = 8px from the right edge. */
 		margin-right: 8px;
@@ -691,18 +756,17 @@
 		font-size: 12px;
 		/* Reference .created-at is upright (font-style: normal), color #a8a8a8. */
 		font-style: normal;
-		color: #a8a8a8;
+		color: var(--content-meta);
 		white-space: nowrap;
 		flex-shrink: 0;
 	}
 
 	.body {
-		/* Reference body (div.text-formated) sits in the content column to the RIGHT
-		   of the avatar gutter, aligned under the username (capture: body x=66 ≈
-		   username x=62, both past the avatar) — NOT flush-left under the avatar.
-		   Left indent ≈ kebab + avatar + row gaps; right margin stays mr-2 (8px). */
-		margin: 0.35rem 8px 0 71px;
-		color: #676767;
+		/* Body lives in the content column (right of the gutter) so it aligns under
+		   the username naturally — no magic left margin. Reference is
+		   .msg-left.text-formated.ml-2.mr-2 → 8px each side, small top gap. */
+		margin: 0.2rem 8px 0 8px;
+		color: var(--content-text);
 		/* Reference .text-formated body is font-weight 100 (Open Sans Thin, now
 		   loaded). Very thin per the capture. */
 		font-weight: 100;
@@ -730,8 +794,8 @@
 		padding-top: 0.15rem;
 		padding-bottom: 0.1rem;
 	}
-	.feed.compact .row1 {
-		gap: 0.35rem;
+	.feed.compact .msg-row {
+		align-items: center;
 	}
 	.feed.compact .body {
 		font-size: 0.82em;
@@ -742,30 +806,50 @@
 		display: flex;
 		gap: 0.4rem;
 		padding: 0.55rem 0.65rem;
-		border-top: 1px solid #e1e1e1;
+		border-top: 1px solid var(--content-border);
 		/* Reference composer surface is white (#fff), not gray. */
-		background: #ffffff;
+		background: var(--content-bg);
 		flex-shrink: 0;
 	}
 	input,
 	select {
-		background: #ffffff;
+		background: var(--content-bg);
 		border: 1px solid #d3d7e0;
 		/* Reference .form-control composer fields are flat (border-radius: 0). */
-		color: #676767;
+		color: var(--content-text);
 		border-radius: 0;
 		padding: 0.4rem 0.5rem;
 		font-size: 0.82rem;
 	}
-	.sym {
+	/* Ticker field with a fixed "$" prefix adornment. */
+	.sym-wrap {
+		position: relative;
 		width: 5rem;
+		flex-shrink: 0;
+	}
+	.sym-prefix {
+		position: absolute;
+		left: 0.5rem;
+		top: 50%;
+		transform: translateY(-50%);
+		color: var(--content-text);
+		font-size: 0.82rem;
+		font-weight: 700;
+		pointer-events: none;
+	}
+	.sym {
+		width: 100%;
+		/* Room for the "$" prefix. */
+		padding-left: 1.05rem;
+		/* Belt-and-suspenders uppercase (onSymbolInput also uppercases the value). */
+		text-transform: uppercase;
 	}
 	.note {
 		flex: 1;
 		min-width: 0;
 	}
 	form button {
-		background: #0a6db1;
+		background: var(--accent);
 		color: #fff;
 		border: none;
 		/* Small button: keep a subtle radius (~4px) per the flat-surface rule. */
