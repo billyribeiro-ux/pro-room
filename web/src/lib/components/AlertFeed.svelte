@@ -429,7 +429,7 @@
 	.panel {
 		display: flex;
 		flex-direction: column;
-		background: #ffffff;
+		background: var(--content-bg);
 		/* Reference room-shell surfaces are flat (border-radius: 0). */
 		border-radius: 0;
 		overflow: hidden;
@@ -446,7 +446,7 @@
 		padding: 4px;
 		min-height: 48px;
 		background: var(--content-header-bg);
-		color: #ffffff;
+		color: var(--content-header-color);
 		flex-shrink: 0;
 	}
 	.title {
@@ -492,7 +492,7 @@
 		padding: 0;
 		flex: 1;
 		overflow-y: auto;
-		background: #ffffff;
+		background: var(--content-bg);
 	}
 	.empty {
 		padding: 0.6rem 0.85rem;
@@ -512,7 +512,7 @@
 		display: block;
 		width: 100%;
 		text-align: center;
-		background: #e8e8e8;
+		background: var(--content-separator-bg);
 		/* The date text is the reference's readable light-theme separator color
 		   (#373c42); the #ccc the capture shows is the container default, not the
 		   date link itself. */
@@ -532,8 +532,8 @@
 		   avatar gutter + body 8px margins). */
 		padding: 0.3rem 0.85rem 0.25rem;
 		/* Reference rows are white with a top divider (#e1e1e1) and flat corners. */
-		background: #ffffff;
-		border-top: 1px solid #e1e1e1;
+		background: var(--content-bg);
+		border-top: 1px solid var(--content-border);
 		border-radius: 0;
 		font-size: var(--msg-font-size);
 	}
@@ -608,7 +608,7 @@
 	}
 	.menu-trigger:hover {
 		font-weight: 900;
-		color: #8c8686;
+		color: var(--kebab-color);
 	}
 	.menu {
 		position: absolute;
@@ -617,7 +617,7 @@
 		z-index: 5;
 		min-width: 9rem;
 		margin-top: 0.2rem;
-		background: #ffffff;
+		background: var(--content-bg);
 		border: 1px solid #e3e5ec;
 		border-radius: 8px;
 		box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
@@ -696,8 +696,8 @@
 		   rgb(108,117,125) #6c757d, white text, 400 10px/15px, padding 1px 3px,
 		   1px solid #6c757d border (= bg). report.md §06 line 150 (was a custom
 		   light-blue badge — the reference is BS secondary gray). */
-		background: #6c757d;
-		border: 1px solid #6c757d;
+		background: var(--qa-badge-bg);
+		border: 1px solid var(--qa-badge-bg);
 		color: #ffffff;
 		font-size: 10px;
 		font-weight: 400;
@@ -733,7 +733,7 @@
 		font-size: 12px;
 		/* Reference .created-at is upright (font-style: normal), color #a8a8a8. */
 		font-style: normal;
-		color: #a8a8a8;
+		color: var(--content-meta);
 		white-space: nowrap;
 		flex-shrink: 0;
 	}
@@ -743,7 +743,7 @@
 		   the username naturally — no magic left margin. Reference is
 		   .msg-left.text-formated.ml-2.mr-2 → 8px each side, small top gap. */
 		margin: 0.2rem 8px 0 8px;
-		color: #676767;
+		color: var(--content-text);
 		/* Reference .text-formated body is font-weight 100 (Open Sans Thin, now
 		   loaded). Very thin per the capture. */
 		font-weight: 100;
@@ -783,17 +783,17 @@
 		display: flex;
 		gap: 0.4rem;
 		padding: 0.55rem 0.65rem;
-		border-top: 1px solid #e1e1e1;
+		border-top: 1px solid var(--content-border);
 		/* Reference composer surface is white (#fff), not gray. */
-		background: #ffffff;
+		background: var(--content-bg);
 		flex-shrink: 0;
 	}
 	input,
 	select {
-		background: #ffffff;
+		background: var(--content-bg);
 		border: 1px solid #d3d7e0;
 		/* Reference .form-control composer fields are flat (border-radius: 0). */
-		color: #676767;
+		color: var(--content-text);
 		border-radius: 0;
 		padding: 0.4rem 0.5rem;
 		font-size: 0.82rem;

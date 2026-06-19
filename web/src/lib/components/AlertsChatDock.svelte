@@ -206,7 +206,7 @@
 		   children stay clipped to the panel box. No box-shadow in the reference. */
 		border-radius: 0;
 		overflow: hidden;
-		background: #ffffff;
+		background: var(--content-bg);
 	}
 	.dock.dragging {
 		user-select: none;
@@ -234,7 +234,7 @@
 		min-width: 0;
 	}
 	.chat-pane.two-col .chat-col + .chat-col {
-		border-left: 1px solid #d9d9d9;
+		border-left: 1px solid var(--content-border);
 	}
 
 	.hsplit {
