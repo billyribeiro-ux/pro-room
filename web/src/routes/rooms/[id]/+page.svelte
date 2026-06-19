@@ -731,14 +731,6 @@
 			<Icon name="music" />
 		</button>
 	{/if}
-	{#if caps?.can_post_alert}
-		<!-- New poll → opens the create-poll modal (PollModal). Gated on can_post_alert
-		     (the same cap that lets admins close polls in PollPanel). Was a dead modal
-		     with no trigger; this wires it. -->
-		<button class="ctrl" onclick={() => (showCreatePoll = true)} title="New poll" aria-label="New poll">
-			<Icon name="poll" />
-		</button>
-	{/if}
 	{#if caps?.can_manage_room}
 		<button class="ctrl" onclick={() => (showRecPreview = true)} title="Record" aria-label="Record">
 			<Icon name="dot-circle" />
@@ -784,7 +776,11 @@
 		canManage={caps?.can_manage_room ?? false}
 		onDeleteAlert={(id) =>
 			deleteAlert(roomId, id).catch((e) =>
-				showToast('Delete failed', e instanceof ApiError ? e.message : 'Could not delete alert', 6000)
+				showToast(
+					'Delete failed',
+					e instanceof ApiError ? e.message : 'Could not delete alert',
+					6000
+				)
 			)}
 		onDeleteMessage={(id) =>
 			deleteMessage(roomId, id).catch((e) =>
@@ -800,6 +796,7 @@
 		onPostMessage={postMessage}
 		onPostOffTopic={(body) => postMessageTo('off_topic', body)}
 		onChannel={selectChannel}
+		onCreatePoll={caps?.can_post_alert ? () => (showCreatePoll = true) : undefined}
 	/>
 {/snippet}
 

@@ -222,10 +222,10 @@ test('react to an alert with an emoji', async ({ page }) => {
 	await shot(page, '12-reaction-added');
 });
 
-// The "New poll" broadcast control (top-nav, can_post_alert) opens PollModal —
-// previously a dead modal with no trigger; now wired in +page stageActions.
+// "Create Poll" lives in the ALERTS header next to Post Alert (matches the
+// reference, where doPollUI sits beside doPostAlertUI — not the main navbar).
 test('create, vote on, and close a poll', async ({ page }) => {
-	await clickAction(page, 'New poll');
+	await page.getByRole('button', { name: 'Create a poll' }).click();
 	// PollModal is a draggable floating "Polls" panel (not a role=dialog).
 	const panel = page.locator("section[aria-label='Polls']");
 	await expect(panel).toBeVisible();
