@@ -49,6 +49,19 @@ pub async fn revoke(state: &AppState, jar: &CookieJar) -> Result<Cookie<'static>
     Ok(clear_cookie(&state.config))
 }
 
+/// Revoke EVERY session for a user across BOTH stores (Postgres rows + the Redis
+/// session cache), e.g. after a password change. Evicting the cache is essential:
+/// [`resolve`] checks the cache before Postgres, so a cached entry would keep
+/// authenticating after the row is revoked.
+pub async fn revoke_all_for_user(state: &AppState, user_id: UserId) -> Result<(), AppError> {
+    let hashes = db::sessions::active_token_hashes(&state.db, user_id).await?;
+    db::sessions::revoke_all_for_user(&state.db, user_id).await?;
+    for hash in &hashes {
+        let _ = state.cache.drop_session(hash).await;
+    }
+    Ok(())
+}
+
 /// Resolve a session token to its user, consulting the cache before Postgres and
 /// populating the cache on a miss.
 pub async fn resolve(state: &AppState, secret: &str) -> Result<Option<SessionUser>, AppError> {

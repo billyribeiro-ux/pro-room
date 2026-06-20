@@ -267,6 +267,19 @@ pub async fn count(pool: &PgPool) -> anyhow::Result<i64> {
     Ok(row.count)
 }
 
+/// Count ACTIVE super-admins — used to refuse demoting/suspending the last one
+/// (which would lock everyone out of user management). Runtime query.
+pub async fn count_active_super_admins(pool: &PgPool) -> anyhow::Result<i64> {
+    let n: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM users \
+         WHERE global_role::text = 'super_admin' AND status::text = 'active'",
+    )
+    .fetch_one(pool)
+    .await
+    .context("count active super admins")?;
+    Ok(n)
+}
+
 /// Hard-delete a user (for removing test accounts). The final `DELETE FROM users`
 /// CASCADEs sessions, identities, room memberships, chat messages, reactions,
 /// private messages and badge assignments; SET-NULL columns (notes/files/branding

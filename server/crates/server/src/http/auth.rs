@@ -93,10 +93,7 @@ async fn register(
 ) -> AppResult<(CookieJar, Json<MeResponse>)> {
     let email = normalize_email(&body.email)?;
     validate_password(&body.password)?;
-    let display_name = body.display_name.trim();
-    if display_name.is_empty() {
-        return Err(AppError::BadRequest("display name is required".into()));
-    }
+    let display_name = validate_display_name(&body.display_name)?;
 
     if db::users::find_by_email(&state.db, &email).await?.is_some() {
         return Err(AppError::Conflict("email already registered".into()));
@@ -109,7 +106,16 @@ async fn register(
     let hash = tokio::task::spawn_blocking(move || crypto::hash_password(&password))
         .await
         .map_err(|e| AppError::Internal(anyhow::Error::new(e)))??;
-    let user = db::users::create(&state.db, &email, display_name, Some(&hash), role).await?;
+    let user = match db::users::create(&state.db, &email, &display_name, Some(&hash), role).await {
+        Ok(u) => u,
+        // A racing duplicate (unique-violation) resolves to 409, not a generic 500.
+        Err(e) => {
+            if db::users::find_by_email(&state.db, &email).await?.is_some() {
+                return Err(AppError::Conflict("email already registered".into()));
+            }
+            return Err(e.into());
+        }
+    };
     db::identities::link(&state.db, user.id, "password", &email).await?;
 
     let session_user = session_user(user);
@@ -143,18 +149,27 @@ async fn login(
         return Err(AppError::Unauthorized);
     }
 
-    let record = db::users::find_by_email(&state.db, &email)
-        .await?
-        .ok_or(AppError::Unauthorized)?;
-    let hash = record.password_hash.clone().ok_or(AppError::Unauthorized)?;
-    // Verify off the async worker — Argon2 verification is CPU-bound (~10-40ms).
+    let record = db::users::find_by_email(&state.db, &email).await?;
+    let stored_hash = record.as_ref().and_then(|r| r.password_hash.clone());
+    // Always pay the Argon2 cost (CPU-bound, ~10-40ms): verify the real hash, or
+    // hash a throwaway when the email is unknown / has no password. This keeps login
+    // TIMING from revealing whether an account exists (a user-enumeration oracle);
+    // the error response is already uniform (Unauthorized either way).
     let password = body.password.clone();
-    let ok = tokio::task::spawn_blocking(move || crypto::verify_password(&password, &hash))
-        .await
-        .map_err(|e| AppError::Internal(anyhow::Error::new(e)))??;
-    if !ok {
+    let ok = tokio::task::spawn_blocking(move || {
+        if let Some(h) = stored_hash {
+            crypto::verify_password(&password, &h)
+        } else {
+            // Pay the same Argon2 cost for an unknown / passwordless account, then fail.
+            let _ = crypto::hash_password(&password);
+            Ok(false)
+        }
+    })
+    .await
+    .map_err(|e| AppError::Internal(anyhow::Error::new(e)))??;
+    let Some(record) = record.filter(|_| ok) else {
         return Err(AppError::Unauthorized);
-    }
+    };
 
     let session_user = session_user(record.user);
     let ip = util::client_ip(&headers, Some(peer));
@@ -189,11 +204,15 @@ async fn update_me(
     Json(body): Json<UpdateMeBody>,
 ) -> AppResult<Json<MeResponse>> {
     let name = body.display_name.trim();
-    // Validate server-side (never trust the client): alphanumeric, >= 3 chars
-    // (reference "Username can only contain letters and numbers").
-    if name.len() < 3 || !name.chars().all(|c| c.is_ascii_alphanumeric()) {
+    // Validate server-side (never trust the client): alphanumeric, 3..=40 chars
+    // (reference "Username can only contain letters and numbers" + a max length so
+    // it can't grow unbounded — matches the bound in validate_display_name).
+    if name.chars().count() < 3
+        || name.chars().count() > 40
+        || !name.chars().all(|c| c.is_ascii_alphanumeric())
+    {
         return Err(AppError::BadRequest(
-            "Display name must be at least 3 letters or numbers (no spaces).".into(),
+            "Display name must be 3-40 letters or numbers (no spaces).".into(),
         ));
     }
     db::users::set_display_name(&state.db, user.user_id, name).await?;
@@ -213,8 +232,11 @@ struct ChangePasswordBody {
 async fn change_password(
     State(state): State<AppState>,
     CurrentUser(user): CurrentUser,
+    jar: CookieJar,
+    headers: HeaderMap,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
     Json(body): Json<ChangePasswordBody>,
-) -> AppResult<Json<serde_json::Value>> {
+) -> AppResult<(CookieJar, Json<serde_json::Value>)> {
     // Throttle: re-verifying the current password is a brute-force surface even
     // for an authenticated caller.
     if !state
@@ -244,7 +266,13 @@ async fn change_password(
         .await
         .map_err(|e| AppError::Internal(anyhow::Error::new(e)))??;
     db::users::set_password_hash(&state.db, user.user_id, &new_hash).await?;
-    Ok(Json(serde_json::json!({ "ok": true })))
+    // Revoke EVERY session for this account across Postgres AND the Redis cache
+    // (any other logged-in device stops authenticating after a password change),
+    // then issue a fresh session so the caller stays signed in.
+    session::revoke_all_for_user(&state, user.user_id).await?;
+    let ip = util::client_ip(&headers, Some(peer));
+    let cookie = session::issue(&state, user.user_id, user_agent(&headers), ip.as_deref()).await?;
+    Ok((jar.add(cookie), Json(serde_json::json!({ "ok": true }))))
 }
 
 #[derive(Deserialize)]
@@ -366,6 +394,28 @@ pub(crate) fn validate_password(pw: &str) -> AppResult<()> {
         ));
     }
     Ok(())
+}
+
+/// Validate + normalize a display name: trimmed, 1..=40 chars, no control
+/// characters. Shared by register and the admin user-create so the rules can't
+/// drift between them (the self-service `update_me` keeps the reference's stricter
+/// alphanumeric rule on top of this length bound).
+pub(crate) fn validate_display_name(raw: &str) -> AppResult<String> {
+    let name = raw.trim();
+    if name.is_empty() {
+        return Err(AppError::BadRequest("display name is required".into()));
+    }
+    if name.chars().count() > 40 {
+        return Err(AppError::BadRequest(
+            "display name is too long (max 40 characters)".into(),
+        ));
+    }
+    if name.chars().any(char::is_control) {
+        return Err(AppError::BadRequest(
+            "display name has invalid characters".into(),
+        ));
+    }
+    Ok(name.to_owned())
 }
 
 fn user_agent(headers: &HeaderMap) -> Option<&str> {

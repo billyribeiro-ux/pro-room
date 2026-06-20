@@ -53,10 +53,7 @@ async fn create(
 
     let email = super::auth::normalize_email(&body.email)?;
     super::auth::validate_password(&body.password)?;
-    let display_name = body.display_name.trim();
-    if display_name.is_empty() {
-        return Err(AppError::BadRequest("display name is required".into()));
-    }
+    let display_name = super::auth::validate_display_name(&body.display_name)?;
     if db::users::find_by_email(&state.db, &email).await?.is_some() {
         return Err(AppError::Conflict("email already registered".into()));
     }
@@ -65,8 +62,18 @@ async fn create(
     let hash = tokio::task::spawn_blocking(move || crypto::hash_password(&password))
         .await
         .map_err(|e| AppError::Internal(anyhow::Error::new(e)))??;
-    let new_user =
-        db::users::create(&state.db, &email, display_name, Some(&hash), body.role).await?;
+    let new_user = match db::users::create(&state.db, &email, &display_name, Some(&hash), body.role)
+        .await
+    {
+        Ok(u) => u,
+        // A racing duplicate (unique-violation) resolves to 409, not a generic 500.
+        Err(e) => {
+            if db::users::find_by_email(&state.db, &email).await?.is_some() {
+                return Err(AppError::Conflict("email already registered".into()));
+            }
+            return Err(e.into());
+        }
+    };
     db::identities::link(&state.db, new_user.id, "password", &email).await?;
     audit_user(
         &state,
@@ -132,6 +139,16 @@ async fn set_role(
     Json(body): Json<SetRoleBody>,
 ) -> AppResult<Json<serde_json::Value>> {
     ensure_system_action(&state, &user, Action::ManageUsers).await?;
+    // Don't demote the LAST active super-admin (would lock everyone out of user
+    // management). Check-then-act is fine here — only super-admins reach this.
+    if body.role != Role::SuperAdmin
+        && matches!(db::users::find_by_id(&state.db, id).await?, Some(u) if u.global_role == Role::SuperAdmin)
+        && db::users::count_active_super_admins(&state.db).await? <= 1
+    {
+        return Err(AppError::BadRequest(
+            "can't change the role of the last super admin".into(),
+        ));
+    }
     db::users::set_role(&state.db, id, body.role).await?;
     audit_user(
         &state,
@@ -156,6 +173,15 @@ async fn set_status(
     Json(body): Json<SetStatusBody>,
 ) -> AppResult<Json<serde_json::Value>> {
     ensure_system_action(&state, &user, Action::ManageUsers).await?;
+    // Don't suspend the LAST active super-admin (would lock everyone out).
+    if body.status != UserStatus::Active
+        && matches!(db::users::find_by_id(&state.db, id).await?, Some(u) if u.global_role == Role::SuperAdmin)
+        && db::users::count_active_super_admins(&state.db).await? <= 1
+    {
+        return Err(AppError::BadRequest(
+            "can't suspend the last super admin".into(),
+        ));
+    }
     db::users::set_status(&state.db, id, body.status).await?;
     audit_user(
         &state,
