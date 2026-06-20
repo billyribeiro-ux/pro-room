@@ -265,11 +265,11 @@
 						{#if canManageUsers}
 							<button
 								class="sub-item"
-								aria-label="Add User"
-								title="Add a user + set their role"
+								aria-label="Users"
+								title="Manage users (add / delete)"
 								onclick={() => (addUserOpen = true)}
 							>
-								<Icon name="user-plus" size={14} /><span class="label">Add User</span>
+								<Icon name="users" size={14} /><span class="label">Users</span>
 							</button>
 						{/if}
 					</div>

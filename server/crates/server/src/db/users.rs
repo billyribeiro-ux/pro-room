@@ -266,3 +266,37 @@ pub async fn count(pool: &PgPool) -> anyhow::Result<i64> {
         .context("count users")?;
     Ok(row.count)
 }
+
+/// Hard-delete a user (for removing test accounts). The final `DELETE FROM users`
+/// CASCADEs sessions, identities, room memberships, chat messages, reactions,
+/// private messages and badge assignments; SET-NULL columns (notes/files/branding
+/// authorship) are nulled. This transaction first clears the user's authored
+/// content that is RESTRICT-constrained (alerts, polls + their votes, Q&A
+/// questions) so the final delete can succeed. A user who OWNS a room is NOT
+/// deletable here (`rooms.owner_id` is RESTRICT) — the final delete errors and the
+/// whole tx rolls back. Returns false when no such user existed. Runtime queries
+/// (no .sqlx cache needed for the bare statements).
+pub async fn delete(pool: &PgPool, id: UserId) -> anyhow::Result<bool> {
+    let uid = id.as_uuid();
+    let mut tx = pool.begin().await.context("begin user-delete tx")?;
+    for stmt in [
+        "DELETE FROM poll_votes WHERE user_id = $1",
+        "DELETE FROM polls WHERE author_id = $1",
+        "DELETE FROM questions WHERE author_id = $1",
+        "DELETE FROM alerts WHERE author_id = $1",
+    ] {
+        sqlx::query(stmt)
+            .bind(uid)
+            .execute(&mut *tx)
+            .await
+            .with_context(|| format!("user-delete cascade: {stmt}"))?;
+    }
+    let affected = sqlx::query("DELETE FROM users WHERE id = $1")
+        .bind(uid)
+        .execute(&mut *tx)
+        .await
+        .context("delete user")?
+        .rows_affected();
+    tx.commit().await.context("commit user-delete")?;
+    Ok(affected == 1)
+}

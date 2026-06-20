@@ -10,7 +10,7 @@ use crate::state::AppState;
 use axum::Json;
 use axum::Router;
 use axum::extract::{Path, State};
-use axum::routing::{get, patch};
+use axum::routing::{delete, get, patch};
 use domain::entities::{User, UserStatus};
 use domain::{Action, Role, UserId};
 use serde::Deserialize;
@@ -18,6 +18,7 @@ use serde::Deserialize;
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/api/users", get(list).post(create))
+        .route("/api/users/{id}", delete(delete_user))
         .route("/api/users/{id}/role", patch(set_role))
         .route("/api/users/{id}/status", patch(set_status))
 }
@@ -95,6 +96,28 @@ async fn audit_user(state: &AppState, actor: UserId, target: UserId, action: &st
     if let Err(e) = db::audit::record(&state.db, entry).await {
         tracing::warn!(error = ?e, action, "failed to write user-action audit");
     }
+}
+
+/// Hard-delete a user (remove a test account). Gated on `ManageUsers`
+/// (`super_admin` only). Cascades the user's authored content (see
+/// `db::users::delete`). Guards against deleting your OWN account (instant
+/// self-lockout). 404 when no such user.
+async fn delete_user(
+    State(state): State<AppState>,
+    CurrentUser(user): CurrentUser,
+    Path(id): Path<UserId>,
+) -> AppResult<Json<serde_json::Value>> {
+    ensure_system_action(&state, &user, Action::ManageUsers).await?;
+    if id == user.user_id {
+        return Err(AppError::BadRequest(
+            "you can't delete your own account".into(),
+        ));
+    }
+    if !db::users::delete(&state.db, id).await? {
+        return Err(AppError::NotFound);
+    }
+    audit_user(&state, user.user_id, id, "user.delete", "").await;
+    Ok(Json(serde_json::json!({ "ok": true })))
 }
 
 #[derive(Deserialize)]
