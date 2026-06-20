@@ -77,3 +77,35 @@ pub async fn revoke(pool: &sqlx::PgPool, token_hash: &str) -> anyhow::Result<()>
     .context("revoke session")?;
     Ok(())
 }
+
+/// Revoke ALL of a user's active sessions (e.g. after a password change) so any
+/// other logged-in session for that account stops authenticating. Runtime query
+/// (no .sqlx cache needed for the bare UPDATE). NOTE: callers must also drop the
+/// Redis session cache for the affected token hashes (see
+/// [`crate::auth::session::revoke_all_for_user`]) — a cached session keeps
+/// resolving even after this row is revoked.
+pub async fn revoke_all_for_user(pool: &sqlx::PgPool, user_id: UserId) -> anyhow::Result<()> {
+    sqlx::query("UPDATE sessions SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL")
+        .bind(user_id.as_uuid())
+        .execute(pool)
+        .await
+        .context("revoke all sessions for user")?;
+    Ok(())
+}
+
+/// Token hashes of a user's currently-valid sessions — used to evict their cached
+/// entries when revoking all of them.
+pub async fn active_token_hashes(
+    pool: &sqlx::PgPool,
+    user_id: UserId,
+) -> anyhow::Result<Vec<String>> {
+    let rows: Vec<String> = sqlx::query_scalar(
+        "SELECT token_hash FROM sessions \
+         WHERE user_id = $1 AND revoked_at IS NULL AND expires_at > now()",
+    )
+    .bind(user_id.as_uuid())
+    .fetch_all(pool)
+    .await
+    .context("list active session hashes")?;
+    Ok(rows)
+}

@@ -152,13 +152,30 @@ pub async fn set_role(pool: &PgPool, id: UserId, role: Role) -> anyhow::Result<(
 /// Update a user's display name. Mirrors `set_role`; uses a runtime-checked query
 /// (no sqlx macro cache needed for the bare UPDATE).
 pub async fn set_display_name(pool: &PgPool, id: UserId, name: &str) -> anyhow::Result<()> {
-    let affected = sqlx::query("UPDATE users SET display_name = $1, updated_at = now() WHERE id = $2")
-        .bind(name)
-        .bind(id.as_uuid())
-        .execute(pool)
-        .await
-        .context("set display name")?
-        .rows_affected();
+    let affected =
+        sqlx::query("UPDATE users SET display_name = $1, updated_at = now() WHERE id = $2")
+            .bind(name)
+            .bind(id.as_uuid())
+            .execute(pool)
+            .await
+            .context("set display name")?
+            .rows_affected();
+    anyhow::ensure!(affected == 1, "user not found");
+    Ok(())
+}
+
+/// Replace a user's argon2 password hash (self-service change-password). Runtime
+/// query (no sqlx macro cache needed for the bare UPDATE). The caller hashes off
+/// the async worker.
+pub async fn set_password_hash(pool: &PgPool, id: UserId, hash: &str) -> anyhow::Result<()> {
+    let affected =
+        sqlx::query("UPDATE users SET password_hash = $1, updated_at = now() WHERE id = $2")
+            .bind(hash)
+            .bind(id.as_uuid())
+            .execute(pool)
+            .await
+            .context("set password hash")?
+            .rows_affected();
     anyhow::ensure!(affected == 1, "user not found");
     Ok(())
 }
@@ -248,4 +265,51 @@ pub async fn count(pool: &PgPool) -> anyhow::Result<i64> {
         .await
         .context("count users")?;
     Ok(row.count)
+}
+
+/// Count ACTIVE super-admins — used to refuse demoting/suspending the last one
+/// (which would lock everyone out of user management). Runtime query.
+pub async fn count_active_super_admins(pool: &PgPool) -> anyhow::Result<i64> {
+    let n: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM users \
+         WHERE global_role::text = 'super_admin' AND status::text = 'active'",
+    )
+    .fetch_one(pool)
+    .await
+    .context("count active super admins")?;
+    Ok(n)
+}
+
+/// Hard-delete a user (for removing test accounts). The final `DELETE FROM users`
+/// CASCADEs sessions, identities, room memberships, chat messages, reactions,
+/// private messages and badge assignments; SET-NULL columns (notes/files/branding
+/// authorship) are nulled. This transaction first clears the user's authored
+/// content that is RESTRICT-constrained (alerts, polls + their votes, Q&A
+/// questions) so the final delete can succeed. A user who OWNS a room is NOT
+/// deletable here (`rooms.owner_id` is RESTRICT) — the final delete errors and the
+/// whole tx rolls back. Returns false when no such user existed. Runtime queries
+/// (no .sqlx cache needed for the bare statements).
+pub async fn delete(pool: &PgPool, id: UserId) -> anyhow::Result<bool> {
+    let uid = id.as_uuid();
+    let mut tx = pool.begin().await.context("begin user-delete tx")?;
+    for stmt in [
+        "DELETE FROM poll_votes WHERE user_id = $1",
+        "DELETE FROM polls WHERE author_id = $1",
+        "DELETE FROM questions WHERE author_id = $1",
+        "DELETE FROM alerts WHERE author_id = $1",
+    ] {
+        sqlx::query(stmt)
+            .bind(uid)
+            .execute(&mut *tx)
+            .await
+            .with_context(|| format!("user-delete cascade: {stmt}"))?;
+    }
+    let affected = sqlx::query("DELETE FROM users WHERE id = $1")
+        .bind(uid)
+        .execute(&mut *tx)
+        .await
+        .context("delete user")?
+        .rows_affected();
+    tx.commit().await.context("commit user-delete")?;
+    Ok(affected == 1)
 }

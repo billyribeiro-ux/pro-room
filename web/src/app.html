@@ -4,6 +4,23 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="text-scale" content="scale" />
+		<script>
+			// This app ships NO service worker. Proactively unregister any stale SW
+			// left by an older build (it would intercept navigations — causing 404s
+			// on /rooms/:id — and serve cached old code, e.g. a broken screen-share
+			// stage). Also drop its caches. Safe no-op once none remain.
+			if ('serviceWorker' in navigator) {
+				navigator.serviceWorker
+					.getRegistrations()
+					.then((regs) => regs.forEach((r) => r.unregister()))
+					.catch(() => {});
+				if (window.caches)
+					caches
+						.keys()
+						.then((keys) => keys.forEach((k) => caches.delete(k)))
+						.catch(() => {});
+			}
+		</script>
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 		<link

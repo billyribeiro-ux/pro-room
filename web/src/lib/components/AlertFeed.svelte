@@ -42,6 +42,10 @@
 		/** Admin: delete any alert (shown in the row menu). */
 		canManage?: boolean;
 		onDelete?: (id: string) => void;
+		/** Open the create-poll modal. Shown in the alerts header next to Post Alert
+		    (the reference puts poll creation in the alerts toolbar, not the navbar).
+		    Inert/hidden when omitted. */
+		onCreatePoll?: () => void;
 	}
 	let {
 		alerts,
@@ -53,7 +57,8 @@
 		canReact = false,
 		onReact,
 		canManage = false,
-		onDelete
+		onDelete,
+		onCreatePoll
 	}: Props = $props();
 
 	let symbol = $state('');
@@ -123,9 +128,9 @@
 		// near-bottom guard), even if we'd scrolled up to read history.
 		stickNext = true;
 		try {
-			// Post the ticker with a leading "$" (the field strips it for editing and
-			// shows it as a fixed prefix). bodyText de-dupes, so this is safe.
-			await onPost(`$${ticker}`, side, note);
+			// Post the plain (uppercase) ticker. The "$" is ONLY a visual prefix in
+			// the composer field — it is NOT part of the stored/displayed alert body.
+			await onPost(ticker, side, note);
 			symbol = '';
 			note = '';
 		} finally {
@@ -150,12 +155,11 @@
 		return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 	}
 
-	// Full text body for an alert: "$SYMBOL [side] note". The symbol is normalized
-	// to an UPPERCASE "$TICKER" (de-dupes any stored "$", so older or modal-posted
-	// alerts render consistently too).
+	// Full text body for an alert: "SYMBOL [side] note". NO "$" is added here — the
+	// "$" is only a visual prefix in the composer's ticker field, never the posted
+	// body (so a non-ticker alert like the modal's "ALERT" default isn't "$ALERT").
 	function bodyText(a: AlertItem): string {
-		const sym = a.symbol ? `$${a.symbol.replace(/^\$+/, '').toUpperCase()}` : '';
-		const head = a.side ? `${sym} ${a.side}` : sym;
+		const head = a.side ? `${a.symbol} ${a.side}` : a.symbol;
 		return a.note ? `${head} ${a.note}` : head;
 	}
 
@@ -215,6 +219,16 @@
 					aria-label="Post an alert"
 					title="Post Alert"
 					onclick={() => (postAlertOpen = true)}><Icon name="plus-circle" size={18} /></button
+				>
+			{/if}
+			{#if canPost && onCreatePoll}
+				<!-- Create poll lives in the alerts toolbar next to Post Alert (reference
+				     doPollUI sits beside doPostAlertUI), NOT the main navbar. -->
+				<button
+					type="button"
+					aria-label="Create a poll"
+					title="Create Poll"
+					onclick={() => onCreatePoll?.()}><Icon name="poll" size={18} /></button
 				>
 			{/if}
 			<button type="button" aria-label="Search alerts" onclick={() => (searchOpen = true)}

@@ -31,6 +31,8 @@
 		/** Post into the off-topic channel (used by the extra column). */
 		onPostOffTopic?: (body: string) => Promise<void>;
 		onChannel: (channel: ChatChannel) => void;
+		/** Open the create-poll modal (rendered in the alerts header). */
+		onCreatePoll?: () => void;
 	}
 	let {
 		roomId,
@@ -51,7 +53,8 @@
 		onPostAlert,
 		onPostMessage,
 		onPostOffTopic,
-		onChannel
+		onChannel,
+		onCreatePoll
 	}: Props = $props();
 
 	// The column's WIDTH is now owned by the outer <Split> gutter in the room
@@ -126,6 +129,7 @@
 			onDelete={onDeleteAlert}
 			canPost={canPostAlert}
 			onPost={onPostAlert}
+			{onCreatePoll}
 		/>
 	</div>
 
