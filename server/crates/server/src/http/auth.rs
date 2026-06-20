@@ -92,11 +92,7 @@ async fn register(
     Json(body): Json<RegisterBody>,
 ) -> AppResult<(CookieJar, Json<MeResponse>)> {
     let email = normalize_email(&body.email)?;
-    if body.password.len() < 8 {
-        return Err(AppError::BadRequest(
-            "password must be at least 8 characters".into(),
-        ));
-    }
+    validate_password(&body.password)?;
     let display_name = body.display_name.trim();
     if display_name.is_empty() {
         return Err(AppError::BadRequest("display name is required".into()));
@@ -138,6 +134,13 @@ async fn login(
         .await?
     {
         return Err(AppError::RateLimited);
+    }
+
+    // Cap input length before the argon2 verify (stored hashes are bounded to 1024
+    // chars on every set path, so a longer password can never match anyway). Keeps
+    // a giant-password login from turning verify into a CPU-DoS.
+    if body.password.len() > 1024 {
+        return Err(AppError::Unauthorized);
     }
 
     let record = db::users::find_by_email(&state.db, &email)
@@ -221,11 +224,7 @@ async fn change_password(
     {
         return Err(AppError::RateLimited);
     }
-    if body.new_password.len() < 8 {
-        return Err(AppError::BadRequest(
-            "password must be at least 8 characters".into(),
-        ));
-    }
+    validate_password(&body.new_password)?;
     let record = db::users::find_by_email(&state.db, &user.email)
         .await?
         .ok_or(AppError::Unauthorized)?;
@@ -350,6 +349,23 @@ pub(crate) fn normalize_email(raw: &str) -> AppResult<String> {
         return Err(AppError::BadRequest("invalid email".into()));
     }
     Ok(email)
+}
+
+/// Bound a password on every SET path: >= 8 (usable) and <= 1024. The upper bound
+/// is a hardening guard — argon2 cost scales with input length, so an unbounded
+/// password lets a caller turn each hash into a CPU-DoS on the blocking pool.
+pub(crate) fn validate_password(pw: &str) -> AppResult<()> {
+    if pw.len() < 8 {
+        return Err(AppError::BadRequest(
+            "password must be at least 8 characters".into(),
+        ));
+    }
+    if pw.len() > 1024 {
+        return Err(AppError::BadRequest(
+            "password is too long (max 1024 characters)".into(),
+        ));
+    }
+    Ok(())
 }
 
 fn user_agent(headers: &HeaderMap) -> Option<&str> {

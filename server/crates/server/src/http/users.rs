@@ -51,11 +51,7 @@ async fn create(
     ensure_system_action(&state, &user, Action::ManageUsers).await?;
 
     let email = super::auth::normalize_email(&body.email)?;
-    if body.password.len() < 8 {
-        return Err(AppError::BadRequest(
-            "password must be at least 8 characters".into(),
-        ));
-    }
+    super::auth::validate_password(&body.password)?;
     let display_name = body.display_name.trim();
     if display_name.is_empty() {
         return Err(AppError::BadRequest("display name is required".into()));
@@ -71,7 +67,34 @@ async fn create(
     let new_user =
         db::users::create(&state.db, &email, display_name, Some(&hash), body.role).await?;
     db::identities::link(&state.db, new_user.id, "password", &email).await?;
+    audit_user(
+        &state,
+        user.user_id,
+        new_user.id,
+        "user.create",
+        &format!("role={}", body.role.as_str()),
+    )
+    .await;
     Ok(Json(new_user))
+}
+
+/// Append a per-action audit row identifying the TARGET user + the change.
+/// `ensure_system_action` already audits the authorization DECISION against the
+/// generic "system" resource; this records WHO was created/promoted/suspended —
+/// the whole point of the log for privileged user management. Best-effort: a
+/// failed audit write is logged, not fatal (the mutation already committed).
+async fn audit_user(state: &AppState, actor: UserId, target: UserId, action: &str, detail: &str) {
+    let resource = format!("user:{}", target.as_uuid());
+    let entry = db::audit::AuditEntry {
+        actor_id: Some(actor),
+        action,
+        resource: &resource,
+        decision: "allow",
+        reason: Some(detail),
+    };
+    if let Err(e) = db::audit::record(&state.db, entry).await {
+        tracing::warn!(error = ?e, action, "failed to write user-action audit");
+    }
 }
 
 #[derive(Deserialize)]
@@ -87,6 +110,14 @@ async fn set_role(
 ) -> AppResult<Json<serde_json::Value>> {
     ensure_system_action(&state, &user, Action::ManageUsers).await?;
     db::users::set_role(&state.db, id, body.role).await?;
+    audit_user(
+        &state,
+        user.user_id,
+        id,
+        "user.set_role",
+        &format!("role={}", body.role.as_str()),
+    )
+    .await;
     Ok(Json(serde_json::json!({ "ok": true })))
 }
 
@@ -103,5 +134,13 @@ async fn set_status(
 ) -> AppResult<Json<serde_json::Value>> {
     ensure_system_action(&state, &user, Action::ManageUsers).await?;
     db::users::set_status(&state.db, id, body.status).await?;
+    audit_user(
+        &state,
+        user.user_id,
+        id,
+        "user.set_status",
+        &format!("status={}", body.status.as_str()),
+    )
+    .await;
     Ok(Json(serde_json::json!({ "ok": true })))
 }
