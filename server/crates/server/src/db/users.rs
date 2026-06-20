@@ -152,13 +152,30 @@ pub async fn set_role(pool: &PgPool, id: UserId, role: Role) -> anyhow::Result<(
 /// Update a user's display name. Mirrors `set_role`; uses a runtime-checked query
 /// (no sqlx macro cache needed for the bare UPDATE).
 pub async fn set_display_name(pool: &PgPool, id: UserId, name: &str) -> anyhow::Result<()> {
-    let affected = sqlx::query("UPDATE users SET display_name = $1, updated_at = now() WHERE id = $2")
-        .bind(name)
-        .bind(id.as_uuid())
-        .execute(pool)
-        .await
-        .context("set display name")?
-        .rows_affected();
+    let affected =
+        sqlx::query("UPDATE users SET display_name = $1, updated_at = now() WHERE id = $2")
+            .bind(name)
+            .bind(id.as_uuid())
+            .execute(pool)
+            .await
+            .context("set display name")?
+            .rows_affected();
+    anyhow::ensure!(affected == 1, "user not found");
+    Ok(())
+}
+
+/// Replace a user's argon2 password hash (self-service change-password). Runtime
+/// query (no sqlx macro cache needed for the bare UPDATE). The caller hashes off
+/// the async worker.
+pub async fn set_password_hash(pool: &PgPool, id: UserId, hash: &str) -> anyhow::Result<()> {
+    let affected =
+        sqlx::query("UPDATE users SET password_hash = $1, updated_at = now() WHERE id = $2")
+            .bind(hash)
+            .bind(id.as_uuid())
+            .execute(pool)
+            .await
+            .context("set password hash")?
+            .rows_affected();
     anyhow::ensure!(affected == 1, "user not found");
     Ok(())
 }

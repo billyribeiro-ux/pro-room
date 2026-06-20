@@ -15,6 +15,13 @@
 	let saving = $state(false);
 	let error = $state<string | null>(null);
 
+	// Change-password (self-service) — e.g. an admin-created user changing their
+	// temporary password. Verifies the current password server-side.
+	let currentPw = $state('');
+	let newPw = $state('');
+	let pwSaving = $state(false);
+	let pwError = $state<string | null>(null);
+
 	const email = $derived(auth.user?.email ?? '');
 
 	// Reference rule: "Username can only contain letters and numbers", min 3.
@@ -30,6 +37,9 @@
 		if (open) {
 			name = auth.user?.display_name ?? '';
 			error = null;
+			currentPw = '';
+			newPw = '';
+			pwError = null;
 		}
 	});
 
@@ -47,6 +57,28 @@
 			error = e instanceof ApiError ? e.message : 'Could not save your profile.';
 		} finally {
 			saving = false;
+		}
+	}
+
+	async function changePassword() {
+		if (newPw.length < 8 || pwSaving) return;
+		pwSaving = true;
+		pwError = null;
+		try {
+			await api.post('/api/auth/password', {
+				current_password: currentPw,
+				new_password: newPw
+			});
+			currentPw = '';
+			newPw = '';
+			showToast('Password changed', 'Use your new password next time you sign in.', 4000);
+		} catch (e) {
+			pwError =
+				e instanceof ApiError
+					? e.message
+					: 'Could not change your password (check your current one).';
+		} finally {
+			pwSaving = false;
 		}
 	}
 </script>
@@ -87,6 +119,35 @@
 				<span class="err">{nameError}</span>
 			{/if}
 		</label>
+
+		<div class="field pw-section">
+			<span class="flabel">Change password</span>
+			<input
+				class="input"
+				type="password"
+				bind:value={currentPw}
+				autocomplete="current-password"
+				placeholder="Current password"
+			/>
+			<input
+				class="input"
+				type="password"
+				bind:value={newPw}
+				autocomplete="new-password"
+				placeholder="New password (at least 8 characters)"
+			/>
+			{#if pwError}
+				<span class="err" role="alert">{pwError}</span>
+			{/if}
+			<button
+				class="btn secondary pw-btn"
+				type="button"
+				onclick={changePassword}
+				disabled={newPw.length < 8 || pwSaving}
+			>
+				{pwSaving ? 'Changing…' : 'Change password'}
+			</button>
+		</div>
 
 		{#if error}
 			<p class="err" role="alert">{error}</p>
@@ -185,6 +246,18 @@
 		color: #fff;
 	}
 	.btn.primary:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+	.pw-section {
+		border-top: 1px solid var(--border);
+		padding-top: 0.9rem;
+	}
+	.pw-btn {
+		align-self: flex-start;
+		margin-top: 0.2rem;
+	}
+	.btn.secondary:disabled {
 		opacity: 0.6;
 		cursor: not-allowed;
 	}

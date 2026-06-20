@@ -26,6 +26,7 @@ pub fn router() -> Router<AppState> {
         .route("/api/auth/login", post(login))
         .route("/api/auth/logout", post(logout))
         .route("/api/auth/me", get(me).patch(update_me))
+        .route("/api/auth/password", post(change_password))
         .route("/api/auth/magic/request", post(magic_request))
         .route("/api/auth/magic/verify", get(magic_verify))
         .route("/api/auth/oauth/{provider}/start", get(oauth_start))
@@ -198,6 +199,56 @@ async fn update_me(
 }
 
 #[derive(Deserialize)]
+struct ChangePasswordBody {
+    current_password: String,
+    new_password: String,
+}
+
+/// Change the caller's OWN password. Self-scoped via `CurrentUser`. The CURRENT
+/// password is re-verified before the new one is set, so a hijacked session can't
+/// silently re-key the account. Argon2 hash + verify run on a blocking thread.
+async fn change_password(
+    State(state): State<AppState>,
+    CurrentUser(user): CurrentUser,
+    Json(body): Json<ChangePasswordBody>,
+) -> AppResult<Json<serde_json::Value>> {
+    // Throttle: re-verifying the current password is a brute-force surface even
+    // for an authenticated caller.
+    if !state
+        .cache
+        .rate_limit(&format!("changepw:{}", user.user_id.as_uuid()), 10, 60)
+        .await?
+    {
+        return Err(AppError::RateLimited);
+    }
+    if body.new_password.len() < 8 {
+        return Err(AppError::BadRequest(
+            "password must be at least 8 characters".into(),
+        ));
+    }
+    let record = db::users::find_by_email(&state.db, &user.email)
+        .await?
+        .ok_or(AppError::Unauthorized)?;
+    let hash = record
+        .password_hash
+        .clone()
+        .ok_or_else(|| AppError::BadRequest("this account has no password set".into()))?;
+    let current = body.current_password.clone();
+    let ok = tokio::task::spawn_blocking(move || crypto::verify_password(&current, &hash))
+        .await
+        .map_err(|e| AppError::Internal(anyhow::Error::new(e)))??;
+    if !ok {
+        return Err(AppError::Unauthorized);
+    }
+    let new = body.new_password.clone();
+    let new_hash = tokio::task::spawn_blocking(move || crypto::hash_password(&new))
+        .await
+        .map_err(|e| AppError::Internal(anyhow::Error::new(e)))??;
+    db::users::set_password_hash(&state.db, user.user_id, &new_hash).await?;
+    Ok(Json(serde_json::json!({ "ok": true })))
+}
+
+#[derive(Deserialize)]
 struct MagicRequestBody {
     email: String,
 }
@@ -293,7 +344,7 @@ async fn oauth_callback(
     Ok((jar.add(cookie), Redirect::to(&target)))
 }
 
-fn normalize_email(raw: &str) -> AppResult<String> {
+pub(crate) fn normalize_email(raw: &str) -> AppResult<String> {
     let email = raw.trim().to_lowercase();
     if email.len() < 3 || !email.contains('@') {
         return Err(AppError::BadRequest("invalid email".into()));

@@ -17,6 +17,7 @@
 	import AllUserPmModal from './modals/AllUserPmModal.svelte';
 	import BrandingModal from './modals/BrandingModal.svelte';
 	import BadgesModal from './modals/BadgesModal.svelte';
+	import AddUserModal from './modals/AddUserModal.svelte';
 	import { debugLogText, logEvent } from '$lib/stores/sessionLog.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
 
@@ -59,11 +60,15 @@
 	let allPmOpen = $state(false);
 	let brandingOpen = $state(false);
 	let badgesOpen = $state(false);
+	let addUserOpen = $state(false);
 
 	// Branding is account-wide: gate on the global RoomManage capability (admin+),
 	// mirroring the backend Action::ManageBranding gate — NOT on `canManage` (which
 	// is room-scoped to the owner/super-admin), so any global admin can reach it.
 	const canManageBranding = $derived(auth.can('room.manage'));
+	// "Add User" is super-admin-only — mirrors the backend Action::ManageUsers gate
+	// (UserManage is held only by super_admin), not the admin+ room.manage above.
+	const canManageUsers = $derived(auth.can('user.manage'));
 
 	function initialOf(name: string): string {
 		return name.trim().charAt(0).toUpperCase() || '?';
@@ -257,6 +262,16 @@
 						>
 							<Icon name="star" size={14} /><span class="label">Badges</span>
 						</button>
+						{#if canManageUsers}
+							<button
+								class="sub-item"
+								aria-label="Add User"
+								title="Add a user + set their role"
+								onclick={() => (addUserOpen = true)}
+							>
+								<Icon name="user-plus" size={14} /><span class="label">Add User</span>
+							</button>
+						{/if}
 					</div>
 				</div>
 			{/if}
@@ -340,6 +355,9 @@
 <BrandingModal open={brandingOpen} onClose={() => (brandingOpen = false)} />
 {#if badgesOpen}
 	<BadgesModal open onClose={() => (badgesOpen = false)} {present} />
+{/if}
+{#if addUserOpen}
+	<AddUserModal open onClose={() => (addUserOpen = false)} />
 {/if}
 
 <style>
