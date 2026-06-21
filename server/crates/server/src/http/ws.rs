@@ -56,7 +56,15 @@ async fn upgrade(
     // for the admin view only — never broadcast to room members.
     let ip = util::client_ip(&headers, Some(peer));
     let user_id = user.user_id;
-    Ok(ws.on_upgrade(move |socket| room_socket(state, socket, id, user_id, ip)))
+    // The socket is receive-mostly (clients send only tiny heartbeats), so cap
+    // inbound message/frame size hard — this bounds the work an abusive client can
+    // force per frame (each inbound message drives a Redis presence write) and
+    // replaces axum's permissive 64 MiB / 16 MiB defaults. Outbound payloads are
+    // unaffected (a large server message is simply fragmented on the wire).
+    Ok(ws
+        .max_message_size(64 * 1024)
+        .max_frame_size(64 * 1024)
+        .on_upgrade(move |socket| room_socket(state, socket, id, user_id, ip)))
 }
 
 async fn room_socket(

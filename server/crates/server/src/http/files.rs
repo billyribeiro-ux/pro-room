@@ -12,7 +12,7 @@ use crate::state::AppState;
 use axum::Json;
 use axum::Router;
 use axum::body::Body;
-use axum::extract::{Multipart, Path, Query, State};
+use axum::extract::{DefaultBodyLimit, Multipart, Path, Query, State};
 use axum::http::header;
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
@@ -36,6 +36,11 @@ pub fn router() -> Router<AppState> {
             "/api/rooms/{id}/uploads",
             axum::routing::post(upload_inline),
         )
+        // Raise the request-body cap for this router's upload POSTs above axum's
+        // 2 MB default — otherwise the 25 MB `read_file_part` check is unreachable
+        // because the body is rejected at 2 MB first. +1 MB of headroom covers
+        // multipart boundary/header overhead; the GET/DELETE routes carry no body.
+        .layer(DefaultBodyLimit::max(MAX_UPLOAD_BYTES + 1024 * 1024))
 }
 
 #[derive(Deserialize)]
