@@ -114,6 +114,7 @@ export class ScreenShareRoom {
 	   screen audio). Tracked so the top-bar Volume/Mute control can set .volume/.muted
 	   on every one — LiveKit has no single "remote output volume" knob, so we drive the
 	   media elements directly. Newly-subscribed tracks inherit the current values. */
+	// eslint-disable-next-line svelte/prefer-svelte-reactivity -- imperative registry of media elements driven directly, not reactive state
 	#audioEls = new Set<HTMLMediaElement>();
 	/** Current remote-audio output level (0..1) and mute, applied to every #audioEls
 	   element and to any track that subscribes later. Persist on the instance so a
@@ -132,6 +133,7 @@ export class ScreenShareRoom {
 			// connecting, or the SFU kicks one of the two same-identity sessions and the
 			// loser spams "skipping incoming track after Room disconnected".
 			if (activeInstance && activeInstance !== this) await activeInstance.#teardown();
+			// eslint-disable-next-line @typescript-eslint/no-this-alias -- module-level singleton tracking of the active LiveKit instance (HMR/remount guard)
 			activeInstance = this;
 			await this.#openRoom(url, token);
 		});

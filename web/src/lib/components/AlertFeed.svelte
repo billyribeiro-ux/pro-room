@@ -72,6 +72,7 @@
 	// Filter-checklist source: present roster ∪ distinct alert authors (so a trader
 	// who posted but isn't currently present stays selectable), keyed by author_id.
 	const filterTraders = $derived.by<FilterTrader[]>(() => {
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- transient local map for de-duping inside a $derived, never reactive state
 		const map = new Map<string, string>();
 		for (const p of present) map.set(p.user_id, p.display_name);
 		for (const a of alerts) if (a.author_id) map.set(a.author_id, a.author_name ?? 'Trader');
@@ -94,6 +95,7 @@
 	let stickNext = false;
 	$effect.pre(() => {
 		if (!feedEl) return; // not yet mounted
+		// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- bare read registers the $effect dependency on the filtered list
 		visibleAlerts.length; // re-run whenever the (filtered) list changes
 		// "Tab sleep optimization": skip autoscroll layout work while hidden.
 		if (shouldThrottle()) return;

@@ -41,6 +41,7 @@
 	// Fetch whenever the modal is open and a peer is selected.
 	$effect(() => {
 		if (open) {
+			// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- bare read registers the $effect dependency on peerId
 			peerId;
 			void reload();
 		}

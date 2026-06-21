@@ -31,6 +31,7 @@
 	// Load when the modal opens or the channel changes.
 	$effect(() => {
 		if (open) {
+			// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- bare read registers the $effect dependency on channel
 			channel;
 			void reload();
 		}
