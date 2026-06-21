@@ -412,8 +412,18 @@
 						<span class="avatar" aria-hidden="true">{initials(m.author_name)}</span>
 					{/if}
 
-					<span class="username" style:color={m.author_color ?? 'var(--username-color)'}
-						>{m.author_name ?? 'trader'}</span
+					<span
+						class="username"
+						style:color={m.author_color ?? 'var(--username-color)'}
+						role="button"
+						tabindex="0"
+						onclick={() => openUserInfo(m)}
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								openUserInfo(m);
+							}
+						}}>{m.author_name ?? 'trader'}</span
 					>
 					<Badges data={m.author_badges} />
 
