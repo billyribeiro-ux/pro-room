@@ -21,6 +21,9 @@ pub fn router() -> Router<AppState> {
 }
 
 const MAX_ALERTS: i64 = 100;
+/// Cap on the optional free-text alert note. Matches the chat message body limit
+/// (`messages.rs` `MAX_BODY_LEN`) so a single alert can't persist unbounded text.
+const MAX_NOTE_LEN: usize = 2000;
 
 #[derive(Deserialize)]
 struct CreateAlertBody {
@@ -61,6 +64,9 @@ async fn create(
         .as_deref()
         .map(str::trim)
         .filter(|s| !s.is_empty());
+    if note.is_some_and(|s| s.len() > MAX_NOTE_LEN) {
+        return Err(AppError::BadRequest("note is too long".into()));
+    }
 
     // Delivery-intent flags from the Post Alert modal. Default to false when the
     // client omits them (older clients / non-trade announcements).

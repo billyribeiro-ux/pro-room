@@ -4,6 +4,7 @@
 // backend for these (confirmed from the app bundle: manageMutedUsers /
 // manageFollowedUsers just read/write a local list); muting hides that user's chat
 // messages on this device only.
+import { browser } from '$app/environment';
 
 export interface SocialUser {
 	id: string;
@@ -14,7 +15,7 @@ const MUTED_KEY = 'ptr.social.muted';
 const FOLLOWED_KEY = 'ptr.social.followed';
 
 function load(key: string): SocialUser[] {
-	if (typeof localStorage === 'undefined') return [];
+	if (!browser) return [];
 	try {
 		const v = JSON.parse(localStorage.getItem(key) ?? '[]');
 		return Array.isArray(v) ? v.filter((u) => u && typeof u.id === 'string') : [];
@@ -34,6 +35,7 @@ class UserList {
 	}
 
 	#persist() {
+		if (!browser) return;
 		try {
 			localStorage.setItem(this.#key, JSON.stringify(this.users));
 		} catch {
