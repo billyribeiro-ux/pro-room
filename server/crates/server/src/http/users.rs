@@ -62,18 +62,17 @@ async fn create(
     let hash = tokio::task::spawn_blocking(move || crypto::hash_password(&password))
         .await
         .map_err(|e| AppError::Internal(anyhow::Error::new(e)))??;
-    let new_user = match db::users::create(&state.db, &email, &display_name, Some(&hash), body.role)
-        .await
-    {
-        Ok(u) => u,
-        // A racing duplicate (unique-violation) resolves to 409, not a generic 500.
-        Err(e) => {
-            if db::users::find_by_email(&state.db, &email).await?.is_some() {
-                return Err(AppError::Conflict("email already registered".into()));
+    let new_user =
+        match db::users::create(&state.db, &email, &display_name, Some(&hash), body.role).await {
+            Ok(u) => u,
+            // A racing duplicate (unique-violation) resolves to 409, not a generic 500.
+            Err(e) => {
+                if db::users::find_by_email(&state.db, &email).await?.is_some() {
+                    return Err(AppError::Conflict("email already registered".into()));
+                }
+                return Err(e.into());
             }
-            return Err(e.into());
-        }
-    };
+        };
     db::identities::link(&state.db, new_user.id, "password", &email).await?;
     audit_user(
         &state,

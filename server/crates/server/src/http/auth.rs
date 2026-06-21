@@ -120,8 +120,13 @@ async fn register(
 
     let session_user = session_user(user);
     let ip = util::client_ip(&headers, Some(peer));
-    let cookie =
-        session::issue(&state, session_user.user_id, user_agent(&headers), ip.as_deref()).await?;
+    let cookie = session::issue(
+        &state,
+        session_user.user_id,
+        user_agent(&headers),
+        ip.as_deref(),
+    )
+    .await?;
     Ok((jar.add(cookie), Json(me_response(&session_user))))
 }
 
@@ -173,8 +178,13 @@ async fn login(
 
     let session_user = session_user(record.user);
     let ip = util::client_ip(&headers, Some(peer));
-    let cookie =
-        session::issue(&state, session_user.user_id, user_agent(&headers), ip.as_deref()).await?;
+    let cookie = session::issue(
+        &state,
+        session_user.user_id,
+        user_agent(&headers),
+        ip.as_deref(),
+    )
+    .await?;
     Ok((jar.add(cookie), Json(me_response(&session_user))))
 }
 

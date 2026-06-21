@@ -2,7 +2,7 @@
 
 use std::time::Duration;
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Config {
     pub bind_addr: String,
     pub cors_origins: Vec<String>,
@@ -30,23 +30,76 @@ pub struct Config {
     pub smtp: Option<SmtpConfig>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct LiveKitConfig {
     pub url: String,
     pub api_key: String,
     pub api_secret: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct OAuthProviderConfig {
     pub client_id: String,
     pub client_secret: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct SmtpConfig {
     pub url: String,
     pub from: String,
+}
+
+// Secrets must never reach logs. These manual `Debug` impls redact every
+// credential-bearing field (the structs intentionally do NOT derive `Debug`), so
+// `tracing`/`{:?}` of a `Config` is safe by construction.
+impl std::fmt::Debug for Config {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Config")
+            .field("bind_addr", &self.bind_addr)
+            .field("cors_origins", &self.cors_origins)
+            .field("public_web_url", &self.public_web_url)
+            .field("public_api_url", &self.public_api_url)
+            .field("database_url", &"[redacted]")
+            .field("redis_url", &"[redacted]")
+            .field("uploads_dir", &self.uploads_dir)
+            .field("session_secret", &"[redacted]")
+            .field("session_ttl", &self.session_ttl)
+            .field("auth_dev_bypass", &self.auth_dev_bypass)
+            .field("livekit", &self.livekit)
+            .field("google_oauth", &self.google_oauth)
+            .field("github_oauth", &self.github_oauth)
+            .field("smtp", &self.smtp)
+            .finish()
+    }
+}
+
+impl std::fmt::Debug for LiveKitConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("LiveKitConfig")
+            .field("url", &self.url)
+            .field("api_key", &self.api_key)
+            .field("api_secret", &"[redacted]")
+            .finish()
+    }
+}
+
+impl std::fmt::Debug for OAuthProviderConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OAuthProviderConfig")
+            .field("client_id", &self.client_id)
+            .field("client_secret", &"[redacted]")
+            .finish()
+    }
+}
+
+impl std::fmt::Debug for SmtpConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // The SMTP URL can embed `user:pass@host` credentials, so redact it.
+        f.debug_struct("SmtpConfig")
+            .field("url", &"[redacted]")
+            .field("from", &self.from)
+            .finish()
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -74,6 +127,17 @@ impl Config {
             .parse()
             .map_err(|_| ConfigError::Invalid("SESSION_TTL_HOURS", "expected an integer".into()))?;
 
+        // Defense in depth for the dev-only auth bypass: refuse to even start a
+        // release build with it enabled. (The extractor branch is additionally
+        // `cfg!(debug_assertions)`-fenced, so it is also compiled out of release.)
+        let auth_dev_bypass = truthy("AUTH_DEV_BYPASS");
+        if auth_dev_bypass && !cfg!(debug_assertions) {
+            return Err(ConfigError::Invalid(
+                "AUTH_DEV_BYPASS",
+                "must not be enabled in a release build".to_owned(),
+            ));
+        }
+
         Ok(Self {
             bind_addr: opt("APP_BIND_ADDR").unwrap_or_else(|| "0.0.0.0:8080".to_owned()),
             cors_origins: opt("APP_CORS_ORIGINS")
@@ -91,8 +155,7 @@ impl Config {
             uploads_dir: opt("APP_UPLOADS_DIR").unwrap_or_else(|| "./uploads".to_owned()),
             session_secret,
             session_ttl: Duration::from_secs(ttl_hours * 3600),
-            // DEV-ONLY: off unless explicitly opted in with a truthy value.
-            auth_dev_bypass: truthy("AUTH_DEV_BYPASS"),
+            auth_dev_bypass,
             livekit: optional_group(&[
                 ("LIVEKIT_URL", true),
                 ("LIVEKIT_API_KEY", true),

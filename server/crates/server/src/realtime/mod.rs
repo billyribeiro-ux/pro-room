@@ -180,6 +180,13 @@ impl RealtimeHub {
     /// pattern, routing each message into the matching local channel.
     pub async fn start(&self) -> anyhow::Result<()> {
         let subscriber = self.cache.subscriber().await?;
+        // Spawn fred's managed-subscription task BEFORE (p)subscribing so it tracks
+        // these patterns and automatically replays them whenever the connection
+        // drops and the reconnect policy restores it. Without this the dispatcher
+        // task survives a Redis blip but the subscriber comes back subscribed to
+        // nothing, silently starving realtime (chat/alerts/presence) for the rest
+        // of the process lifetime.
+        let resubscribe = subscriber.manage_subscriptions();
         subscriber
             .psubscribe(CHANNEL_PATTERN)
             .await
@@ -193,8 +200,10 @@ impl RealtimeHub {
         let user_rooms = self.user_rooms.clone();
         let mut rx = subscriber.message_rx();
         tokio::spawn(async move {
-            // Keep the subscriber alive for the lifetime of the task.
+            // Keep the subscriber and its managed-resubscribe task alive for the
+            // lifetime of the dispatcher.
             let _subscriber = subscriber;
+            let _resubscribe = resubscribe;
             loop {
                 match rx.recv().await {
                     Ok(message) => dispatch(&rooms, &user_rooms, &message),
