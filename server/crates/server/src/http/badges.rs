@@ -62,7 +62,11 @@ async fn create(
             "slug and label must be 40 characters or fewer".into(),
         ));
     }
-    let image_url = body.image_url.as_deref().map(str::trim).filter(|s| !s.is_empty());
+    let image_url = body
+        .image_url
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty());
     let badge = db::badges::create(
         &state.db,
         slug,

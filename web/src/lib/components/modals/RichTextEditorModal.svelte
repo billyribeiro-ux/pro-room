@@ -108,7 +108,11 @@
 	}
 
 	function send() {
-		onSave?.(editor?.innerHTML ?? '');
+		// Sanitise on the way OUT too (defence in depth): the contenteditable content
+		// is user-controlled, so never hand an unsanitised HTML string to `onSave` —
+		// a consumer that later renders it via `{@html}`/`innerHTML` would otherwise
+		// have an XSS sink. Mirrors the inbound sanitisation in `editorSetup`.
+		onSave?.(DOMPurify.sanitize(editor?.innerHTML ?? ''));
 		onClose();
 	}
 

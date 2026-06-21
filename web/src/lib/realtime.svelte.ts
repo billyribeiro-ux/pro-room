@@ -45,7 +45,11 @@ export class RoomSocket {
 			// Log before resetting #retry so a reconnect reads as one (reference parity:
 			// I("Connected to server... is reconnect:")).
 			const isReconnect = this.#retry > 0;
-			logEvent(isReconnect ? `WS reconnected to room ${this.roomId}` : `WS connected to room ${this.roomId}`);
+			logEvent(
+				isReconnect
+					? `WS reconnected to room ${this.roomId}`
+					: `WS connected to room ${this.roomId}`
+			);
 			this.connected = true;
 			this.#retry = 0;
 			this.#startHeartbeat();

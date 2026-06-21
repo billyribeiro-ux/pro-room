@@ -23,7 +23,7 @@ tokio = { version = "1.52.3", features = ["full"] }
 axum = { version = "0.8.9", features = ["macros", "multipart", "ws"] }
 axum-extra = { version = "0.12.6", features = ["cookie", "typed-header"] }
 tower = "0.5.3"
-tower-http = { version = "0.6.11", features = ["cors", "trace", "catch-panic"] }
+tower-http = { version = "0.7.0", features = ["cors", "trace", "catch-panic"] }
 futures-util = "0.3.32"
 sqlx = { version = "0.9.0", default-features = false, features = ["runtime-tokio", "tls-rustls-ring", "postgres", "uuid", "time", "json", "macros", "migrate"] }
 fred = { version = "10", features = ["subscriber-client"] }
@@ -39,4 +39,10 @@ dotenvy = "0.15.7"
 url = "2.5.8"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 getrandom = "0.4.2"
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "charset", "http2"] }
+reqwest = { version = "0.13.4", default-features = false, features = ["rustls-no-provider", "json", "charset", "http2", "form"] }
+# reqwest 0.13's `rustls-no-provider` bundles no crypto provider, so we install
+# the pure-Rust *ring* provider as the process-wide default in `main` (see
+# main.rs). This keeps the original architecture decision — no aws-lc-rs, hence
+# no native cmake/clang build deps / cleaner CI — while staying on the latest
+# reqwest. Root certs are handled by reqwest 0.13's built-in rustls-platform-verifier.
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12", "logging"] }

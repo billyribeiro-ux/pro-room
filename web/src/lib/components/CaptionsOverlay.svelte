@@ -124,7 +124,8 @@
 		<div class="cc-bar" role="status" aria-live="polite" transition:fade={{ duration: 120 }}>
 			<Icon name="closed-captioning" size={18} />
 			<p class="cc-text">
-				{#if shownSpeaker}<strong>{shownSpeaker}:</strong> {/if}{shownText}
+				{#if shownSpeaker}<strong>{shownSpeaker}:</strong>
+				{/if}{shownText}
 			</p>
 		</div>
 	{/if}

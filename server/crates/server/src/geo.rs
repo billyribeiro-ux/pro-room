@@ -165,7 +165,8 @@ fn is_global(addr: IpAddr) -> bool {
                 || v4.is_link_local()
                 || v4.is_broadcast()
                 || v4.is_documentation()
-                || v4.is_unspecified())
+                || v4.is_unspecified()
+                || is_shared_address_space(v4))
         }
         IpAddr::V6(v6) => {
             // No stable `is_unique_local`/`is_unicast_link_local` on stable Rust,
@@ -176,6 +177,15 @@ fn is_global(addr: IpAddr) -> bool {
             !(v6.is_loopback() || v6.is_unspecified() || is_unique_local || is_link_local)
         }
     }
+}
+
+/// RFC 6598 carrier-grade-NAT shared address space (`100.64.0.0/10`). Not covered
+/// by [`std::net::Ipv4Addr::is_private`] but just as non-routable on the public
+/// internet, so it must never be sent to the geo API. (`Ipv4Addr::is_shared` is
+/// still unstable, hence the manual prefix check.)
+fn is_shared_address_space(v4: std::net::Ipv4Addr) -> bool {
+    let [a, b, ..] = v4.octets();
+    a == 100 && (b & 0xc0) == 0x40
 }
 
 #[cfg(test)]
@@ -203,6 +213,20 @@ mod tests {
     #[test]
     fn public_addresses_are_global() {
         for ip in ["8.8.8.8", "1.1.1.1", "2606:4700:4700::1111"] {
+            let addr: IpAddr = ip.parse().unwrap();
+            assert!(is_global(addr), "{ip} should be treated as global");
+        }
+    }
+
+    #[test]
+    fn cgnat_shared_space_is_not_global() {
+        // RFC 6598 100.64.0.0/10 must be treated as local (never sent to the API).
+        for ip in ["100.64.0.1", "100.100.50.2", "100.127.255.255"] {
+            let addr: IpAddr = ip.parse().unwrap();
+            assert!(!is_global(addr), "{ip} (CGNAT) should be treated as local");
+        }
+        // Addresses just outside the /10 stay global.
+        for ip in ["100.63.255.255", "100.128.0.1"] {
             let addr: IpAddr = ip.parse().unwrap();
             assert!(is_global(addr), "{ip} should be treated as global");
         }

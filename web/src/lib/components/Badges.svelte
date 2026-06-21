@@ -8,8 +8,7 @@
 	let { data }: { data?: AuthorBadges } = $props();
 
 	const hasAny = $derived(
-		!!data &&
-			((data.badges?.length ?? 0) > 0 || data.is_trial || data.is_new || !!data.years)
+		!!data && ((data.badges?.length ?? 0) > 0 || data.is_trial || data.is_new || !!data.years)
 	);
 </script>
 

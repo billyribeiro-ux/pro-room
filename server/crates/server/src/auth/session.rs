@@ -123,7 +123,11 @@ impl FromRequestParts<AppState> for CurrentUser {
         // is set, resolve a synthetic super-admin so QA can hit every endpoint
         // without logging in. This branch is unreachable in production because
         // the flag stays unset. NEVER SHIP ENABLED.
-        if state.config.auth_dev_bypass {
+        // Compile-time fence: `cfg!(debug_assertions)` is a constant `false` in a
+        // release build, so this branch is dead-code-eliminated from production
+        // binaries — the bypass cannot run there even if the flag were set (and
+        // `Config::from_env` refuses to start a release build with it enabled).
+        if cfg!(debug_assertions) && state.config.auth_dev_bypass {
             return Ok(Self(dev_bypass_user(state).await?));
         }
 

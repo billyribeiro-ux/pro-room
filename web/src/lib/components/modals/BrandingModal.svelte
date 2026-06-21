@@ -73,7 +73,11 @@
 			applyBranding(data);
 			showToast('Branding saved', 'The app name has been updated.', 4000);
 		} catch (err) {
-			showToast('Save failed', err instanceof ApiError ? err.message : 'Could not update the name.', 6000);
+			showToast(
+				'Save failed',
+				err instanceof ApiError ? err.message : 'Could not update the name.',
+				6000
+			);
 		} finally {
 			saving = false;
 		}
@@ -92,7 +96,11 @@
 			applyBranding(data);
 			showToast('Logo reset', 'Reverted to the default logo.', 4000);
 		} catch (err) {
-			showToast('Reset failed', err instanceof ApiError ? err.message : 'Could not reset the logo.', 6000);
+			showToast(
+				'Reset failed',
+				err instanceof ApiError ? err.message : 'Could not reset the logo.',
+				6000
+			);
 		}
 	}
 </script>

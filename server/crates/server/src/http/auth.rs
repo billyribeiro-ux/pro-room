@@ -106,22 +106,34 @@ async fn register(
     let hash = tokio::task::spawn_blocking(move || crypto::hash_password(&password))
         .await
         .map_err(|e| AppError::Internal(anyhow::Error::new(e)))??;
-    let user = match db::users::create(&state.db, &email, &display_name, Some(&hash), role).await {
+    // Atomic: the user row and its password identity must both land or neither —
+    // otherwise a failure after the user insert left an un-loginnable orphan user.
+    let mut tx = state.db.begin().await?;
+    let user = match db::users::create(&mut *tx, &email, &display_name, Some(&hash), role).await {
         Ok(u) => u,
         // A racing duplicate (unique-violation) resolves to 409, not a generic 500.
+        // The failed INSERT has aborted this transaction, so roll it back (drop)
+        // before re-checking on a fresh pool connection.
         Err(e) => {
+            drop(tx);
             if db::users::find_by_email(&state.db, &email).await?.is_some() {
                 return Err(AppError::Conflict("email already registered".into()));
             }
             return Err(e.into());
         }
     };
-    db::identities::link(&state.db, user.id, "password", &email).await?;
+    db::identities::link(&mut *tx, user.id, "password", &email).await?;
+    tx.commit().await?;
 
     let session_user = session_user(user);
     let ip = util::client_ip(&headers, Some(peer));
-    let cookie =
-        session::issue(&state, session_user.user_id, user_agent(&headers), ip.as_deref()).await?;
+    let cookie = session::issue(
+        &state,
+        session_user.user_id,
+        user_agent(&headers),
+        ip.as_deref(),
+    )
+    .await?;
     Ok((jar.add(cookie), Json(me_response(&session_user))))
 }
 
@@ -173,8 +185,13 @@ async fn login(
 
     let session_user = session_user(record.user);
     let ip = util::client_ip(&headers, Some(peer));
-    let cookie =
-        session::issue(&state, session_user.user_id, user_agent(&headers), ip.as_deref()).await?;
+    let cookie = session::issue(
+        &state,
+        session_user.user_id,
+        user_agent(&headers),
+        ip.as_deref(),
+    )
+    .await?;
     Ok((jar.add(cookie), Json(me_response(&session_user))))
 }
 

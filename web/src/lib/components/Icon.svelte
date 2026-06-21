@@ -1,10 +1,12 @@
 <script lang="ts">
 	/**
-	 * Font Awesome 5 icon — the reference app's exact icon set (fa-solid-900 /
+	 * Font Awesome 7 icon — the reference app's exact icon set (fa-solid-900 /
 	 * fa-regular-400 / fa-brands-400). Renders the same `<i class="fas fa-…">`
-	 * markup the reference uses; the glyph stylesheet is loaded globally in the
-	 * root layout. Color inherits from the surrounding text (`currentColor`), so
-	 * callers usually don't need to set it explicitly; size is the px font-size.
+	 * markup the reference uses; FA7 free keeps the legacy `fas`/`far`/`fab`
+	 * style aliases and the FA5 glyph names this app relies on, so the markup is
+	 * unchanged. The glyph stylesheet is loaded globally in the root layout.
+	 * Color inherits from the surrounding text (`currentColor`), so callers
+	 * usually don't need to set it explicitly; size is the px font-size.
 	 */
 	interface Props {
 		/** FA glyph name without the `fa-` prefix, e.g. "search", "bell-slash". */

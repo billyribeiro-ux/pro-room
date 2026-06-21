@@ -4,7 +4,7 @@ use anyhow::Context as _;
 use domain::UserId;
 
 pub async fn link(
-    pool: &sqlx::PgPool,
+    executor: impl sqlx::PgExecutor<'_>,
     user_id: UserId,
     provider: &str,
     provider_subject: &str,
@@ -19,7 +19,7 @@ pub async fn link(
         provider,
         provider_subject,
     )
-    .execute(pool)
+    .execute(executor)
     .await
     .context("link identity")?;
     Ok(())

@@ -187,8 +187,7 @@
 					aria-label="Alert text"
 					bind:value={text}
 					rows="10"
-					placeholder="Alert Text..."
-				></textarea>
+					placeholder="Alert Text..."></textarea>
 			</div>
 		{:else if tab === 'url'}
 			<!-- Reference Text Url tab: fa-link url input-group + rows=2 message textarea. -->
@@ -210,8 +209,7 @@
 					aria-label="Alert text"
 					bind:value={urlText}
 					rows="2"
-					placeholder="Alert Text..."
-				></textarea>
+					placeholder="Alert Text..."></textarea>
 			</div>
 		{:else}
 			<!-- Reference Image/GIF/Video tab: url input + "OR..." + upload/drop zone + rows=2 message. -->
@@ -261,8 +259,7 @@
 					aria-label="Alert text"
 					bind:value={mediaText}
 					rows="2"
-					placeholder="Alert Text..."
-				></textarea>
+					placeholder="Alert Text..."></textarea>
 			</div>
 		{/if}
 
@@ -277,8 +274,7 @@
 					name="alert-disclosure"
 					aria-label="Legal disclosure text"
 					bind:value={disclosureText}
-					rows="3"
-				></textarea>
+					rows="3"></textarea>
 			</div>
 		{/if}
 

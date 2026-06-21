@@ -48,8 +48,7 @@
 			spellcheck="true"
 			placeholder="Type your message here.."
 			aria-label="Reply text"
-			onkeydown={onKeydown}
-		></textarea>
+			onkeydown={onKeydown}></textarea>
 		<div class="tools">
 			<button type="button" class="tool" aria-label="Add emoji" title="Add Emojis">
 				<Icon name="smile" family="regular" />

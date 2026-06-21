@@ -27,6 +27,15 @@ async fn main() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();
     init_tracing();
 
+    // Install the pure-Rust *ring* provider as rustls's process-wide default
+    // crypto provider. reqwest is built with `rustls-no-provider`, so it relies
+    // on this being set before the first HTTPS client is constructed (OAuth
+    // token exchange + geo lookups). Chosen over aws-lc-rs to keep the build
+    // free of native cmake/clang dependencies.
+    rustls::crypto::ring::default_provider()
+        .install_default()
+        .expect("install ring as the default rustls CryptoProvider");
+
     let config = Config::from_env().context("loading configuration")?;
     let bind_addr = config.bind_addr.clone();
 
@@ -56,9 +65,36 @@ async fn main() -> anyhow::Result<()> {
         listener,
         app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
     )
+    .with_graceful_shutdown(shutdown_signal())
     .await
     .context("server error")?;
     Ok(())
+}
+
+/// Resolve on SIGINT (Ctrl-C) or SIGTERM (container stop / `systemctl stop`), so
+/// `axum::serve` stops accepting new connections and drains in-flight requests and
+/// `WebSockets` instead of being hard-killed mid-request on a redeploy.
+async fn shutdown_signal() {
+    use tokio::signal;
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl-C handler");
+    };
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install SIGTERM handler")
+            .recv()
+            .await;
+    };
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+    tokio::select! {
+        () = ctrl_c => {},
+        () = terminate => {},
+    }
+    tracing::info!("shutdown signal received; draining connections");
 }
 
 fn init_tracing() {
