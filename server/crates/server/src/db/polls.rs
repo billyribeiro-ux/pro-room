@@ -13,6 +13,7 @@ use anyhow::Context as _;
 use domain::entities::{Poll, PollDetail, PollOptionResult};
 use domain::{PollId, PollOptionId, RoomId, UserId};
 use sqlx::PgPool;
+use std::collections::HashMap;
 
 /// Flat projection of a `polls` row, decoded by `sqlx` and lifted into the
 /// strongly-typed domain [`Poll`].
@@ -60,6 +61,17 @@ impl From<OptionResultRow> for PollOptionResult {
             votes: row.votes,
         }
     }
+}
+
+/// Same projection as [`OptionResultRow`] but carrying the owning `poll_id`, so a
+/// single room-wide query can be grouped back into per-poll option lists.
+#[derive(sqlx::FromRow)]
+struct RoomOptionRow {
+    poll_id: uuid::Uuid,
+    id: uuid::Uuid,
+    label: String,
+    position: i32,
+    votes: i64,
 }
 
 /// Whether a poll exists, belongs to the given room, and is currently `open`.
@@ -157,6 +169,10 @@ pub async fn create(
 }
 
 /// List the active (open) polls in a room, newest first, each with its tallies.
+///
+/// Fetches every open poll's options + per-option vote counts in a SINGLE query
+/// (grouped in memory by poll), rather than one option query per poll — this
+/// removes the prior N+1.
 pub async fn list_active(pool: &PgPool, room_id: RoomId) -> anyhow::Result<Vec<PollDetail>> {
     let poll_rows: Vec<PollRow> = sqlx::query_as(
         "SELECT id, room_id, author_id, question, anonymous, status, created_at \
@@ -168,13 +184,48 @@ pub async fn list_active(pool: &PgPool, room_id: RoomId) -> anyhow::Result<Vec<P
     .fetch_all(pool)
     .await
     .context("list active polls")?;
-
-    let mut details = Vec::with_capacity(poll_rows.len());
-    for poll_row in poll_rows {
-        let entity: Poll = poll_row.into();
-        let options = option_results(pool, entity.id).await?;
-        details.push(assemble_detail(entity, options));
+    if poll_rows.is_empty() {
+        return Ok(Vec::new());
     }
+
+    // One query for all open polls' options + tallies. The LEFT JOIN keeps
+    // zero-vote options, and ordering by (poll_id, position) means each poll's
+    // options arrive already position-sorted, matching `option_results`.
+    let option_rows: Vec<RoomOptionRow> = sqlx::query_as(
+        "SELECT o.poll_id, o.id, o.label, o.position, count(v.id) AS votes \
+         FROM poll_options o \
+         JOIN polls p ON p.id = o.poll_id \
+         LEFT JOIN poll_votes v ON v.option_id = o.id \
+         WHERE p.room_id = $1 AND p.status = 'open' \
+         GROUP BY o.poll_id, o.id, o.label, o.position \
+         ORDER BY o.poll_id, o.position ASC",
+    )
+    .bind(room_id.as_uuid())
+    .fetch_all(pool)
+    .await
+    .context("list active poll options")?;
+
+    let mut by_poll: HashMap<PollId, Vec<PollOptionResult>> = HashMap::new();
+    for row in option_rows {
+        by_poll
+            .entry(PollId::from_uuid(row.poll_id))
+            .or_default()
+            .push(PollOptionResult {
+                id: PollOptionId::from_uuid(row.id),
+                label: row.label,
+                position: row.position,
+                votes: row.votes,
+            });
+    }
+
+    let details = poll_rows
+        .into_iter()
+        .map(|poll_row| {
+            let entity: Poll = poll_row.into();
+            let options = by_poll.remove(&entity.id).unwrap_or_default();
+            assemble_detail(entity, options)
+        })
+        .collect();
     Ok(details)
 }
 
