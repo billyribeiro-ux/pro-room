@@ -110,7 +110,7 @@
 		<section>
 			<h4>Logo</h4>
 			<div class="logo-row">
-				<span class="logo-preview"><img src={brand.logo} alt={brand.name} /></span>
+				<span class="logo-preview"><img src={brand.logo} alt={brand.name ?? 'Logo'} /></span>
 				<div class="logo-actions">
 					<label class="btn primary" class:disabled={uploading}>
 						<Icon name="upload" size={16} />
