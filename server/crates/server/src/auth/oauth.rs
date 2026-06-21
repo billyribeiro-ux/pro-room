@@ -263,6 +263,10 @@ fn string_field(value: &serde_json::Value, key: &str) -> Option<String> {
 fn http_client() -> AppResult<reqwest::Client> {
     reqwest::Client::builder()
         .user_agent("pro-room-server")
+        // Bound every OAuth provider call so a slow or hung endpoint can't pin a
+        // request task indefinitely (geo.rs sets the same pair). connect + total.
+        .connect_timeout(std::time::Duration::from_secs(5))
+        .timeout(std::time::Duration::from_secs(10))
         .build()
         .map_err(|e| AppError::Internal(anyhow::Error::new(e)))
 }
