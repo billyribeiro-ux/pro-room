@@ -44,7 +44,17 @@ export default defineConfig({
 		launchOptions: {
 			// Synthetic camera/mic so getUserMedia resolves headlessly (AV E2E) and
 			// permission is auto-granted — required for the camera/mic lifecycle specs.
-			args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream']
+			// `WebRtcHideLocalIpsWithMdns` is disabled because headless Chromium
+			// otherwise hides loopback ICE host candidates behind mDNS (.local) names
+			// that a localhost LiveKit SFU can't resolve — so the media plane never
+			// connects and the AV/screen-share controls never enable. Disabling it
+			// exposes the raw 127.0.0.1 candidate so WebRTC completes against a local
+			// SFU (harmless against a remote SFU).
+			args: [
+				'--use-fake-device-for-media-stream',
+				'--use-fake-ui-for-media-stream',
+				'--disable-features=WebRtcHideLocalIpsWithMdns'
+			]
 		}
 	},
 	webServer: {
