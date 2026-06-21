@@ -113,16 +113,22 @@ async fn create(
     }
 
     let visibility = body.visibility.unwrap_or(RoomVisibility::Private);
-    let room = db::rooms::create(&state.db, &slug, name, user.user_id, visibility).await?;
+    // Atomic: the room insert and the creator's owner-membership must both land or
+    // neither. On the pool they were two independent statements, so a failure after
+    // the room insert orphaned a room with no members. A transaction rolls the room
+    // back if the membership write fails (sqlx rolls back on drop without commit).
+    let mut tx = state.db.begin().await?;
+    let room = db::rooms::create(&mut *tx, &slug, name, user.user_id, visibility).await?;
     // The creator joins their own room with their global role.
     db::members::upsert(
-        &state.db,
+        &mut *tx,
         room.id,
         user.user_id,
         user.global_role,
         &serde_json::json!({}),
     )
     .await?;
+    tx.commit().await?;
 
     let ctx = RoomContext::load(&state, &user, room.id).await?;
     Ok(Json(detail_from(&ctx)))

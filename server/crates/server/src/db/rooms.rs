@@ -48,7 +48,7 @@ impl TryFrom<RoomRow> for Room {
 }
 
 pub async fn create(
-    pool: &PgPool,
+    executor: impl sqlx::PgExecutor<'_>,
     slug: &str,
     name: &str,
     owner_id: UserId,
@@ -64,7 +64,7 @@ pub async fn create(
     .bind(name)
     .bind(owner_id.as_uuid())
     .bind(visibility.as_str())
-    .fetch_one(pool)
+    .fetch_one(executor)
     .await
     .context("insert room")?;
     row.try_into()

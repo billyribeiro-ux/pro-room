@@ -14,7 +14,7 @@ pub struct UserRecord {
 
 /// Insert a new user. `password_hash` is `None` for OAuth/magic-link-only users.
 pub async fn create(
-    pool: &PgPool,
+    executor: impl sqlx::PgExecutor<'_>,
     email: &str,
     display_name: &str,
     password_hash: Option<&str>,
@@ -34,7 +34,7 @@ pub async fn create(
         password_hash,
         global_role.as_str(),
     )
-    .fetch_one(pool)
+    .fetch_one(executor)
     .await
     .context("insert user")?;
 

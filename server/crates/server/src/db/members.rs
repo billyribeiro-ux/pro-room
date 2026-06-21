@@ -24,7 +24,7 @@ pub struct MemberView {
 }
 
 pub async fn upsert(
-    pool: &PgPool,
+    executor: impl sqlx::PgExecutor<'_>,
     room_id: RoomId,
     user_id: UserId,
     role: Role,
@@ -42,7 +42,7 @@ pub async fn upsert(
         role.as_str(),
         attributes,
     )
-    .execute(pool)
+    .execute(executor)
     .await
     .context("upsert member")?;
     Ok(())
