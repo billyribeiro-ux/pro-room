@@ -99,6 +99,7 @@
 	let stickNext = false;
 	$effect.pre(() => {
 		if (!messagesEl) return; // not yet mounted
+		// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- bare read registers the $effect dependency on the filtered list
 		visibleMessages.length; // re-run whenever the (filtered) list changes
 		// "Tab sleep optimization": skip the autoscroll DOM write while the tab is
 		// hidden so a backgrounded room doesn't do layout work.

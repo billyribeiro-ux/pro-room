@@ -12,6 +12,7 @@ export class RoomSocket {
 
 	#ws: WebSocket | null = null;
 	#heartbeat: ReturnType<typeof setInterval> | null = null;
+	#reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 	#closed = false;
 	#retry = 0;
 
@@ -32,6 +33,10 @@ export class RoomSocket {
 	close(): void {
 		this.#closed = true;
 		this.#stopHeartbeat();
+		if (this.#reconnectTimer) {
+			clearTimeout(this.#reconnectTimer);
+			this.#reconnectTimer = null;
+		}
 		this.#ws?.close();
 		this.#ws = null;
 		this.connected = false;
@@ -79,7 +84,8 @@ export class RoomSocket {
 		const delay = Math.min(1000 * 2 ** this.#retry, 15000);
 		logEvent(`WS reconnect scheduled in ${delay}ms (attempt ${this.#retry + 1})`);
 		this.#retry += 1;
-		setTimeout(() => {
+		this.#reconnectTimer = setTimeout(() => {
+			this.#reconnectTimer = null;
 			if (!this.#closed) this.#connect();
 		}, delay);
 	}

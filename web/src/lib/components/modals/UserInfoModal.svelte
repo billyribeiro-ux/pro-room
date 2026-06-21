@@ -122,8 +122,8 @@
 		justify-content: center;
 		gap: 0;
 	}
-	:global(.panel:has(.user-info-body)) :global(.foot) > .action,
-	:global(.panel:has(.user-info-body)) :global(.foot) > .close-btn {
+	:global(.panel:has(.user-info-body)) :global(.foot) > :global(.action),
+	:global(.panel:has(.user-info-body)) :global(.foot) > :global(.close-btn) {
 		width: 23%;
 		margin: 4px;
 		justify-content: center;

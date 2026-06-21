@@ -38,13 +38,13 @@
 					type="button"
 					class="gif-muted"
 					onclick={() => revealGif(seg.href)}>GIF muted — click to show</button
-				>{:else}<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- external user-supplied image URL --><a
+				>{:else}<!-- eslint-disable svelte/no-navigation-without-resolve -- external user-supplied image URL (target=_blank), not SvelteKit navigation --><a
 					class="img-container"
 					href={seg.href}
 					target="_blank"
 					rel="noopener noreferrer"
 					title="Open image"><img class="uploaded-img" src={seg.href} alt="" loading="lazy" /></a
-				>{/if}{:else}{seg.value}{/if}{/each}</span
+				><!-- eslint-enable svelte/no-navigation-without-resolve -->{/if}{:else}{seg.value}{/if}{/each}</span
 >
 
 <style>

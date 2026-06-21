@@ -25,6 +25,7 @@ export const sessionLog = $state<{ entries: string[] }>({ entries: [] });
 
 /** Append a timestamped line, enforcing the 900-entry ring cap (reference parity). */
 export function logEvent(message: string): void {
+	// eslint-disable-next-line svelte/prefer-svelte-reactivity -- one-shot timestamp string, formatted then discarded; not reactive state
 	sessionLog.entries.push(`[${new Date().toLocaleTimeString()}] ${message}`);
 	if (sessionLog.entries.length > MAX_ENTRIES) sessionLog.entries.shift();
 }

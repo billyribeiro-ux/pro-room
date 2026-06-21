@@ -128,6 +128,7 @@
 				bind:value={currentPw}
 				autocomplete="current-password"
 				placeholder="Current password"
+				aria-label="Current password"
 			/>
 			<input
 				class="input"
@@ -135,6 +136,7 @@
 				bind:value={newPw}
 				autocomplete="new-password"
 				placeholder="New password (at least 8 characters)"
+				aria-label="New password"
 			/>
 			{#if pwError}
 				<span class="err" role="alert">{pwError}</span>
