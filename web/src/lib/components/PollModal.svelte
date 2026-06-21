@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onDestroy } from 'svelte';
 	import { page } from '$app/state';
 	import { ApiError } from '$lib/api';
 	import { createPoll, type PollDetail } from '$lib/poll';
@@ -138,6 +139,12 @@
 		}
 	}
 
+	// Active-drag teardown, hoisted to component scope so a mid-drag unmount can
+	// still detach the window listeners — otherwise the closures leak and keep
+	// firing against destroyed component state if the panel closes before pointerup.
+	// Removing a non-attached listener is a no-op, so calling this any time is safe.
+	let cleanupDrag: (() => void) | null = null;
+
 	// Drag by the titlebar (ignore clicks on the window-control buttons).
 	function onTitlePointerDown(e: PointerEvent) {
 		if ((e.target as HTMLElement).closest('button')) return;
@@ -152,12 +159,18 @@
 		};
 		const up = () => {
 			dragging = false;
+			cleanupDrag?.();
+		};
+		cleanupDrag = () => {
 			window.removeEventListener('pointermove', move);
 			window.removeEventListener('pointerup', up);
+			cleanupDrag = null;
 		};
 		window.addEventListener('pointermove', move);
 		window.addEventListener('pointerup', up);
 	}
+
+	onDestroy(() => cleanupDrag?.());
 </script>
 
 {#if open}

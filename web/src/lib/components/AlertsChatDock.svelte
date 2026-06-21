@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onDestroy } from 'svelte';
 	import type { ChatChannel, PresentUser, ReactionTally, ReactionTarget } from '$lib/types';
 	import AlertFeed, { type AlertItem } from './AlertFeed.svelte';
 	import ChatPanel, { type ChatItem } from './ChatPanel.svelte';
@@ -94,6 +95,11 @@
 		window.localStorage.setItem(FRACTION_KEY, String(alertsFraction));
 	});
 
+	// Active-drag teardown, hoisted to component scope so a mid-drag unmount can
+	// still detach the window listeners — otherwise the closures leak and keep
+	// firing against destroyed state if the dock closes before pointerup.
+	let cleanupDrag: (() => void) | null = null;
+
 	function startHeightDrag(e: PointerEvent) {
 		e.preventDefault();
 		dragging = true;
@@ -105,12 +111,18 @@
 		};
 		const up = () => {
 			dragging = false;
+			cleanupDrag?.();
+		};
+		cleanupDrag = () => {
 			window.removeEventListener('pointermove', move);
 			window.removeEventListener('pointerup', up);
+			cleanupDrag = null;
 		};
 		window.addEventListener('pointermove', move);
 		window.addEventListener('pointerup', up);
 	}
+
+	onDestroy(() => cleanupDrag?.());
 
 	function resetHeight() {
 		alertsFraction = 0.814;
