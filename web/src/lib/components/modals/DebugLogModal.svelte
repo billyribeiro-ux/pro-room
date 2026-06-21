@@ -53,8 +53,7 @@
 			spellcheck="false"
 			wrap="off"
 			aria-label="Debug log"
-			value={text}
-		></textarea>
+			value={text}></textarea>
 	</div>
 </Modal>
 

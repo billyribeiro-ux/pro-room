@@ -38,7 +38,9 @@ test.beforeAll(async ({ request, playwright }) => {
 		await mike.post(`${API}/api/auth/login`, {
 			data: { email: 'mike@proroom.dev', password: 'proom1234' }
 		});
-		const msgs = (await (await request.get(`${API}/api/rooms/${roomId}/messages`)).json()) as Array<{
+		const msgs = (await (
+			await request.get(`${API}/api/rooms/${roomId}/messages`)
+		).json()) as Array<{
 			author_name?: string;
 		}>;
 		if (!msgs.some((m) => m.author_name === 'Mike')) {
@@ -76,7 +78,9 @@ async function openSidebarItem(page: Page, name: string) {
 
 async function closeModal(page: Page) {
 	await page.keyboard.press('Escape');
-	await expect(page.getByRole('dialog')).toHaveCount(0, { timeout: 5_000 }).catch(() => {});
+	await expect(page.getByRole('dialog'))
+		.toHaveCount(0, { timeout: 5_000 })
+		.catch(() => {});
 }
 
 /** Open the User Info modal for the first chat row authored by `who`. */
@@ -151,7 +155,8 @@ test('Edit my Info updates the display name', async ({ page }) => {
 		timeout: 8_000
 	});
 	const me = await page.evaluate(
-		async () => await (await fetch('http://localhost:8081/api/auth/me', { credentials: 'include' })).json()
+		async () =>
+			await (await fetch('http://localhost:8081/api/auth/me', { credentials: 'include' })).json()
 	);
 	expect(me.user.display_name).toBe(name);
 	// reset
@@ -227,7 +232,10 @@ test('General Settings Compact Mode applies to the chat list', async ({ page }) 
 
 test('1:1 Private Chat sends a message that appears once', async ({ page }) => {
 	await openUserInfo(page, 'Mike');
-	await page.getByRole('dialog').getByRole('button', { name: /Private Chat|Private Message/i }).click();
+	await page
+		.getByRole('dialog')
+		.getByRole('button', { name: /Private Chat|Private Message/i })
+		.click();
 	const panel = page.locator('.priv-chat');
 	await expect(panel).toBeVisible({ timeout: 5_000 });
 	const body = `pm-e2e-${Date.now()}`;

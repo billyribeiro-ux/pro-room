@@ -71,7 +71,9 @@ const CHANNEL: Record<SoundKind, DndKey | null> = {
  * the kinds with a dedicated toggle are listed; the rest are gated by DND alone.
  * A `false` pref suppresses that cue regardless of DND.
  */
-const PREF: Partial<Record<SoundKind, 'startRecordingSound' | 'stopRecordingSound' | 'reactionsResponse'>> = {
+const PREF: Partial<
+	Record<SoundKind, 'startRecordingSound' | 'stopRecordingSound' | 'reactionsResponse'>
+> = {
 	recordStart: 'startRecordingSound',
 	recordStop: 'stopRecordingSound',
 	reaction: 'reactionsResponse'

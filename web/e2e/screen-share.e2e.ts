@@ -16,7 +16,8 @@ test.beforeAll(async ({ request }) => {
 	const rooms = (await res.json()) as Array<{ id: string; is_live: boolean }>;
 	const room = rooms.find((r) => r.is_live) ?? rooms[0];
 	roomId = room.id;
-	if (!room.is_live) await request.post(`${API}/api/rooms/${roomId}/live`, { data: { is_live: true } });
+	if (!room.is_live)
+		await request.post(`${API}/api/rooms/${roomId}/live`, { data: { is_live: true } });
 });
 
 // Replace getDisplayMedia with a moving canvas stream (headless screen capture).
@@ -62,7 +63,9 @@ test('screen share renders in the stage and the zoom/snapshot/stop controls work
 	const t0 = await container.evaluate((el) => getComputedStyle(el).transform);
 	await page.getByRole('button', { name: 'Zoom' }).click();
 	await expect
-		.poll(async () => container.evaluate((el) => getComputedStyle(el).transform), { timeout: 3_000 })
+		.poll(async () => container.evaluate((el) => getComputedStyle(el).transform), {
+			timeout: 3_000
+		})
 		.not.toBe(t0);
 
 	// Snapshot control downloads a PNG.

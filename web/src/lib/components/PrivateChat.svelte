@@ -102,8 +102,7 @@
 					placeholder="Type your message here.."
 					aria-label="Message"
 					oninput={autogrow}
-					onkeydown={onComposerKeydown}
-				></textarea>
+					onkeydown={onComposerKeydown}></textarea>
 				<button type="button" class="ic" aria-label="Emoji">
 					<Icon name="smile" size={18} />
 				</button>

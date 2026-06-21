@@ -27,6 +27,15 @@ async fn main() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();
     init_tracing();
 
+    // Install the pure-Rust *ring* provider as rustls's process-wide default
+    // crypto provider. reqwest is built with `rustls-no-provider`, so it relies
+    // on this being set before the first HTTPS client is constructed (OAuth
+    // token exchange + geo lookups). Chosen over aws-lc-rs to keep the build
+    // free of native cmake/clang dependencies.
+    rustls::crypto::ring::default_provider()
+        .install_default()
+        .expect("install ring as the default rustls CryptoProvider");
+
     let config = Config::from_env().context("loading configuration")?;
     let bind_addr = config.bind_addr.clone();
 

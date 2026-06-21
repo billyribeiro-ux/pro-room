@@ -34,7 +34,17 @@
 				href={seg.href}
 				target="_blank"
 				rel="noopener noreferrer">{seg.value}</a
-			>{:else if seg.kind === 'image'}{#if seg.gif && dnd.chatGif && !shownGifs.has(seg.href)}<button type="button" class="gif-muted" onclick={() => revealGif(seg.href)}>GIF muted — click to show</button>{:else}<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- external user-supplied image URL --><a class="img-container" href={seg.href} target="_blank" rel="noopener noreferrer" title="Open image"><img class="uploaded-img" src={seg.href} alt="" loading="lazy" /></a>{/if}{:else}{seg.value}{/if}{/each}</span
+			>{:else if seg.kind === 'image'}{#if seg.gif && dnd.chatGif && !shownGifs.has(seg.href)}<button
+					type="button"
+					class="gif-muted"
+					onclick={() => revealGif(seg.href)}>GIF muted — click to show</button
+				>{:else}<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- external user-supplied image URL --><a
+					class="img-container"
+					href={seg.href}
+					target="_blank"
+					rel="noopener noreferrer"
+					title="Open image"><img class="uploaded-img" src={seg.href} alt="" loading="lazy" /></a
+				>{/if}{:else}{seg.value}{/if}{/each}</span
 >
 
 <style>

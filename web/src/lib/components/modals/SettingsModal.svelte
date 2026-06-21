@@ -307,11 +307,23 @@
 			</div>
 			<div class="radios" role="radiogroup" aria-label="Alert text mode">
 				<label class="radio">
-					<input type="radio" name="alert-text-mode" value="regular" checked={prefs.alertMode === 'regular'} onchange={() => setPref('alertMode', 'regular')} />
+					<input
+						type="radio"
+						name="alert-text-mode"
+						value="regular"
+						checked={prefs.alertMode === 'regular'}
+						onchange={() => setPref('alertMode', 'regular')}
+					/>
 					<span>Regular Mode</span>
 				</label>
 				<label class="radio">
-					<input type="radio" name="alert-text-mode" value="compact" checked={prefs.alertMode === 'compact'} onchange={() => setPref('alertMode', 'compact')} />
+					<input
+						type="radio"
+						name="alert-text-mode"
+						value="compact"
+						checked={prefs.alertMode === 'compact'}
+						onchange={() => setPref('alertMode', 'compact')}
+					/>
 					<span>Compact Mode</span>
 				</label>
 			</div>
@@ -353,7 +365,11 @@
 					<span class="state">{dnd.qa ? 'off' : 'on'}</span>
 				</label>
 				<label class="check">
-					<input type="checkbox" checked={prefs.qaReactionsSound} onchange={(e) => setPref('qaReactionsSound', checked(e))} />
+					<input
+						type="checkbox"
+						checked={prefs.qaReactionsSound}
+						onchange={(e) => setPref('qaReactionsSound', checked(e))}
+					/>
 					<span>QA Reactions Sound</span>
 					<span class="state">{prefs.qaReactionsSound ? 'on' : 'off'}</span>
 				</label>
@@ -374,16 +390,24 @@
 				<span>Alert popup</span>
 			</div>
 			<label class="check">
-				<input type="checkbox" checked={prefs.longerAlertPopup} onchange={(e) => setPref('longerAlertPopup', checked(e))} />
+				<input
+					type="checkbox"
+					checked={prefs.longerAlertPopup}
+					onchange={(e) => setPref('longerAlertPopup', checked(e))}
+				/>
 				<span>Longer alert popup</span>
 				<span class="state">{prefs.longerAlertPopup ? 'on' : 'off'}</span>
 			</label>
 			<!-- Filter out alerts — integration phase points this at AlertFilterModal. -->
-			<button class="btn ghost wide" type="button" onclick={() => {
+			<button
+				class="btn ghost wide"
+				type="button"
+				onclick={() => {
 					onFilterAlerts?.();
 					onClose();
 					openFilter();
-				}}>
+				}}
+			>
 				<Icon name="filter" size={15} /> Filter out alerts
 			</button>
 		</div>
@@ -396,11 +420,23 @@
 			</div>
 			<div class="radios" role="radiogroup" aria-label="Chat text mode">
 				<label class="radio">
-					<input type="radio" name="chat-text-mode" value="regular" checked={prefs.chatMode === 'regular'} onchange={() => setPref('chatMode', 'regular')} />
+					<input
+						type="radio"
+						name="chat-text-mode"
+						value="regular"
+						checked={prefs.chatMode === 'regular'}
+						onchange={() => setPref('chatMode', 'regular')}
+					/>
 					<span>Regular Mode</span>
 				</label>
 				<label class="radio">
-					<input type="radio" name="chat-text-mode" value="compact" checked={prefs.chatMode === 'compact'} onchange={() => setPref('chatMode', 'compact')} />
+					<input
+						type="radio"
+						name="chat-text-mode"
+						value="compact"
+						checked={prefs.chatMode === 'compact'}
+						onchange={() => setPref('chatMode', 'compact')}
+					/>
 					<span>Compact Mode</span>
 				</label>
 			</div>
@@ -411,7 +447,11 @@
 				<span>Image Preview</span>
 			</div>
 			<label class="check">
-				<input type="checkbox" checked={prefs.smallImagePreview} onchange={(e) => setPref('smallImagePreview', checked(e))} />
+				<input
+					type="checkbox"
+					checked={prefs.smallImagePreview}
+					onchange={(e) => setPref('smallImagePreview', checked(e))}
+				/>
 				<span>Smaller image preview</span>
 				<span class="state">{prefs.smallImagePreview ? 'on' : 'off'}</span>
 			</label>
@@ -469,7 +509,11 @@
 				<span>Extra chat column</span>
 			</div>
 			<label class="check">
-				<input type="checkbox" checked={prefs.extraChatColumn} onchange={(e) => setPref('extraChatColumn', checked(e))} />
+				<input
+					type="checkbox"
+					checked={prefs.extraChatColumn}
+					onchange={(e) => setPref('extraChatColumn', checked(e))}
+				/>
 				<span>Chat column</span>
 				<span class="state">{prefs.extraChatColumn ? 'on' : 'off'}</span>
 			</label>
@@ -480,7 +524,11 @@
 				<span>Always Scroll To Bottom</span>
 			</div>
 			<label class="check">
-				<input type="checkbox" checked={prefs.alwaysScrollToBottom} onchange={(e) => setPref('alwaysScrollToBottom', checked(e))} />
+				<input
+					type="checkbox"
+					checked={prefs.alwaysScrollToBottom}
+					onchange={(e) => setPref('alwaysScrollToBottom', checked(e))}
+				/>
 				<span>Always scroll to bottom</span>
 				<span class="state">{prefs.alwaysScrollToBottom ? 'on' : 'off'}</span>
 			</label>
@@ -492,12 +540,20 @@
 			</div>
 			<div class="checks">
 				<label class="check">
-					<input type="checkbox" checked={prefs.trimChatLogs} onchange={(e) => setPref('trimChatLogs', checked(e))} />
+					<input
+						type="checkbox"
+						checked={prefs.trimChatLogs}
+						onchange={(e) => setPref('trimChatLogs', checked(e))}
+					/>
 					<span>Reduce Chatlog Memory</span>
 					<span class="state">{prefs.trimChatLogs ? 'on' : 'off'}</span>
 				</label>
 				<label class="check">
-					<input type="checkbox" checked={prefs.tabSleep} onchange={(e) => setPref('tabSleep', checked(e))} />
+					<input
+						type="checkbox"
+						checked={prefs.tabSleep}
+						onchange={(e) => setPref('tabSleep', checked(e))}
+					/>
 					<span>Tab sleep optimization</span>
 					<span class="state">{prefs.tabSleep ? 'on' : 'off'}</span>
 				</label>

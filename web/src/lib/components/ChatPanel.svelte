@@ -454,8 +454,7 @@
 						maxlength="2000"
 						placeholder="Type your message here.."
 						oninput={autogrow}
-						onkeydown={onComposerKeydown}
-					></textarea>
+						onkeydown={onComposerKeydown}></textarea>
 				</div>
 				<div class="textAreaBtnsCol">
 					<!-- Add Emojis (far fa-smile) → native-Unicode picker popover. -->

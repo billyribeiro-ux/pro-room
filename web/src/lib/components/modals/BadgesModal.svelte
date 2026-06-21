@@ -135,11 +135,8 @@
 		<section>
 			<h4>Create a badge</h4>
 			<div class="form-grid">
-				<label
-					>Slug<input type="text" bind:value={slug} maxlength="40" placeholder="mod" /></label
-				>
-				<label
-					>Label<input type="text" bind:value={label} maxlength="40" placeholder="MOD" /></label
+				<label>Slug<input type="text" bind:value={slug} maxlength="40" placeholder="mod" /></label>
+				<label>Label<input type="text" bind:value={label} maxlength="40" placeholder="MOD" /></label
 				>
 				<label class="color">Background<input type="color" bind:value={bgColor} /></label>
 				<label class="color">Text<input type="color" bind:value={textColor} /></label>
