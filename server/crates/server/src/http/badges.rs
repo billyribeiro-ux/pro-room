@@ -79,8 +79,11 @@ async fn create(
     )
     .await
     .map_err(|e| {
-        // A duplicate slug is a 409, not a 500.
-        if e.to_string().contains("badges_slug_key") {
+        // A duplicate slug is a 409, not a 500. The sqlx unique-violation Display
+        // (which carries the constraint name) is a SOURCE in the anyhow chain, not
+        // the top-level `.context("create badge")`, so inspect the whole chain
+        // rather than just `e.to_string()`.
+        if e.chain().any(|c| c.to_string().contains("badges_slug_key")) {
             AppError::Conflict("a badge with that slug already exists".into())
         } else {
             AppError::Internal(e)

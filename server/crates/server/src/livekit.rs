@@ -57,7 +57,11 @@ pub fn mint(config: &LiveKitConfig, grant: &Grant) -> anyhow::Result<String> {
             room_join: true,
             can_publish: grant.can_publish,
             can_subscribe: true,
-            can_publish_data: true,
+            // Least privilege: gate data-channel publish on the same presenter
+            // check as A/V publish. The app carries chat/alerts/reactions/presence
+            // over its own WebSocket hub (not LiveKit data channels), so a
+            // subscribe-only member has no need to publish data.
+            can_publish_data: grant.can_publish,
         },
     };
     jsonwebtoken::encode(
