@@ -39,6 +39,7 @@ test('camera X removes the tile — no lingering black tile (BUG A)', async ({ p
 	// The local webcam tile appears — only the local tile carries the X.
 	const closeX = page.getByRole('button', { name: 'Turn off your camera' });
 	await expect(closeX).toHaveCount(1, { timeout: 15_000 });
+	await page.screenshot({ path: 'e2e/screenshots/f13-camera-on.png' });
 
 	// Click the X. THE FIX: the tile is fully removed (pre-fix it lingered, black,
 	// because the muted-but-published track kept #refresh re-adding it).
@@ -65,6 +66,7 @@ test('mic start/stop completes without a thrown error (BUG A + AV-Settings regre
 	// Mic is publishing -> the Stop-microphone control appears.
 	const stopMic = page.getByRole('button', { name: 'Stop microphone' });
 	await expect(stopMic).toBeVisible({ timeout: 15_000 });
+	await page.screenshot({ path: 'e2e/screenshots/f14-mic-on.png' });
 
 	// Stop unpublishes cleanly and returns to the start state.
 	await stopMic.click();
