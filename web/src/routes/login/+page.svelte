@@ -6,6 +6,12 @@
 	import { resolve } from '$app/paths';
 	import Icon from '$lib/components/Icon.svelte';
 
+	/** Local Docker seed account — DEV only (see scripts/seed-dev-users.sh). */
+	const DEV_LOGIN = {
+		email: 'demo@proroom.local',
+		password: 'Demo1234!'
+	} as const;
+
 	let email = $state('');
 	let password = $state('');
 	let error = $state<string | null>(null);
@@ -17,7 +23,25 @@
 		error = null;
 		busy = true;
 		try {
-			await auth.login(email, password);
+			// Trim email only — password is used as-typed (server does not trim).
+			await auth.login(email.trim(), password);
+			await goto(resolve('/rooms'));
+		} catch (err) {
+			error = err instanceof ApiError ? err.message : 'Sign in failed';
+		} finally {
+			busy = false;
+		}
+	}
+
+	/** One-click fill + sign-in so local testing cannot mistype seed credentials. */
+	async function devLogin() {
+		if (!import.meta.env.DEV) return;
+		email = DEV_LOGIN.email;
+		password = DEV_LOGIN.password;
+		error = null;
+		busy = true;
+		try {
+			await auth.login(DEV_LOGIN.email, DEV_LOGIN.password);
 			await goto(resolve('/rooms'));
 		} catch (err) {
 			error = err instanceof ApiError ? err.message : 'Sign in failed';
@@ -41,6 +65,7 @@
 	}
 
 	function oauth(provider: 'google' | 'github') {
+		// Empty API_URL (dev proxy) → same-origin path.
 		window.location.href = `${API_URL}/api/auth/oauth/${provider}/start?redirect_to=/rooms`;
 	}
 </script>
@@ -52,6 +77,18 @@
 			<h1>Sign in</h1>
 		</div>
 
+		{#if import.meta.env.DEV}
+			<div class="dev-box">
+				<strong>Local dev login</strong>
+				<code>{DEV_LOGIN.email}</code>
+				<code>{DEV_LOGIN.password}</code>
+				<button type="button" class="dev-btn" onclick={devLogin} disabled={busy}>
+					{busy ? 'Signing in…' : 'Fill & sign in as demo admin'}
+				</button>
+				<p class="dev-hint">API base: {API_URL === '' ? '(same-origin /api via Vite proxy)' : API_URL}</p>
+			</div>
+		{/if}
+
 		{#if error}<p class="error">{error}</p>{/if}
 		{#if magicSent}<p class="ok">Check your email for a sign-in link.</p>{/if}
 
@@ -62,7 +99,12 @@
 			</label>
 			<label>
 				Password
-				<input type="password" bind:value={password} autocomplete="current-password" required />
+				<input
+					type="password"
+					bind:value={password}
+					autocomplete={import.meta.env.DEV ? 'off' : 'current-password'}
+					required
+				/>
 			</label>
 			<button class="primary" type="submit" disabled={busy}>
 				{busy ? 'Signing in…' : 'Sign in'}
@@ -214,5 +256,43 @@
 		padding: 0.5rem 0.7rem;
 		border-radius: 8px;
 		font-size: 0.85rem;
+	}
+	.dev-box {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+		margin-bottom: 1rem;
+		padding: 0.75rem 0.85rem;
+		border-radius: 8px;
+		border: 1px dashed color-mix(in srgb, var(--accent) 55%, var(--border));
+		background: color-mix(in srgb, var(--accent) 10%, transparent);
+		font-size: 0.8rem;
+	}
+	.dev-box strong {
+		font-size: 0.78rem;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		color: var(--text-dim);
+	}
+	.dev-box code {
+		font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+		font-size: 0.85rem;
+		color: var(--text);
+		user-select: all;
+	}
+	.dev-btn {
+		margin-top: 0.35rem;
+		background: var(--accent);
+		border-color: var(--accent);
+		color: #fff;
+		font-weight: 600;
+	}
+	.dev-btn:hover {
+		background: var(--accent-hover);
+	}
+	.dev-hint {
+		margin: 0.25rem 0 0;
+		color: var(--text-dim);
+		font-size: 0.72rem;
 	}
 </style>
