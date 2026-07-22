@@ -518,9 +518,9 @@
 		text-align: center;
 		background: var(--content-separator-bg);
 		color: #373c42;
-		/* Measured band metrics 16px/24px (pixel-diff); the inner date anchor's
-		   own color was never captured — #373c42 kept from the earlier capture. */
-		font-size: 16px;
+		/* Reference date ANCHOR renders at 13px inside the #e8e8e8 band
+		   (audit vs file2/ultra-member). */
+		font-size: 13px;
 		font-weight: 300;
 		padding: 0;
 		line-height: 24px;
@@ -733,7 +733,9 @@
 		border-color: #565e64;
 	}
 	.qa-count {
-		font-weight: 700;
+		/* Reference count inherits the button's 400 weight (not bold). */
+		font-weight: 400;
+		margin-right: 4px;
 	}
 	.qa-check {
 		font-size: 10px;
@@ -771,11 +773,13 @@
 		white-space: pre-wrap;
 		font-size: var(--msg-font-size);
 	}
-	/* Reference span.stockColor ticker: 700 13px/19.5px UPPERCASE
-	   (report.md:1341); no italic in the computed shorthand. */
+	/* Reference .stockColor stylesheet rule (file2.html.html): font-weight:700;
+	   font-style:italic; text-transform:uppercase — the raw CSS rule (hard
+	   evidence) carries italic, so restore it. */
 	.stock {
 		color: var(--ticker-color, #1a1a1a);
 		font-weight: 700;
+		font-style: italic;
 		text-transform: uppercase;
 	}
 	.img-open {

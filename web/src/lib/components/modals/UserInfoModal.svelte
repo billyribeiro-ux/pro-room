@@ -193,10 +193,11 @@
 	}
 	/* Measured modal active tab (targeted.json node 33, report.md:1589):
 	   #45a2ff fill, white text. */
-	.tab.active {
-		background: var(--modal-active-tab, #45a2ff);
-		color: #fff;
-		border-color: var(--modal-active-tab, #45a2ff);
+		.tab.active {
+		background: var(--modal-active-tab-bg, #222);
+		color: var(--modal-active-tab, #00bc8c);
+		border: 1px solid var(--modal-active-tab-border, #444);
+		border-bottom: none;
 	}
 	.details {
 		width: 100%;

@@ -267,12 +267,14 @@
 <style>
 	.rec {
 		position: fixed;
-		right: 1rem;
-		bottom: 1rem;
+		/* Reference .recsHolderScreen sits above the screenshare card
+		   (bottom:265px right:0) so the two don't overlap. */
+		right: 0;
+		bottom: 265px;
 		z-index: 1040; /* floating layer: above the z-1030 nav, below modals */
-		width: 330px;
-		background: var(--bg-elev);
-		border: 1px solid var(--border);
+		width: 350px;
+		background: #000;
+		border: 1px solid #fafafa;
 		border-radius: var(--radius);
 		box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
 		display: flex;
@@ -300,8 +302,8 @@
 		color: var(--text);
 	}
 	.title small {
-		font-weight: 400;
-		color: var(--text-dim);
+		font-weight: 700;
+		color: #fff;
 	}
 	.dot {
 		width: 9px;

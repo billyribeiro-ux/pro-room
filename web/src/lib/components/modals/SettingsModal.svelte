@@ -622,15 +622,16 @@
 		margin-bottom: 1rem;
 	}
 	/* Measured settings tab (targeted.json node 33, report.md:1589): padding
-	   8px 16px, 16px font; active = #45a2ff fill, white text, 1px #45a2ff
-	   border, 6px top radius. */
+	   8px 16px, 16px font. Darkly nav-tabs (appusersettingsmodal.html.html):
+	   active = #222 bg / #00bc8c text / #444 border, border-bottom:none. */
 	.tab {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.4rem;
 		background: transparent;
 		border: 1px solid transparent;
-		color: var(--text-dim);
+		/* Inactive tab text near-white (not the dim modal text). */
+		color: #f4f4f4;
 		padding: 8px 16px;
 		margin-bottom: -1px;
 		font-weight: 400;
@@ -639,13 +640,13 @@
 		cursor: pointer;
 	}
 	.tab:hover {
-		color: var(--text);
-		border-color: var(--modal-active-tab, #45a2ff);
+		border-color: var(--modal-active-tab-border, #444);
 	}
 	.tab.active {
-		background: var(--modal-active-tab, #45a2ff);
-		color: #fff;
-		border-color: var(--modal-active-tab, #45a2ff);
+		background: var(--modal-active-tab-bg, #222);
+		color: var(--modal-active-tab, #00bc8c);
+		border: 1px solid var(--modal-active-tab-border, #444);
+		border-bottom: none;
 		cursor: default;
 	}
 
@@ -654,16 +655,19 @@
 		flex-direction: column;
 	}
 
+	/* Reference section headings are normal-case, ~1rem, near-white, with a
+	   trailing colon (e.g. "Choose Color Theme:") — not the uppercase dim style. */
 	.section-head {
 		display: flex;
 		align-items: center;
 		gap: 0.45rem;
-		color: var(--text-dim);
-		font-size: 0.8rem;
-		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 0.04em;
+		color: var(--modal-color, #f4f4f4);
+		font-size: 1rem;
+		font-weight: 400;
 		margin-bottom: 0.6rem;
+	}
+	.section-head span::after {
+		content: ':';
 	}
 	.section-head.spaced {
 		margin-top: 1.25rem;
@@ -866,15 +870,17 @@
 		width: 100%;
 		margin-top: 0.4rem;
 	}
+	/* Reference "Edit my Info and Avatar" is a SOLID btn-warning: #f39c12 fill,
+	   white text. */
 	.btn.warn-btn {
 		margin-top: 1.5rem;
 		width: 100%;
-		background: color-mix(in srgb, var(--warn) 14%, transparent);
-		border-color: color-mix(in srgb, var(--warn) 55%, transparent);
-		color: var(--warn);
+		background: var(--warn, #f39c12);
+		border-color: var(--warn, #f39c12);
+		color: #fff;
 	}
 	.btn.warn-btn:hover {
-		background: color-mix(in srgb, var(--warn) 22%, transparent);
-		border-color: var(--warn);
+		opacity: 0.9;
+		border-color: var(--warn, #f39c12);
 	}
 </style>

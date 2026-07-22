@@ -187,34 +187,38 @@
 			</button>
 		{/each}
 
-		<div class="tools">
-			<div class="search">
-				<Icon name="search" size={15} />
-				<input
-					id="files-search"
-					name="files-search"
-					type="search"
-					placeholder="Search files…"
-					bind:value={query}
-				/>
-			</div>
-			<button type="button" class="ic" onclick={load} disabled={busy} aria-label="Refresh">
-				<!-- Reference files refresh: fas fa-sync, 12px, white (report.md:2594). -->
-				<Icon name="sync" size={12} />
-			</button>
-			{#if canManage}
-				<button
-					type="button"
-					class="upload"
-					onclick={() => fileInput?.click()}
-					disabled={uploading}
-				>
-					<Icon name="upload" size={15} />
-					{uploading ? 'Uploading…' : 'Upload'}
-				</button>
-				<input class="hidden-input" type="file" bind:this={fileInput} onchange={onUpload} />
-			{/if}
+	</div>
+
+	<!-- Reference Files search sits in its OWN centered 75%-wide row BELOW the tab
+	     strip (file6 DOM: div.d-flex.flex-wrap.justify-content-center.w-75.m-auto >
+	     div.flex-fill > div.input-group.st-searchbar > input.form-control + right
+	     icon addon). Refresh is the blue .st-fileSeeMore labeled button. -->
+	<div class="file-controls">
+		<div class="searchbar">
+			<input
+				id="files-search"
+				name="files-search"
+				type="text"
+				aria-label="search"
+				placeholder="Search files..."
+				bind:value={query}
+			/>
+			<span class="searchbar-icon" aria-hidden="true"><Icon name="search" size={14} /></span>
 		</div>
+		<button type="button" class="see-more" onclick={load} disabled={busy} title="Reload list">
+			Refresh<Icon name="sync" size={12} />
+		</button>
+		{#if canManage}
+			<button
+				type="button"
+				class="see-more upload"
+				onclick={() => fileInput?.click()}
+				disabled={uploading}
+			>
+				{uploading ? 'Uploading…' : 'Upload'}<Icon name="upload" size={12} />
+			</button>
+			<input class="hidden-input" type="file" bind:this={fileInput} onchange={onUpload} />
+		{/if}
 	</div>
 
 	{#if error}<p class="error">{error}</p>{/if}
@@ -225,7 +229,6 @@
 				<tr>
 					<th>Name</th>
 					<th class="num">Size</th>
-					<th class="num">Date</th>
 					<th class="act"></th>
 				</tr>
 			</thead>
@@ -251,7 +254,6 @@
 							{/if}
 						</td>
 						<td class="num">{formatSize(f.size_bytes)}</td>
-						<td class="num">{formatDate(f.created_at)}</td>
 						<td class="act">
 							<button type="button" class="download" onclick={() => download(f)}>
 								<Icon name="download" size={14} /> Download
@@ -271,7 +273,7 @@
 					</tr>
 				{:else}
 					<tr>
-						<td class="empty" colspan="4">
+						<td class="empty" colspan="3">
 							{query ? 'No files match your search.' : 'No files in this category yet.'}
 						</td>
 					</tr>
@@ -290,21 +292,18 @@
 		flex-direction: column;
 		height: 100%;
 		min-height: 0;
-		/* Reference file list is a LIGHT striped surface: odd #fff / even #f4f4f4
-		   rows (report.md:744,2932); base text #676767 on white. */
-		background: var(--file-list-odd-bg, #ffffff);
-		color: var(--content-text, #676767);
+		/* Reference Files pane is the NAVY presenter surface #0f2e43 — only the
+		   table ROWS are the light striped list; the search row + surround stay
+		   navy (file6: #files pane has no bg, inherits .presentation-box
+		   --presenter-area-bg; report.md:2580,728). */
+		background: var(--presenter-area-bg, #0f2e43);
+		color: #ffffff;
 	}
 	.subtabs {
 		display: flex;
-		/* position:relative so .tools can be pulled out of the centered flow below. */
-		position: relative;
 		align-items: center;
-		/* Reference .files-tabs: justify-content:center — Files / Images / Sounds are
-		   ALWAYS centered on the full width; the search/refresh/upload tools are taken
-		   out of the flow (absolute, right) so they never shift the three tabs.
-		   No strip padding/gap — spacing comes from the 5px link margins
-		   (report.md:2423,2386). */
+		/* Reference .files-tabs: justify-content:center — Files / Images / Sounds
+		   centered. Search/refresh moved to their own row below (no absolute tools). */
 		justify-content: center;
 		flex-wrap: wrap;
 		gap: 0;
@@ -353,96 +352,101 @@
 		line-height: 1;
 		border: 1px solid #000000;
 		border-radius: 50rem;
-		/* `.bg-danger` is OVERRIDDEN to coral rgb(231,76,60) — NOT the Bootstrap
-		   default #dc3545 (220,53,69). report.md §04 line 945. */
-		background: rgb(231, 76, 60);
+		/* `.badge.bg-danger` computes Bootstrap danger #dc3545 (220,53,69). */
+		background: rgb(220, 53, 69);
 		color: #ffffff;
 		font-size: 0.75em;
 		font-weight: 700;
 		/* .files-badge: notch up-right onto the sub-tab label (margin -9px 0 0 3px). */
 		margin: -9px 0 0 3px;
 	}
-	.tools {
+	/* Reference: search + refresh live in their OWN centered 75%-wide row BELOW
+	   the tab strip (file6 DOM: div.d-flex.flex-wrap.justify-content-center
+	   .align-items-center.w-75.m-auto). */
+	.file-controls {
 		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
 		align-items: center;
 		gap: 0.4rem;
-		/* Out of the centered flow so the three category tabs stay truly centered. */
-		position: absolute;
-		right: 0.85rem;
-		top: 50%;
-		transform: translateY(-50%);
+		width: 75%;
+		margin: 0.6rem auto;
+		flex-shrink: 0;
 	}
-	.search {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.3rem;
-		/* Reference searchbar: #fff bar, #b7b7b7 text, #666 icon
-		   (report.md:747). */
+	/* Reference div.input-group.st-searchbar: flex-fills the row; white bar
+	   (--file-searchbar-bg #fff), 32px tall, radius .25rem; input.form-control on
+	   the LEFT + fa-search icon addon on the RIGHT (file6 CSS). */
+	.searchbar {
+		display: flex;
+		flex: 1 1 auto;
+		min-width: 8rem;
+		height: 32px;
 		background: var(--file-searchbar-bg, #ffffff);
-		border: none;
-		border-radius: 6px;
-		padding: 0.2rem 0.6rem;
-		color: var(--file-searchbar-icon-color, #666666);
+		border-radius: 0.25rem;
+		overflow: hidden;
 	}
-	.search input {
+	.searchbar input {
+		flex: 1;
+		min-width: 0;
 		border: none;
 		outline: none;
+		box-shadow: none;
 		background: transparent;
-		/* .files-search .form-control: font-size 12px */
+		height: 32px;
+		padding: 0 0.6rem;
 		font-size: 12px;
+		/* --file-searchbar-color #b7b7b7. */
 		color: var(--file-searchbar-color, #b7b7b7);
-		width: 9rem;
 	}
-	.ic {
+	/* Reference .st-searchbar-icon: right addon, radius 0 .25rem .25rem 0, height
+	   32px, padding 3px 10px, --file-searchbar-icon-color #666. */
+	.searchbar-icon {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		/* Reference files refresh: bare white 12px glyph on the navy strip
-		   (report.md:2594). */
-		background: transparent;
-		border: none;
-		color: #ffffff;
-		border-radius: 6px;
-		/* .files-options button: padding 5px */
-		padding: 5px;
+		height: 32px;
+		padding: 3px 10px;
+		background: var(--file-searchbar-bg, #ffffff);
+		color: var(--file-searchbar-icon-color, #666666);
+		border-radius: 0 0.25rem 0.25rem 0;
 		cursor: pointer;
 	}
-	.ic:hover:not(:disabled) {
-		opacity: 0.85;
-	}
-	.ic:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-	.upload {
+	/* Reference .st-fileSeeMore: --file-see-more-bg #45a2ff / --tabs-color #fff,
+	   12px, labeled button (Refresh / Upload) with a trailing icon. */
+	.see-more {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.35rem;
-		/* --tab-active-bg / accent #45a2ff */
-		background: var(--accent);
+		background: var(--file-see-more-bg, #45a2ff);
 		border: none;
 		color: #ffffff;
-		border-radius: 6px;
-		/* .files-options button: padding 5px; font-size 12px */
+		border-radius: 0.25rem;
 		padding: 5px 10px;
 		font-size: 12px;
 		font-weight: 700;
 		cursor: pointer;
 	}
-	.upload:hover:not(:disabled) {
-		background: var(--accent);
+	.see-more:hover:not(:disabled) {
+		opacity: 0.9;
 	}
-	.upload:disabled {
+	.see-more:disabled {
 		opacity: 0.6;
 		cursor: not-allowed;
 	}
 	.hidden-input {
 		display: none;
 	}
+	/* Reference .fileList is the light striped table capped at max-height:350px,
+	   scrolling internally, so the navy pane shows around/below it (file6 CSS).
+	   White background here so the rows read as the light list on the navy pane. */
 	.list {
 		flex: 1;
 		min-height: 0;
+		max-height: 350px;
 		overflow-y: auto;
+		background: var(--file-list-odd-bg, #ffffff);
+		margin: 0.4rem;
+		border-radius: 4px;
 	}
 	table {
 		width: 100%;

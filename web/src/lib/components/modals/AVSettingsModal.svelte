@@ -122,7 +122,7 @@
 	}
 </script>
 
-<Modal {open} {onClose} title="Audio/Video Settings">
+<Modal {open} {onClose} title="Audio/Video Settings" footerCenter>
 	<div class="tabs" role="tablist" aria-label="Audio/Video settings sections">
 		<button
 			type="button"
@@ -244,22 +244,26 @@
 		border-bottom: 1px solid var(--border);
 		margin-bottom: 0.9rem;
 	}
+	/* Darkly modal nav-tabs box (same as SettingsModal): #222 bg / #00bc8c
+	   text / #444 border on active. */
 	.tab {
 		background: transparent;
-		border: none;
-		border-bottom: 2px solid transparent;
-		color: var(--text-dim);
-		padding: 0.45rem 0.7rem;
-		font-size: 0.82rem;
-		font-weight: 600;
+		border: 1px solid transparent;
+		color: #f4f4f4;
+		padding: 8px 16px;
+		font-size: 16px;
+		font-weight: 400;
 		margin-bottom: -1px;
+		border-radius: 6px 6px 0 0;
 	}
 	.tab:hover {
-		color: var(--text);
+		border-color: var(--modal-active-tab-border, #444);
 	}
 	.tab.active {
-		color: var(--text);
-		border-bottom-color: var(--accent);
+		background: var(--modal-active-tab-bg, #222);
+		color: var(--modal-active-tab, #00bc8c);
+		border: 1px solid var(--modal-active-tab-border, #444);
+		border-bottom: none;
 	}
 	.hint {
 		margin: 0 0 0.8rem;
@@ -360,8 +364,9 @@
 		flex: 0 0 auto;
 		white-space: nowrap;
 	}
+	/* Darkly btn-primary = navy #375a7f (--modal-btn-primary). */
 	.primary {
-		background: var(--accent);
+		background: var(--modal-btn-primary, #375a7f);
 		color: #fff;
 		border: none;
 		border-radius: var(--radius);
@@ -370,7 +375,7 @@
 		font-weight: 700;
 	}
 	.primary:hover {
-		background: var(--accent-hover);
+		opacity: 0.9;
 	}
 	.change {
 		align-self: flex-start;
@@ -378,7 +383,8 @@
 	}
 	.success {
 		background: var(--positive);
-		color: #07210a;
+		/* Darkly btn-success text is #fff. */
+		color: #fff;
 		border: none;
 		border-radius: var(--radius);
 		padding: 0.4rem 0.95rem;

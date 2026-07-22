@@ -84,7 +84,7 @@
 					title="Change share source"
 					onclick={() => (sourceOpen = !sourceOpen)}
 				>
-					Source <Icon name="caret-down" size={10} />
+					<Icon name="caret-down" size={10} />
 				</button>
 				{#if sourceOpen}
 					<div class="src-menu" role="menu">
@@ -118,15 +118,16 @@
 <style>
 	.card {
 		position: fixed;
-		right: 1rem;
-		bottom: 1rem;
+		right: 0;
+		bottom: 0;
 		z-index: 1040; /* floating layer: above the z-1030 nav, below modals */
 		width: 350px;
 		height: 260px;
 		display: flex;
 		flex-direction: column;
 		background: #000;
-		border: 1px solid var(--border, #444);
+		/* Reference .webcamsHolderScreen: 1px solid #fafafa, flush bottom-right. */
+		border: 1px solid #fafafa;
 		border-radius: 6px;
 		overflow: hidden;
 		cursor: move;

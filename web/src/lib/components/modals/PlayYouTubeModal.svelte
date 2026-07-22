@@ -140,7 +140,7 @@
 	<button class="btn secondary" type="button" onclick={close}>Close</button>
 {/snippet}
 
-<Modal {open} onClose={close} title="Play YouTube For All" {footer}>
+<Modal {open} onClose={close} title="Play YouTube For All" {footer} footerCenter>
 	<!-- Reference body: a Bootstrap input-group — URL input with Save + Play For All
 	     appended as input-group-text btn addons (files/file2.html, file8.html). -->
 	<div class="input-group">

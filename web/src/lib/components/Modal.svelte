@@ -73,7 +73,10 @@
 
 {#if open}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="backdrop" transition:fade={{ duration: 150 }} onclick={onClose} onkeydown={onKeydown}>
+	<!-- in:fade only (reference .modal.fade fades IN). No out-transition, so a
+	     closing modal is removed immediately — never leaves a second lingering
+	     aria-modal dialog when one modal hands off to another. -->
+	<div class="backdrop" in:fade={{ duration: 150 }} onclick={onClose} onkeydown={onKeydown}>
 		<div
 			class="panel"
 			class:lg={size === 'lg'}

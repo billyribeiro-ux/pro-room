@@ -58,10 +58,10 @@
 		line-height: 1.5;
 	}
 	.ticker {
-		/* Captured .stockColor: `font: 700 13px/19.5px`, UPPERCASE — the computed
-		   shorthand carries NO italic (report.md:1341). Color via --ticker-color. */
+		/* Reference .stockColor CSS rule (file2.html.html): 700 italic UPPERCASE. */
 		color: var(--ticker-color, #1a1a1a);
 		font-weight: 700;
+		font-style: italic;
 		text-transform: uppercase;
 	}
 	.mention {

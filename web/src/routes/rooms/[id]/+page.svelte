@@ -757,7 +757,7 @@
 				title="Camera"
 				aria-label="Camera"
 			>
-				<Icon name="video" />
+				<Icon name="camera" />
 			</button>
 		{/if}
 		{#if screen.micPublishing}
@@ -836,7 +836,7 @@
 			title="Members"
 			aria-label="Members"
 		>
-			<Icon name="cog" />
+			<Icon name="users" />
 		</button>
 	{/if}
 {/snippet}

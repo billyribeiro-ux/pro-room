@@ -143,7 +143,13 @@
 		     lines; hovering reveals 28px round white-border close + history buttons;
 		     history mode scrolls back with a 60px timestamp column
 		     (file-1-part-D.md:141-156). -->
-		<div class="cc-bar" role="status" aria-live="polite" transition:fade={{ duration: 120 }}>
+		<div
+			class="cc-bar"
+			class:history={historyMode}
+			role="status"
+			aria-live="polite"
+			transition:fade={{ duration: 120 }}
+		>
 			<div class="cc-tools">
 				<button
 					type="button"
@@ -200,11 +206,21 @@
 		right: 0;
 		bottom: 0;
 		z-index: 9999;
+		/* Reference live caption bar is a single horizontal row (space-between),
+		   min-height 48px, gap 12px, padding 12px 20px. History mode stacks
+		   (column) via .cc-bar.history. */
 		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
-		padding: 0.65rem 1.1rem;
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+		min-height: 48px;
+		gap: 12px;
+		padding: 12px 20px;
 		background: rgba(0, 0, 0, 0.8);
+	}
+	.cc-bar.history {
+		flex-direction: column;
+		align-items: stretch;
 	}
 	.cc-bar :global(i) {
 		color: #fff;
@@ -213,11 +229,9 @@
 	}
 	/* Hover-revealed round tool buttons: 28px, 1px solid #fff, circular. */
 	.cc-tools {
-		position: absolute;
-		top: -14px;
-		right: 10px;
 		display: flex;
 		gap: 6px;
+		flex: 0 0 auto;
 		opacity: 0;
 		transition: opacity 0.15s ease;
 	}
@@ -232,7 +246,8 @@
 		width: 28px;
 		height: 28px;
 		border-radius: 50%;
-		border: 1px solid #fff;
+		/* Reference .speech-reco-*-btn border is 2px solid #fff. */
+		border: 2px solid #fff;
 		background: rgba(0, 0, 0, 0.8);
 		color: #fff;
 		cursor: pointer;
@@ -240,8 +255,10 @@
 	}
 	.cc-live {
 		display: flex;
-		align-items: flex-start;
+		align-items: center;
 		gap: 0.5rem;
+		flex: 1;
+		min-width: 0;
 	}
 	.cc-text {
 		margin: 0;
@@ -276,13 +293,14 @@
 		align-items: baseline;
 		gap: 8px;
 		color: #fff;
-		font-size: 22px;
+		/* Reference history lines are 16px (live caption stays 22px). */
+		font-size: 16px;
 		line-height: 1.3;
 	}
-	/* Reference per-line timestamp column is 60px (file-1-part-D.md:152). */
+	/* Reference per-line timestamp column is 60px, 14px (file-1-part-D.md:152). */
 	.cc-time {
 		flex: 0 0 60px;
-		font-size: 12px;
+		font-size: 14px;
 		color: #ccc;
 	}
 	.cc-line strong {

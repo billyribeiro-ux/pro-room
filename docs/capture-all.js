@@ -8,9 +8,12 @@
  *  ⚠ CHROME BLOCKS CONSOLE PASTES BY DEFAULT: if pasting does nothing, type
  *     allow pasting   in the Console first, press Enter, then paste again.
  *
- *  RUN TWICE: once logged in as PRESENTER (ROLE='presenter'), once as MEMBER
- *  (ROLE='member'). Files download as proroom-all-<role>.json plus one
- *  proroom-live-<role>-<label>.json per SNAP.
+ *  ONE PRESENTER RUN CAPTURES BOTH SIDES. You only need to be logged in as a
+ *  PRESENTER/ADMIN — the presenter DOM is a SUPERSET of the member DOM (member =
+ *  presenter minus the broadcast/admin controls). The script tags every
+ *  presenter-only node with  presenterOnly:true , so the MEMBER view is derived
+ *  by dropping those. No member login required. Role is auto-detected for the
+ *  filename; override with  window.__ROLE='admin'  before pasting if ever wrong.
  *
  *  WHAT IT DOES
  *   - Captures the complete BASE evidence once: every stylesheet (full CSS incl
@@ -29,16 +32,31 @@
  *  done.
  *
  *  HOW TO RUN
- *   1. Set ROLE below ('presenter' when logged in as admin/presenter, 'member'
- *      when logged in as a member).
- *   2. Undock DevTools into its own window so the page is full desktop width.
- *   3. Paste, Enter. It takes ~5-10s (it pauses between states) then downloads
- *      proroom-full-<ROLE>.json. Send me that file.
- *   Run once as PRESENTER (admin) and once as MEMBER.
+ *   1. Open the room on the REAL app, DevTools → Console (undock to a separate
+ *      window so the page keeps full desktop width ≥ 1100px).
+ *   2. Paste this whole file, Enter. (If nothing happens: type  allow pasting
+ *      first.) It runs ~5-10s and downloads proroom-all-<role>.json.
+ *   3. For live states (recording / sharing / CC), trigger the state then run
+ *      SNAP('recording-live') etc. — each downloads its own file instantly.
+ *   4. Send me proroom-all-presenter.json + every SNAP file. That's everything —
+ *      no separate member run needed (member = the presenterOnly:false subset).
  * ========================================================================== */
 (async () => {
-	const ROLE = 'presenter'; // ← EDIT: 'presenter' (admin run) or 'member' (member run)
+	// AUTO-DETECT role — no editing. Admin/presenter markers: broadcast/go-live/
+	// record/screen-share controls, the presenter cams holder, or the admin-only
+	// sidebar items (Session Control / Branding / Play YouTube For All). Anything
+	// else is a member. Override if ever wrong: window.__ROLE = 'admin'  before run.
+	const ADMIN_MARKERS = [
+		'[class*="go-live" i]', '[class*="golive" i]', '[title*="Go Live" i]',
+		'[class*="record" i]', '[title*="Record" i]', '[class*="screen-share" i]',
+		'[class*="start-screen" i]', 'app-presenter-cams', '[id*="session-control" i]',
+		'[data-bs-target*="session" i]', '[data-bs-target*="branding" i]',
+		'[class*="mic-record" i]', '[class*="broadcast" i]'
+	];
+	const detected = ADMIN_MARKERS.some((s) => { try { return !!document.querySelector(s); } catch { return false; } });
+	const ROLE = (window.__ROLE || (detected ? 'admin' : 'member')).toLowerCase();
 	const LABEL = ROLE;
+	console.log('%cDetected role: ' + ROLE + (window.__ROLE ? ' (overridden)' : '') + ' — run this once as admin AND once as a member.', 'color:#000;background:#45a2ff;padding:3px 8px;font-weight:bold');
 
 	const OUT = {
 		meta: {}, head: { stylesheetLinks: [], fontLinks: [], preloads: [], metas: {} },
@@ -152,7 +170,7 @@
 			path: cssPath(el), tag: el.tagName.toLowerCase(), id: el.id || undefined,
 			class: (el.getAttribute && el.getAttribute('class')) || undefined, rect: rectOf(el),
 			text: [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent.trim()).join(' ').slice(0, 100) || undefined,
-			attrs: attrsOf(el), icon: iconOf(el),
+			attrs: attrsOf(el), icon: iconOf(el), presenterOnly: presenterOnly.has(el) || undefined,
 			style: snap(el), before: pseudo(el, '::before'), after: pseudo(el, '::after')
 		};
 		if (withRules) o.matchedRules = matchedRulesFor(el);
@@ -160,6 +178,21 @@
 	};
 
 	const all = [...document.querySelectorAll('*')];
+
+	// Mark presenter-only nodes (broadcast/admin controls) + all their descendants
+	// so the MEMBER view = every node WITHOUT presenterOnly. Derived from a single
+	// presenter session — no member login needed.
+	const presenterOnly = new WeakSet();
+	guard('presenterOnly', () => {
+		const roots = new Set();
+		for (const sel of ADMIN_MARKERS) { try { document.querySelectorAll(sel).forEach((n) => roots.add(n)); } catch {} }
+		// Also treat the whole nav broadcast cluster + admin sidebar group as presenter-only.
+		['#navbarsRoom .nav-item', '.presenter-controls', '.broadcast-controls', '[class*="admin" i] .sidebar-item'].forEach((sel) => { try { document.querySelectorAll(sel).forEach((n) => roots.add(n)); } catch {} });
+		for (const root of roots) { presenterOnly.add(root); root.querySelectorAll('*').forEach((d) => presenterOnly.add(d)); }
+		OUT.meta.presenterOnlyRoots = roots.size;
+	});
+	const isPresenterOnly = (el) => presenterOnly.has(el) || undefined;
+
 	guard('cssVariables', () => {
 		const grab = (el) => { const cs = getComputedStyle(el); const o = {}; for (const p of cs) if (p.startsWith('--')) o[p] = cs.getPropertyValue(p).trim(); return o; };
 		OUT.cssVariables.root = grab(document.documentElement); OUT.cssVariables.body = grab(document.body);

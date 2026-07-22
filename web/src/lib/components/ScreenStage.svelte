@@ -329,11 +329,15 @@
 		padding: 0;
 		list-style: none;
 		min-height: 40px;
-		/* var(--notes-tabs-bg) #0c2434 (report.md:729,860); flat; above video (z 1). */
+		/* var(--notes-tabs-bg) #0c2434 (report.md:729,860); flat. z-index 3 keeps
+		   the strip — and the per-screen cog dropdown that drops out of it — ABOVE
+		   the video (which computes z-index 2 in this same context; see
+		   .tabs-content isolation below). Otherwise the video painted over the
+		   open cog menu. */
 		background-color: var(--notes-tabs-bg, #0c2434);
 		border-color: transparent;
 		position: relative;
-		z-index: 1;
+		z-index: 3;
 	}
 	.nav-item {
 		display: block;
@@ -510,6 +514,11 @@
 		flex: 1;
 		min-height: 0;
 		position: relative;
+		/* Contain the video's z-index:2 in this box's OWN stacking context so it
+		   can't be promoted into the parent context and paint over the tab strip's
+		   cog dropdown. `isolation:isolate` establishes the context without a
+		   z-index. */
+		isolation: isolate;
 	}
 
 	.empty {

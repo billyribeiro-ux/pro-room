@@ -287,11 +287,13 @@
 	.close {
 		/* Reference closeIcon: absolute top:0 right:5px, z102, plain white 20px
 		   fa-times — no pill, no background; cursor inherits the card's `move`
-		   (report.md:1080,1143-1144). */
+		   (report.md:1080,1143-1144). height:24px matches the name-bar line so the
+		   20px glyph centers vertically (was ~2px high). */
 		position: absolute;
 		top: 0;
 		right: 5px;
 		z-index: 102;
+		height: 24px;
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
