@@ -409,6 +409,16 @@
 	async function connectLiveKit() {
 		try {
 			const tok = await api.post<LiveKitToken>(`/api/rooms/${roomId}/livekit-token`);
+			// Preflight: catch a down SFU before LiveKit client retries/spams console.
+			// mode:no-cors still throws on net::ERR_CONNECTION_REFUSED.
+			const probe = tok.url.replace(/^ws/i, 'http').replace(/\/$/, '') + '/';
+			try {
+				await fetch(probe, { mode: 'no-cors', cache: 'no-store' });
+			} catch {
+				throw new Error(
+					`LiveKit SFU unreachable at ${tok.url} — run: docker compose up -d livekit`
+				);
+			}
 			await screen.connect(tok.url, tok.token);
 		} catch (err) {
 			if (err instanceof ApiError && err.status === 503) {

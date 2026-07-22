@@ -205,6 +205,13 @@ export class ScreenShareRoom {
 		} catch (e) {
 			// Failed handshake: drop the half-open room so a retry starts clean.
 			this.#room = null;
+			const msg = e instanceof Error ? e.message : String(e);
+			// Surface connection-refused clearly (SFU not running / wrong host).
+			if (/connection refused|failed to fetch|networkerror|websocket/i.test(msg)) {
+				throw new Error(
+					`Could not open LiveKit at ${url} (${msg}). Ensure: docker compose up -d livekit`
+				);
+			}
 			throw e;
 		}
 		this.connected = true;
