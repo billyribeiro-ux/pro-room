@@ -6,7 +6,7 @@
 	"scripts": {
 		"dev": "vite dev",
 		"dev:env": "bash ../scripts/ensure-dev-env.sh",
-		"dev:infra": "docker compose -f ../compose.yaml up -d --wait postgres redis livekit",
+		"dev:infra": "docker compose -f ../compose.yaml up -d --wait postgres redis",
 		"dev:api": "cd ../server && cargo run -q -p server",
 		"dev:backend": "pnpm run dev:infra && pnpm run dev:api",
 		"dev:wait-api": "bash ../scripts/wait-for-api.sh",
@@ -53,7 +53,6 @@
 		"@fontsource/open-sans": "^5.3.0",
 		"@fortawesome/fontawesome-free": "7.3.1",
 		"dompurify": "^3.4.12",
-		"livekit-client": "^2.20.2",
 		"valibot": "^1.4.2"
 	},
 	"engines": {

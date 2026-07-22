@@ -68,8 +68,8 @@ pnpm dev:backend   # infra then API
 pnpm dev           # vite (SvelteKit)
 ```
 
-LiveKit SFU (screen share / media) starts with `pnpm dev:infra` / `pnpm dev:all`
-(ports 7880–7882; keys in `livekit.yaml` must match `server/.env` LIVEKIT_*).
+Media is **local browser only** for now (getUserMedia / getDisplayMedia) — no LiveKit SFU.
+Screen share and webcam work on this client; multi-party media is not wired yet.
 
 See `web/.env.example` and `server/.env.example` for configuration (database URL
 on host port **5433**, Redis on **6380**, LiveKit, OAuth, SMTP).
