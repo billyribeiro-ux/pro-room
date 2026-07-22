@@ -177,12 +177,15 @@
 		justify-content: space-between;
 		gap: 0.75rem;
 		padding: 1rem;
-		border-bottom: 1px solid var(--modal-border);
+		/* Reference `.modal-content .modal-header{border-color:var(
+		   --modal-active-tab-border-color)!important}` = blue #45a2ff divider. */
+		border-bottom: 1px solid var(--modal-active-tab-border, #45a2ff);
 	}
 	.title {
 		margin: 0;
-		font-size: 18px;
-		font-weight: 700;
+		/* Reference h5.modal-title: 20px / weight 500 (node 178). */
+		font-size: 20px;
+		font-weight: 500;
 	}
 	.close {
 		/* Reference header close is the borderless white ✕
@@ -206,7 +209,8 @@
 	.body {
 		padding: 1rem;
 		overflow-y: auto;
-		font-size: 0.9rem;
+		/* Reference modal-body text renders at 16px, not shrunk. */
+		font-size: 16px;
 		line-height: 1.5;
 	}
 	.foot {
@@ -215,7 +219,8 @@
 		justify-content: flex-end;
 		gap: 0.5rem;
 		padding: 1rem;
-		border-top: 1px solid var(--modal-border);
+		/* Reference modal-footer border-top is blue #45a2ff. */
+		border-top: 1px solid var(--modal-active-tab-border, #45a2ff);
 	}
 	/* Reference `modal-footer text-center` variant (report.md:1686). */
 	.foot.center {

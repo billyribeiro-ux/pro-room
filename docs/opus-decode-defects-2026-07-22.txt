@@ -1,0 +1,940 @@
+1. [CRITICAL/M] <modal-settings> #user-settings-modal .modal-content (chrome) :: background-color
+   REF: rgb(16, 61, 92) = #103d5c (navy; matched rule .modal-content{background-color:var(--modal-content-bg-color)}, node 176)
+   OURS: var(--modal-bg) = #303030 (Darkly gray) @ Modal.svelte:157 (token layout.css:101 --modal-bg:#303030)
+   FIX: Set --modal-bg to #103d5c so modal chrome is the reference navy, not Darkly gray. The whole modal body/header/footer inherit this.
+
+2. [CRITICAL/M] <modal-settings> .nav-tabs .nav-link.active (#user-app-settings-tab) :: background-color
+   REF: rgb(69, 162, 255) = #45a2ff (matched .modal-content .nav-tabs .nav-link.active{background-color:var(--modal-active-tab-bg-color)!important}, node 183)
+   OURS: var(--modal-active-tab-bg,#222) = #222 (dark gray) @ SettingsModal.svelte:646 (token layout.css:110 --modal-active-tab-bg:#222222)
+   FIX: Active tab fill must be blue #45a2ff, not #222. Set --modal-active-tab-bg:#45a2ff.
+
+3. [CRITICAL/M] <modal-settings> .nav-tabs .nav-link.active (#user-app-settings-tab) :: color
+   REF: rgb(255, 255, 255) = #fff (matched ...active{color:var(--modal-active-tab-color)!important}, node 183)
+   OURS: var(--modal-active-tab,#00bc8c) = #00bc8c (green) @ SettingsModal.svelte:647 (token layout.css:111 --modal-active-tab:#00bc8c)
+   FIX: Active tab text must be white #fff, not green. Note --modal-active-tab is also mapped to --accent in Modal.svelte:152, so decouple the active-tab text color from the accent.
+
+4. [CRITICAL/M] <modal-settings> .radio / .check option rows (App Settings form controls) :: container box (background/border/radius/padding)
+   REF: NO box: bare rows — div.ml-5 (margin-left:48px) or div.form-check (padding-left:24px) containing input + label, transparent background, no border, no radius (nodes 194-220, 248-283)
+   OURS: filled card per row: background var(--bg-elev) #444, border 1px var(--border), border-radius var(--radius), padding 0.6rem 0.75rem @ SettingsModal.svelte:688-699 (.radio,.check)
+   FIX: Remove the boxed-card styling; render each option as a bare left-indented row (indent ~48px) with just the circle control and label, no background/border/padding.
+
+5. [CRITICAL/M] <tokens> :root --modal-bg (consumed by Modal.svelte .modal background:var(--modal-bg)) :: background-color / --modal-content-bg-color
+   REF: #103d5c (tokens.json cssVariables.root['--modal-content-bg-color']=#103d5c; rendered div.modal-content background-color=rgb(16,61,92) in modal-settings.json)
+   OURS: #303030 @ web/src/routes/layout.css:101 (--modal-bg:#303030), consumed Modal.svelte:157
+   FIX: Set --modal-bg to #103d5c. The reference themes modals NAVY, not Bootswatch-Darkly gray; the whole modal surface is the wrong color family. Correct the stale layout.css:96-100 comment that asserts #303030.
+
+6. [CRITICAL/M] <modals-batch> .modal-content (all 7 modals) :: background-color
+   REF: rgb(16,61,92) #103d5c — rule '.modal-content { background-color: var(--modal-content-bg-color) }', token --modal-content-bg-color:#103d5c (tokens.json)
+   OURS: #303030 (--modal-bg, used as panel background) @ src/routes/layout.css:101 (--modal-bg) → Modal.svelte:157 background:var(--modal-bg)
+   FIX: Set the modal content background to navy #103d5c (retheme --modal-bg / --modal-content-bg-color to #103d5c). Every modal chrome is navy in the real app, not Darkly gray.
+
+7. [HIGH/M] <tokens> :root --modal-bg (Modal.svelte content bg, 3 real uses) :: background-color (maps ref --modal-content-bg-color)
+   REF: #103d5c  (cssVariables.root '--modal-content-bg-color': '#103d5c'; also --modal-content-border-color #103d5c)
+   OURS: #303030 @ web/src/routes/layout.css:101 (--modal-bg: #303030), consumed Modal.svelte:150,157
+   FIX: Set --modal-bg: #103d5c. The live root resolves the modal content surface to navy #103d5c, not Bootswatch-Darkly #303030 (layout.css comment lines 96-100 is stale prose; the capture overrides it).
+
+8. [HIGH/M] <tokens> :root --modal-border (Modal.svelte content/header/footer borders, 8 uses) :: border-color (maps ref --modal-content-border-color)
+   REF: #103d5c  (cssVariables.root '--modal-content-border-color': '#103d5c')
+   OURS: #444444 @ web/src/routes/layout.css:103 (--modal-border: #444444), consumed Modal.svelte:151,158,180,218 + MutedUsersModal/FollowedUsersModal
+   FIX: Set --modal-border: #103d5c to match the navy modal border in the capture (currently Darkly #444).
+
+9. [HIGH/M] <tokens> :root --modal-active-tab-bg (settings/AV/userinfo modal active tab pill) :: background-color (maps ref --modal-active-tab-bg-color)
+   REF: #45a2ff  (cssVariables.root '--modal-active-tab-bg-color': '#45a2ff')
+   OURS: #222222 @ web/src/routes/layout.css:110 (--modal-active-tab-bg: #222222); fallbacks also #222 in SettingsModal.svelte:646, AVSettingsModal:263, UserInfoModal:197
+   FIX: Set --modal-active-tab-bg: #45a2ff and update the three var(--modal-active-tab-bg, #222) fallbacks to #45a2ff. The active modal tab is the blue #45a2ff pill, not Darkly #222.
+
+10. [HIGH/M] <tokens> :root --modal-active-tab (active tab text color) :: color (maps ref --modal-active-tab-color)
+   REF: #fff  (cssVariables.root '--modal-active-tab-color': '#fff')
+   OURS: #00bc8c @ web/src/routes/layout.css:111 (--modal-active-tab: #00bc8c); fallbacks #00bc8c in SettingsModal:647, AVSettingsModal:264, UserInfoModal:198, Modal.svelte:152
+   FIX: Set --modal-active-tab: #ffffff and update the var(--modal-active-tab, #00bc8c) fallbacks to #fff. Active tab text is white on the blue pill, not teal green.
+
+11. [HIGH/M] <kebab> .menu (msg kebab dropdown) — ref div.dropdown-menu.users-dropdown-options.show :: background-color
+   REF: rgb(14, 54, 81) = #0e3651 (dropdown7.json dropdown-menu computed background-color)
+   OURS: var(--content-bg) = #ffffff (layout.css:68) @ src/lib/components/ChatPanel.svelte:947
+   FIX: The reference kebab menu is a dark navy panel, not white. Set background to #0e3651 (matches tokens --archives-dropdown-menu-bg-color / --session-control-dropdown-bg = #0e3651).
+
+12. [HIGH/M] <kebab> .menu button (dropdown item) — ref a.dropdown-item 'User Info'/'Mention'/'Copy' :: color
+   REF: rgb(69, 162, 255) = #45a2ff (dropdown7.json dropdown-item computed color)
+   OURS: #2b3140 (dark slate) @ src/lib/components/ChatPanel.svelte:960
+   FIX: Item label + icon color must be the accent blue. Set color: var(--accent) (#45a2ff). Icons use currentColor so they follow automatically, matching the ref fa-user/fa-reply/fa-copy ::before color rgb(69,162,255).
+
+13. [HIGH/M] <kebab> .menu button (dropdown item) :: font-size
+   REF: 16px (dropdown7.json dropdown-item computed font-size)
+   OURS: 0.82rem (~13.1px) @ src/lib/components/ChatPanel.svelte:961
+   FIX: Set font-size: 16px to match the reference dropdown-item.
+
+14. [HIGH/M] <kebab> .menu button:hover (dropdown item hover) :: background-color / color
+   REF: background rgb(55, 90, 127) = #375a7f, color rgb(255,255,255) white (dropdown7.json .dropdown-item:hover matched rule)
+   OURS: background #f0f4fb (light lilac); hover color unchanged (#2b3140) @ src/lib/components/ChatPanel.svelte:967-969
+   FIX: Set :hover/:focus background to #375a7f (--primary) and color to #ffffff to match the reference dark-menu hover state.
+
+15. [HIGH/M] <notes> .noteOptions (options/toolbar bar) vs our .head :: position / order in pane
+   REF: Bar sits at the BOTTOM of the note pane: `.noteOptions{position:sticky;bottom:0}` inside `.note-view{display:flex;flex-flow:column;height:100%}` — note-container (flex:1, scrolls) is above, the options bar is stuck to the bottom (stage-notes.json noteOptions node style position:'sticky', matched rule `.noteOptions{background-color:var(--note-options-bg);position:sticky;bottom:0;padding:10px}`)
+   OURS: Our .head toolbar is rendered at the TOP, before .body, position:static @ /Users/billyribeiro/Desktop/pro-room/web/src/lib/components/NotesPanel.svelte:190 (template order) and :303-313 (.head, no sticky/bottom)
+   FIX: Move the toolbar below the note body and make it a bottom sticky bar: render .body first, then the options bar; set `.head{position:sticky;bottom:0}` and drop the top placement.
+
+16. [HIGH/M] <topnav> a.navbar-brand (brand slot) > span.room-name :: brand text content / extra child element
+   REF: navbar-brand anchor carries NO text label: topnav.json node idx 53 (a.navbar-brand ml-1 mr-auto) has text='' and no child nodes, immediate sibling is div#navbarsRoom — the brand is the logo <img> alone (navbar.html dump: <a class="navbar-brand ml-1 mr-auto"><img id="cssLogo" class="brand-logo"></a>)
+   OURS: renders an extra <span class="room-name">{roomName}</span> (roomName default 'Trading Room', fed detail.room.name) styled font-size:20px; font-weight:300; line-height:30px — a visible text label next to the logo @ web/src/lib/components/RoomTopNav.svelte:112 (span), 409-413 (.room-name style)
+   FIX: Remove the .room-name span (line 112) and its .room-name style block (409-413); the brand slot is the logo image alone, constrained to max-width:200px/max-height:40px (already correct at .brand-logo).
+
+17. [HIGH/M] <modal-settings> input.form-check-input (radios & checkboxes) :: appearance/size/color
+   REF: appearance:none 20px×20px circle (border-radius:50% even for checkboxes), no border; unchecked background var(--light-gray)=#ccc, checked background var(--checkbox-bg-color)=#45a2ff (nodes 195,206,219,249,253)
+   OURS: native control, width/height 16px, accent-color var(--accent)=#00bc8c (green) @ SettingsModal.svelte:704-711 (.radio input,.check input)
+   FIX: Custom-style controls as 20px grey (#ccc) circles that turn blue (#45a2ff) when checked; reference renders even checkboxes as 50%-radius circles.
+
+18. [HIGH/M] <modal-settings> .form-check-label (option labels) :: font-weight / text-transform (checked vs unchecked)
+   REF: unchecked: font-weight 300, text-transform none (nodes 220,250,251); checked: font-weight 700, text-transform uppercase (rule ...input:checked + label{text-transform:uppercase;font-weight:700}, nodes 196,207,254,262,274)
+   OURS: constant font-weight 600, no uppercase, no checked-state change @ SettingsModal.svelte:699 (font-weight:600 on .radio/.check)
+   FIX: Labels: weight 300 normal-case by default; when the control is checked, weight 700 + UPPERCASE.
+
+19. [HIGH/M] <modal-settings> .modal-header (Modal head) :: border-bottom-color
+   REF: rgb(69, 162, 255) = #45a2ff (matched .modal-content .modal-header{border-color:var(--modal-active-tab-border-color)!important}, node 177)
+   OURS: var(--modal-border) = #444 @ Modal.svelte:180 (.head border-bottom)
+   FIX: Header bottom divider must be blue #45a2ff, not #444.
+
+20. [HIGH/M] <modal-settings> ul.nav-tabs#userSettingsTab (tab strip) :: border-bottom-color
+   REF: rgb(69, 162, 255) = #45a2ff (matched .modal-content .nav-tabs{border-color:var(--modal-active-tab-border-color)!important}, node 181)
+   OURS: var(--border) = #444 @ SettingsModal.svelte:621 (.tabs border-bottom)
+   FIX: Tab-strip underline must be blue #45a2ff, not #444.
+
+21. [HIGH/M] <modal-settings> div.modal-footer.text-center :: border-top-color
+   REF: rgb(69, 162, 255) = #45a2ff (matched .modal-content .modal-footer{border-color:var(--modal-active-tab-border-color)!important}, node 288)
+   OURS: var(--modal-border) = #444 @ Modal.svelte:218 (.foot border-top)
+   FIX: Footer top divider must be blue #45a2ff, not #444.
+
+22. [HIGH/M] <modal-settings> button.btn.btn-warning.btn-sm (Edit my Info and Avatar) :: background/color/size/width
+   REF: background rgb(255,193,7)=#ffc107 (yellow), color rgb(0,0,0)=#000 (black text), btn-sm: font-size 14px, padding 4px 8px, border-radius 4px, width auto (~183px, NOT full width) (node 286)
+   OURS: background var(--warn,#f39c12) (orange), color #fff (white), full width 100%, base .btn size, radius 6px @ SettingsModal.svelte:875-881 (.btn.warn-btn)
+   FIX: Make it a small auto-width yellow (#ffc107) button with black text, font-size 14px, padding 4px 8px, radius 4px; drop width:100%.
+
+23. [HIGH/M] <tokens> modal nav-tabs active tab (SettingsModal .tab.active) — token --modal-active-tab-bg :: background-color / --modal-active-tab-bg-color
+   REF: #45a2ff (tokens.json root['--modal-active-tab-bg-color']=#45a2ff; rendered a.nav-link.active background-color=rgb(69,162,255) in modal-settings.json)
+   OURS: #222222 @ web/src/routes/layout.css:110 (--modal-active-tab-bg:#222222)
+   FIX: Set to #45a2ff. NOTE this OVERTURNS defects.txt#2 which claimed ref active-tab bg=#222 (Darkly box); tokens.json + rendered slice prove it is a blue #45a2ff pill.
+
+24. [HIGH/M] <tokens> modal nav-tabs active tab text — token --modal-active-tab :: color / --modal-active-tab-color
+   REF: #fff (tokens.json root['--modal-active-tab-color']=#fff; rendered a.nav-link.active color=rgb(255,255,255) in modal-settings.json)
+   OURS: #00bc8c @ web/src/routes/layout.css:111 (--modal-active-tab:#00bc8c)
+   FIX: Active-tab text is WHITE, not green. Set --modal-active-tab to #fff (or split into a dedicated color token). OVERTURNS defects.txt#2 which claimed #00bc8c green text.
+
+25. [HIGH/M] <tokens> modal nav-tabs active tab border — token --modal-active-tab-border :: border-color / --modal-active-tab-border-color
+   REF: #45a2ff (tokens.json root['--modal-active-tab-border-color']=#45a2ff; rendered a.nav-link.active border-color=rgb(69,162,255))
+   OURS: #444444 @ web/src/routes/layout.css:112 (--modal-active-tab-border:#444444)
+   FIX: Set to #45a2ff. OVERTURNS defects.txt#2 which claimed #444 border.
+
+26. [HIGH/M] <tokens> modal success/Save button — token --modal-success (Modal.svelte:154 --positive:var(--modal-success)) :: background-color / --modal-btn-success-bg
+   REF: #92d528 (tokens.json root['--modal-btn-success-bg']=#92d528)
+   OURS: #00bc8c @ web/src/routes/layout.css:105 (--modal-success:#00bc8c)
+   FIX: Reference modal Save button is lime #92d528, not teal #00bc8c. Set --modal-success to #92d528 (border --modal-btn-success-border is also #92d528).
+
+27. [HIGH/M] <archives-roster> roster cog dropdown item (li.dropdown-item / span 'Sort by Trials') :: color
+   REF: rgb(33, 37, 41) #212529 (slice roster-cog.json group3 li.dropdown-item + span 'Sort by Trials' style.color)
+   OURS: #676767 @ RoomSidebar.svelte:825 (.cog-menu button)
+   FIX: Set .cog-menu button color to #212529 (Darkly near-black) instead of #676767; the reference item text on the white menu is #212529.
+
+28. [HIGH/M] <modals-batch> .modal-header (border-bottom) & .modal-footer (border-top), all modals :: border-color
+   REF: rgb(69,162,255) #45a2ff — rule '.modal-content .modal-header, .modal-content .modal-footer { border-color: var(--modal-active-tab-border-color) !important }'
+   OURS: #444444 (var(--modal-border)) @ Modal.svelte:180 (.head border-bottom) & Modal.svelte:218 (.foot border-top)
+   FIX: Header bottom-border and footer top-border must be bright blue #45a2ff, not gray #444.
+
+29. [HIGH/M] <modals-batch> button.btn.btn-primary inside .modal-content (ChatLogs/AlertLogs 'Reload Log List', Muted 'Close', WebRTC 'Start Test') :: background-color / border-color
+   REF: rgb(10,109,177) #0a6db1 — rule '.modal-content .btn-primary { background-color: var(--modal-btn-close-bg); border-color: var(--modal-btn-close-border) }'
+   OURS: #375a7f (--modal-btn-primary) in ChatLogs/AlertLogs/Muted; #45a2ff (var(--accent)) in ConnectivityCheck @ ChatLogsModal.svelte:148-149, AlertLogsModal.svelte:133-134, MutedUsersModal.svelte:111-112, ConnectivityCheckModal.svelte:240-242
+   FIX: All in-modal primary buttons are #0a6db1, not #375a7f or #45a2ff. Map --modal-btn-primary to #0a6db1.
+
+30. [HIGH/M] <modals-batch> .status-item (WebRTC troubleshooter rows) ≈ ConnectivityCheckModal .status-item :: background-color / border / border-radius / padding
+   REF: background rgb(248,250,252) #f8fafc; border 1px rgb(226,232,240) #e2e8f0; border-radius 0.75rem (12px); padding 1rem 1.25rem; margin-bottom 16px — rule '.status-item{...}'
+   OURS: no background, no border, no radius; padding 0.5rem 0 @ ConnectivityCheckModal.svelte:197-203
+   FIX: Each status row is a light rounded card: bg #f8fafc, 1px #e2e8f0 border, 12px radius, 16px/20px padding, 16px gap between rows.
+
+31. [HIGH/M] <modals-batch> textarea.txt-area.form-control (ReplyModal) :: background-color / color / border / border-radius / font-size
+   REF: background rgb(255,255,255) white; color rgb(103,103,103) #676767; border 0; border-radius 0; font-size 14px; padding 6px 5px
+   OURS: background #111 (var(--bg-elev)); 1px var(--border); border-radius var(--radius) 6px; font-size 0.88rem @ ReplyModal.svelte:74-86
+   FIX: Reply textarea is a white field with gray #676767 text, no border, no radius, 14px — not a dark bordered box.
+
+32. [HIGH/M] <modals-batch> .list-group-item (ChatLogs & AlertLogs message rows) :: background-color / color / text-align / border-color
+   REF: background rgb(255,255,255) white; color rgb(33,37,41) #212529; text-align center; border rgb(222,226,230) #dee2e6; radius 6px; content = bold centered Date, 'By:' email(italic), 'Channel:' value(italic)
+   OURS: background var(--bg-elev) #111 dark; color var(--text) light; text-align left; border var(--border) #444; head is author+date space-between @ ChatLogsModal.svelte:107-133, AlertLogsModal.svelte:92-118
+   FIX: Log entries are white cards with dark centered text (Date bold, By: email italic, Channel: italic), light #dee2e6 borders — not dark left-aligned rows.
+
+33. [HIGH/M] <notes> .noteOptions (download/options bar) :: position / placement
+   REF: .noteOptions { background-color: var(--note-options-bg); position: sticky; bottom: 0px; padding: 10px; } — computed position:sticky, bottom:0px; it is a BOTTOM bar of the note panel, and the ONLY control in it is the noteDownload button
+   OURS: Actions live in .head, rendered BEFORE .body (top of panel); no sticky bottom bar @ NotesPanel.svelte:190-226 (.head placed above .body at :228), .head style :303-313
+   FIX: Move the Download/options bar to a sticky bottom bar (position:sticky; bottom:0; padding:10px; background:var(--note-options-bg)) after the .body, matching the reference .noteOptions, instead of a top .head toolbar.
+
+34. [HIGH/M] <modals-batch> div.modal-header (shared Modal.svelte .head) :: border-bottom-color
+   REF: rgb(69,162,255) #45a2ff — confirmed in modal-followed/muted/chatlogs/reply/mobile slices; driven by `.modal-content .modal-header{border-color:var(--modal-active-tab-border-color)!important}` with --modal-active-tab-border-color:#45a2ff
+   OURS: #103d5c (border-bottom:1px solid var(--modal-border); --modal-border:#103d5c) — divider renders invisible navy-on-navy @ web/src/lib/components/Modal.svelte:180
+   FIX: Set .head border-bottom color to the blue divider token: border-bottom:1px solid var(--modal-active-tab-border, #45a2ff).
+
+35. [HIGH/M] <modals-batch> div.modal-footer (shared Modal.svelte .foot) :: border-top-color
+   REF: rgb(69,162,255) #45a2ff — confirmed in modal-followed/muted/reply slices (border-top 1px rgb(69,162,255))
+   OURS: #103d5c (border-top:1px solid var(--modal-border)) — divider invisible @ web/src/lib/components/Modal.svelte:218
+   FIX: Set .foot border-top color to var(--modal-active-tab-border, #45a2ff).
+
+36. [MEDIUM/M] <tokens> :root --modal-active-tab-border (active tab border, 5 uses) :: border-color (maps ref --modal-active-tab-border-color)
+   REF: #45a2ff  (cssVariables.root '--modal-active-tab-border-color': '#45a2ff')
+   OURS: #444444 @ web/src/routes/layout.css:112 (--modal-active-tab-border: #444444); fallbacks #444 in SettingsModal:643,648, AVSettingsModal:260,265, UserInfoModal:199
+   FIX: Set --modal-active-tab-border: #45a2ff and update the var(--modal-active-tab-border, #444) fallbacks to #45a2ff (blue pill border, not gray).
+
+37. [MEDIUM/M] <tokens> :root --modal-close-bg (Modal.svelte close button bg/border, 2 uses) :: background-color (maps ref --modal-btn-close-bg)
+   REF: #0a6db1  (cssVariables.root '--modal-btn-close-bg': '#0a6db1', border '--modal-btn-close-border': '#0a6db1')
+   OURS: #375a7f @ web/src/routes/layout.css:104 (--modal-close-bg: #375a7f), consumed Modal.svelte:202,204
+   FIX: Set --modal-close-bg: #0a6db1. The modal close button is room blue #0a6db1, not the Darkly primary #375a7f.
+
+38. [MEDIUM/M] <tokens> :root --modal-success (Modal.svelte --positive / success button, 8 uses) :: background-color (maps ref --modal-btn-success-bg)
+   REF: #92d528  (cssVariables.root '--modal-btn-success-bg': '#92d528', border '--modal-btn-success-border': '#92d528')
+   OURS: #00bc8c @ web/src/routes/layout.css:105 (--modal-success: #00bc8c), consumed Modal.svelte:154
+   FIX: Set --modal-success: #92d528. Modal success/confirm buttons are lime green #92d528 (matches --file-download-bg/--note-download-bg #92d528), not teal #00bc8c.
+
+39. [MEDIUM/M] <tokens> :root --modal-danger (danger/delete button, 12 uses) :: background-color (maps ref --modal-btn-danger-bg)
+   REF: #bb352a  (cssVariables.root '--modal-btn-danger-bg': '#bb352a', border '--modal-btn-danger-border': '#bb352a')
+   OURS: #e74c3c @ web/src/routes/layout.css:106 (--modal-danger: #e74c3c)
+   FIX: Set --modal-danger: #bb352a to match the captured modal danger button (also equals --note-delete-bg/--file-delete-bg #bb352a), not generic --negative #e74c3c.
+
+40. [MEDIUM/M] <tokens> :root --modal-input-bg (Modal.svelte --bg-elev inside modals) :: background-color (maps ref --modal-input-group-bg)
+   REF: #0a6db1  (cssVariables.root '--modal-input-group-bg': '#0a6db1')
+   OURS: #444444 @ web/src/routes/layout.css:113 (--modal-input-bg: #444444), consumed Modal.svelte:149
+   FIX: Set --modal-input-bg: #0a6db1. The modal input-group accent is room blue #0a6db1, not Darkly #444.
+
+41. [MEDIUM/M] <tokens> :root --sidebar-wrapper-bg (RoomSidebar drawer background) :: background-color (maps ref --sidebar-wrapper-bg-color)
+   REF: #103d5c  (cssVariables.root '--sidebar-wrapper-bg-color': '#103d5c'; active resolved value, sidebar-wrapper-color #fff)
+   OURS: #ffffff @ web/src/routes/layout.css:59 (--sidebar-wrapper-bg: #ffffff), consumed RoomSidebar.svelte:491 background: var(--sidebar-wrapper-bg, #ffffff)
+   FIX: Set --sidebar-wrapper-bg: #103d5c (and drawer text to white) - the active resolved --sidebar-wrapper-bg-color is navy #103d5c, matching --sidebar-menu-bg. Our #fff matches only the --lightTheme-* variant, not the room default. Also update the var() fallback at RoomSidebar.svelte:491.
+
+42. [MEDIUM/M] <archives-roster> a.dropdown-item.small (Archives menu item — Alert Logs / Chat Logs / Transcript History) → our .archives-item :: font-size
+   REF: 14px (computed on a.dropdown-item.small in dropdown1.json; the reference .dropdown-menu base font-size is 16px so .small's 0.875em resolves to 14px)
+   OURS: 0.875em → 12.25px (our .archives-menu inherits 14px from .sidebar-inner, not 16px, so 0.875em = 12.25px) @ web/src/lib/components/RoomSidebar.svelte:681
+   FIX: Set .archives-item font-size to an absolute 14px (or 0.875rem, since rem=16px) instead of 0.875em, so the items render at the reference 14px regardless of the 14px-inheriting menu.
+
+43. [MEDIUM/M] <archives-roster> li.dropdown-item / span 'Sort by Trials' (roster cog menu) → our .cog-menu button :: color
+   REF: rgb(33, 37, 41) = #212529 (computed on li.dropdown-item and its inner span in dropdown2.json/roster-cog.json)
+   OURS: #676767 @ web/src/lib/components/RoomSidebar.svelte:825
+   FIX: Change .cog-menu button color from #676767 to #212529 to match the reference dark item text.
+
+44. [MEDIUM/M] <archives-roster> li.dropdown-item (roster cog menu item) → our .cog-menu button :: font-size
+   REF: 14px (computed on li.dropdown-item in dropdown2.json)
+   OURS: 0.875em → 12.25px (our .cog-menu inherits 14px from .sidebar-inner) @ web/src/lib/components/RoomSidebar.svelte:826
+   FIX: Set .cog-menu button font-size to 14px (or 0.875rem) instead of 0.875em.
+
+45. [MEDIUM/M] <archives-roster> li.dropdown-item (roster cog menu item) → our .cog-menu button :: padding
+   REF: 5px 2px 5px 2px (padding-top/bottom 5px, left/right 2px; computed on li.dropdown-item in dropdown2.json)
+   OURS: 0.25rem 1rem = 4px 16px @ web/src/lib/components/RoomSidebar.svelte:827
+   FIX: Change .cog-menu button padding to 5px 2px to match; our 16px left/right padding pushes the label far in vs the reference's 2px.
+
+46. [MEDIUM/M] <kebab> .menu (msg kebab dropdown) :: border
+   REF: none — border-top-width 0px, border-top-style none (dropdown7.json dropdown-menu computed)
+   OURS: 1px solid #e3e5ec @ src/lib/components/ChatPanel.svelte:948
+   FIX: Remove the light border; the reference menu has no border (border: none).
+
+47. [MEDIUM/M] <kebab> .menu (msg kebab dropdown) :: padding
+   REF: 8px 0px 8px 0px — padding-top/bottom 8px, padding-left/right 0px (dropdown7.json dropdown-menu computed)
+   OURS: 0.25rem (4px all sides) @ src/lib/components/ChatPanel.svelte:950
+   FIX: Set padding: 8px 0 (0.5rem 0). Horizontal padding lives on the items (16px), not the container.
+
+48. [MEDIUM/M] <kebab> .menu button (dropdown item) :: padding
+   REF: 4px 16px 4px 16px — padding 4px top/bottom, 16px left/right (dropdown7.json dropdown-item computed)
+   OURS: 0.4rem 0.55rem (~6.4px 8.8px) @ src/lib/components/ChatPanel.svelte:963
+   FIX: Set padding: 4px 16px (0.25rem 1rem) to match the reference item box.
+
+49. [MEDIUM/M] <notes> .head h3 (note title heading) :: presence of title in toolbar
+   REF: The reference options bar contains NO title/heading — the note title is shown only as the tab label (a.editName inside the noteTabset tab). noteOptions children are just the action buttons (noteDownload etc.)
+   OURS: We render `<h3>{selected.title}</h3>` inside .head, duplicating the title as a heading in the bar @ /Users/billyribeiro/Desktop/pro-room/web/src/lib/components/NotesPanel.svelte:191 and :314-317
+   FIX: Remove the <h3> title from the toolbar; the title already appears in the sub-tab label.
+
+50. [MEDIUM/M] <notes> note sub-tab non-home tabs (a.nav-link > icon) :: leading icon on non-first tabs
+   REF: Non-home note tabs (e.g. 'JC's Daily Briefing', node 32→editName node 35) render ONLY the editName title text — no pen/edit icon. Only the first/home tab carries `i.fas.fa-home` (node 29). The fa-edit icon in the reference is the dynamic `i#noteChangeIndicator` (unsaved-changes state), not a per-tab decoration.
+   OURS: We render `<Icon name="pen">` on every tab with index>0 @ /Users/billyribeiro/Desktop/pro-room/web/src/lib/components/NotesPanel.svelte:172-176
+   FIX: Do not render a pen icon on non-first tabs; show the home icon only on the first/home tab and the bare title on the rest.
+
+51. [MEDIUM/M] <notes> .download (noteDownload button) :: font-size / font-weight
+   REF: font-size:14px, font-weight:400 (stage-notes.json .btn.btn-sm.noteDownload node style font-size '14px', font-weight '400'; .btn-sm sets --bs-btn-font-size:.875rem)
+   OURS: font-size:0.8rem (12.8px), font-weight:700 @ /Users/billyribeiro/Desktop/pro-room/web/src/lib/components/NotesPanel.svelte:362-363
+   FIX: Set .download font-size:14px (0.875rem) and font-weight:400.
+
+52. [MEDIUM/M] <notes> .rendered p / ul / ol (note body text) :: font-size
+   REF: Note body inherits the .note-container default font-size:16px, line-height:24px (stage-notes.json .note-container node style font-size '16px', line-height '24px')
+   OURS: We force font-size:0.9rem (14.4px), line-height:1.5 on rendered p/ul/ol, shrinking all note body text @ /Users/billyribeiro/Desktop/pro-room/web/src/lib/components/NotesPanel.svelte:382 (p) and :394 (ul/ol)
+   FIX: Use font-size:1rem (16px) / line-height:1.5 for rendered note body text to match the reference container default.
+
+53. [MEDIUM/M] <stage> #mainTabs a.nav-link (idle Screens/Notes/Files tabs) :: color
+   REF: rgb(255,255,255) #fff — winning rule `.screens-tabs .nav-link, .mainTabset .nav-link, .noteTabset .nav-link { color: var(--tabs-color) }`, --tabs-color=#fff; computed color rgb(255,255,255) on a#notes-tab, a.nav-link(Files) AND active a#screens-tab in stage-screens.json group1
+   OURS: #ccc @ MainStage.svelte:197 (`color: #ccc;`)
+   FIX: Set idle .tabbar button color to #fff (var(--tabs-color)). NOTE: this conflicts with stage.json which computed rgb(204,204,204) for the same Files nav-link (see honestGaps); the matched-rule cascade (.mainTabset .nav-link specificity 0,2,0 > body #ccc) deterministically yields #fff, so #fff is the correct target.
+
+54. [MEDIUM/M] <stage> #mainTabs a.nav-link (idle tabs) :: font-weight
+   REF: 300 — computed font-weight 300 on a#notes-tab and a.nav-link(Files) in stage-screens.json (both idle); active a#screens-tab is also 300
+   OURS: 400 @ MainStage.svelte:199 (`font-weight: 400;`)
+   FIX: Change idle .tabbar button font-weight to 300 (all reference tabs, idle and active, compute 300). The .active override at line 231 is already 300, so only the base needs fixing.
+
+55. [MEDIUM/M] <stage> #screenTabs ul.nav.nav-tabs.screens-tabs :: min-height
+   REF: 0px — computed min-height 0px on ul#screenTabs; when empty the strip collapses (computed height 1px, just its 1px bottom border)
+   OURS: 40px @ ScreenStage.svelte:331 (`min-height: 40px;`)
+   FIX: Remove/zero the min-height so the empty strip collapses like the reference; pill height comes from the pills' own content (20px img + 4px padding + 5px margins ≈ 38px) when populated. Divergence is visible only in the empty 'No one presenting' state, where ours currently renders a 40px #0c2434 band above the message.
+
+56. [MEDIUM/M] <stage> empty-state h3.text-center.mt-4 ('No one is presenting right now...') :: font-size
+   REF: 28px — computed font-size 28px on the h3 in stage-screens.json
+   OURS: 1.3rem (20.8px) @ ScreenStage.svelte:533 (`font-size: 1.3rem;`)
+   FIX: Set .empty font-size to 1.75rem (28px) to match the reference h3.
+
+57. [MEDIUM/M] <chat> .msg-box.elevated (reference div.msg-box.msg-box-adm) :: background-color
+   REF: rgb(215,215,215) = #d7d7d7 (dominant: 16 of 20 captured admin rows; 2 are #f4f4f4, 2 are #e8e8e8 — all identical class 'msg-box pb-1 msg-box-adm')
+   OURS: #f4f4f4 @ src/lib/components/ChatPanel.svelte:872
+   FIX: Change the elevated (admin/super-admin) row tint from #f4f4f4 to #d7d7d7 to match the rendered admin rows. NOTE: the CSS token --lightTheme-msgs-bg-adm is #f4f4f4 (which only 2/20 rows show); verify #d7d7d7 is the stable admin tint and not a transient highlight/animate.css state before committing.
+
+58. [MEDIUM/M] <modal-settings> #user-settings-modal .modal-dialog :: max-width
+   REF: 700px (matched #user-settings-modal .modal-dialog{max-width:700px}; computed width 700px, node 175)
+   OURS: 500px (Modal default md; SettingsModal calls <Modal> with no size) @ Modal.svelte:138 (.panel max-width:500px); SettingsModal.svelte:92
+   FIX: Give the Settings modal a ~700px width (custom size), not the default 500px.
+
+59. [MEDIUM/M] <modal-settings> h5 modal title (General Settings) :: font-size / font-weight
+   REF: font-size 20px (1.25rem), font-weight 500 (node 178)
+   OURS: font-size 18px, font-weight 700 @ Modal.svelte:184-185 (.title)
+   FIX: Title should be 20px weight 500, not 18px weight 700.
+
+60. [MEDIUM/M] <modal-settings> .modal-body :: font-size
+   REF: 16px (node 180; all body text/labels render at 16px)
+   OURS: 0.9rem (=14.4px) @ Modal.svelte:209 (.body font-size)
+   FIX: Body base font-size should be 16px (1rem); the reference text is not shrunk to 0.9rem.
+
+61. [MEDIUM/M] <modal-settings> .section-head icon (i.fas.fa-palette etc.) :: color
+   REF: rgb(244, 244, 244) = #f4f4f4 — same near-white as heading text (::before color, node 192)
+   OURS: var(--accent) = #00bc8c (green) @ SettingsModal.svelte:677 (.section-head :global(svg) color:var(--accent))
+   FIX: Section-head icons are the same near-white as the heading, not accent-colored.
+
+62. [MEDIUM/M] <modal-settings> input#chat-text-color etc. (color pickers) :: size / shape / background
+   REF: native color swatch 45px×20px (rectangular), white background, border 1px rgb(222,226,230), border-radius 0, padding 1px 2px (matched #chat-*-color{width:45px;height:20px}, node 227)
+   OURS: 34px×34px square, transparent background, border-radius 8px @ SettingsModal.svelte:756-767 (.color-row input[type=color])
+   FIX: Color inputs are 45×20 rectangular swatches with white bg and square (0-radius) corners, not 34×34 rounded squares.
+
+63. [MEDIUM/M] <modal-settings> .color-row (Colors & Size rows) :: container box + label position
+   REF: NO box: div.ml-5 (indent 48px) > input(45×20) + label.form-check-label.ml-4.pl-2 (label margin-left 24px, padding-left 8px, weight 300), transparent bg (nodes 226-228)
+   OURS: boxed .color-row: background var(--bg-elev), border 1px, border-radius, padding 0.45rem 0.75rem; label weight 600 @ SettingsModal.svelte:747-776 (.color-row / .color-label)
+   FIX: Remove the box; render swatch + label on a bare indented line with the label offset to the right (~24px), label weight 300.
+
+64. [MEDIUM/M] <modal-settings> input#chat-text-size (Text Size control) :: control style + layout
+   REF: same 45px×20px white swatch-style input, font-size 13px, border 1px rgb(222,226,230), with label 'Text Size' to its right (ml-4 pl-2, weight 300) — laid out identically to the color rows (nodes 239,240)
+   OURS: dark input[type=number] width 5rem, background var(--bg-elev) #444, padding 0.4rem 0.5rem, label on LEFT, plus a separate 'px' suffix span @ SettingsModal.svelte:790-810 (.size-row)
+   FIX: Match the color-row pattern: a small 45×20 white input (13px) with the 'Text Size' label to its right; drop the left-label + px-suffix layout.
+
+65. [MEDIUM/M] <modal-settings> .btn base (Reset / Save / Close / Filter buttons) :: font-size / font-weight / padding
+   REF: font-size 16px (1rem), font-weight 400, padding 6px 12px (.375rem .75rem) (nodes 242,243,289)
+   OURS: font-size 0.85rem, font-weight 600, padding 0.5rem 0.9rem @ SettingsModal.svelte:824-826 (.btn)
+   FIX: Buttons are 16px / weight 400 / padding 6px 12px, not 0.85rem / 600 / 0.5rem 0.9rem.
+
+66. [MEDIUM/M] <modal-settings> button.btn.btn-secondary (footer Close) :: background-color / border-color
+   REF: rgb(108, 117, 125) = #6c757d (matched BS5 .btn-secondary{--bs-btn-bg:#6c757d}, node 289)
+   OURS: #444 @ SettingsModal.svelte:844-846 (.btn.secondary)
+   FIX: Close button is Bootstrap-5 secondary grey #6c757d, not #444.
+
+67. [MEDIUM/M] <modal-settings> toggle state word span ('on'/'off') :: font-size / color / weight / position
+   REF: font-size 16px, font-weight 700 (uppercase when row checked), color #f4f4f4 — same styling as the label, rendered inline immediately after the label text (nodes 255,263,275)
+   OURS: .state: font-size 0.75rem, font-weight 700, letter-spacing 0.04em, color var(--text-dim) (dim grey), margin-left:auto (floated to far-right edge) @ SettingsModal.svelte:722-729 (.state)
+   FIX: State word matches the label (16px, near-white #f4f4f4, no letter-spacing) and sits inline right after the label, not as a small dim right-floated badge.
+
+68. [MEDIUM/M] <tokens> modal close button — token --modal-close-bg (Modal.svelte:202) :: background-color / --modal-btn-close-bg
+   REF: #0a6db1 (tokens.json root['--modal-btn-close-bg']=#0a6db1)
+   OURS: #375a7f @ web/src/routes/layout.css:104 (--modal-close-bg:#375a7f)
+   FIX: Set --modal-close-bg to #0a6db1 (reference close button is the blue #0a6db1, not Darkly primary #375a7f).
+
+69. [MEDIUM/M] <tokens> modal input group — token --modal-input-bg (Modal.svelte:149 --bg-elev:var(--modal-input-bg)) :: background-color / --modal-input-group-bg
+   REF: #0a6db1 (tokens.json root['--modal-input-group-bg']=#0a6db1)
+   OURS: #444444 @ web/src/routes/layout.css:113 (--modal-input-bg:#444444)
+   FIX: Set --modal-input-bg to #0a6db1 (reference modal input-group addon is blue #0a6db1, not gray #444).
+
+70. [MEDIUM/M] <tokens> modal danger button — token --modal-danger :: background-color / --modal-btn-danger-bg
+   REF: #bb352a (tokens.json root['--modal-btn-danger-bg']=#bb352a)
+   OURS: #e74c3c @ web/src/routes/layout.css:106 (--modal-danger:#e74c3c)
+   FIX: Set --modal-danger to #bb352a (reference modal danger button is #bb352a, matching --note-delete-bg/--file-delete-bg which we already have right). Confirmed from tokens.json only; a danger button was not in-frame in modal-settings.json.
+
+71. [MEDIUM/M] <tokens> modal header/footer separators — token --modal-border (Modal.svelte:180 header border-bottom, :218 footer border-top) :: border-color
+   REF: #45a2ff (rendered div.modal-header border-bottom-color=rgb(69,162,255) and div.modal-footer border=rgb(69,162,255) in modal-settings.json; token --modal-tabs-border-color=#45a2ff)
+   OURS: #444444 @ web/src/routes/layout.css:103 (--modal-border:#444444)
+   FIX: Reference modal header/footer dividers are the blue #45a2ff nav-tabs border, not gray #444. Give the header/footer separators #45a2ff (token --modal-content-border-color is #103d5c but the visible separators render #45a2ff).
+
+72. [MEDIUM/M] <archives-roster> archives dropdown item (a.dropdown-item.small) hover state :: background-color / color on :hover
+   REF: hover background rgb(55, 90, 127) #375a7f + color rgb(255,255,255) (slice archives.json matchedRule .dropdown-item:hover,.dropdown-item:focus{color:rgb(255,255,255);background-color:rgb(55,90,127)})
+   OURS: opacity: 0.85 only (no background/color change) @ RoomSidebar.svelte:689-691 (.archives-item:hover:not(:disabled){opacity:0.85})
+   FIX: Replace the opacity hover with background:#375a7f and color:#fff on .archives-item:hover to match the Bootstrap dropdown-item hover fill.
+
+73. [MEDIUM/M] <archives-roster> roster cog dropdown item (li.dropdown-item) :: padding
+   REF: 5px 2px (slice roster-cog.json li padding-top/bottom 5px, padding-left/right 2px)
+   OURS: 0.25rem 1rem = 4px 16px @ RoomSidebar.svelte:827 (.cog-menu button padding)
+   FIX: Set .cog-menu button padding to 5px 2px; the reference item has only 2px side padding (menu width 228px, item width 222px), not 16px.
+
+74. [MEDIUM/M] <archives-roster> roster cog dropdown menu (ul.dropdown-menu inside .user-options) :: padding
+   REF: 2px on all four sides (slice roster-cog.json ul padding-top/right/bottom/left 2px; matchedRule .user-options .dropdown-menu{padding:2px})
+   OURS: 0.5rem 0 = 8px top/bottom, 0 left/right @ RoomSidebar.svelte:817 (.cog-menu padding)
+   FIX: Set .cog-menu padding to 2px (all sides) to match the reference user-options dropdown.
+
+75. [MEDIUM/M] <archives-roster> archives dropdown item (a.dropdown-item.small) :: font-size
+   REF: 14px (slice archives.json a.dropdown-item.small style.font-size = 14px; .small=0.875em of the menu's 16px base)
+   OURS: 0.875em → 12.25px (inherits sidebar-inner 14px base at RoomSidebar.svelte:507) @ RoomSidebar.svelte:681 (.archives-item font-size:0.875em)
+   FIX: Set .archives-item font-size to 14px explicitly (0.875em resolves to 12.25px because our sidebar base is 14px, not the reference 16px dropdown base).
+
+76. [MEDIUM/M] <archives-roster> roster cog dropdown item (li.dropdown-item / span) :: font-size
+   REF: 14px (slice roster-cog.json li.dropdown-item + span 'Sort by Trials' style.font-size = 14px)
+   OURS: 0.875em → 12.25px (inherits sidebar-inner 14px base at RoomSidebar.svelte:507) @ RoomSidebar.svelte:826 (.cog-menu button font-size:0.875em)
+   FIX: Set .cog-menu button font-size to 14px explicitly; 0.875em resolves to 12.25px on our 14px sidebar base.
+
+77. [MEDIUM/M] <modals-batch> button.btn-close.btn-close-white (all modals) :: appearance / opacity / hover
+   REF: Bootstrap masked-SVG white ✕, opacity 0.5, hover opacity 0.75, no background fill, 16×16, margin -8px auto -8px
+   OURS: Font-Awesome 'times' icon, color #fff opacity 1, hover fills var(--modal-close-bg) #375a7f box, padding 0.3rem @ Modal.svelte:99-107 & 187-205
+   FIX: Close is a dimmed (opacity .5) white X that brightens to .75 on hover with no filled background box.
+
+78. [MEDIUM/M] <modals-batch> h5.modal-title (ChatLogs/AlertLogs/Muted/Followed/Mobile) :: font-size / font-weight
+   REF: font-size 20px (1.25rem); font-weight 500; color rgb(244,244,244) #f4f4f4
+   OURS: font-size 18px; font-weight 700 @ Modal.svelte:184-185 (.title)
+   FIX: Default modal title is 20px weight 500 (h5). (Only the WebRTC modal overrides to weight 700 white via its own rule.)
+
+79. [MEDIUM/M] <modals-batch> .modal-content (outer panel border) :: border-color
+   REF: rgba(0,0,0,0.176) translucent black (var(--bs-border-color-translucent))
+   OURS: #444444 solid (var(--modal-border)) @ Modal.svelte:158
+   FIX: Panel outer border is faint translucent black rgba(0,0,0,0.176), not solid #444.
+
+80. [MEDIUM/M] <modals-batch> .modal-content (panel) :: border-radius
+   REF: 8px (var(--bs-border-radius-lg), computed border-top-left-radius 8px)
+   OURS: 6px @ Modal.svelte:161
+   FIX: Modal corner radius is 8px, not 6px.
+
+81. [MEDIUM/M] <modals-batch> button.btn.btn-secondary (Reply 'Close', AlertLogs 'Close', WebRTC 'Close') :: background-color / border-color
+   REF: rgb(108,117,125) #6c757d (Bootstrap gray)
+   OURS: #444444 (--modal-btn-secondary) @ ReplyModal.svelte:122-123, AlertLogsModal.svelte:145-146
+   FIX: Secondary buttons are #6c757d, not #444.
+
+82. [MEDIUM/M] <modals-batch> button.btn.btn-success 'Copy Results' (WebRTC) :: background-color / border-color
+   REF: rgb(146,213,40) #92d528 lime — rule '.modal-content .btn-success { background-color: var(--modal-btn-success-bg) }'
+   OURS: #00bc8c teal (var(--modal-success)) @ ConnectivityCheckModal.svelte:253-256
+   FIX: In-modal success button is lime #92d528, not teal #00bc8c.
+
+83. [MEDIUM/M] <modals-batch> button.btn.btn-secondary 'Close' (WebRTC footer) :: background / variant
+   REF: filled secondary rgb(108,117,125) #6c757d, weight 400
+   OURS: transparent ghost button (.btn.ghost), color var(--text-dim), border var(--border) @ ConnectivityCheckModal.svelte:168 & 231-238
+   FIX: WebRTC Close is a filled #6c757d secondary button, not a transparent ghost.
+
+84. [MEDIUM/M] <modals-batch> .status-item span.fw-medium (WebRTC row labels) :: color / font-weight / font-size
+   REF: color rgb(26,32,44) #1a202c (dark, on light card); font-weight 600; font-size 0.95rem (15.2px)
+   OURS: font-weight 500; color inherits light modal text; size inherits @ ConnectivityCheckModal.svelte:204-206 (.fw-medium)
+   FIX: Row labels are dark #1a202c, weight 600, 0.95rem (they sit on the light card).
+
+85. [MEDIUM/M] <modals-batch> span.status-icon (WebRTC status dot ●) :: font-size / pending color
+   REF: font-size 1.5rem (24px), min-width 24px; pending color rgb(100,116,139) #64748b
+   OURS: font-size 1rem (16px); pending color var(--text-dim) #cccccc @ ConnectivityCheckModal.svelte:207-213
+   FIX: Status dot is 1.5rem (24px); pending color slate #64748b.
+
+86. [MEDIUM/M] <modals-batch> ReplyModal title/header vs .do-private-reply :: content / structure
+   REF: header shows the quoted original message — span.do-private-reply (15px, weight 500) with strong sender ('ROM:') + message body text; h5.modal-title itself is empty
+   OURS: title = recipient name + ':' (e.g. 'ROM:') only; no quoted message shown @ ReplyModal.svelte:17 & 41
+   FIX: Show the original message being replied to (bold sender + quoted text at 15px), not just the recipient name.
+
+87. [MEDIUM/M] <modals-batch> ReplyModal emoji/image tool buttons :: appearance
+   REF: plain FA icons (far fa-smile & fas fa-image) colored #676767 inside the white textarea column (.textAreaBtnsCol), no button box
+   OURS: dark bordered .tool buttons (bg var(--bg-elev), 1px var(--border), radius) @ ReplyModal.svelte:52-59 & 96-107
+   FIX: Emoji/image are bare gray icons on the white input row, not dark bordered buttons.
+
+88. [MEDIUM/M] <modals-batch> ChatLogs channel selector :: structure
+   REF: no <select> control; all messages listed together, each item shows a 'Channel: <value>' italic line
+   OURS: a <select> dropdown (Main Chat / Off Topic) filters the list @ ChatLogsModal.svelte:46-54
+   FIX: Remove the channel <select>; list all messages with a per-item 'Channel:' label as in the reference.
+
+89. [MEDIUM/M] <alerts> span.stockColor (alert ticker symbol) inside div.msg-left.text-formated.preText :: color
+   REF: rgb(103,103,103) = #676767 (app-st-message:24 stockColor computed color; its parent preText body is also #676767 — ticker is the SAME gray as the body, distinguished only by 700/italic/uppercase)
+   OURS: #1a1a1a (near-black, darker than the #676767 body) @ web/src/routes/layout.css:92 (--ticker-color:#1a1a1a); web/src/lib/components/AlertFeed.svelte:780 (.stock color:var(--ticker-color,#1a1a1a)); web/src/lib/components/MessageBody.svelte:62 (.ticker color:var(--ticker-color,#1a1a1a))
+   FIX: Set the default ticker color to #676767 (match the body) — e.g. change --ticker-color to #676767, or make .stock/.ticker inherit --content-text. Our own comment at layout.css:90-91 admits the color was 'not captured'; the capture now shows #676767.
+
+90. [MEDIUM/M] <alerts> div.msg-box.pb-1 (alert row) in chatScrollViewParentAlerts :: background-color
+   REF: per-alert: rgb(255,255,255)=#fff (23 rows), rgb(232,232,232)=#e8e8e8 (22 rows), rgb(215,215,215)=#d7d7d7 (5 rows) — all share the identical class 'msg-box pb-1', so bg is data-driven per alert (e.g. rows 1-3,5 #e8e8e8; rows 9-10,50 #d7d7d7; row 24 #fff)
+   OURS: #fff for every row (var(--content-bg)) @ web/src/lib/components/AlertFeed.svelte:540 (.msg-box background:var(--content-bg))
+   FIX: Reference paints ~54% of alert rows a non-white highlight (#e8e8e8 / #d7d7d7). The exact per-alert trigger (inline style / data attr) is NOT in the slice — treat as an honest gap, but ours being uniformly white is a real visible divergence. Add row-state background support once the trigger field is known.
+
+91. [MEDIUM/M] <chat> div.msg-box-adm > div.mr-1.d-flex.flex-row-reverse (admin/moderator/super chat row wrapper) :: flex-direction
+   REF: row-reverse — chat.json: the flex child of every div.msg-box-adm computes flex-direction:row-reverse (class 'mr-1 d-flex flex-row-reverse'), mirroring avatar+username+kebab+body to the right edge; normal div.msg-box children compute flex-direction:row ('mr-1 d-flex flex-row')
+   OURS: row — ChatPanel.svelte:893-897 .row1{display:flex; align-items:center; gap:0.5rem} has no flex-direction, so every row (including class:elevated at :455) renders left-to-right; .msg-box.elevated (:871-873) only adds a grey tint, no flip. Comment :899-901 explicitly asserts the reference does not flip by role — contradicted by the slice. @ web/src/lib/components/ChatPanel.svelte:455 (class:elevated) + :893-897 (.row1) + :871-873 (.elevated)
+   FIX: For elevated (admin/mod/super) rows, set the row-1 flex container to flex-direction:row-reverse so avatar+username+kebab+body mirror to the right edge like div.msg-box-adm, keeping the grey tint. Remove the stale 'reference does not flip' comment at :899-901.
+
+92. [MEDIUM/M] <notes> .noteDownload :: font-weight
+   REF: font-weight: 400 (btn default; computed 400)
+   OURS: font-weight: 700 @ NotesPanel.svelte:363
+   FIX: Set .download font-weight to 400.
+
+93. [MEDIUM/M] <notes> .noteDownload :: border-radius
+   REF: border-top-left-radius: 4px / border-bottom-right-radius: 4px (btn 0.25rem)
+   OURS: border-radius: 6px @ NotesPanel.svelte:360
+   FIX: Set .download border-radius to 4px.
+
+94. [MEDIUM/M] <notes> .note-container p (rendered note body text) :: font-size
+   REF: computed font-size: 16px on note body <p> (inherited from .note-container 16px)
+   OURS: font-size: 0.9rem (14.4px) on .rendered p and ul/ol @ NotesPanel.svelte:382 (p) and :394 (ul/ol)
+   FIX: Set rendered note body font-size to 1rem/16px for p, ul, ol to match the reference note text size.
+
+95. [MEDIUM/M] <modal-settings> .modal-header divider (settings modal header) :: border-bottom-color
+   REF: rgb(69,162,255) #45a2ff, 1px (slice node 177 div.modal-header: border-bottom-width 1px, border-bottom-color rgb(69,162,255); matched rule '.modal-content .modal-header,.modal-content .modal-footer,.modal-content .nav-tabs {border-color: var(--modal-active-tab-border-color)!important}', token --modal-active-tab-border-color=#45a2ff)
+   OURS: #103d5c (border-bottom: 1px solid var(--modal-border); Modal.svelte:151 maps --border:var(--modal-border) and layout.css:107 --modal-border:#103d5c — a navy line on the navy #103d5c body, effectively invisible) @ web/src/lib/components/Modal.svelte:180
+   FIX: Set the header divider to the blue chrome color: `border-bottom: 1px solid var(--modal-active-tab-border)` (#45a2ff) instead of var(--modal-border).
+
+96. [MEDIUM/M] <modal-settings> .modal-footer divider (settings modal footer) :: border-top-color
+   REF: rgb(69,162,255) #45a2ff, 1px (slice node 288 div.modal-footer.text-center: border-top-width 1px, border-top-color rgb(69,162,255); same '.modal-content .modal-footer {border-color: var(--modal-active-tab-border-color)!important}' rule)
+   OURS: #103d5c (border-top: 1px solid var(--modal-border) = #103d5c navy on navy body) @ web/src/lib/components/Modal.svelte:218
+   FIX: Set the footer divider to `border-top: 1px solid var(--modal-active-tab-border)` (#45a2ff).
+
+97. [MEDIUM/M] <modal-settings> ul#userSettingsTab.nav.nav-tabs (settings tab strip) :: border-bottom-color
+   REF: rgb(69,162,255) #45a2ff, 1px (slice node 181 ul#userSettingsTab: border-bottom-width 1px, border-bottom-color rgb(69,162,255))
+   OURS: #103d5c (.tabs border-bottom: 1px solid var(--border); inside Modal --border resolves to var(--modal-border)=#103d5c — navy line on navy body) @ web/src/lib/components/modals/SettingsModal.svelte:621
+   FIX: Set the tab strip to `border-bottom: 1px solid var(--modal-active-tab-border)` (#45a2ff).
+
+98. [MEDIUM/M] <modal-settings> button.btn.btn-warning.btn-sm ('Edit my Info and Avatar') :: background-color / color
+   REF: bg rgb(255,193,7) #ffc107, text rgb(0,0,0) #000 (slice node 286 computed background-color rgb(255,193,7), color rgb(0,0,0); matched Bootstrap-5 rule '.btn-warning{--bs-btn-color:#000;--bs-btn-bg:#ffc107;--bs-btn-border-color:#ffc107}')
+   OURS: bg #f39c12, text #fff (.btn.warn-btn: background var(--warn,#f39c12), border-color var(--warn,#f39c12), color #fff; layout.css:30 --warn:#f39c12) @ web/src/lib/components/modals/SettingsModal.svelte:875-881
+   FIX: Match the rendered Bootstrap-5 btn-warning: background/border #ffc107 and text color #000 (not the Darkly #f39c12/white).
+
+99. [MEDIUM/M] <modal-settings> div.modal-footer.text-center (footer button alignment) :: justify-content
+   REF: flex-end (slice node 288 computed justify-content 'flex-end'; text-align 'center' — Bootstrap `modal-footer text-center` only sets text-align, so the lone Close button stays right-aligned)
+   OURS: center (SettingsModal passes footerCenter → Modal .foot.center {justify-content:center}, centering the Close button) @ web/src/lib/components/modals/SettingsModal.svelte:92 (footerCenter) → Modal.svelte:221-223
+   FIX: text-center does not re-center flex children; drop footerCenter here (or make .foot.center set text-align:center, not justify-content:center) so the Close button is right-aligned (flex-end) like the reference.
+
+100. [MEDIUM/M] <modals-batch> h5.modal-title (Modal.svelte .title) :: font-size
+   REF: 20px — confirmed in modal-followed/muted/reply/mobile (h5.modal-title font-size 20px)
+   OURS: 18px @ web/src/lib/components/Modal.svelte:184
+   FIX: Set .title font-size:20px (1.25rem).
+
+101. [MEDIUM/M] <modals-batch> h5.modal-title (Modal.svelte .title) :: font-weight
+   REF: 500 — confirmed across modal slices (h5.modal-title font-weight 500)
+   OURS: 700 @ web/src/lib/components/Modal.svelte:185
+   FIX: Set .title font-weight:500.
+
+102. [MEDIUM/M] <modals-batch> button.btn-primary inside modal (ChatLogs/AlertLogs 'Reload Log List'; Muted 'Close') :: background-color / border-color
+   REF: rgb(10,109,177) #0a6db1 — computed in modal-chatlogs ('Reload Log List') and modal-muted ('Close'); winning rule `.modal-content .btn-primary{background-color:var(--modal-btn-close-bg);border-color:var(--modal-btn-close-border)}`, --modal-btn-close-bg:#0a6db1
+   OURS: #375a7f (var(--modal-btn-primary); layout.css:115 --modal-btn-primary:#375a7f) @ web/src/lib/components/modals/ChatLogsModal.svelte:148-149; AlertLogsModal.svelte:133-134; MutedUsersModal.svelte:111-112 (token layout.css:115)
+   FIX: Modal primary buttons are overridden to #0a6db1 inside .modal-content — set --modal-btn-primary:#0a6db1 (matching --modal-btn-close-bg) or point .primary at #0a6db1.
+
+103. [MEDIUM/M] <modals-batch> button.btn-secondary inside modal (Reply/Mobile/ChatLogs/AlertLogs 'Close') :: background-color / border-color
+   REF: rgb(108,117,125) #6c757d — computed in modal-reply/modal-mobile ('Close'); winning rule Bootstrap-5 `.btn-secondary{--bs-btn-bg:#6c757d;--bs-btn-border-color:#6c757d}`
+   OURS: #444 (var(--modal-btn-secondary); layout.css:116 --modal-btn-secondary:#444444) @ web/src/lib/components/modals/ReplyModal.svelte:122-123; MobileAppInfoModal.svelte:53-54; ChatLogsModal.svelte:160-161; AlertLogsModal.svelte:145-146 (token layout.css:116)
+   FIX: Set --modal-btn-secondary:#6c757d (the computed BS5 secondary) instead of Darkly #444.
+
+104. [MEDIUM/M] <modals-batch> modal footer buttons (.btn in Followed/Muted/Chat/Alert/Reply/Mobile) :: font-size
+   REF: 16px (1rem) — every reference .btn computes font-size 16px (btn-primary/secondary/light, pad 6px/12px)
+   OURS: 0.85rem ≈ 13.6px @ web/src/lib/components/modals/FollowedUsersModal.svelte:104 (.btn); also MutedUsersModal/ChatLogsModal/AlertLogsModal/ReplyModal/MobileAppInfoModal .btn
+   FIX: Set modal footer .btn font-size:1rem and padding .375rem .75rem to match reference btn metrics.
+
+105. [MEDIUM/M] <modals-batch> div.modal-body (Modal.svelte .body) :: font-size
+   REF: 16px — modal-body computes font-size 16px across all modal slices
+   OURS: 0.9rem ≈ 14.4px @ web/src/lib/components/Modal.svelte:209
+   FIX: Set .body font-size:1rem (16px) to match reference modal body text size.
+
+106. [MEDIUM/P] <volume> .mute (button.btn.btn-primary.btn-sm, node i5) :: background-color / border-color
+   REF: rgb(13,110,253) = #0d6efd (computed btn-primary bg+border; BS5 --bs-btn-bg)
+   OURS: var(--accent) = #45a2ff (and border 1px var(--accent)) @ src/lib/components/RoomTopNav.svelte:628-629
+   FIX: Set .mute background:#0d6efd; border-color:#0d6efd (bootstrap btn-primary), not the themeable room accent.
+
+107. [MEDIUM/P] <volume> sound-row checkbox (input.form-check-input, node i10) :: accent-color (checked fill)
+   REF: #0d6efd (form-check-input:checked background-color rgb(13,110,253))
+   OURS: accent-color: var(--accent) = #45a2ff @ src/lib/components/RoomTopNav.svelte:674-676
+   FIX: Set .sound-options input[type=checkbox] { accent-color:#0d6efd } to match the bootstrap checked blue, not the room accent.
+
+108. [MEDIUM/P] <volume> status word span (label>span 'on', node i12/i16/i20/i24/i29) :: font-size
+   REF: 16px (inherits row size; weight 300, color rgb(204,204,204))
+   OURS: 0.75rem = 12px @ src/lib/components/RoomTopNav.svelte:677-681
+   FIX: Set .sound-options .status font-size:16px (drop the 0.75rem shrink) to match the reference status word size.
+
+109. [MEDIUM/P] <volume> status word span placement (node i12 inside label i11, label width 104px = content) :: horizontal position (margin-left)
+   REF: inline immediately after label text ('Alert sound on'); label shrinks to content, no right-push
+   OURS: margin-left:auto pushes status to far right of a flex label ('Alert sound        on') @ src/lib/components/RoomTopNav.svelte:678
+   FIX: Remove margin-left:auto so the status word sits inline right after the label text (add a leading space instead), matching the reference.
+
+110. [MEDIUM/P] <volume> divider stack (nodes i6 <hr> + i7 div.dropdown-divider) :: presence of a second (grey) rule
+   REF: TWO horizontal rules: a plain <hr> border-top 1px solid rgb(204,204,204) margin 16px 0, THEN dropdown-divider border-top 1px solid rgb(69,162,255) margin 8px 0
+   OURS: only one <hr class=divider> (blue #45a2ff); the grey hr is missing @ src/lib/components/RoomTopNav.svelte:195,647-652
+   FIX: Render both: a plain grey hr (border-top 1px solid #ccc, margin 16px 0) above the blue dropdown-divider (#45a2ff, margin 8px 0).
+
+111. [LOW/M] <tokens> :root --modal-color (Modal.svelte text color, 8 uses) :: color (maps ref --modal-content-color)
+   REF: #f4f4f4  (cssVariables.root '--modal-content-color': '#f4f4f4')
+   OURS: #ffffff @ web/src/routes/layout.css:102 (--modal-color: #ffffff), consumed Modal.svelte:155,162,195
+   FIX: Set --modal-color: #f4f4f4 (near-white; captured modal text is #f4f4f4, not pure #fff).
+
+112. [LOW/M] <archives-roster> ul.dropdown-menu.show (roster cog menu container) → our .cog-menu :: padding
+   REF: 2px (padding-top/right/bottom/left all 2px; computed on ul.dropdown-menu in dropdown2.json)
+   OURS: 0.5rem 0 = 8px 0 @ web/src/lib/components/RoomSidebar.svelte:817
+   FIX: Change .cog-menu padding from 0.5rem 0 to 2px so the menu chrome hugs the item like the reference (2px inset all around).
+
+113. [LOW/M] <archives-roster> ul.dropdown-menu.show (roster cog menu container) → our .cog-menu :: min-width
+   REF: 160px (10rem; computed on ul.dropdown-menu in dropdown2.json)
+   OURS: 9rem = 144px @ web/src/lib/components/RoomSidebar.svelte:814
+   FIX: Change .cog-menu min-width from 9rem to 10rem (160px).
+
+114. [LOW/M] <archives-roster> li.dropdown-item (roster cog menu item) → our .cog-menu button :: display / layout
+   REF: display: flex; justify-content: space-between; align-items: center (class d-flex align-items-center justify-content-between on li.dropdown-item in dropdown2.json)
+   OURS: display: block (text-only) @ web/src/lib/components/RoomSidebar.svelte:819-828
+   FIX: The reference item is a space-between flex row (label left, room for a trailing control right). Make .cog-menu button display:flex; align-items:center; justify-content:space-between to match the row layout.
+
+115. [LOW/M] <archives-roster> li.dropdown-item (roster cog menu item) → our .cog-menu button :: border-bottom
+   REF: border-bottom-width: 1px (solid; computed on li.dropdown-item in dropdown2.json)
+   OURS: none @ web/src/lib/components/RoomSidebar.svelte:819-828
+   FIX: Reference items carry a 1px bottom separator; add a matching border-bottom to .cog-menu button (exact border color not isolated in the slice — use the menu border rgba(0,0,0,0.176)).
+
+116. [LOW/M] <kebab> .menu (msg kebab dropdown) :: border-radius
+   REF: 6px (dropdown7.json border-top-left-radius / border-bottom-left-radius = 6px)
+   OURS: 8px @ src/lib/components/ChatPanel.svelte:949
+   FIX: Set border-radius: 6px.
+
+117. [LOW/M] <kebab> .menu button (dropdown item) :: border-radius
+   REF: 0px (dropdown7.json dropdown-item border-top-left-radius 0px) — items are flat full-width rows
+   OURS: 6px @ src/lib/components/ChatPanel.svelte:964
+   FIX: Set border-radius: 0 so the hover fill spans the full item width edge-to-edge like the reference.
+
+118. [LOW/M] <kebab> Icon inside menu items (fa-user / fa-reply / fa-copy) :: font-size (icon size)
+   REF: 16px — ref i.fas ::before font-size 16px, weight 900, color rgb(69,162,255) (dropdown7.json)
+   OURS: size={14} @ src/lib/components/ChatPanel.svelte:475,478,481
+   FIX: Set size={16} on the User Info / Mention / Copy icons to match the reference 16px glyphs.
+
+119. [LOW/M] <kebab> .menu button (dropdown item) :: line-height
+   REF: 24px (dropdown7.json dropdown-item computed line-height)
+   OURS: not set — inherits button default (~normal ≈ 1.2) @ src/lib/components/ChatPanel.svelte:954-966
+   FIX: Add line-height: 24px to the item for the reference row height.
+
+120. [LOW/M] <notes> .noteOptions bar padding :: padding
+   REF: padding:10px on all sides (matched rule `.noteOptions{...padding:10px}`; node style padding-top/right/bottom/left all '10px')
+   OURS: padding:0.6rem 0.85rem (9.6px vertical / 13.6px horizontal) @ /Users/billyribeiro/Desktop/pro-room/web/src/lib/components/NotesPanel.svelte:307
+   FIX: Set the toolbar padding to a uniform 10px.
+
+121. [LOW/M] <notes> .noteOptions bar border :: border-bottom
+   REF: No border on the options bar (noteOptions node border-*-width all '0px')
+   OURS: border-bottom:1px solid #eceef3 @ /Users/billyribeiro/Desktop/pro-room/web/src/lib/components/NotesPanel.svelte:312
+   FIX: Remove the border-bottom (or, since the ref bar is at the bottom, no border at all).
+
+122. [LOW/M] <notes> .download (noteDownload button) :: border-radius
+   REF: border-radius:4px (node style border-top-left-radius '4px'; .btn-sm --bs-btn-border-radius:var(--bs-border-radius-sm)=.25rem)
+   OURS: border-radius:6px @ /Users/billyribeiro/Desktop/pro-room/web/src/lib/components/NotesPanel.svelte:360
+   FIX: Set .download border-radius:4px.
+
+123. [LOW/M] <notes> .body (note content area) padding :: padding
+   REF: padding:15px (matched rule `.note-container{...padding:15px}`; node padding-*'15px')
+   OURS: padding:0.85rem (13.6px) @ /Users/billyribeiro/Desktop/pro-room/web/src/lib/components/NotesPanel.svelte:375
+   FIX: Set .body padding:15px.
+
+124. [LOW/M] <stage> #mainTabs a.nav-link (idle tabs) :: border-top-left-radius / border-top-right-radius
+   REF: 6px — computed border-top-left-radius 6px / border-top-right-radius 6px on a#notes-tab and a.nav-link(Files); rule `.nav-tabs .nav-link { border-top-*-radius: var(--bs-nav-tabs-border-radius) }` (BS5 .375rem)
+   OURS: 4px @ MainStage.svelte:206-207 (`border-top-left-radius: 4px; border-top-right-radius: 4px;`)
+   FIX: Change idle top corners to 6px. (Active tab correctly stays 3px all-corners via the .active override, matching `.mainTabset .nav-link.active { border-radius: 3px }`.)
+
+125. [LOW/M] <stage> empty-state h3.text-center.mt-4 :: font-weight
+   REF: 500 — computed font-weight 500 on the h3
+   OURS: 400 @ ScreenStage.svelte:534 (`font-weight: 400;`)
+   FIX: Set .empty font-weight to 500. (Color already matches: ref rgb(204,204,204); ours var(--text-dim)=#cccccc = rgb(204,204,204).)
+
+126. [LOW/M] <chat> .msg-box (reference div.msg-box, non-admin) :: padding-top
+   REF: 0px (all 30 captured non-admin msg-box nodes)
+   OURS: 2px (padding: 2px 0 4px) @ src/lib/components/ChatPanel.svelte:858
+   FIX: Set normal-row padding-top to 0 (padding: 0 0 4px). The 2px top belongs only to the admin row (reference msg-box-adm computes padding-top 2px); the code comment cited the admin capture and applied it to every row.
+
+127. [LOW/M] <chat> .textAreaBtns:hover (reference span.textAreaBtns hover) :: color
+   REF: #0a6db1 (--textarea-holder-btns-hover-color, tokens.json)
+   OURS: var(--accent) = #45a2ff @ src/lib/components/ChatPanel.svelte:1148
+   FIX: Hover color should be #0a6db1 (the darker link-blue), not the accent #45a2ff. Reference token --textarea-holder-btns-hover-color is #0a6db1; use var(--username-color)/#0a6db1 instead of var(--accent). (Hover state not in the static slice; sourced from tokens.json.)
+
+128. [LOW/M] <chat> .avatar (reference div.avatar.pl-1 > img) :: content/background
+   REF: transparent container (rgba(0,0,0,0)) holding a real 35x35 img, object-fit:cover, border-radius:0, with 4px left padding (pl-1)
+   OURS: initials text chip on background #e7e9ef, 35x35, radius 0 @ src/lib/components/ChatPanel.svelte:974-988
+   FIX: Reference renders the author's actual 35px square avatar image (fa-user icon as fallback). Ours renders an initials chip. Render the avatar image when a URL is available and keep initials only as fallback; also add ~4px left padding to match pl-1. (Likely a data gap — our message model may not carry avatar URLs.)
+
+129. [LOW/M] <modal-settings> .modal-content :: border-radius
+   REF: 8px (border-radius-lg .5rem; border-top-left-radius 8px, node 176)
+   OURS: 6px @ Modal.svelte:161
+   FIX: Modal corner radius is 8px, not 6px.
+
+130. [LOW/M] <modal-settings> .nav-tabs .nav-link (tabs, active & inactive) :: font-weight
+   REF: 300 (nodes 183, 185)
+   OURS: 400 (.tab) @ SettingsModal.svelte:637
+   FIX: Tab labels are weight 300 (app light weight), not 400.
+
+131. [LOW/M] <modal-settings> .section-head text span :: font-weight
+   REF: 300 (node 193 'Choose Color Theme:')
+   OURS: 400 @ SettingsModal.svelte:667 (.section-head font-weight)
+   FIX: Section headings render at weight 300, not 400.
+
+132. [LOW/M] <modal-settings> button.btn-outline-danger (Reset) :: color / border-color
+   REF: rgb(220, 53, 69) = #dc3545 (computed; BS5 --bs-btn-color wins, node 242)
+   OURS: var(--modal-danger,#e74c3c) = #e74c3c @ SettingsModal.svelte:862-863 (.btn.outline-danger)
+   FIX: Reset outline color is #dc3545, not #e74c3c.
+
+133. [LOW/M] <modal-settings> .text-right (Reset/Save actions row) :: alignment
+   REF: text-align:right — Reset & Save right-aligned (node 241)
+   OURS: .cs-actions is a flex row with no justify-content (left-aligned) @ SettingsModal.svelte:812-816 (.cs-actions)
+   FIX: Right-align the Reset/Save button group (justify-content:flex-end).
+
+134. [LOW/M] <modal-settings> div.modal-footer :: padding
+   REF: 12px (calc(1rem - gap*.5); padding-top/left/right 12px, node 288)
+   OURS: 1rem (16px) @ Modal.svelte:217 (.foot padding)
+   FIX: Footer padding is 12px, not 16px.
+
+135. [LOW/M] <archives-roster> roster cog dropdown menu (ul.dropdown-menu inside .user-options) :: width / min-width
+   REF: width 228px, min-width 160px (slice roster-cog.json ul style.width 228px, min-width 160px; matchedRule .user-options .dropdown-menu{width:228px})
+   OURS: width auto, min-width 9rem = 144px @ RoomSidebar.svelte:813 (.cog-menu min-width:9rem, no explicit width)
+   FIX: Set .cog-menu width:228px (or min-width:160px) to match the fixed reference menu width.
+
+136. [LOW/M] <archives-roster> roster cog dropdown menu (ul.dropdown-menu inside .user-options) :: font-size (container)
+   REF: 13px (slice roster-cog.json ul style.font-size = 13px; matchedRule .user-options .dropdown-menu{font-size:13px})
+   OURS: unset → inherits 14px @ RoomSidebar.svelte:808-818 (.cog-menu has no font-size)
+   FIX: Set .cog-menu font-size:13px to match the reference container (items then override to 14px).
+
+137. [LOW/M] <modals-batch> .modal-footer (Muted/Followed/Reply/AlertLogs/WebRTC) :: padding
+   REF: 12px (0.75rem, computed padding-top/right/bottom/left 12px)
+   OURS: 16px (1rem) @ Modal.svelte:217 (.foot padding)
+   FIX: Footer padding is 0.75rem (12px), not 1rem.
+
+138. [LOW/M] <modals-batch> empty-state text (Muted 'You don\'t have any muted…', Followed, logs) :: color / font-size / padding
+   REF: div.text-center color rgb(244,244,244) #f4f4f4 full-strength, font-size 16px, font-weight 300, no extra padding
+   OURS: color var(--text-dim) #cccccc dimmed, font-size 0.9rem, padding 1.25rem 0.5rem @ MutedUsersModal.svelte:38-43, FollowedUsersModal.svelte:38-43, ChatLogsModal.svelte:95-100, AlertLogsModal.svelte:80-85
+   FIX: Empty text is full #f4f4f4 at 16px, no extra padding — not dimmed 0.9rem.
+
+139. [LOW/M] <modals-batch> p.text-muted.mb-4 intro (WebRTC) :: color / font-weight / font-size
+   REF: color rgb(229,231,235) #e5e7eb; font-weight 500; font-size 0.95rem (15.2px); margin-bottom 24px — rule '.modal-body .text-muted { font-size:.95rem; color:#e5e7eb!important; font-weight:500!important }'
+   OURS: color var(--text-dim) #cccccc; inherited weight/size; margin-bottom 1.5rem @ ConnectivityCheckModal.svelte:189-192 (.intro)
+   FIX: Intro text is #e5e7eb, weight 500, 0.95rem.
+
+140. [LOW/M] <modals-batch> ChatLogs modal footer :: presence
+   REF: ChatLogs modal has NO modal-footer (no footer Close button; only the header ✕)
+   OURS: renders a footer with a Close button @ ChatLogsModal.svelte:41-45
+   FIX: Remove the ChatLogs footer/Close; reference closes via the header ✕ only. (AlertLogs DOES keep a footer with a #6c757d secondary Close.)
+
+141. [LOW/M] <modals-batch> btn-light 'Close' (Followed) & all footer buttons :: font-weight / font-size / text color
+   REF: weight 400; font-size 16px; padding 6px 12px; btn-light text color rgb(0,0,0)
+   OURS: weight 700; font-size 0.85rem; btn-light text #212529 @ FollowedUsersModal.svelte:100-113; button styles across all modal files
+   FIX: Modal buttons use weight 400 at 16px; btn-light text is pure #000.
+
+142. [LOW/M] <alerts> span.badge.chat-reaction (reaction pill) :: border-radius
+   REF: 6px (chat-reaction border-top-left-radius)
+   OURS: 4px @ web/src/lib/components/ReactionBar.svelte:148 (.pill border-radius:4px)
+   FIX: Set .pill border-radius to 6px.
+
+143. [LOW/M] <alerts> span.badge.chat-reaction (reaction pill) :: line-height
+   REF: 12px (pill total height 20px = 12 lh + 3+3 pad + 1+1 border)
+   OURS: 1.2 (= 14.4px at 12px font → pill ≈22.4px tall, ~2px too tall) @ web/src/lib/components/ReactionBar.svelte:152 (.pill line-height:1.2)
+   FIX: Set .pill line-height to 12px (or 1).
+
+144. [LOW/M] <alerts> div.separator > a (date label) :: line-height
+   REF: 19.5px (date anchor lh; separator band height 19.5px, color #373c42, 13px/300 — all else matches)
+   OURS: 24px (taller gray band) @ web/src/lib/components/AlertFeed.svelte:528 (.separator line-height:24px)
+   FIX: Set .separator line-height to 19.5px (or 1.5). (Minor: ref anchor cursor is 'auto', ours is 'pointer'.)
+
+145. [LOW/M] <alerts> a.navbar-brand.ml-1 (alerts header brand text next to bell) :: font-size
+   REF: 20px (navbar-brand computed; brand box is 78.5px wide so it holds bell icon + a text label at 20px/300/lh30)
+   OURS: 18.75px @ web/src/lib/components/AlertFeed.svelte:461 (.title font-size:18.75px)
+   FIX: Set .title font-size to 20px to match navbar-brand (Bootstrap $navbar-brand-font-size = 1.25rem). The report.md:1275 '18.75px' note is contradicted by the rendered computed value.
+
+146. [LOW/M] <notes> .noteDownload :: font-size
+   REF: font-size: 14px
+   OURS: font-size: 0.8rem (12.8px) @ NotesPanel.svelte:362
+   FIX: Set .download font-size to 14px.
+
+147. [LOW/M] <notes> .note-container p (rendered note body text) :: margin-bottom
+   REF: computed margin-bottom: 16px on note body <p> (p { margin-bottom: 1rem })
+   OURS: margin: 0 0 0.6rem (9.6px) @ NotesPanel.svelte:380 (p) and :392 (ul/ol)
+   FIX: Set rendered p/ul/ol margin-bottom to 1rem (16px).
+
+148. [LOW/M] <notes> .noteDownload :: padding
+   REF: padding: 4px 8px (padding-top/bottom 4px, left/right 8px — btn btn-sm)
+   OURS: padding: 0.35rem 0.7rem (5.6px 11.2px) @ NotesPanel.svelte:361
+   FIX: Set .download padding to 4px 8px.
+
+149. [LOW/M] <notes> .note-container (note body scroll area) :: padding
+   REF: .note-container { padding: 15px } (computed padding-top/left/right 15px)
+   OURS: padding: 0.85rem (13.6px) @ NotesPanel.svelte:375
+   FIX: Set .body padding to 15px.
+
+150. [LOW/M] <notes> rendered note headings (h2/h3 in note body) :: font-size / font-weight
+   REF: note-body h2 { font-size: 32px; font-weight: 700; color: rgb(103,103,103) }, h3 { font-size: 28px; font-weight: 700 } (computed in notes.json content)
+   OURS: No h1-h6 rules in .rendered — headings fall back to UA defaults (h2 ~24px, h3 ~18.7px) @ NotesPanel.svelte:377-399 (.rendered block, no heading selectors)
+   FIX: Add .rendered :global(h2){font-size:32px;font-weight:700} and h3{font-size:28px;font-weight:700} (color already #676767 via inheritance).
+
+151. [LOW/M] <modals-batch> div.modal-content (Modal.svelte .panel) :: border-radius
+   REF: 8px — modal-content border-top-left-radius 8px in modal-followed/muted/chatlogs/reply/mobile
+   OURS: 6px @ web/src/lib/components/Modal.svelte:161
+   FIX: Set .panel border-radius:8px (Bootstrap modal-content uses .5rem).
+
+152. [LOW/M] <modals-batch> div.modal-footer (Modal.svelte .foot) :: padding
+   REF: 12px (.75rem) all sides — modal-footer padding 12px in modal-followed/muted/reply
+   OURS: 1rem (16px) @ web/src/lib/components/Modal.svelte:217
+   FIX: Set .foot padding:.75rem to match reference footer padding.
+
+153. [LOW/P] <volume> .panel-title (h4 'Volume', node i1) :: color
+   REF: rgb(204,204,204) = #ccc (inherits panel color)
+   OURS: #fff @ src/lib/components/RoomTopNav.svelte:596
+   FIX: Change .panel-title color to #ccc (or remove the override so it inherits the panel #ccc).
+
+154. [LOW/P] <volume> .panel-close (span.float-right / i.fa-times, nodes i2/i3) :: color
+   REF: rgb(204,204,204) = #ccc
+   OURS: #abb0b5 @ src/lib/components/RoomTopNav.svelte:607
+   FIX: Change .panel-close color to #ccc to match the reference close glyph.
+
+155. [LOW/P] <volume> .mute (node i5) :: border-radius
+   REF: 4px (btn-sm --bs-border-radius-sm = 0.25rem)
+   OURS: var(--radius) = 6px @ src/lib/components/RoomTopNav.svelte:631
+   FIX: Set .mute border-radius:4px (btn-sm), not var(--radius).
+
+156. [LOW/P] <volume> .mute (node i5) :: padding
+   REF: 4px 8px (btn-sm 0.25rem 0.5rem)
+   OURS: 0.25rem 0.7rem = 4px 11.2px @ src/lib/components/RoomTopNav.svelte:632
+   FIX: Set .mute padding:0.25rem 0.5rem to match btn-sm horizontal padding (8px).
+
+157. [LOW/P] <volume> .mute:hover (node i5, .btn-primary:hover) :: hover background-color
+   REF: #0b5ed7 (bootstrap btn-primary hover)
+   OURS: var(--accent-hover) = #45a2ff @ src/lib/components/RoomTopNav.svelte:637-640
+   FIX: Set .mute:hover background/border to #0b5ed7 / #0a58ca (bootstrap), consistent with the #0d6efd base fix.
+
+158. [LOW/P] <volume> sound-row status word span e.g. "on" (dropdown3.json node 186, sibling of label.form-check-label "Alert sound") :: font-size (and horizontal placement)
+   REF: 16px (node 186 computed font-size 16px, weight 300, color #ccc; sits inline immediately after the label text, width auto)
+   OURS: 0.75rem = 12px, and pushed to the row's right edge via margin-left:auto @ web/src/lib/components/RoomTopNav.svelte:677-681 (.sound-options .status { margin-left: auto; font-size: 0.75rem; color: #ccc })
+   FIX: Set the .status font-size to 16px (match the label) and remove margin-left:auto so the status word renders inline right after the label text as in the reference.
+
+159. [LOW/P] <volume> button.btn.btn-primary.btn-sm "Mute" (dropdown3.json node 179) :: background-color / border-color
+   REF: rgb(13,110,253) = #0d6efd (node 179 computed background-color and border-top-color; btn-primary = --bs-primary #0d6efd in tokens.json)
+   OURS: var(--accent) = #45a2ff @ web/src/lib/components/RoomTopNav.svelte:628-629 (.mute { background: var(--accent); border: 1px solid var(--accent) }); --accent defined web/src/routes/layout.css:26 (#45a2ff)
+   FIX: Style the Mute button with #0d6efd (Bootstrap primary) rather than the room accent #45a2ff — the reference btn-primary is #0d6efd, which differs from the room's #45a2ff accent.
+
+160. [COSMETIC/M] <webcams> div.card.webcamsHolder (webcam card) :: overflow-x / overflow-y
+   REF: visible / visible (computed style on div#webcamsHolder-: "overflow-x":"visible", "overflow-y":"visible")
+   OURS: overflow: hidden @ web/src/lib/components/WebcamHolder.svelte:196
+   FIX: The reference card does NOT clip its content (both axes visible); ours sets overflow:hidden, which rounds/clips the video's corners against the 6px radius. To match exactly, drop `overflow: hidden` (or set `overflow: visible`) on `.card`. Impact is minimal because the 318x238 video fills the content box on a black card, but it is a real computed-style divergence.
+
+161. [COSMETIC/M] <archives-roster> ul.dropdown-menu.show (roster cog menu container) → our .cog-menu :: border-top-color
+   REF: rgba(0, 0, 0, 0.176) (≈ #d2d2d2 over white; computed border-top-color on ul.dropdown-menu in dropdown2.json)
+   OURS: #d9d9d9 @ web/src/lib/components/RoomSidebar.svelte:815
+   FIX: Change .cog-menu border color from solid #d9d9d9 to rgba(0,0,0,0.176) to match Bootstrap's translucent dropdown border.
+
+162. [COSMETIC/M] <archives-roster> dropdown menus (.dropdown-menu[data-bs-popper]) → our .archives-menu and .cog-menu :: margin-top (offset from toggle)
+   REF: margin-top: 2px (0.125rem bs-dropdown-spacer; computed on both .dropdown-menu containers)
+   OURS: 0 (positioned top:100% with no gap) @ web/src/lib/components/RoomSidebar.svelte:663,809
+   FIX: Add margin-top: 2px (or top: calc(100% + 2px)) to .archives-menu and .cog-menu so the menu sits 2px below the toggle like the reference.
+
+163. [COSMETIC/M] <topnav> li.talkingIndicator > a (idle talking indicator) :: cursor
+   REF: pointer (slice node idx 57: a under .talkingIndicator, style.cursor="pointer"; display=inline-flex, line-height=41px, margin 0 5px, max-height 47px — all of which we match)
+   OURS: default @ /Users/billyribeiro/Desktop/pro-room/web/src/lib/components/RoomTopNav.svelte:513-515 (.talking.idle { cursor: default }) rendered at line 130 as a <span>, not the reference's clickable <a>
+   FIX: Drop the cursor:default override on .talking.idle (keep cursor:pointer inherited from .talking), or render the idle indicator inside an <a>/button so the '( No one is speaking )' string shows the reference pointer cursor. Every other property (fs16, lh41, margin 0 5px, max-width 400px, max-height 47px, inline-flex, color #fff) already matches node 57.
+
+164. [COSMETIC/M] <notes> note sub-tab inactive label (a.editName / a.nav-link) :: color
+   REF: Inactive tab label color rgb(204,204,204) #cccccc (stage-notes.json inactive nav-link node 32 color 'rgb(204, 204, 204)' and editName node 35 color 'rgb(204, 204, 204)'); active tab is #ffffff (node 25/30)
+   OURS: All .subtabs button text is #ffffff (both active and inactive) @ /Users/billyribeiro/Desktop/pro-room/web/src/lib/components/NotesPanel.svelte:274
+   FIX: Set inactive subtab text to #cccccc, keep active label #ffffff.
+
+165. [COSMETIC/M] <notes> note sub-tab inactive pill (a.nav-link) :: border-radius (resting)
+   REF: Inactive tab resting border-radius 6px (node 32 border-top-left-radius '6px', from `.nav-tabs .nav-link{border-top-*-radius:var(--bs-border-radius)}`); becomes 3px on hover and when active
+   OURS: border-radius:3px at all times @ /Users/billyribeiro/Desktop/pro-room/web/src/lib/components/NotesPanel.svelte:280
+   FIX: Use 6px resting radius on inactive tabs, 3px on hover/active (minor).
+
+166. [COSMETIC/M] <notes> first/home tab icon (i.fas.fa-home) :: font-size
+   REF: Home icon font-size 9px (stage-notes.json fa-home node 29 font-size '9px')
+   OURS: Home Icon rendered at size={12} @ /Users/billyribeiro/Desktop/pro-room/web/src/lib/components/NotesPanel.svelte:172
+   FIX: Render the home icon around 9-10px to match.
+
+167. [COSMETIC/M] <stage> #mainTabs idle tab label span.mx-1 (Notes/Files) :: margin-right
+   REF: 4px — idle labels use span.mx-1 with margin 0 4px (both sides); computed margin-left 4px + margin-right 4px
+   OURS: 0 (only a leading 4px via the button's gap:4px; no trailing margin after the label text) @ MainStage.svelte:90-91 (icon + bare {t.label} with `gap: 4px` on button at line 190)
+   FIX: Add a trailing 4px after the label to mirror span.mx-1 (idle tabs) — e.g. wrap the label in a span with margin: 0 4px. Icon-to-text spacing (4px) already matches; only the idle tab's trailing gap differs. Active 'Screens' uses span.ml-1 (leading 4px only), which the current gap already matches.
+
+168. [COSMETIC/M] <chat> .tabs button (reference a.nav-link) :: margin-right
+   REF: 5px
+   OURS: 6px @ src/lib/components/ChatPanel.svelte:751
+   FIX: Change margin-right from 6px to 5px; reference nav-link margin-right computes to 5px (the '6px apart' comment measured rects, which are unreliable).
+
+169. [COSMETIC/M] <chat> .textAreaBtnsCol (reference div.textAreaBtnsCol) :: gap
+   REF: normal (0 — the three span.textAreaBtns have 0 margin and abut, each carrying its own 5px padding)
+   OURS: 0.2rem @ src/lib/components/ChatPanel.svelte:1129
+   FIX: Remove the 0.2rem gap (set gap:0). Reference emoji/image/GIF buttons touch, spaced only by each button's internal 5px padding.
+
+170. [COSMETIC/M] <chat> .pill (reference div#textAreaHolder.textSendDiv) :: padding
+   REF: 5px uniform
+   OURS: 0.15rem 0.5rem (~2.4px 8px) @ src/lib/components/ChatPanel.svelte:1085
+   FIX: Set the holder inner padding to a uniform 5px to match textSendDiv (currently ~2.4px vertical / 8px horizontal).
+
+171. [COSMETIC/M] <chat> .created-at (reference span.created-at.mx-2) :: margin-right
+   REF: 8px (mx-2)
+   OURS: 0 (only margin-left:auto; row has padding-right:0 so timestamp is flush to the right edge) @ src/lib/components/ChatPanel.svelte:1018
+   FIX: Add margin-right: 8px on .created-at so the timestamp sits 8px from the row's right edge, matching the reference mx-2.
+
+172. [COSMETIC/M] <modal-settings> .nav-tabs .nav-link (inactive tab text) :: color
+   REF: rgb(255, 255, 255) = #fff (node 185)
+   OURS: #f4f4f4 @ SettingsModal.svelte:635 (.tab color)
+   FIX: Inactive tab text is pure white #fff (minor).
+
+173. [COSMETIC/M] <modal-settings> .modal-content outer border :: border-color
+   REF: rgba(0, 0, 0, 0.176) (BS border-color-translucent, node 176)
+   OURS: var(--modal-border) = #444 @ Modal.svelte:158
+   FIX: Outer modal border is a faint translucent black rgba(0,0,0,.176), not solid #444 (barely visible on navy).
+
+174. [COSMETIC/M] <modal-settings> button.btn-close.btn-close-white (header X) :: implementation/opacity
+   REF: Bootstrap btn-close: black SVG X inverted to white via filter, opacity 0.5, 16px (1em) square, no border (node 179)
+   OURS: solid Icon 'times' (full opacity) with color var(--modal-color), padding 0.3rem, border-radius var(--radius) @ Modal.svelte:99-107 / 187-200 (.close)
+   FIX: Reference close glyph is a semi-transparent (opacity 0.5) white X; ours is full-opacity — minor tonal difference.
+
+175. [COSMETIC/M] <tokens> modal body text — token --modal-color (Modal.svelte:155 --text / :162 color) :: color / --modal-content-color
+   REF: #f4f4f4 (tokens.json root['--modal-content-color']=#f4f4f4; rendered div.modal-content color=rgb(244,244,244))
+   OURS: #ffffff @ web/src/routes/layout.css:102 (--modal-color:#ffffff)
+   FIX: Minor: set --modal-color to #f4f4f4 to match the reference near-white modal text (pure #fff is 1 shade off).
+
+176. [COSMETIC/M] <archives-roster> roster cog dropdown menu (ul.dropdown-menu) :: border-color
+   REF: rgba(0, 0, 0, 0.176) (slice roster-cog.json ul border-top-color) ≈ #d2d2d2 over white
+   OURS: #d9d9d9 (solid rgb 217,217,217) @ RoomSidebar.svelte:815 (.cog-menu border:1px solid #d9d9d9)
+   FIX: Set .cog-menu border to 1px solid rgba(0,0,0,0.176) to match the Bootstrap-default translucent border.
+
+177. [COSMETIC/M] <archives-roster> archives dropdown menu & roster cog dropdown menu :: margin-top
+   REF: 2px (slice archives.json users-dropdown-options margin-top 2px; roster-cog.json dropdown-menu margin-top 2px — the --bs-dropdown-spacer .125rem)
+   OURS: 0 (both menus positioned with top:100% and no margin) @ RoomSidebar.svelte:661-672 (.archives-menu) and 808-818 (.cog-menu)
+   FIX: Add margin-top:2px to .archives-menu and .cog-menu to reproduce the 2px gap below the toggle.
+
+178. [COSMETIC/M] <alerts> button.alert-qa (Q&A badge) :: border-radius
+   REF: 4px (alert-qa border-top-left-radius; btn-sm)
+   OURS: 0.2rem = 3.2px @ web/src/lib/components/AlertFeed.svelte:727 (.alert-qa border-radius:0.2rem)
+   FIX: Set .alert-qa border-radius to 4px (0.25rem).
+
+179. [COSMETIC/M] <modal-settings> modal title (h5 in modal-header) :: font-size / font-weight
+   REF: 20px / 500 (slice node 178 h5: font-size 20px, font-weight 500, color rgb(244,244,244))
+   OURS: 18px / 700 (.title{font-size:18px;font-weight:700}) @ web/src/lib/components/Modal.svelte:182-186
+   FIX: Set the title to font-size 20px, font-weight 500 to match the reference h5.
+
+180. [COSMETIC/M] <modal-settings> div.modal-content (modal panel) :: border-radius
+   REF: 8px (slice node 176 div.modal-content: border-top-left-radius 8px; Bootstrap-5 --bs-modal-border-radius = .5rem)
+   OURS: 6px (.panel{border-radius:6px}) @ web/src/lib/components/Modal.svelte:161
+   FIX: Set the modal panel border-radius to 8px.
+
+181. [COSMETIC/M] <modal-settings> .section-head (section heading text, e.g. span.pl-2) :: font-weight
+   REF: 300 (slice node 193/203/225 span.pl-2: font-weight 300)
+   OURS: 400 (.section-head{font-weight:400}) @ web/src/lib/components/modals/SettingsModal.svelte:666
+   FIX: Set .section-head font-weight to 300 to match the reference heading weight (rest of the heading style already matches: 16px, normal-case, #f4f4f4, trailing colon).
+
+182. [COSMETIC/M] <modals-batch> button.btn-light (Followed 'Close') :: color
+   REF: rgb(0,0,0) #000 — modal-followed btn-light --bs-btn-color:#000
+   OURS: #212529 @ web/src/lib/components/modals/FollowedUsersModal.svelte:112
+   FIX: Set .btn.light color:#000 (currently near-black #212529).
+
+183. [COSMETIC/P] <volume> .divider (blue dropdown-divider, node i7) :: margin (vertical)
+   REF: 8px 0 (margin-top/bottom 8px)
+   OURS: 0.6rem 0 = 9.6px @ src/lib/components/RoomTopNav.svelte:650
+   FIX: Set the blue divider margin to 8px 0 to match dropdown-divider.
+
+184. [COSMETIC/P] <stage> .card.webcamsHolder (webcam tile) :: position
+   REF: absolute — stage-screens.json node class "card webcamsHolder": style.position="absolute"; matched rule .webcamsHolder[_ngcontent-ng-c4054903792]{ position:absolute; z-index:105; ... }
+   OURS: relative @ web/src/lib/components/WebcamHolder.svelte:182
+   FIX: Deliberate, documented parity decision (WebcamHolder.svelte:174-181): the card is position:relative in a flex .holder and floats via the absolute parent .webcam-overlay in MainStage. Visually equivalent (bottom-anchored, centered, wrapping, draggable). Reported only as a real code-level divergence for transparency; no change required for pixel parity.
+
+185. [COSMETIC/P] <stage> .card.webcamsHolder (webcam tile) :: z-index
+   REF: 105 (static) — stage-screens.json node style.z-index="105"; matched rule .webcamsHolder{ ...z-index:105 }
+   OURS: no z-index on base .card; z-index:200 applied only while .card.dragging @ web/src/lib/components/WebcamHolder.svelte:174-211 (base .card has no z-index; :209-210 .card.dragging{ z-index:200 })
+   FIX: Optionally set a static z-index:105 on the base .card to mirror the reference stacking, rather than only lifting the tile during drag. Part of the same deliberate parity decision; visually equivalent.
+
+186. [COSMETIC/P] <stage> .card.webcamsHolder (webcam tile) :: transition
+   REF: all — stage-screens.json node style.transition="all" (webcamsHolder)
+   OURS: none declared (no transition property on .card) @ web/src/lib/components/WebcamHolder.svelte:174-207
+   FIX: Add `transition: all` to .card so drag/reposition/appear animates instead of snapping, matching the reference webcamsHolder computed transition:all.
+
+187. [COSMETIC/P] <volume> h4.panel-title "Volume" (dropdown3.json node 175, path div.dropdown-menu.volumeControl.show > h4) :: color
+   REF: rgb(204,204,204) = #ccc (node 175 computed color, inherited from .volumeControl color #ccc; h4 sets no explicit color)
+   OURS: #fff (explicit) @ web/src/lib/components/RoomTopNav.svelte:596 (.panel-title { color: #fff })
+   FIX: Change .panel-title color from #fff to #ccc so the title matches the reference h4's inherited rgb(204,204,204); or drop the explicit color so it inherits the panel's #ccc.
+
+188. [COSMETIC/P] <volume> separator between Mute button and sound options (dropdown3.json nodes 180 hr + 181 div.dropdown-divider) :: divider count / composition
+   REF: TWO stacked lines: a plain <hr> (node 180, border-top 1px solid rgb(204,204,204), margin 16px 0) followed by a blue <div class="dropdown-divider"> (node 181, border-top 1px solid rgb(69,162,255) = #45a2ff, margin 8px 0)
+   OURS: ONE line: single <hr class="divider"> styled border-top:1px solid #45a2ff, margin 0.6rem 0 @ web/src/lib/components/RoomTopNav.svelte:195 (<hr class="divider">) + 647-652 (.divider)
+   FIX: Add a plain <hr> (faint border ~rgba/ #ccc, 1rem vertical margin) before the blue .divider to reproduce the reference's two-line separator, or accept the single blue line as an intentional simplification.
+

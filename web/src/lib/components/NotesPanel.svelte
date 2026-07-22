@@ -169,11 +169,10 @@
 				class:active={selected?.id === n.id}
 				onclick={() => select(n.id)}
 			>
-				{#if i === 0}<Icon name="home" size={12} />{:else}<Icon
-						name="pen"
-						size={12}
-						class="mx-1"
-					/>{/if}
+				<!-- Reference: only the first/home tab carries an icon (fa-home); other
+				     tabs are the bare title (the fa-edit glyph is the dynamic
+				     unsaved-changes indicator, not a per-tab decoration). -->
+				{#if i === 0}<Icon name="home" size={12} />{/if}
 				{n.title}
 			</button>
 		{/each}
@@ -187,47 +186,47 @@
 	{#if error}<p class="error">{error}</p>{/if}
 
 	{#if selected}
-		<div class="head">
-			<h3>{selected.title}</h3>
-			<div class="head-actions">
-				{#if canManage}
-					<button
-						type="button"
-						class="ic"
-						onclick={() => reorder(-1)}
-						disabled={busy || selectedIndex <= 0}
-						aria-label="Move left"
-					>
-						<Icon name="caret-left" />
-					</button>
-					<button
-						type="button"
-						class="ic"
-						onclick={() => reorder(1)}
-						disabled={busy || selectedIndex >= notes.length - 1}
-						aria-label="Move right"
-					>
-						<Icon name="caret-right" />
-					</button>
-					<button type="button" class="ic" onclick={() => (editorOpen = true)} aria-label="Edit">
-						<Icon name="pen" />
-					</button>
-					<button type="button" class="ic" onclick={() => rename(selected)} aria-label="Rename">
-						<Icon name="pencil-alt" />
-					</button>
-					<button type="button" class="ic del" onclick={() => remove(selected)} aria-label="Delete">
-						<Icon name="trash-alt" />
-					</button>
-				{/if}
-				<button type="button" class="download" onclick={() => download(selected)}>
-					<Icon name="download" size={15} /> Download
-				</button>
-			</div>
-		</div>
-
+		<!-- Reference note-view: the scrolling note body fills the pane, and the
+			     options bar (.noteOptions) is a STICKY BOTTOM bar — no top toolbar,
+			     no duplicate title heading (the title is the active tab label). -->
 		<div class="body">
 			<!-- eslint-disable-next-line svelte/no-at-html-tags -- admin-authored note HTML, DOMPurify-sanitised -->
 			<div class="rendered">{@html sanitize(selected.body)}</div>
+		</div>
+
+		<div class="options">
+			{#if canManage}
+				<button
+					type="button"
+					class="ic"
+					onclick={() => reorder(-1)}
+					disabled={busy || selectedIndex <= 0}
+					aria-label="Move left"
+				>
+					<Icon name="caret-left" />
+				</button>
+				<button
+					type="button"
+					class="ic"
+					onclick={() => reorder(1)}
+					disabled={busy || selectedIndex >= notes.length - 1}
+					aria-label="Move right"
+				>
+					<Icon name="caret-right" />
+				</button>
+				<button type="button" class="ic" onclick={() => (editorOpen = true)} aria-label="Edit">
+					<Icon name="pen" />
+				</button>
+				<button type="button" class="ic" onclick={() => rename(selected)} aria-label="Rename">
+					<Icon name="pencil-alt" />
+				</button>
+				<button type="button" class="ic del" onclick={() => remove(selected)} aria-label="Delete">
+					<Icon name="trash-alt" />
+				</button>
+			{/if}
+			<button type="button" class="download" onclick={() => download(selected)}>
+				<Icon name="download" size={15} /> Download
+			</button>
 		</div>
 	{:else}
 		<div class="empty">
@@ -300,25 +299,20 @@
 		opacity: 0.5;
 		cursor: not-allowed;
 	}
-	.head {
-		display: flex;
-		align-items: center;
-		gap: 0.6rem;
-		padding: 0.6rem 0.85rem;
-		/* Reference notes options/toolbar bar: --note-options-bg #f4f4f4
-		   (report.md:937). */
-		background: var(--note-options-bg, #f4f4f4);
-		border-bottom: 1px solid #eceef3;
-		flex-shrink: 0;
-	}
-	.head h3 {
-		margin: 0;
-		font-size: 1rem;
-	}
-	.head-actions {
+	/* Reference .noteOptions: sticky BOTTOM bar, --note-options-bg #f4f4f4,
+	   padding 10px, holding the action buttons (Download etc.). */
+	.options {
 		display: flex;
 		align-items: center;
 		gap: 0.3rem;
+		position: sticky;
+		bottom: 0;
+		padding: 10px;
+		background: var(--note-options-bg, #f4f4f4);
+		border-top: 1px solid #eceef3;
+		flex-shrink: 0;
+	}
+	.options .download {
 		margin-left: auto;
 	}
 	.ic {
@@ -359,11 +353,12 @@
 		border: none;
 		border-radius: 6px;
 		padding: 0.35rem 0.7rem;
-		font-size: 0.8rem;
-		font-weight: 700;
+		/* Reference .noteDownload (.btn-sm): 14px / weight 400. */
+		font-size: 14px;
+		font-weight: 400;
 		color: #ffffff;
 		cursor: pointer;
-		background: #92d528;
+		background: var(--note-download-bg, #92d528);
 	}
 	.download:hover {
 		color: #212529;
@@ -379,7 +374,8 @@
 	.rendered :global(p) {
 		margin: 0 0 0.6rem;
 		word-break: break-word;
-		font-size: 0.9rem;
+		/* Reference .note-container body: 16px / line-height 24px. */
+		font-size: 16px;
 		line-height: 1.5;
 		min-height: 0.6em;
 	}
@@ -391,7 +387,7 @@
 	.rendered :global(ol) {
 		margin: 0 0 0.6rem;
 		padding-left: 1.4rem;
-		font-size: 0.9rem;
+		font-size: 16px;
 		line-height: 1.5;
 	}
 	.rendered :global(li) {

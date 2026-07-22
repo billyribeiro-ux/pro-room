@@ -89,18 +89,20 @@
 		max-height: 50vh;
 		overflow-y: auto;
 	}
+	/* Reference log entries are WHITE cards with dark centered text and light
+	   #dee2e6 borders (not dark left-aligned rows). */
 	.list-group-item {
 		display: block;
 		width: 100%;
-		text-align: left;
-		background: var(--bg-elev);
-		border: 1px solid var(--border);
-		color: var(--text);
+		text-align: center;
+		background: #ffffff;
+		border: 1px solid #dee2e6;
+		border-radius: 6px;
+		color: #212529;
 		padding: 0.5rem 0.7rem;
+		margin-bottom: 0.4rem;
 	}
-	.list-group-item + .list-group-item {
-		border-top: none;
-	}
+
 	.lg-head {
 		display: flex;
 		justify-content: space-between;

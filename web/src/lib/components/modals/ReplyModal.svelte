@@ -71,22 +71,23 @@
 		align-items: stretch;
 		gap: 0.5rem;
 	}
+	/* Reference reply textarea: WHITE field, #676767 text, no border, no radius,
+	   14px, padding 6px 5px. */
 	textarea {
 		flex: 1;
 		min-width: 0;
 		box-sizing: border-box;
 		resize: vertical;
-		background: var(--bg-elev);
-		border: 1px solid var(--border);
-		color: var(--text);
-		border-radius: var(--radius);
-		padding: 0.5rem 0.6rem;
+		background: #ffffff;
+		border: none;
+		color: #676767;
+		border-radius: 0;
+		padding: 6px 5px;
 		font: inherit;
-		font-size: 0.88rem;
+		font-size: 14px;
 	}
 	textarea:focus {
 		outline: none;
-		border-color: var(--accent);
 	}
 	.tools {
 		display: flex;

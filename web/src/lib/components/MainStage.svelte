@@ -193,10 +193,11 @@
 		background: transparent;
 		/* Reference idle .nav-link: transparent 1px border on all sides. */
 		border: 1px solid transparent;
-		/* Reference idle main-tab computed text is rgb(204,204,204) = #ccc. */
-		color: #ccc;
+		/* Reference idle main-tab: color #fff (--tabs-color) via
+		   .mainTabset .nav-link{color:var(--tabs-color)}; weight 300. */
+		color: #fff;
 		font-size: 12px;
-		font-weight: 400;
+		font-weight: 300;
 		line-height: 12px;
 		/* Reference idle .nav-link: 8px padding all sides, 5px margins all sides. */
 		padding: 8px;

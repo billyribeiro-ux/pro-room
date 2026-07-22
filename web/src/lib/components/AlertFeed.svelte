@@ -628,14 +628,15 @@
 		position: absolute;
 		top: 100%;
 		left: 0;
-		z-index: 5;
-		min-width: 9rem;
+		z-index: 1000;
+		min-width: 10rem;
 		margin-top: 0.2rem;
-		background: var(--content-bg);
-		border: 1px solid #e3e5ec;
+		/* Reference kebab menu (dropdown7.json): dark navy #0e3651 panel, no
+		   border, padding 8px 0, no shadow. */
+		background: #0e3651;
+		border: none;
 		border-radius: 8px;
-		box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
-		padding: 0.25rem;
+		padding: 8px 0;
 		display: flex;
 		flex-direction: column;
 	}
@@ -655,15 +656,18 @@
 		gap: 0.45rem;
 		background: transparent;
 		border: none;
-		color: #2b3140;
-		font-size: 0.82rem;
+		/* Reference dropdown-item: accent blue #45a2ff, 16px, padding 4px 16px. */
+		color: var(--accent, #45a2ff);
+		font-size: 16px;
 		text-align: left;
-		padding: 0.4rem 0.55rem;
-		border-radius: 6px;
+		padding: 4px 16px;
+		border-radius: 0;
 		cursor: pointer;
 	}
 	.menu button:hover {
-		background: #f0f4fb;
+		/* Reference .dropdown-item:hover: #375a7f bg, white text. */
+		background: #375a7f;
+		color: #ffffff;
 	}
 	.menu button.danger {
 		color: var(--negative, #bb352a);

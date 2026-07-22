@@ -615,15 +615,20 @@
 </Modal>
 
 <style>
+	/* Reference #user-settings-modal .modal-dialog{max-width:700px}. */
+	:global(.panel:has(.tabs[aria-label='Settings sections'])) {
+		max-width: 700px;
+	}
 	.tabs {
 		display: flex;
 		gap: 0.25rem;
-		border-bottom: 1px solid var(--border);
+		/* Reference nav-tabs underline is blue #45a2ff. */
+		border-bottom: 1px solid var(--modal-active-tab-border, #45a2ff);
 		margin-bottom: 1rem;
 	}
 	/* Measured settings tab (targeted.json node 33, report.md:1589): padding
-	   8px 16px, 16px font. Darkly nav-tabs (appusersettingsmodal.html.html):
-	   active = #222 bg / #00bc8c text / #444 border, border-bottom:none. */
+	   8px 16px, 16px font. Active tab (live admin capture tokens): #45a2ff bg /
+	   #fff text / 1px #45a2ff border — a solid blue pill, 6px top radius. */
 	.tab {
 		display: inline-flex;
 		align-items: center;
@@ -643,10 +648,9 @@
 		border-color: var(--modal-active-tab-border, #444);
 	}
 	.tab.active {
-		background: var(--modal-active-tab-bg, #222);
-		color: var(--modal-active-tab, #00bc8c);
-		border: 1px solid var(--modal-active-tab-border, #444);
-		border-bottom: none;
+		background: var(--modal-active-tab-bg, #45a2ff);
+		color: var(--modal-active-tab, #fff);
+		border: 1px solid var(--modal-active-tab-border, #45a2ff);
 		cursor: default;
 	}
 
@@ -663,7 +667,7 @@
 		gap: 0.45rem;
 		color: var(--modal-color, #f4f4f4);
 		font-size: 1rem;
-		font-weight: 400;
+		font-weight: 300;
 		margin-bottom: 0.6rem;
 	}
 	.section-head span::after {
@@ -685,29 +689,43 @@
 		gap: 0.4rem;
 	}
 
+	/* Reference form options are BARE left-indented rows — no card background,
+	   border, or radius (div.ml-5/form-check, transparent). */
 	.radio,
 	.check {
 		display: flex;
 		align-items: center;
 		gap: 0.65rem;
-		background: var(--bg-elev);
-		border: 1px solid var(--border);
-		border-radius: var(--radius);
-		padding: 0.6rem 0.75rem;
+		background: transparent;
+		border: none;
+		padding: 0.2rem 0 0.2rem 1.5rem;
 		cursor: pointer;
-		font-weight: 600;
+		/* Label default weight 300, normal-case; checked → 700 uppercase (below). */
+		font-weight: 300;
 	}
-	.radio:hover,
-	.check:hover {
-		border-color: var(--accent);
-	}
+	/* Reference control: 20px circle (even checkboxes are 50% radius), grey #ccc
+	   unchecked → blue #45a2ff checked; appearance:none. */
 	.radio input,
 	.check input {
-		width: 16px;
-		height: 16px;
+		appearance: none;
+		-webkit-appearance: none;
+		width: 20px;
+		height: 20px;
 		flex: 0 0 auto;
-		accent-color: var(--accent);
+		border: none;
+		border-radius: 50%;
+		background: #cccccc;
 		cursor: pointer;
+	}
+	.radio input:checked,
+	.check input:checked {
+		background: var(--checkbox-bg-color, #45a2ff);
+	}
+	/* Reference: a checked option's label goes 700 + UPPERCASE. */
+	.radio:has(input:checked),
+	.check:has(input:checked) {
+		font-weight: 700;
+		text-transform: uppercase;
 	}
 	/* Standalone checkbox rows (not inside a `.checks` group) need their own
 	   top gap so they don't crowd the control above. The Room-Layout PM-logs row
@@ -870,17 +888,21 @@
 		width: 100%;
 		margin-top: 0.4rem;
 	}
-	/* Reference "Edit my Info and Avatar" is a SOLID btn-warning: #f39c12 fill,
-	   white text. */
+	/* Reference "Edit my Info and Avatar" is a Bootstrap btn-warning btn-sm:
+	   #ffc107 yellow fill, BLACK text, 14px, padding 4px 8px, auto width. */
 	.btn.warn-btn {
 		margin-top: 1.5rem;
-		width: 100%;
-		background: var(--warn, #f39c12);
-		border-color: var(--warn, #f39c12);
-		color: #fff;
+		width: auto;
+		align-self: flex-start;
+		background: #ffc107;
+		border-color: #ffc107;
+		color: #000;
+		font-size: 14px;
+		padding: 4px 8px;
+		border-radius: 4px;
 	}
 	.btn.warn-btn:hover {
 		opacity: 0.9;
-		border-color: var(--warn, #f39c12);
+		border-color: #ffc107;
 	}
 </style>

@@ -194,12 +194,19 @@
 		display: flex;
 		flex-direction: column;
 	}
+	/* Reference .status-item: light rounded card — #f8fafc bg, 1px #e2e8f0
+	   border, 12px radius, 16px/20px padding, 16px gap between rows. */
 	.status-item {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		gap: 0.65rem;
-		padding: 0.5rem 0;
+		background: #f8fafc;
+		border: 1px solid #e2e8f0;
+		border-radius: 12px;
+		padding: 1rem 1.25rem;
+		margin-bottom: 16px;
+		color: #212529;
 	}
 	.fw-medium {
 		font-weight: 500;

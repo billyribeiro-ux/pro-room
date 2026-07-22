@@ -593,7 +593,8 @@
 		margin: 0 0 0.5rem;
 		font-size: 24px;
 		font-weight: 500;
-		color: #fff;
+		/* Reference h4 inherits the panel #ccc (not explicit white). */
+		color: #ccc;
 		text-align: center;
 	}
 	.panel-close {
