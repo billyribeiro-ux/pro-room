@@ -56,8 +56,10 @@ Vite boots immediately in parallel while infra + the API come up:
 cd web && pnpm install && pnpm dev:all
 ```
 
-- Web: http://127.0.0.1:5173  
-- API: http://127.0.0.1:8080  
+- Web: http://localhost:5173  
+- API: http://localhost:8080  
+
+Use **localhost** (not `127.0.0.1`) so the session cookie and CORS match.
 
 Or run pieces separately:
 
