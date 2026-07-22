@@ -9,7 +9,7 @@
 	/** Local Docker seed account — DEV only (see scripts/seed-dev-users.sh). */
 	const DEV_LOGIN = {
 		email: 'demo@proroom.local',
-		password: 'Demo1234!'
+		password: 'tricktrades2026'
 	} as const;
 
 	let email = $state('');
