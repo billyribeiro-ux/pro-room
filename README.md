@@ -68,8 +68,8 @@ pnpm dev:backend   # infra then API
 pnpm dev           # vite (SvelteKit)
 ```
 
-Optional LiveKit SFU for screen share: `docker compose up -d livekit` from the
-repo root (keys in `livekit.yaml` / `server/.env.example`).
+LiveKit SFU (screen share / media) starts with `pnpm dev:infra` / `pnpm dev:all`
+(ports 7880–7882; keys in `livekit.yaml` must match `server/.env` LIVEKIT_*).
 
 See `web/.env.example` and `server/.env.example` for configuration (database URL
 on host port **5433**, Redis on **6380**, LiveKit, OAuth, SMTP).

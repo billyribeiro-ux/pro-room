@@ -412,9 +412,16 @@
 			await screen.connect(tok.url, tok.token);
 		} catch (err) {
 			if (err instanceof ApiError && err.status === 503) {
+				// Server has no LIVEKIT_* config — screen share is intentionally off.
 				screenDisabled = true;
+			} else if (err instanceof ApiError) {
+				error = err.message;
 			} else {
-				error = err instanceof ApiError ? err.message : 'Failed to connect media';
+				// Usually LiveKit SFU unreachable (not running on :7880) or WebRTC/ICE fail.
+				const detail = err instanceof Error ? err.message : String(err);
+				error = detail
+					? `Failed to connect media: ${detail}`
+					: 'Failed to connect media (is LiveKit running on :7880?)';
 			}
 		}
 	}
