@@ -7,7 +7,7 @@
 	import { api, ApiError } from '$lib/api';
 	import { ScreenShareRoom } from '$lib/livekit.svelte';
 	import { RoomSocket } from '$lib/realtime.svelte';
-	import type { ChatChannel, LiveKitToken, PresentUser, RoomDetail, RoomEvent } from '$lib/types';
+	import type { ChatChannel, PresentUser, RoomDetail, RoomEvent } from '$lib/types';
 	import MainStage from '$lib/components/MainStage.svelte';
 	import { type AlertItem } from '$lib/components/AlertFeed.svelte';
 	import { type ChatItem } from '$lib/components/ChatPanel.svelte';
@@ -167,33 +167,25 @@
 						: 60
 	);
 
-	// Map LiveKit camera publishers (local + remote) to the webcam strip's shape.
-	// WebcamHolder is LiveKit-agnostic, so hand it the raw MediaStreamTrack.
+	// Map local camera publishers to the webcam strip's shape.
 	const webcamPublishers = $derived(
 		screen.cameraPublishers.map((p) => ({
 			id: p.identity,
 			name: p.name,
 			isLocal: p.isLocal,
-			// Null-safe: a momentarily-null track during teardown must never throw
-			// while this $derived recomputes (WebcamHolder clears srcObject on null).
-			track: p.track?.mediaStreamTrack ?? null
+			track: p.track ?? null
 		}))
 	);
 
-	// "Is speaking" indicator: LiveKit reports speaking identities (= user_id);
-	// map the first present one to its roster display name for the top nav.
+	// Local-only media has no multi-party speaking indicators yet.
 	const speakingName = $derived.by(() => {
 		const id = screen.activeSpeakers.find((i) => present.some((u) => u.user_id === i));
 		return id ? (present.find((u) => u.user_id === id)?.display_name ?? null) : null;
 	});
 
-	// Surface AV failures (mic/cam/screen-share permission or device errors). The
-	// LiveKit wrapper sets `screen.error` but renders it nowhere — so a blocked mic
-	// just looked dead. Toast it (with the actionable message). `lastShownError` is a
-	// PLAIN (non-reactive) guard: the effect must NOT write the same `screen.error`
-	// it reads, or it self-triggers (state_unsafe_mutation — a CLAUDE.md landmine and
-	// the source of a console error). De-duping by value also stops a re-render from
-	// re-toasting the same message; a genuinely different error still surfaces.
+	// Surface AV failures (mic/cam/screen-share permission or device errors).
+	// `lastShownError` is a PLAIN (non-reactive) guard: the effect must NOT write
+	// the same `screen.error` it reads, or it self-triggers (state_unsafe_mutation).
 	let lastShownError: string | null = null;
 	$effect(() => {
 		const e = screen.error;
@@ -406,33 +398,20 @@
 		detail = { ...detail, room: { ...detail.room, is_live: next } };
 	}
 
-	async function connectLiveKit() {
+	/** Enable local browser media (getUserMedia / getDisplayMedia). No SFU. */
+	async function connectLocalMedia() {
 		try {
-			const tok = await api.post<LiveKitToken>(`/api/rooms/${roomId}/livekit-token`);
-			// Preflight: catch a down SFU before LiveKit client retries/spams console.
-			// mode:no-cors still throws on net::ERR_CONNECTION_REFUSED.
-			const probe = tok.url.replace(/^ws/i, 'http').replace(/\/$/, '') + '/';
-			try {
-				await fetch(probe, { mode: 'no-cors', cache: 'no-store' });
-			} catch {
-				throw new Error(
-					`LiveKit SFU unreachable at ${tok.url} — run: docker compose up -d livekit`
-				);
-			}
-			await screen.connect(tok.url, tok.token);
+			const name = detail
+				? (present.find((u) => u.user_id === detail!.viewer_id)?.display_name ?? 'You')
+				: 'You';
+			await screen.connect({
+				identity: detail?.viewer_id ?? 'local',
+				name
+			});
+			screenDisabled = false;
 		} catch (err) {
-			if (err instanceof ApiError && err.status === 503) {
-				// Server has no LIVEKIT_* config — screen share is intentionally off.
-				screenDisabled = true;
-			} else if (err instanceof ApiError) {
-				error = err.message;
-			} else {
-				// Usually LiveKit SFU unreachable (not running on :7880) or WebRTC/ICE fail.
-				const detail = err instanceof Error ? err.message : String(err);
-				error = detail
-					? `Failed to connect media: ${detail}`
-					: 'Failed to connect media (is LiveKit running on :7880?)';
-			}
+			const detailMsg = err instanceof Error ? err.message : String(err);
+			error = detailMsg ? `Failed to enable media: ${detailMsg}` : 'Failed to enable media';
 		}
 	}
 
@@ -477,7 +456,7 @@
 			void resyncRoomState().catch(() => logEvent('Room state resync after reconnect failed'));
 		});
 		socket.open();
-		await connectLiveKit();
+		await connectLocalMedia();
 	});
 
 	onDestroy(() => {
@@ -543,7 +522,8 @@
 	<div class="room-body">
 		{#if screenDisabled}
 			<p class="notice">
-				Screen sharing is unavailable — the server has no LiveKit credentials configured.
+				Local camera/screen media could not start. Use HTTPS or localhost and allow browser
+				permissions.
 			</p>
 		{/if}
 
