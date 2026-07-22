@@ -185,6 +185,9 @@
 						<Icon name="archive" size={14} /><span class="label">Archives</span>
 					</button>
 					{#if archivesOpen}
+						<!-- Admin capture (dropdown:1): each a.dropdown-item.small has a
+						     leading icon (fa-bell / fa-comment / fa-closed-captioning) + a
+						     span.pl-2 label. -->
 						<div class="archives-menu" role="menu">
 							<button
 								type="button"
@@ -193,7 +196,7 @@
 								onclick={() => {
 									archivesOpen = false;
 									alertLogsOpen = true;
-								}}>Alert Logs</button
+								}}><Icon name="bell" size={14} /><span class="label">Alert Logs</span></button
 							>
 							<button
 								type="button"
@@ -202,14 +205,17 @@
 								onclick={() => {
 									archivesOpen = false;
 									chatLogsOpen = true;
-								}}>Chat Logs</button
+								}}><Icon name="comment" size={14} /><span class="label">Chat Logs</span></button
 							>
 							<button
 								type="button"
 								class="archives-item"
 								role="menuitem"
 								title="Transcript history needs caption persistence (pending backend)"
-								disabled>Transcript History</button
+								disabled
+								><Icon name="closed-captioning" size={14} /><span class="label"
+									>Transcript History</span
+								></button
 							>
 						</div>
 					{/if}
@@ -665,15 +671,22 @@
 		flex-direction: column;
 	}
 	.archives-item {
-		display: block;
+		display: flex;
+		align-items: center;
 		width: 100%;
 		text-align: left;
 		background: transparent;
 		border: none;
 		color: #45a2ff;
-		font-size: 0.875em;
+		/* Absolute 14px (reference .dropdown-item.small = 0.875em of a 16px menu
+		   = 14px; ours inherits 14px so em would give 12.25px). */
+		font-size: 14px;
 		padding: 0.25rem 1rem;
 		cursor: pointer;
+	}
+	/* span.pl-2 — 8px between the icon and the label. */
+	.archives-item .label {
+		padding-left: 8px;
 	}
 	.archives-item:hover:not(:disabled) {
 		opacity: 0.85;
@@ -811,9 +824,10 @@
 		text-align: left;
 		background: transparent;
 		border: none;
-		color: #676767;
-		font-size: 0.875em;
-		padding: 0.25rem 1rem;
+		/* Reference roster-cog item text #212529 (dropdown2.json), 14px, 5px 2px. */
+		color: #212529;
+		font-size: 14px;
+		padding: 5px 2px;
 	}
 	.cog-menu button:disabled {
 		opacity: 0.55;

@@ -93,25 +93,28 @@
 	--msg-font-size: 13px;
 	--radius: 6px;
 
-	/* --- Modals (Bootswatch "Darkly": #303030 content, #444 borders) ----
-	   Maps: --modal-content-bg-color #303030, --modal-content-color #fff,
-	   --modal-content-border-color #444, --modal-btn-close-bg #375a7f,
-	   --modal-btn-success-bg #00bc8c, --modal-btn-danger-bg #e74c3c,
-	   --modal-active-tab-color #00bc8c, --modal-input-group-bg #444. */
-	--modal-bg: #303030;
-	--modal-color: #ffffff;
-	--modal-border: #444444;
-	--modal-close-bg: #375a7f;
-	--modal-success: #00bc8c;
-	--modal-danger: #e74c3c;
-	/* Darkly modal nav-tabs (appusersettingsmodal.html.html stylesheet):
-	   active tab = #222 bg / #00bc8c text / #444 border. Distinct from the
-	   #45a2ff chat/stage pill (--tab-active-bg). */
-	--modal-active-tab-bg: #222222;
-	--modal-active-tab: #00bc8c;
-	--modal-active-tab-border: #444444;
-	--modal-input-bg: #444444;
-	--modal-btn-primary: #375a7f;
+	/* --- Modals — NAVY, from the LIVE admin capture of the target room
+	   ("Mastering The Trade") cssVariables.root (proroom-all-admin.json). This
+	   room's modals are navy #103d5c, NOT Darkly gray — an earlier fragment dump
+	   (appusersettingsmodal.html.html) was a different room. Exact tokens:
+	     --modal-content-bg-color/-border #103d5c · --modal-content-color #f4f4f4
+	     --modal-active-tab-bg-color/-border-color #45a2ff · -color #fff
+	     --modal-btn-close-bg/-border #0a6db1 · --modal-btn-success #92d528
+	     --modal-btn-danger #bb352a · --modal-input-group-bg #0a6db1
+	     --modal-alert-link-color/--modal-upload-files-color #0a6db1 */
+	--modal-bg: #103d5c;
+	--modal-color: #f4f4f4;
+	--modal-border: #103d5c;
+	--modal-close-bg: #0a6db1;
+	--modal-success: #92d528;
+	--modal-danger: #bb352a;
+	--modal-active-tab-bg: #45a2ff;
+	--modal-active-tab: #ffffff;
+	--modal-active-tab-border: #45a2ff;
+	--modal-input-bg: #0a6db1;
+	/* In-modal .btn-primary maps to --modal-btn-close-bg #0a6db1 (Reload Log /
+	   Start Test / etc.) — room blue, not Darkly #375a7f. */
+	--modal-btn-primary: #0a6db1;
 	--modal-btn-secondary: #444444;
 	/* App font — Open Sans is the reference's effective app font; Lato fallback. */
 	--font-sans:

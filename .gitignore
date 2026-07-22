@@ -36,3 +36,4 @@ evidence-folder/*.json
 
 # Runtime upload storage (brand logos, chat/file uploads) — not source.
 server/uploads/
+proroom-all-admin.json

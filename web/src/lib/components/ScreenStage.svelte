@@ -328,7 +328,10 @@
 		margin: 0;
 		padding: 0;
 		list-style: none;
-		min-height: 40px;
+		/* Reference #screenTabs min-height:0 — the empty strip collapses (no 40px
+		   band above the 'No one presenting' message); pill height comes from the
+		   pills' content when populated. */
+		min-height: 0;
 		/* var(--notes-tabs-bg) #0c2434 (report.md:729,860); flat. z-index 3 keeps
 		   the strip — and the per-screen cog dropdown that drops out of it — ABOVE
 		   the video (which computes z-index 2 in this same context; see
@@ -530,7 +533,8 @@
 		/* presentation-box bg: var(--presenter-area-bg) #0f2e43. */
 		background: var(--presenter-area-bg, #0f2e43);
 		color: var(--text-dim);
-		font-size: 1.3rem;
+		/* Reference empty-state h3: 28px. */
+		font-size: 1.75rem;
 		font-weight: 400;
 		padding: 2rem 2rem 0;
 		text-align: center;

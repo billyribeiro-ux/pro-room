@@ -109,7 +109,7 @@
 	.btn.light {
 		background: #f8f9fa;
 		border-color: #f8f9fa;
-		color: #212529;
+		color: #000000;
 	}
 	.btn.light:hover {
 		opacity: 0.9;

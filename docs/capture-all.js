@@ -1,46 +1,4 @@
-/* ============================================================================
- * CAPTURE-ALL — DevTools Console, ON THE REAL APP, logged in, inside the room.
- * Based on the proven pixel-capture-fullstates.js (which produced the existing
- * dumps), extended with: sidebar/archives/kebab/MODAL auto-reveal and a manual
- * SNAP('label') command for LIVE states (broadcasting / recording / CC) that
- * downloads its own JSON immediately.
- *
- *  ⚠ CHROME BLOCKS CONSOLE PASTES BY DEFAULT: if pasting does nothing, type
- *     allow pasting   in the Console first, press Enter, then paste again.
- *
- *  ONE PRESENTER RUN CAPTURES BOTH SIDES. You only need to be logged in as a
- *  PRESENTER/ADMIN — the presenter DOM is a SUPERSET of the member DOM (member =
- *  presenter minus the broadcast/admin controls). The script tags every
- *  presenter-only node with  presenterOnly:true , so the MEMBER view is derived
- *  by dropping those. No member login required. Role is auto-detected for the
- *  filename; override with  window.__ROLE='admin'  before pasting if ever wrong.
- *
- *  WHAT IT DOES
- *   - Captures the complete BASE evidence once: every stylesheet (full CSS incl
- *     :hover/::before), all CSS variables, fonts/@font-face, the colour+type
- *     palette, every visible element's computed styles + layout, assets, and an
- *     inventory of buttons/inputs/links/menus/modals.
- *   - Then AUTO-REVEALS each view-only state and snapshots it into `states`:
- *       • main tabs:  Screens, Streams, Notes, Files
- *       • Notes sub-tabs (each note) and Files sub-tabs (Files / Images / Sounds)
- *       • dropdown toggles (volume, chat/alert gears) — opened, captured, closed
- *     Each state snapshot has full computed styles + the MATCHED CSS RULES.
- *
- *  SAFETY: it ONLY clicks tabs, sub-tabs and dropdown TOGGLES (view-only). It
- *  NEVER clicks action buttons (no Post / Save / Send / Go live / etc.), so it
- *  cannot change anything on the real service. It restores the original tab when
- *  done.
- *
- *  HOW TO RUN
- *   1. Open the room on the REAL app, DevTools → Console (undock to a separate
- *      window so the page keeps full desktop width ≥ 1100px).
- *   2. Paste this whole file, Enter. (If nothing happens: type  allow pasting
- *      first.) It runs ~5-10s and downloads proroom-all-<role>.json.
- *   3. For live states (recording / sharing / CC), trigger the state then run
- *      SNAP('recording-live') etc. — each downloads its own file instantly.
- *   4. Send me proroom-all-presenter.json + every SNAP file. That's everything —
- *      no separate member run needed (member = the presenterOnly:false subset).
- * ========================================================================== */
+
 (async () => {
 	// AUTO-DETECT role — no editing. Admin/presenter markers: broadcast/go-live/
 	// record/screen-share controls, the presenter cams holder, or the admin-only
