@@ -42,9 +42,9 @@ compose.yaml        local Postgres + Redis
 
 ## Toolchain
 
-- Node **24.16.0** (`.nvmrc`) · pnpm
-- Rust stable (`server/rust-toolchain.toml`)
-- Docker (Postgres 16, Redis 7) via `docker compose up`
+- Node **24.18.0** LTS (`.nvmrc`) · pnpm
+- Rust stable 1.97+ (`server/rust-toolchain.toml`)
+- Docker (Postgres 18, Redis 8, LiveKit 1.13.4) via `docker compose up`
 
 ## Development
 
