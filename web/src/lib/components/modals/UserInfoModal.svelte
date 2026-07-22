@@ -191,11 +191,12 @@
 		border-radius: var(--radius) var(--radius) 0 0;
 		cursor: pointer;
 	}
-	/* Reference modal active tab: bg #222, teal #00bc8c text. */
+	/* Measured modal active tab (targeted.json node 33, report.md:1589):
+	   #45a2ff fill, white text. */
 	.tab.active {
-		background: #222;
-		color: var(--modal-success, #00bc8c);
-		border-color: var(--border);
+		background: var(--modal-active-tab, #45a2ff);
+		color: #fff;
+		border-color: var(--modal-active-tab, #45a2ff);
 	}
 	.details {
 		width: 100%;

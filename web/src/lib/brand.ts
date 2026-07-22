@@ -13,6 +13,6 @@ import { env } from '$env/dynamic/public';
  * The default ships a self-contained SVG so the brand renders out of the box.
  */
 export const BRAND = {
-	name: env.PUBLIC_BRAND_NAME?.trim() || 'Trading Room',
-	logo: env.PUBLIC_BRAND_LOGO?.trim() || '/brand-logo.svg'
+	name: env.PUBLIC_BRAND_NAME?.trim() || 'Trick Trades',
+	logo: env.PUBLIC_BRAND_LOGO?.trim() || '/cropped-logo3-350x350.jpg'
 };

@@ -51,7 +51,7 @@
 	},
 	"dependencies": {
 		"@fontsource/open-sans": "^5.3.0",
-		"@fortawesome/fontawesome-free": "7.3.1",
+		"@fortawesome/fontawesome-free": "5.8.1",
 		"dompurify": "^3.4.12",
 		"livekit-client": "^2.20.2",
 		"valibot": "^1.4.2"

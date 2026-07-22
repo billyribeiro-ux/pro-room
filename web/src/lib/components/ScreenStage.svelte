@@ -125,7 +125,34 @@
 	function toggleFullscreen() {
 		if (panEl) fullScreen(panEl);
 	}
+
+	// Per-screen cog dropdown (reference span#dropdownMenuScreen, a real
+	// Bootstrap dropdown — report.md:916; its captured title includes "Detach
+	// Screen to a new window", report.md:2023-2026).
+	let cogOpenFor = $state<string | null>(null);
+
+	function detachScreen(pub: SharePublisher) {
+		cogOpenFor = null;
+		const t = pub.track;
+		if (!t) return;
+		const win = window.open('', '_blank', 'width=1280,height=760');
+		if (!win) return;
+		win.document.title = `Screen — ${pub.name ?? 'Presenter'}`;
+		win.document.body.style.cssText = 'margin:0;background:#000;';
+		const v = win.document.createElement('video');
+		v.autoplay = true;
+		v.muted = true;
+		v.playsInline = true;
+		v.style.cssText = 'width:100vw;height:100vh;object-fit:contain;';
+		v.srcObject = new MediaStream([t]);
+		win.document.body.appendChild(v);
+		void v.play().catch(() => {
+			/* user gesture already occurred (menu click); play should succeed */
+		});
+	}
 </script>
+
+<svelte:window onkeydown={(e) => e.key === 'Escape' && (cogOpenFor = null)} />
 
 <div class="screens">
 	<!-- Per-screen sub-tab strip (#screenTabs): one pill per publisher, plus a
@@ -134,21 +161,63 @@
 		{#each publishers as pub (pub.identity)}
 			{@const isActive = active?.identity === pub.identity}
 			<li class="nav-item" role="presentation">
-				<button
+				<!-- A div (not button) because the reference pill hosts the nested
+				     interactive cog dropdown — button>button is invalid HTML. -->
+				<div
 					class="nav-link"
 					class:active={isActive}
 					role="tab"
+					tabindex="0"
 					aria-selected={isActive}
 					onclick={() => (selected = pub.identity)}
+					onkeydown={(e) => {
+						if (e.key === 'Enter' || e.key === ' ') {
+							e.preventDefault();
+							selected = pub.identity;
+						}
+					}}
 				>
 					<span class="presenter-img" aria-hidden="true">{initials(pub.name)}</span>
 					<span class="mx-1">{pub.name}{pub.isLocal ? ' (you)' : ''}</span>
-					<span class="d-inline-block">
-						<span class="dropdown-toggle" aria-expanded="false" aria-hidden="true">
+					<span class="d-inline-block cog-anchor">
+						<!-- Reference #dropdownMenuScreen is a live dropdown; the captured
+						     item title is "Detach Screen to a new window"
+						     (report.md:916,2023). Menu themed --tabs-dropdown-bg #0f2e43 /
+						     --tabs-dropdown-color #45a2ff. -->
+						<span
+							class="dropdown-toggle"
+							role="button"
+							tabindex="0"
+							aria-haspopup="menu"
+							aria-expanded={cogOpenFor === pub.identity}
+							onclick={(e) => {
+								e.stopPropagation();
+								cogOpenFor = cogOpenFor === pub.identity ? null : pub.identity;
+							}}
+							onkeydown={(e) => {
+								if (e.key === 'Enter' || e.key === ' ') {
+									e.preventDefault();
+									e.stopPropagation();
+									cogOpenFor = cogOpenFor === pub.identity ? null : pub.identity;
+								}
+							}}
+						>
 							<Icon name="cog" size={12} />
 						</span>
+						{#if cogOpenFor === pub.identity}
+							<div class="cog-menu" role="menu">
+								<button
+									type="button"
+									role="menuitem"
+									onclick={(e) => {
+										e.stopPropagation();
+										detachScreen(pub);
+									}}>Detach Screen to a new window</button
+								>
+							</div>
+						{/if}
 					</span>
-				</button>
+				</div>
 			</li>
 		{/each}
 
@@ -180,9 +249,9 @@
 						aria-label="Fullscreen"
 						onclick={toggleFullscreen}
 					>
-						<!-- Reference fullscreen control uses fa-compress-arrows-alt (the
-						     four-arrows-inward glyph), not fa-expand — matched to the bundle. -->
-						<Icon name="compress-arrows-alt" size={14} class="icon" />
+						<!-- Reference fullscreen control captured as fas fa-expand \f065
+						     (report.md:876,3256). -->
+						<Icon name="expand" size={14} class="icon" />
 					</button>
 				</div>
 			</li>
@@ -239,8 +308,8 @@
 		flex-direction: column;
 		height: 100%;
 		min-height: 360px;
-		/* presentation-box bg: var(--presenter-area-bg) #0f2e43 (idle/letterbox base). */
-		background: var(--bg-elev);
+		/* presentation-box bg: var(--presenter-area-bg) #0f2e43 (report.md:135-137). */
+		background: var(--presenter-area-bg, #0f2e43);
 		overflow: hidden;
 	}
 
@@ -253,8 +322,8 @@
 		padding: 0;
 		list-style: none;
 		min-height: 40px;
-		/* var(--notes-tabs-bg) #0c2434; flat (transparent border); above video (z 1). */
-		background-color: var(--bg);
+		/* var(--notes-tabs-bg) #0c2434 (report.md:729,860); flat; above video (z 1). */
+		background-color: var(--notes-tabs-bg, #0c2434);
 		border-color: transparent;
 		position: relative;
 		z-index: 1;
@@ -284,15 +353,16 @@
 			border-color 0.15s ease-in-out;
 	}
 	.nav-link:hover {
-		/* hover (inactive): 1px solid var(--tabs-border-color) var(--accent); radius 3px. */
-		border-color: var(--accent);
+		/* hover (inactive): 1px solid var(--tabs-border-color) #0a6db1
+		   (report.md:2460,854). */
+		border-color: var(--tabs-border-color, #0a6db1);
 	}
 	.nav-link.active {
-		/* active screen pill: #222 fill (--tab-active-bg) + teal text
-		   (--note-tabs-color). The old #45a2ff was wrong-room navy. */
-		background-color: var(--bg-elev-2);
+		/* Measured active pill: bg #45a2ff (--tab-active-bg), white text
+		   (report.md:2454,2459). */
+		background-color: var(--tab-active-bg, #45a2ff);
 		border-color: transparent;
-		color: var(--accent);
+		color: #fff;
 	}
 	.nav-link.active:hover {
 		cursor: default;
@@ -331,6 +401,39 @@
 		display: inline-flex;
 		align-items: center;
 		color: inherit;
+		cursor: pointer;
+	}
+	.cog-anchor {
+		position: relative;
+	}
+	/* Reference dropdown theme: --tabs-dropdown-bg #0f2e43 /
+	   --tabs-dropdown-color #45a2ff (report.md:916). */
+	.cog-menu {
+		position: absolute;
+		top: calc(100% + 4px);
+		left: 0;
+		z-index: 1000;
+		min-width: 220px;
+		background: #0f2e43;
+		border-radius: 6px;
+		padding: 0.5rem 0;
+		display: flex;
+		flex-direction: column;
+	}
+	.cog-menu button {
+		display: block;
+		width: 100%;
+		background: transparent;
+		border: none;
+		color: #45a2ff;
+		font-size: 0.875em;
+		text-align: left;
+		padding: 0.25rem 1rem;
+		cursor: pointer;
+		white-space: nowrap;
+	}
+	.cog-menu button:hover {
+		opacity: 0.85;
 	}
 	.dropdown-toggle::after {
 		display: inline-block;
@@ -348,7 +451,8 @@
 		margin-left: auto;
 	}
 
-	/* .zoom-controls-container — transparent, dimmed (opacity .5) idle. */
+	/* .zoom-controls-container — dimmed at opacity .5 until hovered/active
+	   (report.md:920). */
 	.zoom-controls-container {
 		display: inline-flex;
 		align-items: center;
@@ -357,6 +461,10 @@
 		z-index: 10;
 		margin-top: 4px;
 		position: relative;
+	}
+	.zoom-controls-container:hover,
+	.zoom-controls-container:focus-within {
+		opacity: 1;
 	}
 
 	/* Bootstrap 5 .btn .btn-sm .btn-dark — the reference COMPUTED fill is
@@ -404,7 +512,7 @@
 		   horizontally centered (not vertically centered in the viewport). */
 		place-items: start center;
 		/* presentation-box bg: var(--presenter-area-bg) #0f2e43. */
-		background: var(--bg-elev);
+		background: var(--presenter-area-bg, #0f2e43);
 		color: var(--text-dim);
 		font-size: 1.3rem;
 		font-weight: 400;

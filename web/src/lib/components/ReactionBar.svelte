@@ -92,6 +92,8 @@
 
 		{#if canReact}
 			<div class="add-wrap">
+				<!-- Reference add-affordance: a bare 12px far fa-smile (regular family,
+				     12x12 — report.md:1368-1370), not a filled circle. -->
 				<button
 					type="button"
 					class="add"
@@ -100,7 +102,7 @@
 					aria-expanded={pickerOpen}
 					onclick={togglePicker}
 				>
-					<Icon name="smile" size={15} />
+					<Icon name="smile" family="regular" size={12} />
 				</button>
 
 				{#if pickerOpen}
@@ -133,28 +135,29 @@
 	}
 
 	.pill {
+		/* Captured reaction badge: transparent bg, borderless, `font: 700 12px`,
+		   #676767, padding 3px 6px (report.md:1365-1367). */
 		display: inline-flex;
 		align-items: center;
 		gap: 0.2rem;
-		background: #f1f3f7;
-		border: 1px solid #e0e3ea;
-		border-radius: 999px;
-		padding: 0.05rem 0.45rem;
-		font-size: 0.78rem;
-		line-height: 1.5;
-		color: #3b4150;
+		background: transparent;
+		border: none;
+		border-radius: 0;
+		padding: 3px 6px;
+		font-size: 12px;
+		font-weight: 700;
+		line-height: 1.2;
+		color: #676767;
 		cursor: pointer;
 	}
 	.pill:hover {
-		background: #e8ebf2;
 		opacity: 0.85;
 		cursor: pointer;
 	}
 	.pill.mine {
-		/* Accent tint for the current user's own reactions. */
-		background: color-mix(in srgb, var(--accent) 16%, transparent);
-		border-color: var(--accent);
-		color: var(--accent-hover, var(--accent));
+		/* Own-reaction state: no reference capture exists for it — a plain color
+		   accent keeps the captured transparent/borderless badge geometry. */
+		color: var(--accent);
 	}
 	.pill .emoji {
 		font-size: 0.85rem;
@@ -170,21 +173,18 @@
 		display: inline-flex;
 	}
 	.add {
+		/* Captured add-affordance: bare far fa-smile, 12px, #676767 — no fill,
+		   no border (report.md:1368-1370). */
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		background: #f1f3f7;
-		border: 1px solid #e0e3ea;
-		border-radius: 999px;
-		width: 1.6rem;
-		height: 1.4rem;
-		color: #8a909c;
+		background: transparent;
+		border: none;
+		color: #676767;
 		cursor: pointer;
-		padding: 0;
+		padding: 3px 6px;
 	}
 	.add:hover {
-		background: #e8ebf2;
-		color: #5a6273;
 		opacity: 0.85;
 		cursor: pointer;
 	}
@@ -203,7 +203,6 @@
 		background: #ffffff;
 		border: 1px solid #e3e5ec;
 		border-radius: 10px;
-		box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
 		padding: 0.3rem;
 	}
 	.picker-emoji {

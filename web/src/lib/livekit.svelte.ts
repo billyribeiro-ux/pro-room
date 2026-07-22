@@ -216,7 +216,8 @@ export class ScreenShareRoom {
 			// Surface connection-refused clearly (SFU not running / wrong host).
 			if (/connection refused|failed to fetch|networkerror|websocket/i.test(msg)) {
 				throw new Error(
-					`Could not open LiveKit at ${url} (${msg}). Ensure: docker compose up -d livekit`
+					`Could not open LiveKit at ${url} (${msg}). Ensure: docker compose up -d livekit`,
+					{ cause: e }
 				);
 			}
 			throw e;

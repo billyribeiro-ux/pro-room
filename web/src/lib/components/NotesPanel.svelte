@@ -250,15 +250,19 @@
 		height: 100%;
 		min-height: 0;
 		background: #ffffff;
-		color: #1f2430;
+		/* Reference --note-text-color #676767 (report.md:737,937). */
+		color: var(--note-text-color, #676767);
 	}
 	.subtabs {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
 		justify-content: center;
-		background: var(--bg);
-		border-top: 1px solid var(--accent);
+		/* Reference .noteTabset strip: --notes-tabs-bg #0c2434 with a
+		   1px solid var(--tabs-border-color) #0a6db1 border-top
+		   (report.md:729,2420). */
+		background: var(--notes-tabs-bg, #0c2434);
+		border-top: 1px solid var(--tabs-border-color, #0a6db1);
 		flex-shrink: 0;
 	}
 	.subtabs button {
@@ -277,12 +281,14 @@
 		cursor: pointer;
 	}
 	.subtabs button.active {
-		background: var(--accent);
+		/* Active sub-tab pill: --tab-active-bg #45a2ff, white (report.md:2459,936). */
+		background: var(--tab-active-bg, #45a2ff);
 		border-color: transparent;
 		color: #ffffff;
 	}
 	.subtabs button:hover:not(.active) {
-		border: 1px solid var(--accent);
+		/* Hover border: --tabs-border-color #0a6db1 (report.md:2460). */
+		border: 1px solid var(--tabs-border-color, #0a6db1);
 		border-radius: 3px;
 	}
 	.subtabs .new {
@@ -299,6 +305,9 @@
 		align-items: center;
 		gap: 0.6rem;
 		padding: 0.6rem 0.85rem;
+		/* Reference notes options/toolbar bar: --note-options-bg #f4f4f4
+		   (report.md:937). */
+		background: var(--note-options-bg, #f4f4f4);
 		border-bottom: 1px solid #eceef3;
 		flex-shrink: 0;
 	}
@@ -331,9 +340,17 @@
 		opacity: 0.4;
 		cursor: not-allowed;
 	}
+	/* Reference note delete is a FILLED --note-delete-bg #bb352a button
+	   (report.md:743,938). */
+	.ic.del {
+		background: var(--note-delete-bg, #bb352a);
+		border-color: var(--note-delete-bg, #bb352a);
+		color: #ffffff;
+	}
 	.ic.del:hover {
-		border-color: #ea3943;
-		color: #ea3943;
+		opacity: 0.9;
+		border-color: var(--note-delete-bg, #bb352a);
+		color: #ffffff;
 	}
 	.download {
 		display: inline-flex;

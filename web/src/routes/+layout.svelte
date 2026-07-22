@@ -7,14 +7,14 @@
 	import '@fontsource/open-sans/600.css';
 	import '@fontsource/open-sans/700.css';
 	import '@fontsource/open-sans/400-italic.css';
-	// Font Awesome 5 Free — the reference app's exact icon set (used via <Icon>).
+	// Font Awesome 5 Free 5.8.1 — the reference app's exact icon set + version
+	// (used via <Icon>).
 	import '@fortawesome/fontawesome-free/css/all.min.css';
 	import './layout.css';
-	import favicon from '$lib/assets/favicon.svg';
 	import Nav from '$lib/components/Nav.svelte';
 	import DialogHost from '$lib/components/DialogHost.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
-	import { loadBrand } from '$lib/stores/brand.svelte';
+	import { brand, loadBrand } from '$lib/stores/brand.svelte';
 	import { theme } from '$lib/stores/theme.svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
@@ -51,7 +51,12 @@
 	});
 </script>
 
-<svelte:head><link rel="icon" href={favicon} /></svelte:head>
+<!-- Brand identity: TrickTrades logo as the tab icon + the brand name as the
+     page title (reactive — follows any admin branding change). -->
+<svelte:head>
+	<title>{brand.name}</title>
+	<link rel="icon" href={brand.logo} />
+</svelte:head>
 
 <!-- The room has its own RoomTopNav; the global Nav would double-stack and push
      the shell down (page scroll). Hide it on the full-bleed room route. -->

@@ -282,11 +282,12 @@
 	.backdrop {
 		position: fixed;
 		inset: 0;
-		z-index: 60;
+		/* Reference modal stacking: backdrop 1054 / dialog 1055 (report.md:1569). */
+		z-index: 1054;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: rgba(0, 0, 0, 0.55);
+		background: rgba(0, 0, 0, 0.5);
 		padding: 1rem;
 	}
 	.dialog {
@@ -295,10 +296,13 @@
 		/* Reference #alertQAModal .modal-dialog is capped at max-width 600px. */
 		width: min(600px, 100%);
 		max-height: 80vh;
-		background: var(--bg-elev-2);
-		border: 1px solid var(--border);
-		border-radius: 12px;
-		color: var(--text);
+		/* Modal chrome tokens (Darkly #303030/#444, 6px radius, the single
+		   painting shadow — report.md:1526-1540,1573-1574). */
+		background: var(--modal-bg, #303030);
+		border: 1px solid var(--modal-border, #444);
+		border-radius: 6px;
+		color: var(--modal-color, #fff);
+		box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.5);
 		overflow: hidden;
 	}
 	header {

@@ -6,57 +6,89 @@
    scoped styles can reference them without Tailwind. */
 :root {
 	/* ===================================================================
-	   Pro Trading Room palette — EXACT match to chat.protradingroom.com
-	   (Bootswatch "Darkly" chrome + light content panel). Every value below
-	   is the resolved token from the live styles bundle's global :root.
+	   Pro Trading Room palette — matched to the admin-room capture
+	   (evidence-folder/report.md, reconstructed from
+	   proroom-ultra-admin-room.json). The room chrome is NAVY, not black:
+	   navbar #0c2434, gutters/headers #0a6db1, stage #0f2e43, accents
+	   #45a2ff. Generic --bg/--bg-elev remain for non-room surfaces.
 	   Kept in sync with `DEFAULTS` in `lib/stores/theme.svelte.ts`.
 	   ------------------------------------------------------------------- */
-
-	/* --- Chrome (dark) --------------------------------------------------
-	   Black nav/sidebar/gutters, #111 stage/panels, #222 elevated tabs,
-	   #444 borders, teal accent. Maps:
-	     --bg       = --navbar-bg/--sidebar-menu-bg/--split-gutter-bg  #000
-	     --bg-elev  = --presenter-area-bg/--notes-tabs-bg/--msgs-header-bg #111
-	     --bg-elev-2= --tab-active-bg/--note-text-bg #222
-	     --border   = --tabs-border-color/--modal-content-border-color #444
-	     --accent   = --app-link-color/--success (teal) #00bc8c */
 	--bg: #000000;
 	--bg-elev: #111111;
 	--bg-elev-2: #222222;
 	--border: #444444;
 	--text: #ffffff;
 	--text-dim: #cccccc;
-	--accent: #00bc8c;
-	/* Darkly link-hover = darken(teal, 15%). */
-	--accent-hover: #008e6a;
+	/* Reference --app-link-color / --tab-active-bg / --presenter-recording-color
+	   all resolve to #45a2ff (report.md:211, 387-389). Nav-link REST color is
+	   #abb0b5 with #45a2ff on hover — no separate darker hover is captured, so
+	   hover reuses the accent. */
+	--accent: #45a2ff;
+	--accent-hover: #45a2ff;
 	--positive: #00bc8c;
 	--negative: #e74c3c;
 	--warn: #f39c12;
-	/* Reference accent states: recording red (--presenter-recording-color #f00)
-	   and the active/talking yellow (--presenter-noRecording-color /
-	   --sidebar-menu-active-color #f7fd37). */
 	--rec: #ff0000;
 	--highlight: #f7fd37;
+
+	/* --- Room chrome (admin-room capture, report.md §01/§02/§04/§10) ----- */
+	--navbar-bg: #0c2434; /* nav.mainAppNav computed rgb(12,36,52) (report.md:105,330) */
+	--navbar-color: #ffffff;
+	--sidebar-menu-bg: #103d5c; /* hamburger pill (report.md:341,2212) */
+	--split-gutter-bg: #0a6db1; /* as-split-gutter rgb(10,109,177) (report.md:150) */
+	--presenter-area-bg: #0f2e43; /* .presentation-box (report.md:135-137,203) */
+	--notes-tabs-bg: #0c2434; /* tab strips (report.md:213,729) */
+	--tab-active-bg: #45a2ff; /* active tab pill bg, white text (report.md:211,2454) */
+	--tabs-border-color: #0a6db1; /* tab hover border (report.md:2460,732) */
+	--darker-black: #111111; /* div.wrapper bg rgb(17,17,17) (report.md:103,206) */
+	--nav-icon-rest: #abb0b5; /* volume/reload resting icon color (report.md:374-377) */
+
+	/* --- Files / Notes pane tokens (report.md §04/§10) ------------------- */
+	--file-list-even-bg: #f4f4f4;
+	--file-list-odd-bg: #ffffff;
+	--file-name-color: #0a6db1;
+	--file-searchbar-bg: #ffffff;
+	--file-searchbar-color: #b7b7b7;
+	--file-searchbar-icon-color: #666666;
+	--file-see-more-bg: #45a2ff;
+	--note-text-color: #676767;
+	--note-delete-bg: #bb352a;
+	--note-options-bg: #f4f4f4;
+
+	/* --- Sidebar drawer tokens (report.md §03) --------------------------- */
+	--sidebar-wrapper-bg: #ffffff;
+	--sidebar-wrapper-color: #676767;
+	--sidebar-accent: #45a2ff; /* website link / search bg / reload icon (report.md:625,672,674) */
+	--sidebar-navitem-border: #ffffff; /* 1px bottom separator per li (report.md:561) */
 
 	/* --- Content panel (light) — chat / alerts / roster (--lightTheme-*) -
 	   The reference message panel is a light surface independent of the dark
 	   chrome. Surfaces #fff/#e1e1e1, body #676767, date #8394a9, borders
 	   #d9d9d9, separator #e8e8e8; the panel HEADER bar is dark #111/#ccc. */
 	--content-bg: #ffffff;
-	--content-bg-adm: #e1e1e1;
+	/* Admin chat-row highlight — spec --lightTheme-msgs-bg-adm (report.md:2843). */
+	--content-bg-adm: #f4f4f4;
 	--content-text: #676767;
-	--content-meta: #8394a9;
-	--content-border: #d9d9d9;
+	/* Timestamp/date gray — spec --lightTheme-date-color (report.md:2846). */
+	--content-meta: #a8a8a8;
+	/* Message-row border — spec --lightTheme-msg-border-color (report.md:2844). */
+	--content-border: #e1e1e1;
 	--content-separator-bg: #e8e8e8;
-	--content-header-bg: #111111;
-	--content-header-color: #cccccc;
+	/* Alert/chat header bar: blue #0a6db1 with white text — computed on the
+	   captured alertHeader/chatHeader (report.md:1257-1258,1387) and the
+	   --msgs-header-bg/--msgs-header-color tokens (report.md:2899). */
+	--content-header-bg: #0a6db1;
+	--content-header-color: #ffffff;
 	--composer-bg: #ffffff;
 	--composer-text: #555555;
 	--qa-badge-bg: #6c757d;
 	--kebab-color: #8c8686;
-	/* lightTheme username is near-black (#000 base; per-user colors override). */
-	--username-color: #1a1a1a;
-	/* Stock ticker `.stockColor` renders near-black, 700, italic, UPPERCASE. */
+	/* lightTheme username + kebab base — spec --lightTheme-username-color
+	   #0a6db1 (report.md:2845) and the kebab's computed rgb(10,109,177)
+	   !important (report.md:2055). Per-user colors still override. */
+	--username-color: #0a6db1;
+	/* Stock ticker `.stockColor`: 700 13px/19.5px UPPERCASE (report.md:1341);
+	   color not captured on the rendered row — near-black retained. */
 	--ticker-color: #1a1a1a;
 	--msg-font-size: 13px;
 	--radius: 6px;
@@ -118,8 +150,10 @@ body {
 	background: var(--bg);
 	color: var(--text);
 	font-family: var(--font-sans);
-	/* Reference body is Open Sans weight 300 (light) — drives the overall feel. */
+	/* Reference body is Open Sans weight 300 (light) — drives the overall feel.
+	   Line-height 24px = 16px x 1.5 on 22,347 captured nodes (report.md:224,2699). */
 	font-weight: 300;
+	line-height: 1.5;
 	-webkit-font-smoothing: antialiased;
 }
 

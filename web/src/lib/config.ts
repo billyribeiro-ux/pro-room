@@ -9,9 +9,7 @@ import { browser } from '$app/environment';
  *   would make the browser call `:8080` directly and break session cookies.
  * - **Production / preview:** use `PUBLIC_API_URL` if set (no trailing slash).
  */
-export const API_URL = import.meta.env.DEV
-	? ''
-	: (env.PUBLIC_API_URL ?? '').replace(/\/$/, '');
+export const API_URL = import.meta.env.DEV ? '' : (env.PUBLIC_API_URL ?? '').replace(/\/$/, '');
 
 /**
  * WebSocket origin for the room hub.

@@ -43,7 +43,8 @@
 	<button class="btn primary" type="button" onclick={onClose}>Close</button>
 {/snippet}
 
-<Modal {open} {onClose} title="Debug Log" {footer}>
+<!-- Reference Debug Log is a modal-lg (~800px, report.md:1677). -->
+<Modal {open} {onClose} title="Debug Log" {footer} size="lg">
 	<div class="debug-log-body">
 		<label class="sr-only" for="debug-log-text">Debug log</label>
 		<textarea
@@ -58,11 +59,6 @@
 </Modal>
 
 <style>
-	/* Widen the shared Modal shell to "large" only when it hosts this content. */
-	:global(.panel:has(.debug-log-body)) {
-		max-width: 820px;
-	}
-
 	.debug-log-body {
 		display: flex;
 		min-height: 0;

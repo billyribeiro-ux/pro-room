@@ -84,10 +84,12 @@
 </script>
 
 {#snippet footer()}
-	<button class="btn primary" type="button" onclick={onClose}>Close</button>
+	<!-- Reference: `btn btn-secondary` Close in a `modal-footer text-center`
+	     (report.md:1686,1698). -->
+	<button class="btn secondary" type="button" onclick={onClose}>Close</button>
 {/snippet}
 
-<Modal {open} {onClose} title="General Settings" {footer}>
+<Modal {open} {onClose} title="General Settings" {footer} footerCenter>
 	<div class="tabs" role="tablist" aria-label="Settings sections">
 		{#each tabs as t (t.id)}
 			<button
@@ -116,7 +118,7 @@
 				<label class="radio">
 					<input
 						type="radio"
-						name="theme-mode"
+						name="app-color-theme"
 						value="light"
 						checked={theme.mode === 'light'}
 						onchange={() => selectMode('light')}
@@ -126,7 +128,7 @@
 				<label class="radio">
 					<input
 						type="radio"
-						name="theme-mode"
+						name="app-color-theme"
 						value="dark"
 						checked={theme.mode === 'dark'}
 						onchange={() => selectMode('dark')}
@@ -159,6 +161,8 @@
 			<hr />
 			<label class="check">
 				<input
+					id="pm-window-layout"
+					name="pm-window-layout"
 					type="checkbox"
 					checked={layout.pmLogsRight}
 					onchange={(e) => setPmLogsRight(e.currentTarget.checked)}
@@ -175,6 +179,8 @@
 				{#each colorControls as control (control.key)}
 					<li class="color-row">
 						<input
+							id="color-{control.key}"
+							name="color-{control.key}"
 							type="color"
 							value={theme.tokens[control.key]}
 							onchange={(e) => onColor(control.key, e)}
@@ -200,10 +206,12 @@
 				<span class="size-val">{theme.fontSize}px</span>
 			</div>
 			<div class="cs-actions">
-				<button class="btn ghost" type="button" onclick={() => theme.reset()}>
+				<!-- Reference: Reset = btn-outline-danger, Save changes =
+				     btn-outline-light (report.md:1704,1706). -->
+				<button class="btn outline-danger" type="button" onclick={() => theme.reset()}>
 					<Icon name="undo-alt" size={15} /> Reset
 				</button>
-				<button class="btn primary" type="button" onclick={() => theme.apply()}>
+				<button class="btn outline-light" type="button" onclick={() => theme.apply()}>
 					<Icon name="save" size={15} /> Save changes
 				</button>
 			</div>
@@ -216,6 +224,8 @@
 			<div class="checks">
 				<label class="check">
 					<input
+						id="app-donot-disturb"
+						name="app-donot-disturb"
 						type="checkbox"
 						checked={dnd.app}
 						onchange={(e) => setDnd('app', e.currentTarget.checked)}
@@ -224,6 +234,8 @@
 				</label>
 				<label class="check">
 					<input
+						id="app-recording-start-sound"
+						name="app-recording-start-sound"
 						type="checkbox"
 						checked={prefs.startRecordingSound}
 						onchange={(e) => setPref('startRecordingSound', checked(e))}
@@ -233,6 +245,8 @@
 				</label>
 				<label class="check">
 					<input
+						id="app-recording-stop-sound"
+						name="app-recording-stop-sound"
 						type="checkbox"
 						checked={prefs.stopRecordingSound}
 						onchange={(e) => setPref('stopRecordingSound', checked(e))}
@@ -242,6 +256,8 @@
 				</label>
 				<label class="check">
 					<input
+						id="reactions-response"
+						name="reactions-response"
 						type="checkbox"
 						checked={prefs.reactionsResponse}
 						onchange={(e) => setPref('reactionsResponse', checked(e))}
@@ -251,6 +267,8 @@
 				</label>
 				<label class="check">
 					<input
+						id="reactions-qa-response"
+						name="reactions-qa-response"
 						type="checkbox"
 						checked={prefs.reactionsQaResponse}
 						onchange={(e) => setPref('reactionsQaResponse', checked(e))}
@@ -267,6 +285,8 @@
 			</div>
 			<label class="check">
 				<input
+					id="video-enabled"
+					name="video-enabled"
 					type="checkbox"
 					checked={prefs.videoEnabled}
 					onchange={(e) => setPref('videoEnabled', checked(e))}
@@ -281,6 +301,8 @@
 			</div>
 			<label class="check">
 				<input
+					id="app-speech-reco-overlay"
+					name="app-speech-reco-overlay"
 					type="checkbox"
 					checked={prefs.captionsOverlay}
 					onchange={(e) => setPref('captionsOverlay', checked(e))}
@@ -336,6 +358,8 @@
 			<div class="checks">
 				<label class="check">
 					<input
+						id="alert-popup-donot-disturb"
+						name="alert-popup-donot-disturb"
 						type="checkbox"
 						checked={!dnd.alertPopup}
 						onchange={(e) => setDnd('alertPopup', !e.currentTarget.checked)}
@@ -348,6 +372,8 @@
 				<hr />
 				<label class="check">
 					<input
+						id="alert-donot-disturb"
+						name="alert-donot-disturb"
 						type="checkbox"
 						checked={!dnd.alert}
 						onchange={(e) => setDnd('alert', !e.currentTarget.checked)}
@@ -357,6 +383,8 @@
 				</label>
 				<label class="check">
 					<input
+						id="qa-donot-disturb"
+						name="qa-donot-disturb"
 						type="checkbox"
 						checked={!dnd.qa}
 						onchange={(e) => setDnd('qa', !e.currentTarget.checked)}
@@ -366,6 +394,8 @@
 				</label>
 				<label class="check">
 					<input
+						id="qa-reactions-sound"
+						name="qa-reactions-sound"
 						type="checkbox"
 						checked={prefs.qaReactionsSound}
 						onchange={(e) => setPref('qaReactionsSound', checked(e))}
@@ -375,6 +405,8 @@
 				</label>
 				<label class="check">
 					<input
+						id="non-trade-donot-disturb"
+						name="non-trade-donot-disturb"
 						type="checkbox"
 						checked={!dnd.nonTradeAlert}
 						onchange={(e) => setDnd('nonTradeAlert', !e.currentTarget.checked)}
@@ -391,6 +423,8 @@
 			</div>
 			<label class="check">
 				<input
+					id="longer-alert-popup"
+					name="longer-alert-popup"
 					type="checkbox"
 					checked={prefs.longerAlertPopup}
 					onchange={(e) => setPref('longerAlertPopup', checked(e))}
@@ -448,6 +482,8 @@
 			</div>
 			<label class="check">
 				<input
+					id="small-image-preview"
+					name="small-image-preview"
 					type="checkbox"
 					checked={prefs.smallImagePreview}
 					onchange={(e) => setPref('smallImagePreview', checked(e))}
@@ -464,6 +500,8 @@
 			<div class="checks">
 				<label class="check">
 					<input
+						id="chat-gif-donot-disturb"
+						name="chat-gif-donot-disturb"
 						type="checkbox"
 						checked={!dnd.chatGif}
 						onchange={(e) => setDnd('chatGif', !e.currentTarget.checked)}
@@ -473,6 +511,8 @@
 				</label>
 				<label class="check">
 					<input
+						id="chat-badges"
+						name="chat-badges"
 						type="checkbox"
 						checked={!dnd.chatBadges}
 						onchange={(e) => setDnd('chatBadges', !e.currentTarget.checked)}
@@ -482,6 +522,8 @@
 				</label>
 				<label class="check">
 					<input
+						id="chat-popup"
+						name="chat-popup"
 						type="checkbox"
 						checked={!dnd.chatPopup}
 						onchange={(e) => setDnd('chatPopup', !e.currentTarget.checked)}
@@ -494,6 +536,8 @@
 				<hr />
 				<label class="check">
 					<input
+						id="chat-donot-disturb"
+						name="chat-donot-disturb"
 						type="checkbox"
 						checked={!dnd.chat}
 						onchange={(e) => setDnd('chat', !e.currentTarget.checked)}
@@ -510,6 +554,8 @@
 			</div>
 			<label class="check">
 				<input
+					id="extra-chat-column"
+					name="extra-chat-column"
 					type="checkbox"
 					checked={prefs.extraChatColumn}
 					onchange={(e) => setPref('extraChatColumn', checked(e))}
@@ -525,6 +571,8 @@
 			</div>
 			<label class="check">
 				<input
+					id="always-scroll-to-bottom"
+					name="always-scroll-to-bottom"
 					type="checkbox"
 					checked={prefs.alwaysScrollToBottom}
 					onchange={(e) => setPref('alwaysScrollToBottom', checked(e))}
@@ -541,6 +589,8 @@
 			<div class="checks">
 				<label class="check">
 					<input
+						id="trim-chat-logs"
+						name="trim-chat-logs"
 						type="checkbox"
 						checked={prefs.trimChatLogs}
 						onchange={(e) => setPref('trimChatLogs', checked(e))}
@@ -550,6 +600,8 @@
 				</label>
 				<label class="check">
 					<input
+						id="tab-sleep"
+						name="tab-sleep"
 						type="checkbox"
 						checked={prefs.tabSleep}
 						onchange={(e) => setPref('tabSleep', checked(e))}
@@ -569,26 +621,32 @@
 		border-bottom: 1px solid var(--border);
 		margin-bottom: 1rem;
 	}
+	/* Measured settings tab (targeted.json node 33, report.md:1589): padding
+	   8px 16px, 16px font; active = #45a2ff fill, white text, 1px #45a2ff
+	   border, 6px top radius. */
 	.tab {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.4rem;
 		background: transparent;
-		border: none;
-		border-bottom: 2px solid transparent;
+		border: 1px solid transparent;
 		color: var(--text-dim);
-		padding: 0.5rem 0.75rem;
+		padding: 8px 16px;
 		margin-bottom: -1px;
-		font-weight: 600;
-		font-size: 0.85rem;
+		font-weight: 400;
+		font-size: 16px;
+		border-radius: 6px 6px 0 0;
 		cursor: pointer;
 	}
 	.tab:hover {
 		color: var(--text);
+		border-color: var(--modal-active-tab, #45a2ff);
 	}
 	.tab.active {
-		color: var(--text);
-		border-bottom-color: var(--accent);
+		background: var(--modal-active-tab, #45a2ff);
+		color: #fff;
+		border-color: var(--modal-active-tab, #45a2ff);
+		cursor: default;
 	}
 
 	.panel {
@@ -770,21 +828,39 @@
 	.btn:hover {
 		border-color: var(--accent);
 	}
-	.btn.primary {
-		background: var(--accent);
-		border-color: var(--accent);
-		color: #fff;
-	}
-	.btn.primary:hover {
-		background: var(--accent-hover);
-		border-color: var(--accent-hover);
-	}
 	.btn.ghost {
 		background: transparent;
 		color: var(--text-dim);
 	}
 	.btn.ghost:hover {
 		color: var(--text);
+	}
+	/* Bootstrap variants per the captured footer buttons (report.md:1698-1706). */
+	.btn.secondary {
+		background: #444;
+		border-color: #444;
+		color: #fff;
+	}
+	.btn.secondary:hover {
+		opacity: 0.9;
+	}
+	.btn.outline-light {
+		background: transparent;
+		border-color: #f8f9fa;
+		color: #f8f9fa;
+	}
+	.btn.outline-light:hover {
+		background: #f8f9fa;
+		color: #212529;
+	}
+	.btn.outline-danger {
+		background: transparent;
+		border-color: var(--modal-danger, #e74c3c);
+		color: var(--modal-danger, #e74c3c);
+	}
+	.btn.outline-danger:hover {
+		background: var(--modal-danger, #e74c3c);
+		color: #fff;
 	}
 	.btn.wide {
 		width: 100%;

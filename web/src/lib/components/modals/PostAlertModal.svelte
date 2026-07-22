@@ -284,19 +284,31 @@
 	{#snippet footer()}
 		<div class="checks">
 			<label class="check">
-				<input type="checkbox" bind:checked={keepOpen} /> Keep alert window open?
+				<input id="keep-open" name="keep-open" type="checkbox" bind:checked={keepOpen} /> Keep alert window
+				open?
 			</label>
 			<label class="check">
-				<input type="checkbox" bind:checked={postToX} /> Post on X? (tweet)
+				<input id="post-to-x" name="post-to-x" type="checkbox" bind:checked={postToX} /> Post on X? (tweet)
 			</label>
 			<label class="check">
-				<input type="checkbox" bind:checked={dontPush} /> Don't send to push notification?
+				<input id="dont-push" name="dont-push" type="checkbox" bind:checked={dontPush} /> Don't send to
+				push notification?
 			</label>
 			<label class="check">
-				<input type="checkbox" bind:checked={nonTradeAlert} /> Non-trade alert? (Different Sound)
+				<input
+					id="non-trade-alert"
+					name="non-trade-alert"
+					type="checkbox"
+					bind:checked={nonTradeAlert}
+				/> Non-trade alert? (Different Sound)
 			</label>
 			<label class="check">
-				<input type="checkbox" bind:checked={legalDisclosure} /> Add Legal Disclosure?
+				<input
+					id="legal-disclosure"
+					name="legal-disclosure"
+					type="checkbox"
+					bind:checked={legalDisclosure}
+				/> Add Legal Disclosure?
 			</label>
 		</div>
 		<button type="button" class="primary" onclick={post} disabled={posting || uploading}>

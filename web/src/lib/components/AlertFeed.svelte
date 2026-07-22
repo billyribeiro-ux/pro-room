@@ -16,6 +16,7 @@
 	import { prefs } from '$lib/stores/prefs.svelte';
 	import { alertFilter, isAlertVisible, type FilterTrader } from '$lib/stores/alertFilter.svelte';
 	import { shouldThrottle } from '$lib/stores/visibility.svelte';
+	import { openLightbox } from '$lib/stores/lightbox.svelte';
 
 	export type AlertItem = Alert & {
 		author_name?: string;
@@ -32,7 +33,6 @@
 		alerts: AlertItem[];
 		present?: PresentUser[];
 		canPost: boolean;
-		onPost: (symbol: string, side: string, note: string) => Promise<void>;
 		/** Optional: open the Q&A thread for an alert (inert when omitted). */
 		onOpenQa?: (alert: AlertItem) => void;
 		/** Aggregated reactions keyed `${target_kind}:${target_id}`. */
@@ -51,7 +51,6 @@
 		alerts,
 		present = [],
 		canPost,
-		onPost,
 		onOpenQa,
 		reactions = {},
 		canReact = false,
@@ -60,11 +59,6 @@
 		onDelete,
 		onCreatePoll
 	}: Props = $props();
-
-	let symbol = $state('');
-	let side = $state('buy');
-	let note = $state('');
-	let posting = $state(false);
 
 	// Trader options for the Advanced Search multi-select = the present roster.
 	const traderOptions = $derived(present.map((p) => ({ value: p.user_id, label: p.display_name })));
@@ -121,34 +115,6 @@
 	// The alert whose delivery report is open (admin), or null.
 	let reportAlert = $state<AlertItem | null>(null);
 
-	async function submit(e: SubmitEvent) {
-		e.preventDefault();
-		const ticker = symbol.trim();
-		if (!ticker) return;
-		posting = true;
-		// Always scroll our own alert into view when it lands (bypasses the
-		// near-bottom guard), even if we'd scrolled up to read history.
-		stickNext = true;
-		try {
-			// Post the plain (uppercase) ticker. The "$" is ONLY a visual prefix in
-			// the composer field — it is NOT part of the stored/displayed alert body.
-			await onPost(ticker, side, note);
-			symbol = '';
-			note = '';
-		} finally {
-			posting = false;
-		}
-	}
-
-	// Ticker field: force UPPERCASE and strip non-ticker characters (including a
-	// typed "$", which is shown as a fixed prefix instead). Lets a trader type
-	// "aapl" and get "$AAPL" without Caps Lock. Same length on the common path
-	// (letters only), so the caret never jumps.
-	function onSymbolInput(e: Event) {
-		const el = e.currentTarget as HTMLInputElement;
-		symbol = el.value.toUpperCase().replace(/[^A-Z0-9.]/g, '');
-	}
-
 	function initials(name: string | undefined) {
 		const n = (name ?? 'Trader').trim();
 		const parts = n.split(/\s+/).filter(Boolean);
@@ -193,11 +159,18 @@
 		openMenuId = null;
 	}
 
-	// "Mention" drops "@name " into the note composer so the next alert can
-	// address that trader. Harmless when the user can't post (no input rendered).
-	function mention(a: AlertItem) {
+	// "Mention" copies "@name " so it can be pasted into the Post Alert modal or
+	// chat. (The reference kebab has a Mention item — report.md:1831 — but its
+	// exact target was never captured; the inline composer it used to feed was
+	// removed for reference parity, since the reference posts only via the modal,
+	// GAP-ANALYSIS.md:42-44.)
+	async function mention(a: AlertItem) {
 		const name = (a.author_name ?? 'Trader').trim();
-		note = note ? `${note} @${name} ` : `@${name} `;
+		try {
+			await navigator.clipboard.writeText(`@${name} `);
+		} catch {
+			// Clipboard can reject (permissions/insecure context); nothing to recover.
+		}
 		openMenuId = null;
 	}
 </script>
@@ -233,14 +206,18 @@
 					onclick={() => onCreatePoll?.()}><Icon name="poll" size={18} /></button
 				>
 			{/if}
-			<button type="button" aria-label="Search alerts" onclick={() => (searchOpen = true)}
-				><Icon name="search" /></button
+			<button
+				type="button"
+				aria-label="Search alerts"
+				title="Search"
+				onclick={() => (searchOpen = true)}><Icon name="search" /></button
 			>
 			<div class="settings-menu">
 				<button
 					type="button"
 					class="gear"
 					aria-label="Alert settings"
+					title="Settings"
 					aria-haspopup="menu"
 					aria-expanded={settingsOpen}
 					onclick={() => (settingsOpen = !settingsOpen)}
@@ -286,7 +263,10 @@
 			{@const newDay = !prev || dayKey(prev.created_at) !== dayKey(a.created_at)}
 			{#if newDay}
 				<li class="separator-row">
-					<span class="separator">{formatDayLabel(a.created_at)}</span>
+					<!-- Reference date label is a centered clickable anchor
+					     (report.md:1357,1360); its click target was never captured, so
+					     this is an inert button with the anchor's affordance. -->
+					<button type="button" class="separator">{formatDayLabel(a.created_at)}</button>
 				</li>
 			{/if}
 			<li class="msg-box">
@@ -378,11 +358,24 @@
 						</div>
 
 						<!-- Body in the content column, aligned under the username (reference
-						     .msg-left.text-formated.ml-2); image nested INSIDE, not a sibling. -->
+						     .msg-left.text-formated.ml-2); image nested INSIDE, not a sibling.
+						     The leading symbol renders as the reference span.stockColor ticker
+						     (report.md:1326,1303,1341). -->
 						<div class="body">
-							<MessageBody text={bodyText(a)} />
+							<span class="stock">{a.symbol}</span>{#if a.side}&nbsp;{a.side}{/if}
+							{#if a.note}<MessageBody text={a.note} />{/if}
 							{#if a.image_url}
-								<img class="alert-img" src={a.image_url} alt="" />
+								{@const img = a.image_url}
+								<!-- Reference attachment click opens the image overlay
+								     (report.md:1513). -->
+								<button
+									type="button"
+									class="img-open"
+									onclick={() => openLightbox(img)}
+									aria-label="Expand image"
+								>
+									<img class="alert-img" src={img} alt="" />
+								</button>
 							{/if}
 						</div>
 
@@ -400,40 +393,9 @@
 			<li class="empty">No alerts yet.</li>
 		{/each}
 	</ul>
-
-	{#if canPost}
-		<form onsubmit={submit}>
-			<div class="sym-wrap">
-				<span class="sym-prefix" aria-hidden="true">$</span>
-				<input
-					id="alert-symbol"
-					name="symbol"
-					class="sym"
-					placeholder="Ticker"
-					value={symbol}
-					oninput={onSymbolInput}
-					autocapitalize="characters"
-					autocomplete="off"
-					autocorrect="off"
-					spellcheck="false"
-					required
-				/>
-			</div>
-			<select id="alert-side" name="side" bind:value={side} aria-label="Side">
-				<option value="buy">Buy</option>
-				<option value="sell">Sell</option>
-				<option value="watch">Watch</option>
-			</select>
-			<input
-				id="alert-note"
-				name="note"
-				class="note"
-				placeholder="Note (optional)"
-				bind:value={note}
-			/>
-			<button type="submit" disabled={posting}>Post</button>
-		</form>
-	{/if}
+	<!-- No inline composer: the reference app-alerts has none — alerts are posted
+	     ONLY via the Post Alert modal (+ button above; GAP-ANALYSIS.md:42-44,
+	     proroom-reference.md:210-211). -->
 </section>
 
 <AlertQaModal alert={qaAlert} onClose={() => (qaAlert = null)} />
@@ -493,15 +455,18 @@
 		align-items: center;
 		/* Reference .navbar-brand bell (me-1) sits 4px from the "Alerts" text. */
 		gap: 4px;
-		/* Reference a.navbar-brand: 20px / weight 300 / line-height 30px. */
+		/* Reference .navbar-brand: 1.17188rem = 18.75px / weight 300 / lh 30px
+		   (report.md:1275). */
 		font-weight: 300;
-		font-size: 20px;
+		font-size: 18.75px;
 		line-height: 30px;
 	}
 	.actions {
 		display: flex;
 		align-items: center;
-		gap: 0.35rem;
+		/* Captured header icons sit 12px apart (search ends x=375, gear starts
+		   x=387 — report.md:1271-1272), same as the chat header. */
+		gap: 12px;
 	}
 	.actions button {
 		display: inline-flex;
@@ -546,30 +511,29 @@
 		padding: 0;
 	}
 	.separator {
-		/* Reference .separator is a flat, full-width gray bar (#e8e8e8) with
-		   light-gray centered text, not a rounded pill. */
+		/* Reference .separator is a flat, full-width gray bar (#e8e8e8) with a
+		   centered clickable date (report.md:1356-1357). Button chrome zeroed. */
 		display: block;
 		width: 100%;
 		text-align: center;
 		background: var(--content-separator-bg);
-		/* The date text is the reference's readable light-theme separator color
-		   (#373c42); the #ccc the capture shows is the container default, not the
-		   date link itself. */
 		color: #373c42;
 		font-size: 13px;
 		font-weight: 300;
 		padding: 0;
 		line-height: 1.5;
+		border: none;
 		border-radius: 0;
 		white-space: nowrap;
+		cursor: pointer;
 	}
 
 	.msg-box {
 		position: relative;
-		/* Reference app-st-message .msg-box is tight (pb-1 only); trim the loose top
-		   padding so rows aren't taller than the reference (insets come from the
-		   avatar gutter + body 8px margins). */
-		padding: 0.3rem 0.85rem 0.25rem;
+		/* Reference app-st-message div.msg-box.pb-1: bottom-only 4px padding — the
+		   insets come from the 58px gutter and the body's 8px margins
+		   (report.md:1309,1315). */
+		padding: 0 0 4px;
 		/* Reference rows are white with a top divider (#e1e1e1) and flat corners. */
 		background: var(--content-bg);
 		border-top: 1px solid var(--content-border);
@@ -695,14 +659,14 @@
 	}
 
 	.avatar {
-		/* Reference in-message avatar is 32x32; square (Bootstrap "Darkly",
-		   --rosterImg-border-radius: 0). Sits in the gutter 4px right of the kebab
-		   (.avatar.pl-1). Always initials — the alert image is the body attachment. */
+		/* Captured in-message avatar img is 35x35, object-fit cover, radius 0 →
+		   SQUARE (report.md:1314) in a 58px gutter (report.md:1329). Always
+		   initials — the alert image is the body attachment. */
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		width: 32px;
-		height: 32px;
+		width: 35px;
+		height: 35px;
 		flex-shrink: 0;
 		margin-left: 4px;
 		border-radius: 0;
@@ -792,10 +756,27 @@
 		white-space: pre-wrap;
 		font-size: var(--msg-font-size);
 	}
+	/* Reference span.stockColor ticker: 700 13px/19.5px UPPERCASE
+	   (report.md:1341); no italic in the computed shorthand. */
+	.stock {
+		color: var(--ticker-color, #1a1a1a);
+		font-weight: 700;
+		text-transform: uppercase;
+	}
+	.img-open {
+		display: block;
+		background: transparent;
+		border: none;
+		padding: 0;
+		cursor: pointer;
+		text-align: left;
+	}
 	.alert-img {
 		display: block;
+		/* Captured attachment constraints: max-width 300px, max-height 200px,
+		   cursor pointer → lightbox (report.md:1342,1513). */
 		max-width: 300px;
-		width: 100%;
+		max-height: 200px;
 		margin-top: 0.5rem;
 		border-radius: 6px;
 		object-fit: cover;
@@ -816,69 +797,5 @@
 	.feed.compact .body {
 		font-size: 0.82em;
 		line-height: 1.25;
-	}
-
-	form {
-		display: flex;
-		gap: 0.4rem;
-		padding: 0.55rem 0.65rem;
-		border-top: 1px solid var(--content-border);
-		/* Reference composer surface is white (#fff), not gray. */
-		background: var(--content-bg);
-		flex-shrink: 0;
-	}
-	input,
-	select {
-		background: var(--content-bg);
-		border: 1px solid #d3d7e0;
-		/* Reference .form-control composer fields are flat (border-radius: 0). */
-		color: var(--content-text);
-		border-radius: 0;
-		padding: 0.4rem 0.5rem;
-		font-size: 0.82rem;
-	}
-	/* Ticker field with a fixed "$" prefix adornment. */
-	.sym-wrap {
-		position: relative;
-		width: 5rem;
-		flex-shrink: 0;
-	}
-	.sym-prefix {
-		position: absolute;
-		left: 0.5rem;
-		top: 50%;
-		transform: translateY(-50%);
-		color: var(--content-text);
-		font-size: 0.82rem;
-		font-weight: 700;
-		pointer-events: none;
-	}
-	.sym {
-		width: 100%;
-		/* Room for the "$" prefix. */
-		padding-left: 1.05rem;
-		/* Belt-and-suspenders uppercase (onSymbolInput also uppercases the value). */
-		text-transform: uppercase;
-	}
-	.note {
-		flex: 1;
-		min-width: 0;
-	}
-	form button {
-		background: var(--accent);
-		color: #fff;
-		border: none;
-		/* Small button: keep a subtle radius (~4px) per the flat-surface rule. */
-		border-radius: 4px;
-		padding: 0.4rem 0.8rem;
-		font-weight: 600;
-		cursor: pointer;
-	}
-	form button:hover {
-		background: #095a93;
-	}
-	form button:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
 	}
 </style>
