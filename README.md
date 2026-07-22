@@ -48,16 +48,28 @@ compose.yaml        local Postgres + Redis
 
 ## Development
 
+One command from `web/` starts Postgres + Redis, the Rust API, and the SvelteKit
+dev server (creates `server/.env` / `web/.env` from the examples if missing).
+Vite boots immediately in parallel while infra + the API come up:
+
 ```bash
-# infra
-docker compose up -d
-
-# backend
-cd server && cargo run
-
-# frontend
-cd web && pnpm install && pnpm dev
+cd web && pnpm install && pnpm dev:all
 ```
 
-See `web/.env.example` and `server/.env.example` for required configuration
-(database URL, Redis URL, LiveKit credentials, OAuth client secrets, SMTP).
+- Web: http://127.0.0.1:5173  
+- API: http://127.0.0.1:8080  
+
+Or run pieces separately:
+
+```bash
+pnpm dev:infra     # docker compose: postgres + redis (waits until healthy)
+pnpm dev:api       # cargo run -p server
+pnpm dev:backend   # infra then API
+pnpm dev           # vite (SvelteKit)
+```
+
+Optional LiveKit SFU for screen share: `docker compose up -d livekit` from the
+repo root (keys in `livekit.yaml` / `server/.env.example`).
+
+See `web/.env.example` and `server/.env.example` for configuration (database URL
+on host port **5433**, Redis on **6380**, LiveKit, OAuth, SMTP).
