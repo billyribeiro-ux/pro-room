@@ -1,10 +1,24 @@
 import { env } from '$env/dynamic/public';
+import { browser } from '$app/environment';
 
-/** Base URL of the Rust API. Configured via PUBLIC_API_URL. */
-export const API_URL = env.PUBLIC_API_URL ?? 'http://localhost:8080';
+/**
+ * Base URL of the Rust API.
+ *
+ * - **Local dev (default):** empty string → same-origin `/api/*` via the Vite proxy
+ *   (`vite.config.ts`). Session cookies stay first-party on :5173.
+ * - **Deployed / direct API:** set `PUBLIC_API_URL=https://api.example.com` (no trailing slash).
+ */
+export const API_URL = (env.PUBLIC_API_URL ?? '').replace(/\/$/, '');
 
-/** WebSocket origin derived from the API URL (http→ws, https→wss). */
-export const WS_URL = API_URL.replace(/^http/, 'ws');
+/**
+ * WebSocket origin for the room hub.
+ * Same-origin when `API_URL` is empty; otherwise http→ws / https→wss on the API host.
+ */
+export const WS_URL = API_URL
+	? API_URL.replace(/^http/, 'ws')
+	: browser
+		? `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`
+		: 'ws://127.0.0.1:8080';
 
 /**
  * GIPHY API key for the chat GIF picker. OPTIONAL — when unset, the composer's GIF
