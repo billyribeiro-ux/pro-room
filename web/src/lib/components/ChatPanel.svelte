@@ -581,7 +581,7 @@
 							aria-expanded={emojiOpen}
 							onclick={() => (emojiOpen = !emojiOpen)}
 						>
-							<Icon name="smile" family="regular" size={18} />
+							<Icon name="smile" family="regular" size={16} />
 						</button>
 						{#if emojiOpen}
 							<div class="emoji-pop" role="menu" aria-label="Pick an emoji" {@attach dismissEmoji}>
@@ -609,7 +609,7 @@
 						disabled={uploading}
 						onclick={() => fileInputEl?.click()}
 					>
-						<Icon name="image" size={18} />
+						<Icon name="image" size={16} />
 					</button>
 					<input
 						bind:this={fileInputEl}
@@ -839,9 +839,9 @@
 		text-align: center;
 		background: var(--content-separator-bg);
 		color: #373c42;
-		/* Measured band metrics 16px/24px (pixel-diff); the inner date anchor's
-		   own color was never captured — #373c42 kept from the earlier capture. */
-		font-size: 16px;
+		/* Reference date ANCHOR renders at 13px inside the #e8e8e8 band
+		   (audit vs file2/ultra-member). */
+		font-size: 13px;
 		font-weight: 300;
 		padding: 0;
 		line-height: 24px;

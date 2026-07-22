@@ -130,7 +130,8 @@
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: 0.25rem;
+		/* Reference inter-pill spacing is margin 0 2px. */
+		gap: 2px;
 		margin-top: 0.3rem;
 	}
 
@@ -141,8 +142,10 @@
 		align-items: center;
 		gap: 0.2rem;
 		background: transparent;
-		border: none;
-		border-radius: 0;
+		/* Reference .chat-reaction: 1px solid border (gray default, blue when
+		   added), 700 12px #676767, padding 3px 6px. */
+		border: 1px solid #676767;
+		border-radius: 4px;
 		padding: 3px 6px;
 		font-size: 12px;
 		font-weight: 700;
@@ -155,9 +158,9 @@
 		cursor: pointer;
 	}
 	.pill.mine {
-		/* Own-reaction state: no reference capture exists for it — a plain color
-		   accent keeps the captured transparent/borderless badge geometry. */
+		/* Reference .chat-reaction-added: blue border/text (#45a2ff). */
 		color: var(--accent);
+		border-color: var(--accent);
 	}
 	.pill .emoji {
 		font-size: 0.85rem;

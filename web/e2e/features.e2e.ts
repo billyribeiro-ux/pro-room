@@ -118,9 +118,19 @@ test('alert popup toast fires on another user’s new alert', async ({ page }) =
 	// viewer must be a different user from the author. View as the seeded member
 	// (real session overrides the bypass), then post the alert WITHOUT credentials so
 	// the bypass authors it as the admin — a different user → the toast fires.
-	await page.request.post('http://localhost:8081/api/auth/login', {
-		data: { email: 'member@ptr.test', password: 'proom1234' }
+	// Self-provision a UNIQUE member each run so the login is HERMETIC — a fixed
+	// seed email may already exist with an unknown password (register 409s and the
+	// password is never reset). A per-run email always registers cleanly and gives
+	// a viewer that differs from the dev-bypass admin author.
+	const memberEmail = `member-e2e-${Date.now()}@ptr.test`;
+	const reg = await page.request.post('http://localhost:8081/api/auth/register', {
+		data: { email: memberEmail, password: 'proom1234', display_name: 'PtrMember' }
 	});
+	expect(reg.ok(), 'member register').toBeTruthy();
+	const login = await page.request.post('http://localhost:8081/api/auth/login', {
+		data: { email: memberEmail, password: 'proom1234' }
+	});
+	expect(login.ok(), 'member login').toBeTruthy();
 	await enterRoom(page); // re-enter now that the member session cookie is set
 	await page.evaluate(async (rid) => {
 		await fetch(`http://localhost:8081/api/rooms/${rid}/alerts`, {

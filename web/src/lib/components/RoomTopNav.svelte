@@ -130,16 +130,18 @@
 		<span class="talking idle">( No one is speaking )</span>
 	{/if}
 
+	<!-- Reference li.recIndicator is the 2nd right-cluster child — right after the
+	     talking indicator, BEFORE the broadcast controls (report.md structure). -->
+	{#if recording}
+		<span class="rec-indicator">[ REC ]</span>
+	{/if}
+
 	<!-- Presenter broadcast controls. In the reference these are the 14 *ngIf
 	     placeholders between the talking indicator and the volume dropdown, so
 	     the group renders here (not via the spacer ahead of talking). The
 	     snippet's own caps gating renders nothing for members. -->
 	{#if actions}
 		<div class="nav-controls">{@render actions()}</div>
-	{/if}
-
-	{#if recording}
-		<span class="rec-indicator">[ REC ]</span>
 	{/if}
 
 	<div class="volume">
@@ -256,7 +258,7 @@
 							checked={dnd.app}
 							onchange={(e) => setDnd('app', e.currentTarget.checked)}
 						/>
-						Don't Disturb <span class="status">{dnd.app ? 'on' : 'off'}</span>
+						Don't Disturb
 					</label>
 				</div>
 			</div>
@@ -531,6 +533,12 @@
 		overflow-x: auto;
 		scrollbar-width: thin;
 		margin: 0 0.5rem;
+	}
+	/* When the presenter cluster renders nothing (member), collapse the wrapper
+	   so it injects no dead space (:empty has no rendered .ctrl children). */
+	.nav-controls:empty {
+		display: none;
+		margin: 0;
 	}
 	/* Reference presenter controls are BARE nav-link icons: muted gray #abb0b5
 	   (navbar-dark .nav-link), margin 0 5px, NO background / border / radius.

@@ -104,7 +104,12 @@
 	--modal-close-bg: #375a7f;
 	--modal-success: #00bc8c;
 	--modal-danger: #e74c3c;
+	/* Darkly modal nav-tabs (appusersettingsmodal.html.html stylesheet):
+	   active tab = #222 bg / #00bc8c text / #444 border. Distinct from the
+	   #45a2ff chat/stage pill (--tab-active-bg). */
+	--modal-active-tab-bg: #222222;
 	--modal-active-tab: #00bc8c;
+	--modal-active-tab-border: #444444;
 	--modal-input-bg: #444444;
 	--modal-btn-primary: #375a7f;
 	--modal-btn-secondary: #444444;

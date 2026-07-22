@@ -54,13 +54,15 @@
 	.new-badge {
 		font-size: 11px;
 		line-height: 1.4;
-		padding: 1px 5px;
+		/* Reference .new-badge/.trial-badge padding is 3px 5px. */
+		padding: 3px 5px;
 		border-radius: 4px;
 		white-space: nowrap;
 	}
 	/* Reference .user-badge-img { width:auto; height:100%; max-height:20px }. */
 	.user-badge-img {
-		height: 16px;
+		/* Reference .user-badge-img { width:auto; height:100%; max-height:20px }. */
+		height: 100%;
 		width: auto;
 		max-height: 20px;
 		vertical-align: middle;
