@@ -839,10 +839,12 @@
 		text-align: center;
 		background: var(--content-separator-bg);
 		color: #373c42;
-		font-size: 13px;
+		/* Measured band metrics 16px/24px (pixel-diff); the inner date anchor's
+		   own color was never captured — #373c42 kept from the earlier capture. */
+		font-size: 16px;
 		font-weight: 300;
 		padding: 0;
-		line-height: 1.5;
+		line-height: 24px;
 		border: none;
 		border-radius: 0;
 		white-space: nowrap;
@@ -857,7 +859,12 @@
 		/* Reference chat .msg-box: bg #fff, flat, top divider #e1e1e1. */
 		background: var(--content-bg);
 		border-top: 1px solid var(--content-border);
-		font-size: var(--msg-font-size);
+		/* Measured shared row-template base (pixel-diff): #ccc / 16px / 100 / 24px;
+		   every visible child overrides. */
+		color: #cccccc;
+		font-size: 16px;
+		font-weight: 100;
+		line-height: 24px;
 	}
 	/* Reference .msg-box-adm: messages from an admin/super-admin (the author's
 	   effective room role) get the grey row --msgs-bg-adm = #f4f4f4. */
@@ -906,12 +913,14 @@
 		justify-content: center;
 		background: transparent;
 		border: none;
-		/* Measured kebab base color: rgb(10,109,177) = var(--username-color)
+		/* Measured a.msgMenu: 20px / 30px line, padding 4px 0 0 5px, base
 		   #0a6db1 !important (report.md:2055); hover #8c8686 at weight 900. */
 		color: var(--username-color, #0a6db1);
+		font-size: 20px;
+		line-height: 30px;
 		font-weight: 600;
 		cursor: pointer;
-		padding: 0.1rem;
+		padding: 4px 0 0 5px;
 		border-radius: 0;
 	}
 	.menu-trigger .ellipsis {
@@ -981,6 +990,8 @@
 	.username {
 		font-size: 14px;
 		font-weight: 900;
+		/* Measured `font: 900 14px/21px` (report.md:1337; pixel-diff). */
+		line-height: 21px;
 		/* Reference chat .username computed colour is --lightTheme-username-color =
 		   var(--accent) (room link-blue), per the presenter-deep matchedRule — NOT #000.
 		   A per-user author_color still wins via the inline style; cursor:pointer
@@ -1008,6 +1019,8 @@
 		margin-left: auto;
 		font-weight: 600;
 		font-size: 12px;
+		/* Measured `600 12px/18px` (report.md:1339; pixel-diff). */
+		line-height: 18px;
 		/* Reference chat .created-at: 12px / 600, upright, colour --date-color
 		   (light theme) = #8394a9. */
 		font-style: normal;
@@ -1020,7 +1033,7 @@
 		/* Body lines up under the USERNAME. Captured shared row template: the body
 		   column's left edge sits at x=58 (report.md:1315), so the body indents
 		   58px (kebab + 35px avatar + gaps). */
-		margin: 0.35rem 8px 0 58px;
+		margin: 0 8px 0 58px;
 		/* Reference chat body (div.msg-left): #676767, 13px / line-height 1.5. */
 		color: var(--content-text);
 		line-height: 1.5;

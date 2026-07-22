@@ -75,13 +75,14 @@ async function enterRoom(page: Page) {
 
 /** Open the off-canvas sidebar if it isn't already open. */
 async function openSidebar(page: Page) {
-	const open = page.getByRole('button', { name: 'Open Sidebar' }).first();
-	if ((await open.count()) > 0 && (await open.isVisible().catch(() => false))) {
-		await open.click();
-		await expect(page.getByRole('button', { name: 'Close sidebar' })).toBeVisible({
-			timeout: 5_000
-		});
+	// The drawer has no in-drawer close button (reference parity — the top-nav
+	// hamburger toggles it). Open only if the drawer content isn't visible yet,
+	// and use the always-present "Mobile App Info" button as the open landmark.
+	const landmark = page.getByRole('button', { name: 'Mobile App Info' }).first();
+	if (!(await landmark.isVisible().catch(() => false))) {
+		await page.getByRole('button', { name: 'Open Sidebar' }).first().click();
 	}
+	await expect(landmark).toBeVisible({ timeout: 5_000 });
 }
 
 /** Open a hamburger item by its exact label. */
@@ -205,7 +206,10 @@ test('mute a user hides their chat + lists them in Manage Muted Users', async ({
 });
 
 test('Alert Logs loads real entries', async ({ page }) => {
-	await openSidebarItem(page, 'Alert Logs');
+	// Archives is a click-toggled dropdown (reference parity); its items are
+	// text-only menu items, not sidebar buttons.
+	await openSidebarItem(page, 'Archives');
+	await page.getByRole('menuitem', { name: 'Alert Logs' }).click();
 	const dialog = page.getByRole('dialog');
 	await expect(dialog).toContainText('Alerts Logs');
 	await expect(dialog.locator('.list-group-item').first()).toBeVisible({ timeout: 8_000 });
@@ -213,7 +217,8 @@ test('Alert Logs loads real entries', async ({ page }) => {
 });
 
 test('Chat Logs loads real entries', async ({ page }) => {
-	await openSidebarItem(page, 'Chat Logs');
+	await openSidebarItem(page, 'Archives');
+	await page.getByRole('menuitem', { name: 'Chat Logs' }).click();
 	const dialog = page.getByRole('dialog');
 	await expect(dialog).toContainText('Chat Logs');
 	await expect(dialog.locator('.list-group-item').first()).toBeVisible({ timeout: 8_000 });

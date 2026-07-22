@@ -120,7 +120,7 @@
 		position: fixed;
 		right: 1rem;
 		bottom: 1rem;
-		z-index: 55;
+		z-index: 1040; /* floating layer: above the z-1030 nav, below modals */
 		width: 320px;
 		max-width: calc(100vw - 2rem);
 		max-height: min(70vh, 520px);

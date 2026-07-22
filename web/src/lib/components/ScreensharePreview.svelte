@@ -107,7 +107,7 @@
 					</div>
 				{/if}
 			</span>
-			<button type="button" class="close" onclick={onStop} aria-label="Stop sharing" title="Close">
+			<button type="button" class="close" onclick={onStop} aria-label="Close preview" title="Close preview (stops sharing)">
 				<Icon name="times" size={16} />
 			</button>
 		</div>
@@ -120,7 +120,7 @@
 		position: fixed;
 		right: 1rem;
 		bottom: 1rem;
-		z-index: 105;
+		z-index: 1040; /* floating layer: above the z-1030 nav, below modals */
 		width: 350px;
 		height: 260px;
 		display: flex;
@@ -134,7 +134,7 @@
 		user-select: none;
 	}
 	.card.dragging {
-		z-index: 200;
+		z-index: 1041;
 	}
 	.bar {
 		display: flex;

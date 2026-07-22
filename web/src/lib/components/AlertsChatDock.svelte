@@ -250,7 +250,10 @@
 		   children stay clipped to the panel box. No box-shadow in the reference. */
 		border-radius: 0;
 		overflow: hidden;
-		background: var(--content-bg);
+		/* Reference as-split-area.alert-chat-box computes TRANSPARENT — its
+		   children (blue headers / white scrollers) paint the surface
+		   (report.md:131; measured via pixel-diff). */
+		background: transparent;
 	}
 	.dock.dragging {
 		user-select: none;

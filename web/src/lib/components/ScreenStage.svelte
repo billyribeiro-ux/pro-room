@@ -70,9 +70,16 @@
 		}
 	}
 
-	// Reset zoom/pan when the active screen changes.
+	// Reset zoom/pan ONLY when the active screen actually changes. `active` is a
+	// $derived OBJECT whose reference churns on every publisher-store tick, so an
+	// effect keyed on the object reset zoom mid-interaction (measured via
+	// MutationObserver: Zoom title flipped 1× → 1.5× → 1× in one batch). Guard on
+	// the identity STRING so store churn can't clobber the user's zoom.
+	let lastActiveIdentity: string | null = null;
 	$effect(() => {
-		void active?.identity;
+		const id = active?.identity ?? null;
+		if (id === lastActiveIdentity) return;
+		lastActiveIdentity = id;
 		zoom = 1;
 		panX = 0;
 		panY = 0;

@@ -518,10 +518,12 @@
 		text-align: center;
 		background: var(--content-separator-bg);
 		color: #373c42;
-		font-size: 13px;
+		/* Measured band metrics 16px/24px (pixel-diff); the inner date anchor's
+		   own color was never captured — #373c42 kept from the earlier capture. */
+		font-size: 16px;
 		font-weight: 300;
 		padding: 0;
-		line-height: 1.5;
+		line-height: 24px;
 		border: none;
 		border-radius: 0;
 		white-space: nowrap;
@@ -538,7 +540,13 @@
 		background: var(--content-bg);
 		border-top: 1px solid var(--content-border);
 		border-radius: 0;
-		font-size: var(--msg-font-size);
+		/* Measured ROW-level base (pixel-diff vs member capture): #ccc / 16px /
+		   weight 100 / 24px — every visible child overrides (username 900,
+		   timestamp 600 12px, body 13px #676767), so this is the inherited base. */
+		color: #cccccc;
+		font-size: 16px;
+		font-weight: 100;
+		line-height: 24px;
 	}
 	/* Reference row: a flex-row of [gutter | content] (.mr-1.d-flex.flex-row). */
 	.msg-row {
@@ -597,12 +605,15 @@
 		justify-content: center;
 		background: transparent;
 		border: none;
-		/* Reference .msgMenu: the ⠇ glyph at 20px / weight 600, flat (no radius),
-		   hover #8c8686. Same kebab as the chat row (alerts keep it on the left). */
+		/* Measured a.msgMenu (pixel-diff vs member capture): 20px / line-height
+		   30px, padding 4px 0 0 5px (pt-1 + 5px left), weight 600, #0a6db1 base,
+		   hover #8c8686 (report.md:2055-2056). */
 		color: var(--username-color);
+		font-size: 20px;
+		line-height: 30px;
 		font-weight: 600;
 		cursor: pointer;
-		padding: 0.1rem;
+		padding: 4px 0 0 5px;
 		border-radius: 0;
 	}
 	.menu-trigger .ellipsis {
@@ -679,6 +690,8 @@
 	.username {
 		font-size: 14px;
 		font-weight: 900;
+		/* Measured `font: 900 14px/21px` (report.md:1337; pixel-diff). */
+		line-height: 21px;
 		color: var(--username-color);
 		/* Reference .username (mx-1) has 4px horizontal margin. */
 		margin: 0 4px;
@@ -734,6 +747,8 @@
 		margin-right: 8px;
 		font-weight: 600;
 		font-size: 12px;
+		/* Measured `600 12px/18px` (report.md:1339; pixel-diff). */
+		line-height: 18px;
 		/* Reference .created-at is upright (font-style: normal), color #a8a8a8. */
 		font-style: normal;
 		color: var(--content-meta);
@@ -745,7 +760,7 @@
 		/* Body lives in the content column (right of the gutter) so it aligns under
 		   the username naturally — no magic left margin. Reference is
 		   .msg-left.text-formated.ml-2.mr-2 → 8px each side, small top gap. */
-		margin: 0.2rem 8px 0 8px;
+		margin: 0 8px;
 		color: var(--content-text);
 		/* Reference .text-formated body is font-weight 100 (Open Sans Thin, now
 		   loaded). Very thin per the capture. */

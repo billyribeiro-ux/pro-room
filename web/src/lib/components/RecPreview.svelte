@@ -11,8 +11,13 @@
 		/** Lifted recording flag — drives the top-nav [ REC ] indicator
 		    (reference li.recIndicator, report.md:1957). */
 		onRecordingChange?: (recording: boolean) => void;
+		/** The live local broadcast to record (share video + audio). When it
+		    returns a stream, recording uses IT — no second screen picker (the
+		    reference records the already-running broadcast). Null → fall back to
+		    getDisplayMedia. */
+		source?: () => MediaStream | null;
 	}
-	let { open, roomId, onClose, onRecordingChange }: Props = $props();
+	let { open, roomId, onClose, onRecordingChange, source }: Props = $props();
 
 	// Client-side screen recording (v1): captures the presenter's screen via
 	// getDisplayMedia → MediaRecorder. On stop you can DOWNLOAD the .webm to your
@@ -31,6 +36,9 @@
 	let saved = $state(false);
 
 	let stream: MediaStream | null = null;
+	// False when `stream` wraps the LIVE broadcast tracks — stopping the
+	// recording must NOT stop those tracks (it would kill the running share).
+	let ownsStream = true;
 	let recorder: MediaRecorder | null = null;
 	let chunks: Blob[] = [];
 	let timer: ReturnType<typeof setInterval> | null = null;
@@ -44,27 +52,50 @@
 			clearInterval(timer);
 			timer = null;
 		}
-		stream?.getTracks().forEach((t) => t.stop());
+		if (ownsStream) stream?.getTracks().forEach((t) => t.stop());
 		stream = null;
 		recorder = null;
 		if (recording) onRecordingChange?.(false);
 		recording = false;
 	}
 
+	// The container MUST be feature-detected: Safari's MediaRecorder rejects
+	// `video/webm` outright (NotSupportedError), which silently killed recording
+	// there. First supported candidate wins; no candidate → browser default.
+	const MIME_CANDIDATES = [
+		'video/webm;codecs=vp9,opus',
+		'video/webm;codecs=vp8,opus',
+		'video/webm',
+		'video/mp4'
+	];
+	function pickMime(): string | undefined {
+		if (typeof MediaRecorder === 'undefined') return undefined;
+		return MIME_CANDIDATES.find((m) => MediaRecorder.isTypeSupported(m));
+	}
+	/** File extension for the ACTUAL recorded container. */
+	let recordedExt = 'webm';
+
 	async function start() {
 		error = null;
 		saved = false;
 		recordedBlob = null;
 		try {
-			stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+			// Record the LIVE broadcast when one is running (no second picker —
+			// reference behavior); only prompt when nothing is being shared.
+			const live = source?.() ?? null;
+			ownsStream = !live;
+			stream = live ?? (await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true }));
 			stream.getVideoTracks()[0]?.addEventListener('ended', stop);
 			chunks = [];
-			recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+			const mime = pickMime();
+			recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+			const actualMime = recorder.mimeType || mime || 'video/webm';
+			recordedExt = /mp4/.test(actualMime) ? 'mp4' : 'webm';
 			recorder.ondataavailable = (e) => {
 				if (e.data.size > 0) chunks.push(e.data);
 			};
 			recorder.onstop = () => {
-				recordedBlob = new Blob(chunks, { type: 'video/webm' });
+				recordedBlob = new Blob(chunks, { type: actualMime });
 				recordedSecs = elapsed;
 			};
 			recorder.start(1000);
@@ -76,10 +107,14 @@
 			elapsed = 0;
 			timer = setInterval(() => (elapsed += 1), 1000);
 		} catch (err) {
+			// Fail loud with the REAL reason (permission vs unsupported vs other) —
+			// the generic message hid a Safari NotSupportedError for months.
 			error =
 				err instanceof Error && err.name === 'NotAllowedError'
 					? 'Permission denied.'
-					: 'Could not start recording.';
+					: err instanceof Error
+						? `Could not start recording: ${err.name} ${err.message}`
+						: 'Could not start recording.';
 			stopTracks();
 		}
 	}
@@ -98,7 +133,7 @@
 		const url = URL.createObjectURL(recordedBlob);
 		const a = document.createElement('a');
 		a.href = url;
-		a.download = `recording-${Date.now()}.webm`;
+		a.download = `recording-${Date.now()}.${recordedExt}`;
 		document.body.appendChild(a);
 		a.click();
 		a.remove();
@@ -111,8 +146,8 @@
 		saving = true;
 		error = null;
 		try {
-			const file = new File([recordedBlob], `recording-${Date.now()}.webm`, {
-				type: 'video/webm'
+			const file = new File([recordedBlob], `recording-${Date.now()}.${recordedExt}`, {
+				type: recordedBlob.type || 'video/webm'
 			});
 			const form = new FormData();
 			form.append('file', file);
@@ -234,7 +269,7 @@
 		position: fixed;
 		right: 1rem;
 		bottom: 1rem;
-		z-index: 60;
+		z-index: 1040; /* floating layer: above the z-1030 nav, below modals */
 		width: 330px;
 		background: var(--bg-elev);
 		border: 1px solid var(--border);

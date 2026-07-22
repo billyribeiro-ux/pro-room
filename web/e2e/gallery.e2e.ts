@@ -98,13 +98,14 @@ async function enterRoom(page: Page) {
 }
 
 async function openSidebar(page: Page) {
-	const open = page.getByRole('button', { name: 'Open Sidebar' }).first();
-	if ((await open.count()) > 0 && (await open.isVisible().catch(() => false))) {
-		await open.click();
-		await expect(page.getByRole('button', { name: 'Close sidebar' })).toBeVisible({
-			timeout: 5_000
-		});
+	// The drawer has no in-drawer close button (reference parity — the top-nav
+	// hamburger toggles it). Open only if the drawer content isn't visible yet,
+	// and use the always-present "Mobile App Info" button as the open landmark.
+	const landmark = page.getByRole('button', { name: 'Mobile App Info' }).first();
+	if (!(await landmark.isVisible().catch(() => false))) {
+		await page.getByRole('button', { name: 'Open Sidebar' }).first().click();
 	}
+	await expect(landmark).toBeVisible({ timeout: 5_000 });
 }
 
 async function openSidebarItem(page: Page, name: string) {

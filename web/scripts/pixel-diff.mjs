@@ -10,9 +10,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 
 const REF = JSON.parse(
-	fs.readFileSync(os.homedir() + '/Downloads/proroom-ultra-member-room.json', 'utf8')
+	fs.readFileSync('../docs/reference/captures/proroom-ultra-member-room.json', 'utf8')
 );
-const ROOM = 'http://localhost:5174/rooms/aea3ca10-30b3-4b16-9763-2bab0a545a0d';
+const ROOM = 'http://localhost:5174/rooms/a3f56d73-9979-4b6c-95c4-a40e8a8e5303';
 
 const norm = (v) => {
 	if (v == null) return v;
@@ -79,7 +79,7 @@ const MAP = [
 	['timestamp', '.alerts-pane .created-at', (e) => (e.class || '').includes('created-at')],
 	[
 		'body text',
-		'.alerts-pane .body .message-body',
+		'.alerts-pane .msg-box .body',
 		(e) => (e.class || '').includes('text-formated')
 	],
 	[
@@ -93,9 +93,8 @@ const MAP = [
 		'stage tab active',
 		'.tabbar button.active',
 		(e) =>
-			(e.class || '').includes('nav-link') &&
-			(e.class || '').includes('active') &&
-			norm(e.style['background-color']) === '#45a2ff'
+			(e.id === 'screens-tab' || (e.class || '').includes('mainTabset')) &&
+			(e.class || '').includes('active')
 	]
 ];
 

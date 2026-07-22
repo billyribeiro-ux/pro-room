@@ -135,7 +135,7 @@
 		background: rgba(0, 0, 0, 0.5);
 		display: flex;
 		justify-content: flex-end;
-		z-index: 50;
+		z-index: 1040; /* floating layer: above the z-1030 nav, below modals */
 	}
 	.drawer {
 		width: 100%;

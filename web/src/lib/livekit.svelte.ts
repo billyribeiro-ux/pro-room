@@ -308,6 +308,28 @@ export class ScreenShareRoom {
 	}
 
 	/**
+	 * MediaStream of the LIVE local broadcast for the client-side recorder: the
+	 * already-published share video plus one audio track (share/tab audio when
+	 * captured, else the live mic). The reference records the broadcast that is
+	 * already running — it never re-prompts the presenter with a second screen
+	 * picker. Null when nothing is being shared (caller falls back to a picker).
+	 */
+	recordingSource(): MediaStream | null {
+		const video = this.#screenTrackFromRoom();
+		if (!video) return null;
+		const tracks: MediaStreamTrack[] = [video];
+		const shareAudio = this.#room?.localParticipant.getTrackPublication(
+			Track.Source.ScreenShareAudio
+		)?.track?.mediaStreamTrack;
+		const mic = this.#room?.localParticipant.getTrackPublication(Track.Source.Microphone)?.track
+			?.mediaStreamTrack;
+		// One audio track only — MediaRecorder ignores extras in most browsers.
+		const audio = shareAudio ?? mic;
+		if (audio) tracks.push(audio);
+		return new MediaStream(tracks);
+	}
+
+	/**
 	 * Share via an external encoder (OBS Virtual Camera / XSplit VCam). These
 	 * present as ordinary video-input devices; we capture the virtual cam with
 	 * getUserMedia and publish it as a ScreenShare-source track so it shows in the

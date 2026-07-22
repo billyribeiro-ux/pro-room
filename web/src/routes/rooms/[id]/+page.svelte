@@ -620,6 +620,7 @@
 		{roomId}
 		onClose={() => (showRecPreview = false)}
 		onRecordingChange={(r) => (recActive = r)}
+		source={() => screen.recordingSource()}
 	/>
 
 	<!-- Reference floating local screen-share preview (app-screenshare-preview,
@@ -970,7 +971,7 @@
 		   350px, padding 5px, 16px, li:hover cursor pointer; shadowless
 		   (report.md:3009). */
 		position: fixed;
-		z-index: 1000;
+		z-index: 1040; /* above the z-1030 nav */
 		width: 350px;
 		display: flex;
 		flex-direction: column;
@@ -1017,7 +1018,7 @@
 		position: fixed;
 		right: 1rem;
 		bottom: 1rem;
-		z-index: 50;
+		z-index: 1040; /* floating layer: above the z-1030 nav, below modals */
 		width: min(340px, calc(100vw - 2rem));
 		max-height: 70vh;
 		overflow-y: auto;
@@ -1029,7 +1030,7 @@
 		position: fixed;
 		left: 1rem;
 		bottom: 1rem;
-		z-index: 55;
+		z-index: 1040; /* floating layer: above the z-1030 nav, below modals */
 		width: min(360px, calc(100vw - 2rem));
 		display: flex;
 		flex-direction: column;

@@ -25,9 +25,10 @@
 <style>
 	.toasts {
 		position: fixed;
-		top: 1rem;
+		/* Clear the 49px fixed room nav; lift above it (nav z-1030). */
+		top: 60px;
 		right: 1rem;
-		z-index: 80;
+		z-index: 1040;
 		display: flex;
 		flex-direction: column;
 		gap: 0.5rem;
