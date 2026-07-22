@@ -158,7 +158,7 @@ async fn login(
     // chars on every set path, so a longer password can never match anyway). Keeps
     // a giant-password login from turning verify into a CPU-DoS.
     if body.password.len() > 1024 {
-        return Err(AppError::Unauthorized);
+        return Err(AppError::InvalidCredentials);
     }
 
     let record = db::users::find_by_email(&state.db, &email).await?;
@@ -166,7 +166,7 @@ async fn login(
     // Always pay the Argon2 cost (CPU-bound, ~10-40ms): verify the real hash, or
     // hash a throwaway when the email is unknown / has no password. This keeps login
     // TIMING from revealing whether an account exists (a user-enumeration oracle);
-    // the error response is already uniform (Unauthorized either way).
+    // the error response is already uniform (InvalidCredentials either way).
     let password = body.password.clone();
     let ok = tokio::task::spawn_blocking(move || {
         if let Some(h) = stored_hash {
@@ -180,7 +180,7 @@ async fn login(
     .await
     .map_err(|e| AppError::Internal(anyhow::Error::new(e)))??;
     let Some(record) = record.filter(|_| ok) else {
-        return Err(AppError::Unauthorized);
+        return Err(AppError::InvalidCredentials);
     };
 
     let session_user = session_user(record.user);

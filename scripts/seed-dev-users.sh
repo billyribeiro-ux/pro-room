@@ -16,8 +16,8 @@
 # Env overrides: API_URL, PGHOST/PGPORT/PGUSER/PGDB/PGPASSWORD, SEED_PASSWORD, SEED_ROOM_SLUG
 set -euo pipefail
 
-API="${API_URL:-http://localhost:8081}"
-PASSWORD="${SEED_PASSWORD:-proom1234}"
+API="${API_URL:-http://localhost:8080}"
+PASSWORD="${SEED_PASSWORD:-admin1234}"
 ROOM_SLUG="${SEED_ROOM_SLUG:-dev-room}"
 psql_q() {
 	env PGPASSWORD="${PGPASSWORD:-proroom}" psql -h "${PGHOST:-localhost}" -p "${PGPORT:-5433}" \

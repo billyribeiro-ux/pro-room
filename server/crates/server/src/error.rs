@@ -17,6 +17,9 @@ pub enum AppError {
     BadRequest(String),
     #[error("unauthorized")]
     Unauthorized,
+    /// Login / credential failure (distinct message from missing-session 401s).
+    #[error("invalid credentials")]
+    InvalidCredentials,
     #[error("forbidden: {0}")]
     Forbidden(&'static str),
     #[error("not found")]
@@ -42,6 +45,11 @@ impl AppError {
                 StatusCode::UNAUTHORIZED,
                 "unauthorized",
                 "authentication required".into(),
+            ),
+            Self::InvalidCredentials => (
+                StatusCode::UNAUTHORIZED,
+                "invalid_credentials",
+                "invalid email or password".into(),
             ),
             Self::Forbidden(m) => (StatusCode::FORBIDDEN, "forbidden", (*m).to_owned()),
             Self::NotFound => (StatusCode::NOT_FOUND, "not_found", "not found".into()),
