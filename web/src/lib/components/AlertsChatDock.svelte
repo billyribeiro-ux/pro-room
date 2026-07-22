@@ -27,7 +27,6 @@
 		onDeleteMessage?: (id: string) => void;
 		canPostAlert: boolean;
 		canPostMessage: boolean;
-		onPostAlert: (symbol: string, side: string, note: string) => Promise<void>;
 		onPostMessage: (body: string) => Promise<void>;
 		/** Post into the off-topic channel (used by the extra column). */
 		onPostOffTopic?: (body: string) => Promise<void>;
@@ -51,7 +50,6 @@
 		onDeleteMessage,
 		canPostAlert,
 		canPostMessage,
-		onPostAlert,
 		onPostMessage,
 		onPostOffTopic,
 		onChannel,
@@ -60,10 +58,14 @@
 
 	// The column's WIDTH is now owned by the outer <Split> gutter in the room
 	// shell; the dock just fills its pane. Only the internal alerts/chat split
-	// fraction lives here.
-	const MIN_FRACTION = 0.15;
-	const MAX_FRACTION = 0.85;
+	// fraction lives here. Reference inner as-split declares minsize="0"
+	// (report.md:162) — either pane may collapse fully; double-click restores.
+	const MIN_FRACTION = 0;
+	const MAX_FRACTION = 1;
 	const FRACTION_KEY = 'acdock.fraction';
+	// Captured alert-box height 900.305px of the 1117px column = 0.806
+	// (report.md:175,1217).
+	const DEFAULT_FRACTION = 0.806;
 
 	function loadNumber(key: string, fallback: number): number {
 		if (typeof window === 'undefined') return fallback;
@@ -78,8 +80,10 @@
 	}
 
 	// Reference dock is alerts-dominant: the alert-chat-box vertical split puts the
-	// alerts pane at ~0.814 of the column height (capture), not an even 50/50.
-	let alertsFraction = $state(clamp(loadNumber(FRACTION_KEY, 0.814), MIN_FRACTION, MAX_FRACTION));
+	// alerts pane at 0.806 of the column height (capture), not an even 50/50.
+	let alertsFraction = $state(
+		clamp(loadNumber(FRACTION_KEY, DEFAULT_FRACTION), MIN_FRACTION, MAX_FRACTION)
+	);
 	let dragging = $state(false);
 
 	let columnEl: HTMLDivElement | null = null;
@@ -125,7 +129,20 @@
 	onDestroy(() => cleanupDrag?.());
 
 	function resetHeight() {
-		alertsFraction = 0.814;
+		alertsFraction = DEFAULT_FRACTION;
+	}
+
+	// Keyboard resize parity with the outer <Split> gutter — the reference
+	// gutter is tabindex="0" and arrow-operable (report.md:237, inferred from
+	// the horizontal gutter at report.md:151-156).
+	function onGutterKeydown(event: KeyboardEvent) {
+		const step = 0.02;
+		let next: number;
+		if (event.key === 'ArrowUp') next = alertsFraction - step;
+		else if (event.key === 'ArrowDown') next = alertsFraction + step;
+		else return;
+		event.preventDefault();
+		alertsFraction = clamp(next, MIN_FRACTION, MAX_FRACTION);
 	}
 </script>
 
@@ -140,18 +157,27 @@
 			{canManage}
 			onDelete={onDeleteAlert}
 			canPost={canPostAlert}
-			onPost={onPostAlert}
 			{onCreatePoll}
 		/>
 	</div>
 
+	<!-- Reference row-resize gutter: role=separator, aria-orientation="vertical",
+	     tabindex=0 (report.md:176,237). -->
+	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div
 		class="hsplit"
 		role="separator"
-		aria-orientation="horizontal"
+		tabindex="0"
+		aria-orientation="vertical"
+		aria-valuemin={MIN_FRACTION * 100}
+		aria-valuemax={MAX_FRACTION * 100}
+		aria-valuenow={Math.round(alertsFraction * 100)}
+		aria-valuetext="{Math.round(alertsFraction * 100)} percent"
 		aria-label="Resize alerts and chat"
 		onpointerdown={startHeightDrag}
 		ondblclick={resetHeight}
+		onkeydown={onGutterKeydown}
 	>
 		<span class="hgrab" aria-hidden="true"></span>
 	</div>
@@ -207,10 +233,12 @@
 		   ~0. minmax(0, 1fr) pins it to the dock width while still letting the inner
 		   flex columns split. Single-column layout is unchanged (still full width). */
 		grid-template-columns: minmax(0, 1fr);
+		/* minmax(0,…) — reference minsize="0" lets either pane collapse fully
+		   (report.md:162). */
 		grid-template-rows:
-			minmax(80px, calc(var(--alerts-fr, 0.5) * 100%))
+			minmax(0, calc(var(--alerts-fr, 0.5) * 100%))
 			auto
-			minmax(80px, 1fr);
+			minmax(0, 1fr);
 		width: 100%;
 		height: 100%;
 		min-height: 0;
@@ -260,9 +288,9 @@
 		align-items: center;
 		justify-content: center;
 		cursor: row-resize;
-		/* Reference as-split-gutter is the dark split gutter (--split-gutter-bg #000), same as the
-		   outer <Split> gutter — a solid blue bar, not a grey divider. */
-		background: var(--bg);
+		/* Reference: the vertical gutter mirrors the horizontal one — brand blue
+		   rgb(10,109,177) (report.md:150,179). */
+		background: var(--split-gutter-bg, #0a6db1);
 		touch-action: none;
 		user-select: none;
 	}

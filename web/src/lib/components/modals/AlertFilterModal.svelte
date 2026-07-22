@@ -28,6 +28,8 @@
 	<!-- Reference .form-check: toggles allow-list vs block-list and re-applies live. -->
 	<label class="check">
 		<input
+			id="show-alerts-from"
+			name="show-alerts-from"
 			type="checkbox"
 			checked={alertFilter.showAlertsFrom}
 			onchange={(e) => setShowAlertsFrom(e.currentTarget.checked)}

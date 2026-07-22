@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import { fade } from 'svelte/transition';
 	import Icon from './Icon.svelte';
 
 	interface Props {
@@ -8,13 +9,25 @@
 		onClose: () => void;
 		children?: Snippet;
 		footer?: Snippet;
-		/** Bootstrap dialog size: md (default ~440px), lg (~800px), xl (~1140px). */
+		/** Bootstrap dialog size: md (default ~500px), lg (~800px), xl (~1140px). */
 		size?: 'md' | 'lg' | 'xl';
+		/** Centered footer (reference `modal-footer text-center` on the Settings /
+		 * WebRTC / Offline shells — report.md:1686). */
+		footerCenter?: boolean;
 		/** Custom header content rendered in place of the plain title (e.g. an
 		 * identity block). `title` is still used as the dialog's aria-label. */
 		header?: Snippet;
 	}
-	let { open, title, onClose, children, footer, size = 'md', header }: Props = $props();
+	let {
+		open,
+		title,
+		onClose,
+		children,
+		footer,
+		size = 'md',
+		footerCenter = false,
+		header
+	}: Props = $props();
 
 	const titleId = $props.id();
 	let panel = $state<HTMLDivElement | null>(null);
@@ -60,7 +73,7 @@
 
 {#if open}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="backdrop" onclick={onClose} onkeydown={onKeydown}>
+	<div class="backdrop" transition:fade={{ duration: 150 }} onclick={onClose} onkeydown={onKeydown}>
 		<div
 			class="panel"
 			class:lg={size === 'lg'}
@@ -96,7 +109,7 @@
 			</div>
 
 			{#if footer}
-				<footer class="foot">
+				<footer class="foot" class:center={footerCenter}>
 					{@render footer()}
 				</footer>
 			{/if}
@@ -108,7 +121,8 @@
 	.backdrop {
 		position: fixed;
 		inset: 0;
-		z-index: 1050;
+		/* Reference stacking: backdrop 1054, modal 1055 (report.md:1569). */
+		z-index: 1054;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -117,31 +131,34 @@
 	}
 	.panel {
 		width: 100%;
-		max-width: 440px;
+		/* Reference default modal-dialog is ~500px (report.md:1676). */
+		max-width: 500px;
 		max-height: calc(100vh - 2rem);
 		display: flex;
 		flex-direction: column;
-		/* Reference modals are a NAVY surface (the room palette: #103d5c bg/border,
-		   soft near-white #f4f4f4 text, #45a2ff active accent) — independent of the
-		   light/dark message-panel theme. Driven by the --modal-* tokens (layout.css).
-		   Custom props inherit through the DOM, so re-mapping the room theme tokens
-		   HERE re-themes every modal's inner content (cards/inputs/borders/accents)
-		   to the navy modal palette in one place — no per-modal edits. */
+		z-index: 1055;
+		/* Modal chrome is Bootstrap "Darkly" gray per the spec's verified
+		   correction block (report.md:1526-1540): #303030 content, #444 borders —
+		   independent of the navy room chrome. Driven by the --modal-* tokens
+		   (layout.css). Custom props inherit through the DOM, so re-mapping the
+		   room theme tokens HERE re-themes every modal's inner content in one
+		   place — no per-modal edits. */
 		--bg-elev: var(--modal-input-bg);
 		--bg-elev-2: var(--modal-bg);
 		--border: var(--modal-border);
 		--accent: var(--modal-active-tab);
-		/* Accent hover is the darker room link-blue (active accent is #45a2ff). */
 		--accent-hover: var(--accent);
 		--positive: var(--modal-success);
 		--text: var(--modal-color);
 		--text-dim: #b8c9d8;
 		background: var(--modal-bg);
 		border: 1px solid var(--modal-border);
-		/* Reference .modal-content radius is 0.3rem (the dominant radius token), not 8px. */
-		border-radius: 0.3rem;
+		/* Reference .modal-content radius: 6px — the dominant radius token, 245
+		   uses (report.md:1573). */
+		border-radius: 6px;
 		color: var(--modal-color);
-		box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5);
+		/* The single painting shadow in the reference palette (report.md:1574). */
+		box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.5);
 		outline: none;
 	}
 	/* Bootstrap modal-lg / modal-xl widths. */
@@ -165,11 +182,13 @@
 		font-weight: 700;
 	}
 	.close {
+		/* Reference header close is the borderless white ✕
+		   (button.btn-close.btn-close-white, report.md:1560). */
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
 		background: transparent;
-		border: 1px solid var(--modal-border);
+		border: none;
 		color: var(--modal-color);
 		border-radius: var(--radius);
 		padding: 0.3rem;
@@ -194,5 +213,9 @@
 		gap: 0.5rem;
 		padding: 1rem;
 		border-top: 1px solid var(--modal-border);
+	}
+	/* Reference `modal-footer text-center` variant (report.md:1686). */
+	.foot.center {
+		justify-content: center;
 	}
 </style>

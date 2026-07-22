@@ -85,7 +85,9 @@
 				<button type="button" class="dev-btn" onclick={devLogin} disabled={busy}>
 					{busy ? 'Signing in…' : 'Fill & sign in as demo admin'}
 				</button>
-				<p class="dev-hint">API base: {API_URL === '' ? '(same-origin /api via Vite proxy)' : API_URL}</p>
+				<p class="dev-hint">
+					API base: {API_URL === '' ? '(same-origin /api via Vite proxy)' : API_URL}
+				</p>
 			</div>
 		{/if}
 

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import { resolve } from '$app/paths';
 	import Icon from './Icon.svelte';
 	import { brand } from '$lib/stores/brand.svelte';
 	import { dnd, setDnd } from '$lib/stores/dnd.svelte';
@@ -97,39 +98,36 @@
 	<button
 		class="icon-btn mobile-btn"
 		onclick={onMobileInfo}
-		aria-label="Launch in mobile app"
-		title="Launch in mobile app"
+		aria-label="Launch in Mobile App"
+		title="Launch in Mobile App"
 	>
 		<Icon name="mobile" size={16} />
 	</button>
 
-	<span class="brand">
-		<img class="brand-logo" src={brand.logo} alt={brand.name} width="32" height="32" />
+	<!-- Reference a.navbar-brand.ml-1.mr-auto (report.md:297,346): a block anchor,
+	     padding 5px 0, margin-left 4px, margin-right:auto — the mr-auto is what
+	     pins everything after it to the right edge (no spacer element). -->
+	<a class="brand" href={resolve('/rooms')}>
+		<img class="brand-logo" src={brand.logo} alt={brand.name} width="40" height="40" />
 		<span class="room-name">{roomName}</span>
-	</span>
+	</a>
 
-	<!-- Reference: navbar-brand carries mr-auto and the action group is
-	     ul.navbar-nav.ml-auto, so everything actionable is pinned RIGHT. The
-	     spacer reproduces mr-auto; the right cluster order matches the verified
-	     viewer capture: talking indicator → presenter controls (*ngIf
-	     placeholders) → [ REC ] → volume (dropstart) → reload. -->
-	<span class="spacer"></span>
-
-	<!-- Reference li.talkingIndicator > a.talking (verified live DOM):
-	     fa-microphone + the bare speaker name + the animated talkingWaveform, in
-	     that order — and the whole indicator is *ngIf'd (ng-star-inserted), i.e. it
-	     renders ONLY while someone is speaking (no "( No one is speaking )" idle
-	     text). Our waveform is an asset-free inline SVG equalizer standing in for
-	     the reference's /assets/images/talking.gif. -->
+	<!-- Reference li.talkingIndicator: while idle it renders the literal
+	     "( No one is speaking )" (captured at rect 1713,4,167,41 in the presenter
+	     capture; odds-room-shell.md:114-116). While someone talks: fa-microphone +
+	     speaker name + the animated talkingWaveform. Our waveform is an
+	     asset-free inline equalizer standing in for /assets/images/talking.gif. -->
 	{#if speaker}
 		<span class="talking">
-			<Icon name="microphone" size={14} />
+			<Icon name="microphone" size={16} />
 			<span class="talking-string">{speaker}</span>
 			<span class="talking-wave" aria-hidden="true">
 				<span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"
 				></span>
 			</span>
 		</span>
+	{:else}
+		<span class="talking idle">( No one is speaking )</span>
 	{/if}
 
 	<!-- Presenter broadcast controls. In the reference these are the 14 *ngIf
@@ -153,14 +151,16 @@
 			title="Volume settings"
 		>
 			{#if muted}
-				<Icon name="volume-mute" size={15} class="nav-muted-icon" />
+				<Icon name="volume-mute" size={32} class="nav-muted-icon" />
 			{:else}
-				<Icon name="volume-up" size={15} class="nav-muted-icon" />
+				<Icon name="volume-up" size={32} class="nav-muted-icon" />
 			{/if}
 		</button>
 
 		{#if volumeOpen}
 			<div class="volume-panel">
+				<!-- Captured open volumeControl: h4 "Volume" at 24px with a float-right
+				     24px fa-times close (proroom-full-presenter.json states["dropdown:3"]). -->
 				<h4 class="panel-title">
 					Volume
 					<button
@@ -169,7 +169,7 @@
 						aria-label="Close volume settings"
 						title="Close"
 					>
-						<Icon name="times" size={16} />
+						<Icon name="times" size={24} />
 					</button>
 				</h4>
 
@@ -192,11 +192,14 @@
 
 				<hr class="divider" />
 
+				<!-- Row set, input names, and label text captured verbatim from the open
+				     dropdown (fragment-pages/navbars-room.html.html;
+				     components-settings.md:201-223). -->
 				<div class="sound-options">
 					<label>
 						<input
-							id="snd-alert"
-							name="alertSound"
+							id="alert-donot-disturb"
+							name="alert-donot-disturb"
 							type="checkbox"
 							checked={!dnd.alert}
 							onchange={(e) => setDnd('alert', !e.currentTarget.checked)}
@@ -205,8 +208,8 @@
 					</label>
 					<label>
 						<input
-							id="snd-qa"
-							name="qaSound"
+							id="qa-donot-disturb"
+							name="qa-donot-disturb"
 							type="checkbox"
 							checked={!dnd.qa}
 							onchange={(e) => setDnd('qa', !e.currentTarget.checked)}
@@ -215,8 +218,8 @@
 					</label>
 					<label>
 						<input
-							id="snd-nta"
-							name="ntaSound"
+							id="non-trade-donot-disturb"
+							name="non-trade-donot-disturb"
 							type="checkbox"
 							checked={!dnd.nonTradeAlert}
 							onchange={(e) => setDnd('nonTradeAlert', !e.currentTarget.checked)}
@@ -225,8 +228,8 @@
 					</label>
 					<label>
 						<input
-							id="snd-chat"
-							name="chatSound"
+							id="chat-donot-disturb"
+							name="chat-donot-disturb"
 							type="checkbox"
 							checked={!dnd.chat}
 							onchange={(e) => setDnd('chat', !e.currentTarget.checked)}
@@ -235,20 +238,20 @@
 					</label>
 					<label title="Show Speech Recognition Overlay">
 						<input
-							id="snd-subtitles"
-							name="subtitles"
+							id="presentation-subtitles"
+							name="presentation-subtitles"
 							type="checkbox"
 							checked={prefs.captionsOverlay}
 							onchange={(e) => setPref('captionsOverlay', e.currentTarget.checked)}
 							aria-label="Show Speech Recognition Overlay"
 						/>
-						<Icon name="closed-captioning" size={14} />
+						<Icon name="closed-captioning" size={16} />
 						Subtitles <span class="status">{prefs.captionsOverlay ? 'on' : 'off'}</span>
 					</label>
 					<label>
 						<input
-							id="snd-dnd"
-							name="dontDisturb"
+							id="app-donot-disturb"
+							name="app-donot-disturb"
 							type="checkbox"
 							checked={dnd.app}
 							onchange={(e) => setDnd('app', e.currentTarget.checked)}
@@ -261,7 +264,7 @@
 	</div>
 
 	<button class="icon-btn nav-link-btn" onclick={onReload} aria-label="Reload" title="Reload">
-		<Icon name="sync" size={15} class="nav-muted-icon" />
+		<Icon name="sync" size={32} class="nav-muted-icon" />
 	</button>
 </nav>
 
@@ -272,7 +275,8 @@
 		left: 0;
 		right: 0;
 		height: 49px;
-		z-index: 40;
+		/* Reference nav.fixed-top computes z-index 1030 (report.md:105,327). */
+		z-index: 1030;
 		display: flex;
 		align-items: center;
 		/* Reference mainAppNav: padding 0 on all sides; horizontal spacing comes
@@ -280,10 +284,9 @@
 		   not a nav gap. */
 		gap: 0;
 		padding: 0;
-		/* Reference mainAppNav: --navbar-bg is the darkest navy (#0c2434 = --bg),
-		   not the elevated surface, and it carries NO bottom border
-		   (border-bottom-width: 0). font: Open Sans 300, 16px / 24px. */
-		background: var(--bg);
+		/* Reference mainAppNav computes rgb(12,36,52) = #0c2434 (--navbar-bg,
+		   report.md:105,330) with NO bottom border. font: Open Sans 300, 16px/24px. */
+		background: var(--navbar-bg, #0c2434);
 		color: var(--text);
 		font-size: 16px;
 		font-weight: 300;
@@ -304,13 +307,20 @@
 		line-height: 0;
 	}
 	/* Bars / sidebar toggle = reference span.sidebar-menu: 1px 5px padding,
-	   0 5px margin, --sidebar-menu-bg (#103d5c = --bg-elev-2), 1px transparent
-	   border, white glyph. */
+	   0 5px margin, --sidebar-menu-bg #103d5c (report.md:341,2212), 1px
+	   transparent border, white 18px glyph on an 18px/27px line box so the pill
+	   measures 28x31 (report.md:2203-2204). */
 	.menu-btn {
-		background: var(--bg-elev-2);
+		background: var(--sidebar-menu-bg, #103d5c);
 		border: 1px solid transparent;
 		padding: 1px 5px;
 		margin: 0 5px;
+		line-height: 27px;
+	}
+	/* Reference .sidebar-menu:hover recolors to #eee (report.md:2211); the
+	   mobile button's only hover change is cursor:pointer (report.md:2242). */
+	.menu-btn:hover:not(:disabled) {
+		color: #eee;
 	}
 	/* Volume + reload = reference a.nav-link wrappers: 8px padding, 0 5px margin,
 	   no background. */
@@ -323,12 +333,6 @@
 	.mobile-btn {
 		padding: 0;
 		margin: 0 4px 0 0;
-	}
-	/* Bars / users / mobile icon-links dim on hover. Volume + reload nav-links
-	   instead recolor to #45a2ff (rule below) — a pure color change with no
-	   opacity dim, matching the reference nav-link:hover. */
-	.icon-btn:not(.nav-link-btn):hover:not(:disabled) {
-		opacity: 0.8;
 	}
 	.icon-btn:disabled {
 		opacity: 0.5;
@@ -364,8 +368,11 @@
 		line-height: 21px;
 		font-weight: 300;
 		padding: 1px 5px;
-		margin: 0 5px;
+		/* Reference span.users margin is 0 4px (ml-1/mr-1, report.md:343,2222). */
+		margin: 0 4px;
 		border: 1px solid #fff;
+		/* Reference users pill carries cursor:pointer (report.md:406). */
+		cursor: pointer;
 	}
 	.count {
 		/* Reference count text inherits the .users weight (300), not bold. */
@@ -373,17 +380,26 @@
 		color: var(--text);
 	}
 	.brand {
-		/* Reference brand slot is an <img class="brand-logo"> (200x18, line-height
-		   30px). We now render the configurable BRAND logo (see $lib/brand) followed
-		   by the room name in the reference's Open Sans light, 20px, weight 300. */
+		/* Reference a.navbar-brand: padding 5px 0, margin-left 4px,
+		   margin-right:auto pushes the right cluster to the edge
+		   (report.md:346,349). Brand renders the configurable logo (see
+		   $lib/brand) + the room name in Open Sans light 20px/300. */
 		display: inline-flex;
 		align-items: center;
 		gap: 10px;
 		white-space: nowrap;
+		padding: 5px 0;
+		margin-left: 4px;
+		margin-right: auto;
+		color: inherit;
+		text-decoration: none;
 	}
 	.brand-logo {
-		/* Scale any drop-in logo to the navbar height; width follows the asset. */
-		height: 32px;
+		/* Reference img.brand-logo constraints: max-width 200px, max-height 40px,
+		   height auto (report.md:347,2276). Width follows the asset's aspect. */
+		max-width: 200px;
+		max-height: 40px;
+		height: auto;
 		width: auto;
 		display: block;
 		flex: 0 0 auto;
@@ -394,30 +410,31 @@
 		line-height: 30px;
 	}
 	.talking {
-		/* Reference a inside li.talkingIndicator: pure white (#fff = --text,
-		   --presenter-noRecording-color), 12px (.talkingIndicator a font-size:12px),
-		   line-height 41px, margin 0 5px, display:inline-flex align-items:center (so
-		   the mic glyph + waveform sit on the text baseline). max-width 400px, ellipsis. */
+		/* Reference a.talking: white, 16px/300, line-height 41px, margin 0 5px,
+		   inline-flex centered, cursor:pointer (report.md:368,413); container
+		   max-width 400px. */
 		display: inline-flex;
 		align-items: center;
 		max-width: 400px;
 		max-height: 47px;
 		color: var(--text);
-		font-size: 12px;
+		font-size: 16px;
 		line-height: 41px;
 		margin: 0 5px;
 		white-space: nowrap;
-		text-overflow: ellipsis;
+		cursor: pointer;
 		animation: fade-in 0.25s ease;
 	}
 	/* Reference .talkingIndicator .talking-string: 14px, margin 0 5px,
-	   max-width 250px, nowrap, overflow auto/hidden. */
+	   max-width 250px, nowrap — hidden overflow + ellipsis on the SAME element
+	   so long speaker names truncate (report.md:370,417). */
 	.talking-string {
 		font-size: 14px;
 		margin: 0 5px;
 		max-width: 250px;
 		white-space: nowrap;
 		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 	/* Active-speaker animated equalizer (reference .talkingWaveform, max 30x25px).
 	   4 white bars pulsing on a stagger — an inline, asset-free waveform. */
@@ -425,8 +442,11 @@
 		display: inline-flex;
 		align-items: flex-end;
 		gap: 2px;
+		/* Reference img#talkingLevelsImg renders ~22x25 with max-width:30px
+		   (report.md:372). */
 		width: 22px;
-		height: 16px;
+		height: 25px;
+		max-width: 30px;
 		margin: 0 2px;
 	}
 	.talking-wave .bar {
@@ -468,11 +488,28 @@
 	.rec-indicator {
 		display: inline-block;
 		max-width: 117px;
-		color: var(--accent);
+		/* Measured rgb(69,162,255) = #45a2ff, --presenter-recording-color
+		   (report.md:373,388). Reference recording state blinks (.blinking-rec,
+		   1s step-start — presenter capture stylesheet @690807). */
+		color: #45a2ff;
 		line-height: 41px;
 		margin: 0 5px;
 		white-space: nowrap;
-		animation: fade-in 0.25s ease;
+		cursor: pointer;
+		animation: rec-blink 1s step-start infinite;
+	}
+	@keyframes rec-blink {
+		50% {
+			opacity: 0;
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.rec-indicator {
+			animation: fade-in 0.25s ease;
+		}
+	}
+	.talking.idle {
+		cursor: default;
 	}
 	@keyframes fade-in {
 		from {
@@ -481,9 +518,6 @@
 		to {
 			opacity: 1;
 		}
-	}
-	.spacer {
-		flex: 1;
 	}
 	/* Presenter broadcast controls live inline in the nav (Share screen / Camera /
 	   Mic / CC / Music / New poll / Record / Go live / Members). The buttons are
@@ -527,27 +561,29 @@
 		position: relative;
 	}
 	/* Reference div.dropdown-menu.volumeControl: text-align:center; color
-	   --light-gray; background --darker-black (#111); border 1px solid
-	   rgb(250,250,250). dropstart => opens to the LEFT of the toggle, so the
-	   panel is pinned to the toggle's right edge and grows leftward. */
+	   #ccc (--light-gray, report.md:2319); background --darker-black (#111);
+	   border 1px solid rgb(250,250,250); radius 6px; padding 8px 0; z-index 1000
+	   (report.md:1803-1809). dropstart ⇒ opens to the LEFT of the toggle
+	   (report.md:429). */
 	.volume-panel {
 		position: absolute;
-		top: calc(100% + 0.4rem);
-		right: 0;
-		width: 220px;
+		top: 0;
+		right: calc(100% + 2px);
+		/* Captured open panel rect: 160x334, right edge at the toggle's left
+		   (proroom-full-presenter.json states["dropdown:3"]: 1718,1,160,334). */
+		width: 160px;
 		text-align: center;
 		background: #111;
 		border: 1px solid rgb(250, 250, 250);
-		/* Reference dropdown-menu border-radius .25rem ≈ 4px. */
-		border-radius: 4px;
-		padding: 0.7rem;
-		color: #abb0b5;
-		z-index: 41;
+		border-radius: 6px;
+		padding: 8px 0;
+		color: #ccc;
+		z-index: 1000;
 	}
-	/* Reference header is an <h4>Volume with a float-right fa-times close. */
+	/* Captured h4 "Volume" renders at 24px with the float-right 24px close. */
 	.panel-title {
 		margin: 0 0 0.5rem;
-		font-size: 1.1rem;
+		font-size: 24px;
 		font-weight: 500;
 		color: #fff;
 		text-align: center;
@@ -568,14 +604,12 @@
 	.panel-close:hover {
 		color: #fff;
 	}
-	/* Reference input.volCtrl range slider: 129x32px, then a <br>. (We keep our
-	   accent-color slider styling — the reference's #111 track is a color and
-	   intentionally NOT adopted here.) */
+	/* Captured input.volCtrl: 129x32, thumb/progress #0d6efd (--bs-primary). */
 	.vol-ctrl {
 		width: 129px;
 		height: 32px;
 		margin: 0.3rem 0 0.6rem;
-		accent-color: var(--accent);
+		accent-color: #0d6efd;
 	}
 	.vol-ctrl:disabled {
 		opacity: 0.5;
@@ -600,11 +634,11 @@
 		background: var(--negative);
 		border-color: var(--negative);
 	}
-	/* Reference <hr> + div.dropdown-divider separating the slider/mute from the
-	   sound options. */
+	/* Reference div.dropdown-divider: --dropdown-divider-bg #45a2ff
+	   (report.md:1810). */
 	.divider {
 		border: none;
-		border-top: 1px solid rgba(250, 250, 250, 0.3);
+		border-top: 1px solid #45a2ff;
 		margin: 0.6rem 0;
 		width: 100%;
 	}
@@ -621,8 +655,9 @@
 		display: flex;
 		align-items: center;
 		gap: 0.45rem;
-		font-size: 0.875rem;
-		color: #abb0b5;
+		/* Reference sound rows: 16px, #ccc (report.md:1819-1820). */
+		font-size: 16px;
+		color: #ccc;
 		cursor: pointer;
 	}
 	.sound-options label:hover {
@@ -634,6 +669,6 @@
 	.sound-options .status {
 		margin-left: auto;
 		font-size: 0.75rem;
-		color: #abb0b5;
+		color: #ccc;
 	}
 </style>

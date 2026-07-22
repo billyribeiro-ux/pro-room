@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
 	import Icon from './Icon.svelte';
+	import Modal from './Modal.svelte';
 
 	interface Props {
 		/** Whether the realtime socket is currently connected. */
@@ -11,8 +12,16 @@
 
 	let { connected, reconnecting = false }: Props = $props();
 
-	/** True while the persistent "down" banner should be shown. */
+	/** True while the connection is down. */
 	let down = $derived(!connected || reconnecting);
+
+	// The reference surfaces connection loss as the "Offline" MODAL (default
+	// ~500px dialog, header title, `modal-footer text-center` Close btn-secondary
+	// — report.md:1676,1696). Close dismisses until the next drop.
+	let dismissed = $state(false);
+	$effect(() => {
+		if (!down) dismissed = false;
+	});
 
 	/** Briefly true after a down -> up transition, to flash the "Connected" toast. */
 	let showConnected = $state(false);
@@ -41,14 +50,18 @@
 	});
 </script>
 
+<Modal open={down && !dismissed} title="Offline" onClose={() => (dismissed = true)} footerCenter>
+	<p class="offline-body">
+		<span class="spin"><Icon name="circle-notch" /></span>
+		Connection lost — reconnecting…
+	</p>
+	{#snippet footer()}
+		<button class="close-btn" type="button" onclick={() => (dismissed = true)}>Close</button>
+	{/snippet}
+</Modal>
+
 <div class="overlay" aria-live="polite">
-	{#if down}
-		<div class="banner down" role="status" transition:fade={{ duration: 150 }}>
-			<span class="spin"><Icon name="circle-notch" /></span>
-			<Icon name="exclamation-triangle" />
-			<span class="label">Reconnecting…</span>
-		</div>
-	{:else if showConnected}
+	{#if showConnected}
 		<div class="banner up" role="status" transition:fade={{ duration: 200 }}>
 			<Icon name="check-circle" />
 			<span class="label">Connected</span>
@@ -82,10 +95,25 @@
 		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 	}
 
-	.banner.down {
-		background: var(--bg-elev-2);
-		border: 1px solid var(--warn, #f0b90b);
-		color: var(--warn, #f0b90b);
+	.offline-body {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin: 0;
+	}
+	/* Reference Offline footer Close is btn-secondary (report.md:1696). */
+	.close-btn {
+		background: #444;
+		border: 1px solid #444;
+		color: #fff;
+		border-radius: var(--radius, 6px);
+		padding: 0.5rem 0.9rem;
+		font-weight: 600;
+		font-size: 0.85rem;
+		cursor: pointer;
+	}
+	.close-btn:hover {
+		opacity: 0.9;
 	}
 
 	.banner.up {

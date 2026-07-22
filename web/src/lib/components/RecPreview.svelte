@@ -8,8 +8,11 @@
 		open: boolean;
 		roomId: string;
 		onClose: () => void;
+		/** Lifted recording flag — drives the top-nav [ REC ] indicator
+		    (reference li.recIndicator, report.md:1957). */
+		onRecordingChange?: (recording: boolean) => void;
 	}
-	let { open, roomId, onClose }: Props = $props();
+	let { open, roomId, onClose, onRecordingChange }: Props = $props();
 
 	// Client-side screen recording (v1): captures the presenter's screen via
 	// getDisplayMedia → MediaRecorder. On stop you can DOWNLOAD the .webm to your
@@ -44,6 +47,7 @@
 		stream?.getTracks().forEach((t) => t.stop());
 		stream = null;
 		recorder = null;
+		if (recording) onRecordingChange?.(false);
 		recording = false;
 	}
 
@@ -65,6 +69,7 @@
 			};
 			recorder.start(1000);
 			recording = true;
+			onRecordingChange?.(true);
 			// Recording-start cue (reference recordingStartSound), gated by the
 			// Settings "Start recording sound" preference inside playSound.
 			playSound('recordStart');
@@ -155,9 +160,11 @@
 {#if open}
 	<aside class="rec" class:expanded aria-label="Recording preview">
 		<header class="head">
+			<!-- Reference chrome text + controls: "Recording Preview. (DELAYED UPTO
+			     20s)" with fa-expand / fa-times (components-media-misc.md:70-105). -->
 			<span class="title">
 				<span class="dot" class:live={recording}></span>
-				Recording Preview <small>(delayed up to 20s)</small>
+				Recording Preview. <small>(DELAYED UPTO 20s)</small>
 			</span>
 			<div class="actions">
 				<button
@@ -166,8 +173,8 @@
 					onclick={() => (expanded = !expanded)}
 					aria-label={expanded ? 'Shrink' : 'Expand'}
 				>
-					{#if expanded}<Icon name="window-minimize" size={14} />{:else}<Icon
-							name="window-maximize"
+					{#if expanded}<Icon name="compress" size={14} />{:else}<Icon
+							name="expand"
 							size={14}
 						/>{/if}
 				</button>

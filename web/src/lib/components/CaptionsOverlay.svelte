@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
+	import { setPref } from '$lib/stores/prefs.svelte';
 	import Icon from './Icon.svelte';
 
 	interface Props {
@@ -26,6 +27,25 @@
 	// presenter also sees their own interim immediately.
 	const shownText = $derived((text ?? interimText).trim());
 	const shownSpeaker = $derived(text ? speaker : undefined);
+
+	// ── History mode (reference .speech-reco-overlay: scrollback with per-line
+	// timestamps + hover-revealed close/history round buttons —
+	// file-1-part-D.md:141-156). ────────────────────────────────────────────────
+	interface CaptionLine {
+		at: string;
+		speaker?: string;
+		text: string;
+	}
+	let history = $state<CaptionLine[]>([]);
+	let historyMode = $state(false);
+	let lastSeen = '';
+	$effect(() => {
+		const t = (text ?? '').trim();
+		if (!t || t === lastSeen) return;
+		lastSeen = t;
+		const at = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+		history = [...history, { at, speaker, text: t }].slice(-200);
+	});
 
 	// Minimal structural types for the Web Speech API (not in every TS DOM config).
 	type RecognitionResultEvent = {
@@ -118,46 +138,118 @@
 		<div class="cc-note" transition:fade={{ duration: 120 }}>
 			Captions not supported in this browser
 		</div>
-	{:else if shownText}
-		<!-- Reference caption bar: a full-width strip across the bottom of the stage,
-		     CC icon + bold speaker + the phrase. -->
+	{:else if shownText || (historyMode && history.length > 0)}
+		<!-- Reference .speech-reco-overlay: bottom strip on #000c with 22px white
+		     lines; hovering reveals 28px round white-border close + history buttons;
+		     history mode scrolls back with a 60px timestamp column
+		     (file-1-part-D.md:141-156). -->
 		<div class="cc-bar" role="status" aria-live="polite" transition:fade={{ duration: 120 }}>
-			<Icon name="closed-captioning" size={18} />
-			<p class="cc-text">
-				{#if shownSpeaker}<strong>{shownSpeaker}:</strong>
-				{/if}{shownText}
-			</p>
+			<div class="cc-tools">
+				<button
+					type="button"
+					class="cc-round"
+					aria-pressed={historyMode}
+					title={historyMode ? 'Live caption' : 'Caption history'}
+					aria-label="Caption history"
+					onclick={() => (historyMode = !historyMode)}
+				>
+					<Icon name="history" size={13} />
+				</button>
+				<button
+					type="button"
+					class="cc-round"
+					title="Close captions"
+					aria-label="Close captions"
+					onclick={() => setPref('captionsOverlay', false)}
+				>
+					<Icon name="times" size={13} />
+				</button>
+			</div>
+			{#if historyMode}
+				<ul class="cc-history">
+					{#each history as line, i (i)}
+						<li>
+							<span class="cc-time">{line.at}</span>
+							<span class="cc-line"
+								>{#if line.speaker}<strong>{line.speaker}:</strong>
+								{/if}{line.text}</span
+							>
+						</li>
+					{/each}
+				</ul>
+			{:else}
+				<div class="cc-live">
+					<Icon name="closed-captioning" size={18} />
+					<p class="cc-text">
+						{#if shownSpeaker}<strong>{shownSpeaker}:</strong>
+						{/if}{shownText}
+					</p>
+				</div>
+			{/if}
 		</div>
 	{/if}
 {/if}
 
 <style>
-	/* Reference: a full-width strip pinned to the bottom of the presentation area,
-	   left-aligned, over a translucent dark backdrop (kept our overlay colour). */
+	/* Reference .speech-reco-overlay: absolute bottom strip, bg #000c,
+	   z-index 9999, white 22px lines (file-1-part-D.md:141-156; presenter
+	   capture stylesheet @771222). */
 	.cc-bar {
 		position: absolute;
 		left: 0;
 		right: 0;
 		bottom: 0;
-		z-index: 20;
+		z-index: 9999;
 		display: flex;
-		align-items: flex-start;
-		gap: 0.5rem;
+		flex-direction: column;
+		gap: 0.25rem;
 		padding: 0.65rem 1.1rem;
-		background: rgba(0, 0, 0, 0.72);
-		pointer-events: none;
+		background: rgba(0, 0, 0, 0.8);
 	}
 	.cc-bar :global(i) {
 		color: #fff;
 		flex: 0 0 auto;
 		margin-top: 2px;
 	}
+	/* Hover-revealed round tool buttons: 28px, 1px solid #fff, circular. */
+	.cc-tools {
+		position: absolute;
+		top: -14px;
+		right: 10px;
+		display: flex;
+		gap: 6px;
+		opacity: 0;
+		transition: opacity 0.15s ease;
+	}
+	.cc-bar:hover .cc-tools,
+	.cc-bar:focus-within .cc-tools {
+		opacity: 1;
+	}
+	.cc-round {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 28px;
+		height: 28px;
+		border-radius: 50%;
+		border: 1px solid #fff;
+		background: rgba(0, 0, 0, 0.8);
+		color: #fff;
+		cursor: pointer;
+		padding: 0;
+	}
+	.cc-live {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.5rem;
+	}
 	.cc-text {
 		margin: 0;
 		color: #fff;
-		font-size: 1.25rem;
+		/* Reference caption lines are 22px (file-1-part-D.md:150). */
+		font-size: 22px;
 		font-weight: 400;
-		line-height: 1.4;
+		line-height: 1.3;
 		text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
 		/* Cap at ~3 lines of caption text. */
 		display: -webkit-box;
@@ -167,6 +259,33 @@
 		overflow: hidden;
 	}
 	.cc-text strong {
+		font-weight: 700;
+	}
+	.cc-history {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		max-height: 180px;
+		overflow-y: auto;
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+	.cc-history li {
+		display: flex;
+		align-items: baseline;
+		gap: 8px;
+		color: #fff;
+		font-size: 22px;
+		line-height: 1.3;
+	}
+	/* Reference per-line timestamp column is 60px (file-1-part-D.md:152). */
+	.cc-time {
+		flex: 0 0 60px;
+		font-size: 12px;
+		color: #ccc;
+	}
+	.cc-line strong {
 		font-weight: 700;
 	}
 	.cc-note {

@@ -104,34 +104,55 @@
 		event.preventDefault();
 		split = clamp(next);
 	}
+
+	// Reference gutter declares `gutterdblclickduration="400"` (report.md:236) —
+	// double-click snaps the split back to its seeded ratio, mirroring the
+	// dock's vertical-gutter double-click reset.
+	function onDblClick() {
+		split = clamp(initial);
+	}
+
+	// angular-split "as-percent" sizing: each area is `flex-basis:
+	// calc(<pct>% - <its share of the gutter>px)` with flex-shrink 0, so the
+	// single 11px gutter is deducted proportionally (report.md:117-121,126).
+	const GUTTER_PX = 11;
+	const basisA = $derived(`calc(${split}% - ${((split / 100) * GUTTER_PX).toFixed(3)}px)`);
+	const basisB = $derived(
+		`calc(${100 - split}% - ${(((100 - split) / 100) * GUTTER_PX).toFixed(3)}px)`
+	);
 </script>
 
 <div class="split" class:vertical={!isHorizontal} class:dragging bind:this={container}>
-	<div class="pane" style:flex-basis="{split}%">
+	<div class="pane" style:flex-basis={basisA}>
 		{@render a()}
 	</div>
 
 	<!-- A focusable, keyboard-operable resize separator: the ARIA `separator`
 	     role with aria-valuenow is the canonical pattern for a splitter, so the
-	     noninteractive-tabindex / element-interactions warnings are expected. -->
+	     noninteractive-tabindex / element-interactions warnings are expected.
+	     Reference: horizontal (col-resize) gutter reports
+	     aria-orientation="horizontal" (report.md:152); the row-resize one
+	     reports "vertical" (report.md:176). -->
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div
 		class="gutter"
 		role="separator"
 		tabindex="0"
-		aria-orientation={isHorizontal ? 'vertical' : 'horizontal'}
+		aria-orientation={isHorizontal ? 'horizontal' : 'vertical'}
 		aria-valuemin={clampMin}
 		aria-valuemax={100 - clampMin}
 		aria-valuenow={Math.round(split)}
+		aria-valuetext="{Math.round(split)} percent"
 		aria-label="Resize panes"
 		onpointerdown={onPointerDown}
 		onkeydown={onKeydown}
+		ondblclick={onDblClick}
 	>
 		<span class="grip" aria-hidden="true"></span>
 	</div>
 
-	<div class="pane" style:flex-basis="{100 - split}%">
+	<div class="pane" style:flex-basis={basisB}>
 		{@render b()}
 	</div>
 </div>
@@ -144,18 +165,22 @@
 		height: 100%;
 		min-width: 0;
 		min-height: 0;
+		/* Reference as-split host computes overflow hidden/hidden (report.md:107). */
+		overflow: hidden;
 	}
 	.split.vertical {
 		flex-direction: column;
 	}
 
 	.pane {
+		/* Reference `> .as-split-area { flex-grow:0; flex-shrink:0;
+		   overflow: hidden auto; }` (report.md:126). */
 		flex-grow: 0;
-		flex-shrink: 1;
+		flex-shrink: 0;
 		/* Allow children (scroll regions) to shrink below content size. */
 		min-width: 0;
 		min-height: 0;
-		overflow: hidden;
+		overflow: hidden auto;
 	}
 
 	.gutter {
@@ -164,8 +189,9 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		/* Reference as-split-gutter is the dark split gutter (--split-gutter-bg #000). */
-		background: var(--bg);
+		/* Reference as-split-gutter computes rgb(10,109,177) — the brand blue
+		   (report.md:150). */
+		background: var(--split-gutter-bg, #0a6db1);
 		/* Prevent the browser from hijacking the drag as a scroll/zoom gesture. */
 		touch-action: none;
 		user-select: none;

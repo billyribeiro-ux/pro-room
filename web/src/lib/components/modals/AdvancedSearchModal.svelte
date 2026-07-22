@@ -103,22 +103,22 @@
 		<div class="row">
 			<div class="checks">
 				<label class="check">
-					<input type="checkbox" bind:checked={nonTrade} />
+					<input id="non-trade" name="non-trade" type="checkbox" bind:checked={nonTrade} />
 					Non Trade Alert
 				</label>
 				<label class="check">
-					<input type="checkbox" bind:checked={archives} />
+					<input id="archives" name="archives" type="checkbox" bind:checked={archives} />
 					Also search archives?
 				</label>
 			</div>
 			<div class="dates">
 				<label class="date">
 					<span>Start Date:</span>
-					<input type="datetime-local" bind:value={startDate} />
+					<input id="start-date" name="start-date" type="datetime-local" bind:value={startDate} />
 				</label>
 				<label class="date">
 					<span>End Date:</span>
-					<input type="datetime-local" bind:value={endDate} />
+					<input id="end-date" name="end-date" type="datetime-local" bind:value={endDate} />
 				</label>
 			</div>
 		</div>

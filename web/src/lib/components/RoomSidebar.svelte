@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PresentUser } from '$lib/types';
 	import type { ScreenShareRoom } from '$lib/livekit.svelte';
+	import { resolve } from '$app/paths';
 	import Icon from './Icon.svelte';
 	import MobileAppInfoModal from './modals/MobileAppInfoModal.svelte';
 	import ConnectivityCheckModal from './modals/ConnectivityCheckModal.svelte';
@@ -25,7 +26,6 @@
 		open: boolean;
 		present: PresentUser[];
 		canManage?: boolean;
-		onClose?: () => void;
 		roomId: string;
 		/** Live LiveKit room — lets AV Settings apply device changes to the call. */
 		screen?: ScreenShareRoom;
@@ -33,16 +33,25 @@
 		onPlayMedia?: (kind: 'youtube', url: string) => void;
 		/** Stop the room-wide video for everyone. */
 		onStopMedia?: () => void;
+		/** Live chat (WS) connection state — gates the "Chat ✓" tick (reference
+		    renders the check only when connected, report.md:636). */
+		chatConnected?: boolean;
+		/** Live media (SFU) connection state — gates the "Media ✓" tick. */
+		mediaConnected?: boolean;
+		/** Refetch the presence roster (the toolbar sync button, report.md:677). */
+		onReloadUsers?: () => void;
 	}
 	let {
 		open,
 		present,
 		canManage = false,
-		onClose,
 		roomId,
 		screen,
 		onPlayMedia,
-		onStopMedia
+		onStopMedia,
+		chatConnected = false,
+		mediaConnected = false,
+		onReloadUsers
 	}: Props = $props();
 
 	let mobileAppOpen = $state(false);
@@ -73,18 +82,42 @@
 	function initialOf(name: string): string {
 		return name.trim().charAt(0).toUpperCase() || '?';
 	}
+
+	// ── Archives dropdown (reference: click-toggled dropdown of three text-only
+	// `dropdown-item small` entries, report.md:651,1836,1840-1842). ──────────────
+	let archivesOpen = $state(false);
+
+	// ── Roster toolbar (reference behaviors, report.md:677,702-705,1987-1994) ──
+	// search → inline user-search input; sort → alpha toggle; sync → refetch;
+	// cog → user-options dropdown (single captured item "Sort by Trials",
+	// report.md:1848-1852).
+	let rosterSearchOpen = $state(false);
+	let rosterQuery = $state('');
+	let sortAlpha = $state(false);
+	let userOptsOpen = $state(false);
+	// Roster header toggles/focuses the roster (report.md:701).
+	let rosterCollapsed = $state(false);
+
+	const rosterShown = $derived.by(() => {
+		let list = present;
+		const q = rosterQuery.trim().toLowerCase();
+		if (q) list = list.filter((u) => u.display_name.toLowerCase().includes(q));
+		if (sortAlpha) {
+			list = [...list].sort((a, b) => a.display_name.localeCompare(b.display_name));
+		}
+		return list;
+	});
 </script>
 
 <aside class="sidebar" class:closed={!open} aria-hidden={!open}>
 	<div class="sidebar-inner">
+		<!-- Reference info-block children are exactly p / a / p / p>button / hr / p —
+		     the hr and the Chat/Media tick row live INSIDE the block; there is no
+		     in-drawer close control (the top-nav hamburger toggles the drawer)
+		     (report.md:499-505). -->
 		<div class="powered">
-			{#if onClose}
-				<button class="close" onclick={onClose} aria-label="Close sidebar" title="Close sidebar">
-					<Icon name="times" />
-				</button>
-			{/if}
 			<p class="powered-by">
-				Powered by: <span class="ptr-website-link">Pro Room</span>
+				Powered by: <a class="ptr-website-link" href={resolve('/rooms')}>Trick Trades</a>
 			</p>
 			<p class="version">Version: v0.0.1</p>
 			<p class="powered-cta">
@@ -97,15 +130,19 @@
 					Mobile App Info
 				</button>
 			</p>
+
+			<hr class="sep" />
+
+			<!-- Reference renders each check only while that feature is connected
+			     (*ngIf ng-star-inserted, report.md:635-636). -->
+			<p class="caps">
+				Chat
+				{#if chatConnected}<Icon name="check" size={14} />{/if}<span class="cap-media"
+					>Media
+					{#if mediaConnected}<Icon name="check" size={14} />{/if}</span
+				>
+			</p>
 		</div>
-
-		<hr class="sep" />
-
-		<p class="caps">
-			Chat <Icon name="check" size={14} /><span class="cap-media"
-				>Media <Icon name="check" size={14} /></span
-			>
-		</p>
 
 		<nav class="menu">
 			<div class="nav-item">
@@ -131,39 +168,51 @@
 			</div>
 
 			<div class="nav-item">
-				<div class="group">
+				<!-- Reference Archives is a click-toggled dropdown (a.nav-link
+				     .sidebar-item.dropdown-toggle with a caret) whose menu renders three
+				     TEXT-ONLY `dropdown-item small` entries on the
+				     --archives-dropdown-menu tokens #0e3651/#45a2ff
+				     (report.md:649,651,1836,1840-1844). -->
+				<div class="archives">
 					<button
-						class="item"
+						class="item dropdown-toggle"
 						aria-label="Archives"
 						title="Archives"
-						onclick={() => (alertLogsOpen = true)}
+						aria-haspopup="menu"
+						aria-expanded={archivesOpen}
+						onclick={() => (archivesOpen = !archivesOpen)}
 					>
 						<Icon name="archive" size={14} /><span class="label">Archives</span>
 					</button>
-					<button
-						class="sub-item"
-						aria-label="Alert Logs"
-						title="Alert Logs"
-						onclick={() => (alertLogsOpen = true)}
-					>
-						<Icon name="bell" size={14} /><span class="label">Alert Logs</span>
-					</button>
-					<button
-						class="sub-item"
-						aria-label="Chat Logs"
-						title="Chat Logs"
-						onclick={() => (chatLogsOpen = true)}
-					>
-						<Icon name="comment" size={14} /><span class="label">Chat Logs</span>
-					</button>
-					<button
-						class="sub-item"
-						aria-label="Transcript History"
-						title="Transcript History"
-						disabled
-					>
-						<Icon name="closed-captioning" size={14} /><span class="label">Transcript History</span>
-					</button>
+					{#if archivesOpen}
+						<div class="archives-menu" role="menu">
+							<button
+								type="button"
+								class="archives-item"
+								role="menuitem"
+								onclick={() => {
+									archivesOpen = false;
+									alertLogsOpen = true;
+								}}>Alert Logs</button
+							>
+							<button
+								type="button"
+								class="archives-item"
+								role="menuitem"
+								onclick={() => {
+									archivesOpen = false;
+									chatLogsOpen = true;
+								}}>Chat Logs</button
+							>
+							<button
+								type="button"
+								class="archives-item"
+								role="menuitem"
+								title="Transcript history needs caption persistence (pending backend)"
+								disabled>Transcript History</button
+							>
+						</div>
+					{/if}
 				</div>
 			</div>
 
@@ -278,38 +327,102 @@
 		</nav>
 
 		<div class="roster">
-			<div class="roster-head">
-				<span class="roster-title">
+			<div class="roster-head" title="Users">
+				<!-- Reference roster header is a pointer-cursor link that toggles/
+				     focuses the roster (report.md:701,2359). -->
+				<button
+					type="button"
+					class="roster-title"
+					onclick={() => (rosterCollapsed = !rosterCollapsed)}
+					aria-expanded={!rosterCollapsed}
+				>
 					<Icon name="user" size={14} /> <span class="label">Users:</span>
 					<span class="roster-count">{present.length}</span>
-				</span>
-				<!-- Reference visual order (float-right reversed): search · sort · sync · cog. -->
+				</button>
+				<!-- Reference visual order (float-right reversed): search · sort · sync ·
+				     cog — all live controls (report.md:677,1987-1994). -->
 				<span class="roster-actions">
-					<button class="mini mini-search" aria-label="Search users" title="Search users" disabled>
+					<button
+						class="mini mini-search"
+						aria-label="Search Users"
+						title="Search Users"
+						aria-expanded={rosterSearchOpen}
+						onclick={() => {
+							rosterSearchOpen = !rosterSearchOpen;
+							if (!rosterSearchOpen) rosterQuery = '';
+						}}
+					>
 						<Icon name="search" size={14} />
 					</button>
-					<button class="mini mini-sort" aria-label="Sort users" title="Sort users" disabled>
+					<button
+						class="mini mini-sort"
+						aria-label="Sort Users"
+						title="Sort Users"
+						aria-pressed={sortAlpha}
+						onclick={() => (sortAlpha = !sortAlpha)}
+					>
 						<Icon name="sort-alpha-down" size={14} />
 					</button>
-					<button class="mini mini-reload" aria-label="Reload users" title="Reload users" disabled>
+					<button
+						class="mini mini-reload"
+						aria-label="Reload Users"
+						title="Reload Users"
+						onclick={() => onReloadUsers?.()}
+					>
 						<Icon name="sync" size={14} />
 					</button>
-					<button class="mini mini-cog" aria-label="User options" title="User options" disabled>
-						<Icon name="cog" size={14} />
-					</button>
+					<span class="cog-wrap">
+						<button
+							class="mini mini-cog"
+							aria-label="User options"
+							aria-haspopup="menu"
+							aria-expanded={userOptsOpen}
+							onclick={() => (userOptsOpen = !userOptsOpen)}
+						>
+							<Icon name="cog" size={14} />
+						</button>
+						{#if userOptsOpen}
+							<!-- Captured menu holds exactly one item: "Sort by Trials"
+							     (report.md:1848-1852). Presence carries no trial/role field
+							     yet, so the item is honestly disabled. -->
+							<div class="cog-menu" role="menu">
+								<button
+									type="button"
+									role="menuitem"
+									title="Needs a role field on presence (pending backend)"
+									disabled>Sort by Trials</button
+								>
+							</div>
+						{/if}
+					</span>
 				</span>
 			</div>
 
-			<ul class="roster-list">
-				{#each present as u (u.user_id)}
-					<li class="roster-item">
-						<span class="avatar" aria-hidden="true">{initialOf(u.display_name)}</span>
-						<span class="roster-name" title={u.display_name}>{u.display_name}</span>
-					</li>
-				{:else}
-					<li class="roster-empty">No one here yet.</li>
-				{/each}
-			</ul>
+			{#if rosterSearchOpen}
+				<input
+					id="roster-search"
+					name="roster-search"
+					class="roster-search"
+					type="search"
+					placeholder="Search users…"
+					bind:value={rosterQuery}
+				/>
+			{/if}
+
+			{#if !rosterCollapsed}
+				<ul class="roster-list">
+					{#each rosterShown as u (u.user_id)}
+						<li class="roster-item">
+							<span class="avatar" aria-hidden="true">{initialOf(u.display_name)}</span>
+							<span class="roster-name" title={u.display_name}>{u.display_name}</span>
+						</li>
+					{:else}
+						<li class="roster-empty">
+							{rosterQuery ? 'No users match.' : 'No one here yet.'}
+						</li>
+					{/each}
+				</ul>
+			{/if}
 		</div>
 	</div>
 </aside>
@@ -369,8 +482,8 @@
 		flex: 0 0 250px;
 		width: 250px;
 		align-self: stretch;
-		background: #ffffff;
-		border-right: 1px solid var(--border);
+		background: var(--sidebar-wrapper-bg, #ffffff);
+		/* No border — the captured wrapper rule lists none (report.md:543,2346). */
 		overflow: hidden;
 		transition:
 			flex-basis 0.2s ease,
@@ -379,7 +492,6 @@
 	.sidebar.closed {
 		flex-basis: 0;
 		width: 0;
-		border-right: none;
 	}
 	.sidebar-inner {
 		width: 250px;
@@ -398,24 +510,6 @@
 		padding: 5px 2px;
 		text-align: center;
 	}
-	.close {
-		position: absolute;
-		top: 4px;
-		right: 4px;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		background: transparent;
-		border: 1px solid var(--border);
-		color: var(--text-dim);
-		border-radius: 4px;
-		padding: 0.25rem;
-		line-height: 0;
-	}
-	.close:hover {
-		color: var(--text);
-		border-color: var(--accent);
-	}
 	/* Reference p (Powered by:): margin-bottom 8px, no padding, 14px/400/lh21. */
 	.powered-by {
 		margin: 0 0 8px;
@@ -425,11 +519,13 @@
 		line-height: 21px;
 		color: #676767;
 	}
-	/* Reference a.ptr-website-link: #45a2ff, margin 0 5px, always underlined. */
+	/* Reference a.ptr-website-link: #45a2ff, margin 0 5px, always underlined,
+	   a real anchor with cursor:pointer (report.md:625). */
 	.ptr-website-link {
-		color: var(--accent);
+		color: var(--sidebar-accent, #45a2ff);
 		margin: 0 5px;
 		text-decoration: underline;
+		cursor: pointer;
 	}
 	/* Reference p (Version): margin-bottom 8px, no padding. */
 	.version {
@@ -458,6 +554,12 @@
 		border: 1px solid #6c757d;
 		border-radius: 4px;
 		cursor: pointer;
+		/* Bootstrap button transition (report.md:1639). */
+		transition:
+			color 0.15s ease-in-out,
+			background-color 0.15s ease-in-out,
+			border-color 0.15s ease-in-out,
+			box-shadow 0.15s ease-in-out;
 	}
 	.app-info-btn:hover {
 		background-color: #5c636a;
@@ -496,45 +598,89 @@
 		display: flex;
 		flex-direction: column;
 	}
-	/* Reference li.nav-item: padding 5px 2px. */
+	/* Reference li.nav-item: padding 5px 2px + a 1px WHITE bottom separator on
+	   every li (report.md:553-561). */
 	.nav-item {
 		padding: 5px 2px;
+		border-bottom: 1px solid var(--sidebar-navitem-border, #ffffff);
 	}
 	/* Reference li.nav-item.py-0 (Manage Muted / Manage Followed Users):
 	   0 vertical padding → 38px rows vs the 48px default rows. */
 	.nav-item.compact {
 		padding: 0 2px;
 	}
-	/* Reference a.nav-link.sidebar-item: padding 8px 0, margin 0 5px, 14px,
-	   weight 300, color #676767, full-width (236px inside 250). */
+	/* Reference a.nav-link.sidebar-item: display block, padding 8px 0, margin
+	   0 5px, 14px, weight 700, color #676767, no border — the row is 37px
+	   (report.md:1656-1661,567). */
 	.item {
-		display: flex;
-		align-items: center;
-		width: auto;
+		display: block;
+		width: calc(100% - 10px);
 		text-align: left;
 		background: transparent;
-		/* Reserve the 1px transparent border in the base state (reference
-		   .sidebar-item) so the :hover border doesn't shift the row geometry. */
-		border: 1px solid transparent;
+		border: none;
 		color: #676767;
 		border-radius: 0;
 		padding: 8px 0;
 		margin: 0 5px;
 		font-size: 14px;
-		font-weight: 300;
+		font-weight: 700;
 		cursor: pointer;
 	}
 	/* Reference a.nav-link.sidebar-item.ps-1: padding-left 4px. */
 	.item-ps {
 		padding-left: 4px;
 	}
-	/* Reference .sidebar-item:hover (presenter-deep matchedRule): a #e9ecef
-	   background fill, and the text color STAYS the resting #676767 (the
-	   .sidebar-item rule is color:inherit !important, so hover does not darken it).
-	   Border stays transparent (reserved in the base rule, no geometry shift). */
+	/* Reference .sidebar-item:hover (matchedRule winner): a #e9ecef background
+	   fill; the text color stays #676767 (report.md:1969,1977). */
 	.item:hover:not(:disabled) {
 		background: #e9ecef;
-		border-color: transparent;
+	}
+	/* Bootstrap dropdown-toggle caret on the Archives header (report.md:649). */
+	.dropdown-toggle::after {
+		display: inline-block;
+		margin-left: 0.255em;
+		vertical-align: 0.255em;
+		content: '';
+		border-top: 0.3em solid;
+		border-right: 0.3em solid transparent;
+		border-bottom: 0;
+		border-left: 0.3em solid transparent;
+	}
+	.archives {
+		position: relative;
+	}
+	/* Reference archives dropdown: --archives-dropdown-menu-bg-color #0e3651,
+	   --archives-dropdown-menu-color #45a2ff; items are text-only
+	   `dropdown-item small` (report.md:1840-1844). */
+	.archives-menu {
+		position: absolute;
+		top: 100%;
+		left: 5px;
+		z-index: 1000;
+		min-width: 10rem;
+		background: #0e3651;
+		border-radius: 6px;
+		padding: 0.5rem 0;
+		display: flex;
+		flex-direction: column;
+	}
+	.archives-item {
+		display: block;
+		width: 100%;
+		text-align: left;
+		background: transparent;
+		border: none;
+		color: #45a2ff;
+		font-size: 0.875em;
+		padding: 0.25rem 1rem;
+		cursor: pointer;
+	}
+	.archives-item:hover:not(:disabled) {
+		opacity: 0.85;
+	}
+	.archives-item:disabled {
+		opacity: 0.55;
+		cursor: not-allowed;
 	}
 	.item:disabled {
 		opacity: 0.6;
@@ -564,20 +710,18 @@
 		width: auto;
 		text-align: left;
 		background: transparent;
-		/* Reserve the 1px transparent border so :hover doesn't shift geometry. */
-		border: 1px solid transparent;
+		border: none;
 		color: #676767;
 		border-radius: 0;
 		padding: 8px 0.6rem 8px 1.4rem;
 		font-size: 14px;
-		font-weight: 300;
+		font-weight: 700;
 		cursor: pointer;
 	}
 	/* Reference .sidebar-menu:hover: text→darker readable gray, transparent
 	   border, NO #e9ecef background fill. */
 	.sub-item:hover:not(:disabled) {
 		color: #212529;
-		border-color: transparent;
 		background: transparent;
 	}
 	.sub-item:disabled {
@@ -585,15 +729,17 @@
 		cursor: not-allowed;
 	}
 
-	/* Roster — reference li.nav-item.d-flex.flex-column, padding 5px 2px. */
+	/* Roster — reference li.nav-item.d-flex.flex-column.h-100 fills the
+	   remaining drawer height (report.md:663,517). */
 	.roster {
 		display: flex;
 		flex-direction: column;
+		flex: 1;
 		min-height: 0;
 		padding: 5px 2px;
 	}
 	/* Reference a.nav-link.active-room-users: row with title + toolbar,
-	   padding-bottom 8px, margin 0 5px. */
+	   padding-bottom 8px, margin 0 5px, cursor pointer (report.md:701,2359). */
 	.roster-head {
 		display: flex;
 		align-items: center;
@@ -605,29 +751,73 @@
 		display: inline-flex;
 		align-items: center;
 		font-size: 14px;
-		font-weight: 300;
+		font-weight: 700;
 		color: #676767;
+		background: transparent;
+		border: none;
+		padding: 0;
+		cursor: pointer;
 	}
 	.roster-count {
-		font-weight: 300;
+		font-weight: 700;
 		color: #676767;
 		padding-left: 4px;
+	}
+	.roster-search {
+		margin: 0 5px 8px;
+		padding: 3px 6px;
+		border: 1px solid #d9d9d9;
+		border-radius: 4px;
+		font-size: 13px;
+		color: #676767;
+		background: #ffffff;
 	}
 	.roster-actions {
 		display: inline-flex;
 		align-items: center;
 	}
-	/* Reference roster toolbar buttons: padding 3px 6px, 26x27, radius 4px. */
+	/* Reference roster toolbar buttons: padding 3px 6px, 26x27, radius 4px
+	   (report.md:668,1991-1994). 21px line box → 27px total height. */
 	.mini {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
 		padding: 3px 6px;
+		min-height: 27px;
 		margin-left: 4px;
 		border: none;
 		border-radius: 4px;
-		line-height: 0;
+		line-height: 21px;
 		cursor: pointer;
+	}
+	.cog-wrap {
+		position: relative;
+		display: inline-flex;
+	}
+	.cog-menu {
+		position: absolute;
+		top: 100%;
+		right: 0;
+		z-index: 1000;
+		min-width: 9rem;
+		background: #ffffff;
+		border: 1px solid #d9d9d9;
+		border-radius: 6px;
+		padding: 0.5rem 0;
+	}
+	.cog-menu button {
+		display: block;
+		width: 100%;
+		text-align: left;
+		background: transparent;
+		border: none;
+		color: #676767;
+		font-size: 0.875em;
+		padding: 0.25rem 1rem;
+	}
+	.cog-menu button:disabled {
+		opacity: 0.55;
+		cursor: not-allowed;
 	}
 	/* The reference cog is a plain `fas fa-cog` glyph inside the users-btns
 	   div with no captured colored-button background — its exact bg/color is
@@ -636,20 +826,19 @@
 		background: #212529;
 		color: #ffffff;
 	}
-	/* Reference reload btn-default: bg #f4f4f4, icon #45a2ff. */
+	/* Reference reload btn-default: bg #f4f4f4, icon #45a2ff (report.md:674). */
 	.mini-reload {
 		background: #f4f4f4;
-		color: var(--accent);
+		color: var(--sidebar-accent, #45a2ff);
 	}
-	/* Reference sort btn-secondary: bg #6c757d, icon #fff. */
+	/* Reference sort btn-secondary: bg #6c757d, icon #fff (report.md:673). */
 	.mini-sort {
 		background: #6c757d;
 		color: #ffffff;
 	}
-	/* Reference search btn-default: bg #45a2ff, icon #f4f4f4, margin-left 0
-	   (leftmost float-right button in the reference toolbar). */
+	/* Reference search: bg #45a2ff, icon #f4f4f4, margin-left 0 (report.md:672). */
 	.mini-search {
-		background: var(--accent);
+		background: var(--sidebar-accent, #45a2ff);
 		color: #f4f4f4;
 		margin-left: 0;
 	}
@@ -682,9 +871,10 @@
 		width: 26px;
 		height: 26px;
 		flex: 0 0 26px;
-		/* Square avatars — reference gravatars are square (Bootstrap "Darkly",
-		   --rosterImg-border-radius: 0). */
-		border-radius: 0;
+		/* Roster avatars are CIRCULAR — --rosterImg-border-radius: 50%
+		   (report.md:2885,3004). Message-row avatars stay square (measured
+		   radius 0, report.md:1314). */
+		border-radius: 50%;
 		background: var(--bg-elev-2);
 		border: 1px solid var(--border);
 		color: var(--text);

@@ -29,8 +29,9 @@ export type ThemeTokens = {
 
 export type ThemeTokenKey = keyof ThemeTokens;
 
-/** Defaults copied verbatim from layout.css `:root` — the Pro Trading Room
- * Bootswatch "Darkly" chrome palette that matches chat.protradingroom.com. */
+/** Defaults copied verbatim from layout.css `:root` — matched to the
+ * admin-room capture (evidence-folder/report.md): accent/link/active color is
+ * #45a2ff and the lightTheme username blue is #0a6db1. */
 const DEFAULTS: ThemeTokens = {
 	'--bg': '#000000',
 	'--bg-elev': '#111111',
@@ -38,12 +39,12 @@ const DEFAULTS: ThemeTokens = {
 	'--border': '#444444',
 	'--text': '#ffffff',
 	'--text-dim': '#cccccc',
-	'--accent': '#00bc8c',
-	'--accent-hover': '#008e6a',
+	'--accent': '#45a2ff',
+	'--accent-hover': '#45a2ff',
 	'--positive': '#00bc8c',
 	'--negative': '#e74c3c',
 	'--warn': '#f39c12',
-	'--username-color': '#1a1a1a',
+	'--username-color': '#0a6db1',
 	'--ticker-color': '#1a1a1a'
 };
 
@@ -70,9 +71,9 @@ export type ThemePreset = {
 /** Built-in presets. "Midnight" is the current default palette. */
 export const PRESETS: ThemePreset[] = [
 	{
-		// Exact Bootswatch "Darkly" chrome captured from the live
-		// chat.protradingroom.com styles bundle (black nav, #111 stage, teal
-		// accent). This is the default — a 1:1 color clone of the original app.
+		// Palette matched to the admin-room capture of the real trading room
+		// (evidence-folder/report.md): #45a2ff accent/active color, #0a6db1
+		// username blue. This is the default — a 1:1 color clone.
 		id: 'protradingroom',
 		name: 'Pro Trading Room',
 		tokens: {
@@ -82,12 +83,12 @@ export const PRESETS: ThemePreset[] = [
 			'--border': '#444444',
 			'--text': '#ffffff',
 			'--text-dim': '#cccccc',
-			'--accent': '#00bc8c',
-			'--accent-hover': '#008e6a',
+			'--accent': '#45a2ff',
+			'--accent-hover': '#45a2ff',
 			'--positive': '#00bc8c',
 			'--negative': '#e74c3c',
 			'--warn': '#f39c12',
-			'--username-color': '#1a1a1a',
+			'--username-color': '#0a6db1',
 			'--ticker-color': '#1a1a1a'
 		}
 	},
@@ -169,7 +170,10 @@ export const PRESETS: ThemePreset[] = [
 	}
 ];
 
-const STORAGE_KEY = 'ptr.theme.tokens';
+// v2: invalidates palettes saved before the 2026-07-22 reference-palette
+// correction (teal #00bc8c accent → captured #45a2ff), which would otherwise
+// override the corrected defaults forever via the inline custom properties.
+const STORAGE_KEY = 'ptr.theme.tokens.v2';
 const FONT_STORAGE_KEY = 'ptr.theme.fontSize';
 const MODE_STORAGE_KEY = 'ptr.theme.mode';
 

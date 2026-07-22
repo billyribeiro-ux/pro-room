@@ -83,20 +83,28 @@
 				role="tab"
 				aria-selected={activeTab === t.id}
 				class:active={activeTab === t.id}
+				class:notes-tab={t.id === 'notes'}
 				disabled={locked && t.id !== 'screens'}
 				onclick={() => (tab = t.id)}
 			>
 				<Icon name={t.icon} size={12} />
 				{t.label}
 			</button>
+			{#if t.id === 'screens'}
+				<!-- Reference ships a "Streams" tab hidden behind its streaming infra as
+				     li:nth-child(2), between Screens and Notes (report.md:770). Mirrored
+				     as a hidden, inert placeholder for DOM parity. -->
+				<button
+					type="button"
+					class="stream-tab-placeholder"
+					hidden
+					tabindex="-1"
+					aria-hidden="true"
+				>
+					<Icon name="broadcast-tower" size={12} /> Streams
+				</button>
+			{/if}
 		{/each}
-
-		<!-- Reference ships a "Streams" tab hidden behind its streaming infra
-		     (<li hidden>). Mirrored as a hidden, inert placeholder for DOM parity;
-		     un-hide and wire it when streaming lands. -->
-		<button type="button" class="stream-tab-placeholder" hidden tabindex="-1" aria-hidden="true">
-			<Icon name="broadcast-tower" size={12} /> Streams
-		</button>
 
 		{#if locked}
 			<span class="locked-pill" title="The presenter has locked the screen">
@@ -143,7 +151,9 @@
 		border: none;
 		border-radius: 0;
 		overflow: hidden;
-		background: var(--bg-elev);
+		/* Reference .presentation-box: background var(--presenter-area-bg) #0f2e43
+		   (report.md:135-137,203,2576). */
+		background: var(--presenter-area-bg, #0f2e43);
 	}
 	/* Reference app-webcam-holder: absolute, pinned to the bottom of the
 	   presentation area, floating over the screen. */
@@ -166,10 +176,9 @@
 		justify-content: center;
 		gap: 0;
 		padding: 0;
-		/* Reference presentation surface (#mainTabs sits on .presentation-box,
-		   computed bg rgb(15,46,67) = --bg-elev #0f2e43; #mainTabs itself is
-		   transparent). */
-		background: var(--bg-elev);
+		/* #mainTabs itself is transparent — the panel's #0f2e43 shows through
+		   (report.md:137,2389). */
+		background: transparent;
 		/* Reference #mainTabs computed border-bottom: 1px solid transparent
 		   (.mainTabset border-color:transparent overrides .nav-tabs). */
 		border-bottom: 1px solid transparent;
@@ -203,10 +212,9 @@
 		white-space: nowrap;
 	}
 	.tabbar button:hover:not(.active):not(:disabled) {
-		/* Reference .nav-tabs .nav-link:hover winner is border-top-color rgb(68,68,68)
-		   = #444 (presenter-deep mainTabs hover), radius 3px, no background change —
-		   NOT the accent-blue we used before. */
-		border: 1px solid #444;
+		/* Reference .nav-link:hover winner: 1px solid var(--tabs-border-color)
+		   #0a6db1, radius 3px, no background change (report.md:2460,854,732). */
+		border: 1px solid var(--tabs-border-color, #0a6db1);
 		border-radius: 3px;
 	}
 	.tabbar button:disabled {
@@ -214,18 +222,21 @@
 		cursor: not-allowed;
 	}
 	.tabbar button.active {
-		/* Reference active main-tab (.mainTabset .nav-link.active): a subtle #222
-		   fill (--tab-active-bg) with TEAL text (--note-tabs-color #00bc8c),
-		   transparent border, 3px radius. NOT a bright pill — that #45a2ff was the
-		   wrong (navy "Mastering The Trade") room; protradingroom.com is Darkly. */
-		color: var(--accent);
-		background: var(--bg-elev-2);
+		/* Measured active tab in the admin-room capture: color #fff on
+		   bg rgb(69,162,255) #45a2ff (--tab-active-bg), transparent border,
+		   3px radius, weight 300 (report.md:2454,853,211). */
+		color: #fff;
+		background: var(--tab-active-bg, #45a2ff);
 		font-weight: 300;
 		border-color: transparent;
 		border-radius: 3px;
 	}
-	/* (Removed the invented "active Notes = dark folder" quirk: presenter-deep shows
-	   the active tab is the #45a2ff blue pill for ALL tabs, Notes included.) */
+	/* Reference special-case: the ACTIVE Notes tab is overridden to the dark
+	   #0c2434 folder fill (`.mainTabset #presAreaTabs-notes.active` gets
+	   background-color var(--notes-tabs-bg), report.md:856). */
+	.tabbar button.active.notes-tab {
+		background: var(--notes-tabs-bg, #0c2434);
+	}
 	.locked-pill {
 		display: inline-flex;
 		align-items: center;

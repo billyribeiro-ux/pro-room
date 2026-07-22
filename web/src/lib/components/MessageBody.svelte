@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { parseMessage } from '$lib/message';
 	import { dnd } from '$lib/stores/dnd.svelte';
+	import { openLightbox } from '$lib/stores/lightbox.svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 
 	interface Props {
@@ -38,13 +39,14 @@
 					type="button"
 					class="gif-muted"
 					onclick={() => revealGif(seg.href)}>GIF muted — click to show</button
-				>{:else}<!-- eslint-disable svelte/no-navigation-without-resolve -- external user-supplied image URL (target=_blank), not SvelteKit navigation --><a
+				>{:else}<!-- Reference opens a full-screen image overlay, not a new tab
+					(openImageModal — report.md:1738,1878). --><button
+					type="button"
 					class="img-container"
-					href={seg.href}
-					target="_blank"
-					rel="noopener noreferrer"
-					title="Open image"><img class="uploaded-img" src={seg.href} alt="" loading="lazy" /></a
-				><!-- eslint-enable svelte/no-navigation-without-resolve -->{/if}{:else}{seg.value}{/if}{/each}</span
+					title="Open image"
+					onclick={() => openLightbox(seg.href)}
+					><img class="uploaded-img" src={seg.href} alt="" loading="lazy" /></button
+				>{/if}{:else}{seg.value}{/if}{/each}</span
 >
 
 <style>
@@ -56,13 +58,10 @@
 		line-height: 1.5;
 	}
 	.ticker {
-		/* Reference .stockColor (e.g. $VLO): near-black #1a1a1a, 700, ITALIC,
-		   text-transform UPPERCASE. Literal capture rule + computed §06 line 1341.
-		   Color is the themeable --ticker-color token (default #1a1a1a); the
-		   uppercase/italic/weight are fixed reference behavior, not themed. */
+		/* Captured .stockColor: `font: 700 13px/19.5px`, UPPERCASE — the computed
+		   shorthand carries NO italic (report.md:1341). Color via --ticker-color. */
 		color: var(--ticker-color, #1a1a1a);
 		font-weight: 700;
-		font-style: italic;
 		text-transform: uppercase;
 	}
 	.mention {
@@ -77,17 +76,21 @@
 		word-break: break-all;
 	}
 	/* Inline posted image/GIF (reference .img-container + .uploaded-img). The
-	   image renders in the message body; clicking opens the full image. The
+	   image renders in the message body; clicking opens the lightbox. The
 	   ChatPanel "Small image preview" pref further shrinks `.body img` to 120px. */
 	.img-container {
 		display: inline-flex;
 		cursor: pointer;
 		padding: 3px;
 		vertical-align: bottom;
+		background: transparent;
+		border: none;
 	}
 	.uploaded-img {
+		/* Captured .uploaded-img rule: max-width 300px, max-height 200px
+		   (report.md:1342). */
 		max-width: 300px;
-		max-height: 300px;
+		max-height: 200px;
 		border-radius: 4px;
 	}
 	/* GIF muted-by-default placeholder (reference showChatGif "gif muted, click to

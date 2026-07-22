@@ -84,8 +84,11 @@
 		align-items: center;
 		gap: 0.3rem;
 		flex-shrink: 0;
-		background: var(--modal-btn-danger, #bb352a);
-		border: 1px solid var(--modal-btn-danger, #bb352a);
+		/* --modal-danger is the defined token (layout.css); the old
+		   `--modal-btn-danger` name was undefined, silently rendering the
+		   fallback. Darkly danger #e74c3c per report.md:1535. */
+		background: var(--modal-danger, #e74c3c);
+		border: 1px solid var(--modal-danger, #e74c3c);
 		color: #fff;
 		border-radius: var(--radius);
 		padding: 0.3rem 0.6rem;

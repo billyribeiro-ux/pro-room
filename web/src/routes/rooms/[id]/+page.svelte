@@ -27,6 +27,9 @@
 	import Split from '$lib/components/Split.svelte';
 	import MediaPlayer from '$lib/components/MediaPlayer.svelte';
 	import MediaForAllModal from '$lib/components/modals/MediaForAllModal.svelte';
+	import AVSettingsModal from '$lib/components/modals/AVSettingsModal.svelte';
+	import ScreensharePreview from '$lib/components/ScreensharePreview.svelte';
+	import Lightbox from '$lib/components/Lightbox.svelte';
 	import {
 		privateChat,
 		closePrivateChat,
@@ -72,6 +75,12 @@
 	let showRecPreview = $state(false);
 	let showMobileInfo = $state(false);
 	let showMediaModal = $state(false);
+	// Live recording flag lifted from RecPreview — drives the top-nav [ REC ]
+	// indicator (reference li.recIndicator, report.md:1957).
+	let recActive = $state(false);
+	// Mic gear (reference .mic-gear-btn, presenter capture nav-css.txt:249-250)
+	// opens the AV device settings.
+	let micSettingsOpen = $state(false);
 	// Closed-captions overlay is now a shared preference (prefs.captionsOverlay) so
 	// the sidebar CC button and the General Settings toggle stay in sync.
 	// Screen-share source picker (Browser vs OBS/XSplit virtual cam). The menu is
@@ -152,30 +161,42 @@
 		narrow.current ? true : layout.position === 'left' || layout.position === 'top'
 	);
 	const splitInitial = $derived(
-		// Measured from the live reference at desktop width: the alerts/chat column
-		// is ~21.24% and the presentation area ~78.76%. Pane A is the dock for
-		// left/top and the stage for right/bottom. (Ratios scale a little with
-		// viewport; this matches the captured 1989px desktop split.)
+		// Captured desktop split: alerts/chat 21.2364% / presentation 78.7636%
+		// (aria-valuenow 21.23640617096612 — report.md:121,154). Pane A is the
+		// dock for left/top and the stage for right/bottom.
 		narrow.current
 			? 45
 			: layout.position === 'left'
-				? 21.5
+				? 21.2364
 				: layout.position === 'top'
 					? 40
 					: layout.position === 'right'
-						? 78.5
+						? 78.7636
 						: 60
 	);
 
+	// Per-viewer hidden remote cams (the × on a remote tile hides it locally —
+	// reference renders the × on every tile, report.md:1143).
+	let hiddenCams = $state<ReadonlySet<string>>(new Set());
 	// Map camera publishers to the webcam strip (MediaStreamTrack already).
 	const webcamPublishers = $derived(
-		screen.cameraPublishers.map((p) => ({
-			id: p.identity,
-			name: p.name,
-			isLocal: p.isLocal,
-			track: p.track ?? null
-		}))
+		screen.cameraPublishers
+			.filter((p) => !hiddenCams.has(p.identity))
+			.map((p) => ({
+				id: p.identity,
+				name: p.name,
+				isLocal: p.isLocal,
+				track: p.track ?? null
+			}))
 	);
+	function onWebcamClose(id: string) {
+		const pub = screen.cameraPublishers.find((p) => p.identity === id);
+		if (pub?.isLocal) {
+			void screen.stopCamera();
+		} else {
+			hiddenCams = new Set([...hiddenCams, id]);
+		}
+	}
 
 	// "Is speaking" indicator: LiveKit reports speaking identities (= user_id);
 	// map the first present one to its roster display name for the top nav.
@@ -382,10 +403,6 @@
 		}
 	}
 
-	async function postAlert(symbol: string, side: string, note: string) {
-		await api.post(`/api/rooms/${roomId}/alerts`, { symbol, side, note: note || null });
-	}
-
 	async function postMessageTo(ch: ChatChannel, body: string) {
 		await api.post(`/api/rooms/${roomId}/messages`, { body, channel: ch });
 	}
@@ -514,6 +531,7 @@
 		roomName={detail.room.name}
 		userCount={present.length}
 		speaker={speakingName}
+		recording={recActive}
 		onToggleSidebar={() => (sidebarOpen = !sidebarOpen)}
 		onMobileInfo={() => (showMobileInfo = true)}
 		onReload={() => location.reload()}
@@ -541,9 +559,9 @@
 	<div class="room-body">
 		{#if screenDisabled}
 			<p class="notice">
-				Media is unavailable — set LIVEKIT_URL / LIVEKIT_API_KEY / LIVEKIT_API_SECRET on the
-				server (local free SFU: <code>docker compose up -d livekit</code>, or LiveKit Cloud free
-				tier keys from cloud.livekit.io).
+				Media is unavailable — set LIVEKIT_URL / LIVEKIT_API_KEY / LIVEKIT_API_SECRET on the server
+				(local free SFU: <code>docker compose up -d livekit</code>, or LiveKit Cloud free tier keys
+				from cloud.livekit.io).
 			</p>
 		{/if}
 
@@ -552,16 +570,19 @@
 				open={sidebarOpen}
 				{present}
 				canManage={caps?.can_manage_room ?? false}
-				onClose={() => (sidebarOpen = false)}
 				{roomId}
 				{screen}
 				onPlayMedia={playMedia}
 				onStopMedia={stopMedia}
+				chatConnected={socket?.connected ?? false}
+				mediaConnected={screen.connected}
+				onReloadUsers={() => void resyncRoomState()}
 			/>
 
 			<div class="layout">
 				{#key `${layout.position}:${narrow.current}`}
-					<Split direction={splitDir} initial={splitInitial} min={12} collapsePx={100}>
+					<!-- Reference as-split declares minsize="0" (report.md:113,153). -->
+					<Split direction={splitDir} initial={splitInitial} min={0} collapsePx={100}>
 						{#snippet a()}
 							{#if dockFirst}{@render dockPane()}{:else}{@render stagePane()}{/if}
 						{/snippet}
@@ -594,7 +615,39 @@
 		onCreated={upsertPoll}
 	/>
 
-	<RecPreview open={showRecPreview} {roomId} onClose={() => (showRecPreview = false)} />
+	<RecPreview
+		open={showRecPreview}
+		{roomId}
+		onClose={() => (showRecPreview = false)}
+		onRecordingChange={(r) => (recActive = r)}
+	/>
+
+	<!-- Reference floating local screen-share preview (app-screenshare-preview,
+	     components-media-misc.md:10-66) — renders while the local user shares. -->
+	{#if screen.publishing}
+		<ScreensharePreview
+			publishers={screen.publishers}
+			onStop={() => void screen.stopSharing()}
+			onShareScreen={() => void screen.startSharing()}
+			onShareVirtualCam={() => void screen.startSharingExternalCam()}
+		/>
+	{/if}
+
+	<AVSettingsModal
+		open={micSettingsOpen}
+		onClose={() => (micSettingsOpen = false)}
+		onChangeDevices={(audioInputId, videoInputId) => {
+			if (audioInputId) screen.switchDevice('audioinput', audioInputId);
+			if (videoInputId) screen.switchDevice('videoinput', videoInputId);
+		}}
+		onSave={({ speakerId, audioInputId, videoInputId }) => {
+			if (audioInputId) screen.switchDevice('audioinput', audioInputId);
+			if (videoInputId) screen.switchDevice('videoinput', videoInputId);
+			if (speakerId) screen.switchDevice('audiooutput', speakerId);
+		}}
+	/>
+
+	<Lightbox />
 
 	<PrivateChat
 		open={privateChat.peer !== null}
@@ -735,6 +788,17 @@
 				<Icon name="microphone" />
 			</button>
 		{/if}
+		<!-- Reference .mic-gear-btn: a tiny gear attached to the mic control
+		     (.7rem, #abb0b5, margin-left -7px, hover #fff — presenter capture
+		     nav-css.txt:249-250). Opens the AV device settings. -->
+		<button
+			class="ctrl mic-gear-btn"
+			onclick={() => (micSettingsOpen = true)}
+			title="Mic settings"
+			aria-label="Mic settings"
+		>
+			<Icon name="cog" size={11} />
+		</button>
 		<button
 			class="ctrl"
 			class:live-on={prefs.captionsOverlay}
@@ -809,7 +873,6 @@
 			)}
 		canPostAlert={caps?.can_post_alert ?? false}
 		canPostMessage={canChat}
-		onPostAlert={postAlert}
 		onPostMessage={postMessage}
 		onPostOffTopic={(body) => postMessageTo('off_topic', body)}
 		onChannel={selectChannel}
@@ -824,7 +887,7 @@
 		publishers={screen.publishers}
 		connected={screen.connected}
 		{webcamPublishers}
-		onWebcamClose={() => screen.stopCamera()}
+		{onWebcamClose}
 		captionsActive={prefs.captionsOverlay}
 		captionSpeaker={liveCaption?.speaker}
 		captionText={liveCaption?.text}
@@ -836,12 +899,18 @@
 
 <style>
 	.room-body {
-		/* Clear the 49px fixed top nav, then fill the rest of the viewport. */
+		/* Clear the 49px fixed top nav, then fill the rest of the viewport.
+		   Reference div.wrapper: bg rgb(17,17,17) #111, text #ccc
+		   (report.md:103,225). */
 		margin-top: 49px;
 		height: calc(100vh - 49px);
 		display: flex;
 		flex-direction: column;
 		min-height: 0;
+		background: var(--darker-black, #111);
+		color: #ccc;
+		/* Anchor for the absolute .notice overlay. */
+		position: relative;
 	}
 	.shell-body {
 		position: relative;
@@ -895,17 +964,21 @@
 	}
 	.share-menu {
 		/* Fixed (not absolute) so it escapes the .nav-controls scroll container's
-		   overflow clipping; anchored to the trigger rect via inline top/left. */
+		   overflow clipping; anchored to the trigger rect via inline top/left.
+		   Evidenced picker surface (.screen-options-start-screen, presenter
+		   capture stylesheet @692295): WHITE bg, --darker-black text, width
+		   350px, padding 5px, 16px, li:hover cursor pointer; shadowless
+		   (report.md:3009). */
 		position: fixed;
-		z-index: 50;
-		min-width: 11rem;
+		z-index: 1000;
+		width: 350px;
 		display: flex;
 		flex-direction: column;
-		background: var(--bg-elev-2);
-		border: 1px solid var(--border);
-		border-radius: 8px;
-		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-		padding: 0.25rem;
+		background: #fff;
+		color: #111;
+		border-radius: 6px;
+		padding: 5px;
+		font-size: 16px;
 	}
 	.share-menu button {
 		display: flex;
@@ -913,16 +986,27 @@
 		gap: 0.5rem;
 		background: transparent;
 		border: none;
-		color: var(--text);
-		font-size: 0.85rem;
+		color: #111;
+		font-size: 16px;
 		text-align: left;
-		padding: 0.45rem 0.6rem;
-		border-radius: 6px;
+		padding: 4px 6px;
+		border-radius: 0;
 		cursor: pointer;
 		white-space: nowrap;
 	}
 	.share-menu button:hover {
-		background: var(--accent-hover);
+		cursor: pointer;
+	}
+	/* Reference .mic-gear-btn: .7rem glyph, #abb0b5, pulled -7px against the mic
+	   control, hover #fff (nav-css.txt:249-250). */
+	.ctrl.mic-gear-btn {
+		font-size: 0.7rem;
+		color: #abb0b5;
+		margin-left: -7px;
+		padding: 0;
+	}
+	.ctrl.mic-gear-btn:hover {
+		color: #fff;
 	}
 	.layout {
 		height: 100%;
@@ -967,25 +1051,36 @@
 		font-weight: 600;
 	}
 	.notice {
-		background: color-mix(in srgb, var(--warn) 12%, transparent);
+		/* Overlay (not in-flow) so the split always occupies the full 49px→bottom
+		   band (report.md:92). */
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		z-index: 44;
+		background: color-mix(in srgb, var(--warn) 30%, #111);
 		border: 1px solid var(--warn);
 		color: #ffe9a8;
 		padding: 0.5rem 0.75rem;
-		border-radius: 8px;
+		border-radius: 0;
 		font-size: 0.85rem;
-		margin-bottom: 1rem;
+		margin: 0;
 	}
-	/* One-tap affordance to unblock autoplay-blocked presenter audio. Shown only
-	   while screen.audioBlocked is true (full-width, hard to miss). */
+	/* One-tap affordance to unblock autoplay-blocked presenter audio. A floating
+	   bottom-center pill so it never covers the tab strip / alert header. */
 	.audio-unblock {
-		display: flex;
+		position: fixed;
+		bottom: 1rem;
+		left: 50%;
+		transform: translateX(-50%);
+		z-index: 45;
+		display: inline-flex;
 		align-items: center;
-		justify-content: center;
 		gap: 0.45rem;
-		width: 100%;
-		padding: 0.5rem 0.75rem;
-		border: 1px solid var(--accent, #2563eb);
-		background: color-mix(in srgb, var(--accent, #2563eb) 16%, transparent);
+		padding: 0.5rem 1rem;
+		border: 1px solid var(--accent, #45a2ff);
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--accent, #45a2ff) 30%, #111);
 		color: var(--text, #fff);
 		font-size: 0.85rem;
 		font-weight: 600;

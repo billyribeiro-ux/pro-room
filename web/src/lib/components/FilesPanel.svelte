@@ -25,6 +25,24 @@
 	let busy = $state(false);
 	let uploading = $state(false);
 	let fileInput = $state<HTMLInputElement | null>(null);
+	// Reference ships a hidden <audio id="mp3player"> as the Sounds-tab playback
+	// sink (file6-room-area.md:245-251) — clicking a sound file plays it here.
+	let mp3player = $state<HTMLAudioElement | null>(null);
+	let playingId = $state<string | null>(null);
+
+	function playSound(f: RoomFile) {
+		if (!mp3player) return;
+		if (playingId === f.id) {
+			mp3player.pause();
+			playingId = null;
+			return;
+		}
+		mp3player.src = fileUrl(f);
+		void mp3player.play().catch(() => {
+			playingId = null;
+		});
+		playingId = f.id;
+	}
 
 	const counts = $derived({
 		file: files.filter((f) => f.category === 'file').length,
@@ -181,7 +199,8 @@
 				/>
 			</div>
 			<button type="button" class="ic" onclick={load} disabled={busy} aria-label="Refresh">
-				<Icon name="sync" />
+				<!-- Reference files refresh: fas fa-sync, 12px, white (report.md:2594). -->
+				<Icon name="sync" size={12} />
 			</button>
 			{#if canManage}
 				<button
@@ -217,7 +236,19 @@
 							{#if f.category === 'image'}
 								<img class="thumb" src={fileUrl(f)} alt={f.filename} loading="lazy" />
 							{/if}
-							<span class="fn">{f.filename}</span>
+							{#if f.category === 'sound'}
+								<button
+									type="button"
+									class="fn sound-link"
+									onclick={() => playSound(f)}
+									title={playingId === f.id ? 'Stop' : 'Play'}
+								>
+									<Icon name={playingId === f.id ? 'stop' : 'play'} size={10} />
+									{f.filename}
+								</button>
+							{:else}
+								<span class="fn">{f.filename}</span>
+							{/if}
 						</td>
 						<td class="num">{formatSize(f.size_bytes)}</td>
 						<td class="num">{formatDate(f.created_at)}</td>
@@ -248,6 +279,9 @@
 			</tbody>
 		</table>
 	</div>
+
+	<!-- Reference hidden audio sink for the Sounds tab (file6-room-area.md:245-251). -->
+	<audio id="mp3player" bind:this={mp3player} onended={() => (playingId = null)} hidden></audio>
 </div>
 
 <style>
@@ -256,9 +290,10 @@
 		flex-direction: column;
 		height: 100%;
 		min-height: 0;
-		/* Reference Files pane is the dark navy presenter surface (#0f2e43). */
-		background: var(--bg-elev);
-		color: #ffffff;
+		/* Reference file list is a LIGHT striped surface: odd #fff / even #f4f4f4
+		   rows (report.md:744,2932); base text #676767 on white. */
+		background: var(--file-list-odd-bg, #ffffff);
+		color: var(--content-text, #676767);
 	}
 	.subtabs {
 		display: flex;
@@ -267,13 +302,15 @@
 		align-items: center;
 		/* Reference .files-tabs: justify-content:center — Files / Images / Sounds are
 		   ALWAYS centered on the full width; the search/refresh/upload tools are taken
-		   out of the flow (absolute, right) so they never shift the three tabs. */
+		   out of the flow (absolute, right) so they never shift the three tabs.
+		   No strip padding/gap — spacing comes from the 5px link margins
+		   (report.md:2423,2386). */
 		justify-content: center;
 		flex-wrap: wrap;
-		gap: 0.35rem;
-		padding: 0.6rem 0.85rem;
-		/* .files-tabs background: var(--notes-tabs-bg) = #0c2434 */
-		background: var(--bg);
+		gap: 0;
+		padding: 0;
+		/* .files-tabs background: var(--notes-tabs-bg) = #0c2434 (report.md:729). */
+		background: var(--notes-tabs-bg, #0c2434);
 		border-bottom: 1px solid transparent;
 		flex-shrink: 0;
 	}
@@ -284,24 +321,26 @@
 		background: transparent;
 		/* Hover border reserves 1px so the active/hover swap doesn't shift layout. */
 		border: 1px solid transparent;
-		/* .files-tabs .nav-link: color #fff; font-size 12px; padding 5px 10px; margin 5px */
+		/* .files-tabs .nav-link: color #fff; 12px weight 300 (tab family computed,
+		   report.md:2454); padding 5px 10px; margin 5px. */
 		color: #ffffff;
 		font-size: 12px;
-		font-weight: 600;
+		font-weight: 300;
 		padding: 5px 10px;
 		margin: 5px;
 		border-radius: 3px;
 		cursor: pointer;
 	}
 	.subtabs > button.active {
-		/* .files-tabs .nav-link.active: bg var(--tab-active-bg) #45a2ff; radius 3px; color #fff */
-		background: var(--accent);
+		/* .files-tabs .nav-link.active: bg var(--tab-active-bg) #45a2ff; radius 3px;
+		   color #fff (report.md:2459). */
+		background: var(--tab-active-bg, #45a2ff);
 		border-color: transparent;
 		color: #ffffff;
 	}
 	.subtabs > button:hover:not(.active) {
-		/* hover: 1px solid var(--tabs-border-color) var(--accent); radius 3px */
-		border-color: var(--accent);
+		/* hover: 1px solid var(--tabs-border-color) #0a6db1 (report.md:2460). */
+		border-color: var(--tabs-border-color, #0a6db1);
 	}
 	.badge {
 		display: inline-flex;
@@ -337,11 +376,13 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.3rem;
-		background: var(--bg-elev);
-		border: 1px solid var(--accent);
+		/* Reference searchbar: #fff bar, #b7b7b7 text, #666 icon
+		   (report.md:747). */
+		background: var(--file-searchbar-bg, #ffffff);
+		border: none;
 		border-radius: 6px;
 		padding: 0.2rem 0.6rem;
-		color: var(--text-dim);
+		color: var(--file-searchbar-icon-color, #666666);
 	}
 	.search input {
 		border: none;
@@ -349,25 +390,25 @@
 		background: transparent;
 		/* .files-search .form-control: font-size 12px */
 		font-size: 12px;
-		color: #ffffff;
+		color: var(--file-searchbar-color, #b7b7b7);
 		width: 9rem;
 	}
 	.ic {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		background: var(--bg-elev);
-		border: 1px solid var(--accent);
-		/* --reload-icon-color: #45a2ff */
-		color: var(--accent);
+		/* Reference files refresh: bare white 12px glyph on the navy strip
+		   (report.md:2594). */
+		background: transparent;
+		border: none;
+		color: #ffffff;
 		border-radius: 6px;
 		/* .files-options button: padding 5px */
 		padding: 5px;
 		cursor: pointer;
 	}
 	.ic:hover:not(:disabled) {
-		border-color: var(--accent);
-		color: var(--accent);
+		opacity: 0.85;
 	}
 	.ic:disabled {
 		opacity: 0.5;
@@ -412,14 +453,14 @@
 	thead th {
 		position: sticky;
 		top: 0;
-		background: var(--bg);
+		background: var(--file-list-odd-bg, #ffffff);
 		text-align: left;
 		font-size: 0.72rem;
 		text-transform: uppercase;
 		letter-spacing: 0.03em;
-		color: var(--text-dim);
+		color: var(--content-text, #676767);
 		padding: 0.5rem 0.85rem;
-		border-bottom: 1px solid var(--border);
+		border-bottom: 1px solid var(--content-separator-bg, #e8e8e8);
 	}
 	th.num,
 	td.num {
@@ -428,12 +469,12 @@
 		/* .st-fileSize: color var(--file-size-color) = #b2b2b2 */
 		color: #b2b2b2;
 	}
+	/* Reference striped rows: even #f4f4f4 / odd #fff (report.md:744,2932). */
 	tbody tr:nth-child(even) {
-		background: rgba(255, 255, 255, 0.03);
+		background: var(--file-list-even-bg, #f4f4f4);
 	}
 	tbody td {
 		padding: 0.5rem 0.85rem;
-		border-bottom: 1px solid var(--border);
 		vertical-align: middle;
 	}
 	td.name {
@@ -450,6 +491,18 @@
 	}
 	.fn {
 		word-break: break-word;
+		/* Reference --file-name-color #0a6db1 (report.md:745). */
+		color: var(--file-name-color, #0a6db1);
+	}
+	.sound-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
+		background: transparent;
+		border: none;
+		padding: 0;
+		font-size: 12px;
+		cursor: pointer;
 	}
 	td.act {
 		text-align: right;
@@ -497,7 +550,7 @@
 	}
 	.empty {
 		text-align: center;
-		color: var(--text-dim);
+		color: var(--content-text, #676767);
 		padding: 2rem;
 	}
 	.error {

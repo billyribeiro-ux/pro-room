@@ -21,6 +21,8 @@
 	import Icon from './Icon.svelte';
 	import { API_URL } from '$lib/config';
 	import { showToast } from '$lib/stores/toast.svelte';
+	import { openLightbox } from '$lib/stores/lightbox.svelte';
+	import { giphyEnabled, searchGifs, type Gif } from '$lib/giphy';
 	import type { Attachment } from 'svelte/attachments';
 
 	export type ChatItem = Message & {
@@ -120,6 +122,8 @@
 	let searchOpen = $state(false);
 	let settingsOpen = $state(false);
 	let editProfileOpen = $state(false);
+	// The gear's anchored dropdown (reference dropdown-toggle, report.md:1402).
+	let gearOpen = $state(false);
 
 	let textareaEl = $state<HTMLTextAreaElement | null>(null);
 
@@ -304,9 +308,59 @@
 	// emoji / image / GIF buttons are shown INLINE next to the textarea — there is
 	// NO "+" collapse. (An earlier odds-and-ends capture showed a "+"; the shipped
 	// reference renders the three buttons directly, so we match that.)
+
+	// ─── GIF picker (reference "Search for GIFs", GIPHY-backed — report.md:1517) ──
+	const gifReady = giphyEnabled();
+	let gifOpen = $state(false);
+	let gifQuery = $state('');
+	let gifs = $state<Gif[]>([]);
+	let gifBusy = $state(false);
+
+	async function loadGifs() {
+		gifBusy = true;
+		try {
+			gifs = await searchGifs(gifQuery);
+		} catch {
+			showToast('GIF search failed', 'Could not reach GIPHY. Please try again.', 5000);
+		} finally {
+			gifBusy = false;
+		}
+	}
+
+	function toggleGifs() {
+		gifOpen = !gifOpen;
+		if (gifOpen && gifs.length === 0) void loadGifs();
+	}
+
+	function pickGif(g: Gif) {
+		insertAtCaret(g.url);
+		gifOpen = false;
+	}
+
+	const dismissGifs: Attachment<HTMLElement> = (node) => {
+		function onKeydown(e: KeyboardEvent) {
+			if (e.key === 'Escape') gifOpen = false;
+		}
+		function onPointerdown(e: PointerEvent) {
+			if (e.target instanceof Node && !node.contains(e.target)) gifOpen = false;
+		}
+		document.addEventListener('keydown', onKeydown);
+		document.addEventListener('pointerdown', onPointerdown, true);
+		return () => {
+			document.removeEventListener('keydown', onKeydown);
+			document.removeEventListener('pointerdown', onPointerdown, true);
+		};
+	};
 </script>
 
-<svelte:window onkeydown={(e) => e.key === 'Escape' && (openMenuId = null)} />
+<svelte:window
+	onkeydown={(e) => {
+		if (e.key === 'Escape') {
+			openMenuId = null;
+			gearOpen = false;
+		}
+	}}
+/>
 
 <section class="panel">
 	<header>
@@ -332,19 +386,53 @@
 			>
 		</div>
 		<div class="actions">
-			<button type="button" aria-label="Search chat" onclick={() => (searchOpen = true)}
-				><Icon name="search" size={16} /></button
-			>
 			<button
 				type="button"
-				class="gear"
-				aria-label="Chat settings"
-				aria-haspopup="dialog"
-				aria-expanded={settingsOpen}
-				onclick={() => (settingsOpen = true)}
+				aria-label="Search chat"
+				title="Search"
+				onclick={() => (searchOpen = true)}><Icon name="search" size={16} /></button
 			>
-				<Icon name="cog" size={16} /><Icon name="caret-down" size={10} />
-			</button>
+			<!-- Reference chat gear is a Bootstrap dropdown-toggle (a.nav-link
+			     .dropdown-toggle, title="Settings", aria-haspopup=true —
+			     report.md:1402,1509), not a direct dialog trigger. Its menu contents
+			     were never captured; the items route to our existing settings surfaces. -->
+			<div class="gear-menu">
+				<button
+					type="button"
+					class="gear"
+					aria-label="Chat settings"
+					title="Settings"
+					aria-haspopup="menu"
+					aria-expanded={gearOpen}
+					onclick={() => (gearOpen = !gearOpen)}
+				>
+					<Icon name="cog" size={16} /><Icon name="caret-down" size={10} />
+				</button>
+				{#if gearOpen}
+					<div class="menu gear-dropdown" role="menu">
+						<button
+							type="button"
+							role="menuitem"
+							onclick={() => {
+								gearOpen = false;
+								settingsOpen = true;
+							}}
+						>
+							<Icon name="cog" size={14} /> Settings
+						</button>
+						<button
+							type="button"
+							role="menuitem"
+							onclick={() => {
+								gearOpen = false;
+								editProfileOpen = true;
+							}}
+						>
+							<Icon name="user" size={14} /> Edit Profile
+						</button>
+					</div>
+				{/if}
+			</div>
 		</div>
 	</header>
 
@@ -359,7 +447,9 @@
 			{@const newDay = !prev || dayKey(prev.created_at) !== dayKey(m.created_at)}
 			{#if newDay}
 				<li class="separator-row">
-					<span class="separator">{formatDayLabel(m.created_at)}</span>
+					<!-- Reference date label is a centered clickable anchor
+					     (report.md:1357,1360); target uncaptured → inert button. -->
+					<button type="button" class="separator">{formatDayLabel(m.created_at)}</button>
 				</li>
 			{/if}
 			<li class="msg-box" class:elevated={!!m.author_role && m.author_role !== 'member'}>
@@ -407,11 +497,10 @@
 						{/if}
 					</div>
 
-					{#if m.image_url}
-						<img class="avatar-img" src={m.image_url} alt="" width="36" height="36" />
-					{:else}
-						<span class="avatar" aria-hidden="true">{initials(m.author_name)}</span>
-					{/if}
+					<!-- Avatar is ALWAYS the author's identity — an image message keeps its
+					     35px avatar and renders the image in the BODY instead
+					     (report.md:1314; the image-as-avatar swap was a divergence). -->
+					<span class="avatar" aria-hidden="true">{initials(m.author_name)}</span>
 
 					<span
 						class="username"
@@ -431,7 +520,20 @@
 					<time class="created-at">{formatStamp(m.created_at)}</time>
 				</div>
 
-				<p class="body"><MessageBody text={m.body} /></p>
+				<p class="body">
+					<MessageBody text={m.body} />
+					{#if m.image_url}
+						{@const img = m.image_url}
+						<button
+							type="button"
+							class="img-open"
+							onclick={() => openLightbox(img)}
+							aria-label="Expand image"
+						>
+							<img class="body-img" src={img} alt="" />
+						</button>
+					{/if}
+				</p>
 
 				{#if onReact}
 					<ReactionBar
@@ -517,15 +619,55 @@
 						onchange={onPickImage}
 					/>
 
-					<!-- Search for GIFs (12px "GIF") → reference uses GIPHY (needs an API key the
-					     app doesn't ship). Rendered disabled rather than half-wired. -->
-					<button
-						type="button"
-						class="textAreaBtns gif"
-						aria-label="Search for GIFs"
-						title="GIF search is unavailable (requires a GIPHY API key)"
-						disabled>GIF</button
-					>
+					<!-- Search for GIFs (12px "GIF" text control, GIPHY-backed —
+					     report.md:1517,3188). Enabled once PUBLIC_GIPHY_KEY is set. -->
+					<div class="gif-wrap">
+						<button
+							type="button"
+							class="textAreaBtns gif"
+							aria-label="Search for GIFs"
+							title={gifReady ? 'Search for GIFs' : 'GIF search needs a GIPHY API key'}
+							aria-haspopup="menu"
+							aria-expanded={gifOpen}
+							disabled={!gifReady}
+							onclick={toggleGifs}>GIF</button
+						>
+						{#if gifOpen}
+							<div class="gif-pop" role="menu" aria-label="GIF search" {@attach dismissGifs}>
+								<input
+									id="gif-search"
+									name="gif-search"
+									type="search"
+									placeholder="Search GIPHY…"
+									bind:value={gifQuery}
+									onkeydown={(e) => {
+										if (e.key === 'Enter') {
+											e.preventDefault();
+											void loadGifs();
+										}
+									}}
+								/>
+								<div class="gif-grid">
+									{#if gifBusy}
+										<p class="gif-note">Searching…</p>
+									{:else}
+										{#each gifs as g (g.id)}
+											<button
+												type="button"
+												class="gif-cell"
+												aria-label="Send {g.title}"
+												onclick={() => pickGif(g)}
+											>
+												<img src={g.preview} alt={g.title} width={g.width} height={g.height} />
+											</button>
+										{:else}
+											<p class="gif-note">No GIFs found.</p>
+										{/each}
+									{/if}
+								</div>
+							</div>
+						{/if}
+					</div>
 				</div>
 			</div>
 		</form>
@@ -598,25 +740,23 @@
 		background: transparent;
 		/* Reference chat tabs (a.nav-link): a 1px border box kept transparent until
 		   active (so active/inactive share the same box size), 12px, weight 700 for
-		   BOTH active and inactive (per the captured computed styles — not 300),
-		   white, top-only 6px radius, padding 8px 5px 5px. */
+		   BOTH active and inactive, white, top-only 6px radius, padding 8px 5px 5px. */
 		border: 1px solid transparent;
 		color: #ffffff;
 		font-size: 12px;
 		font-weight: 700;
 		padding: 8px 5px 5px;
-		/* Reference a.nav-link carries margin-right:5px (the only inter-tab spacing). */
-		margin-right: 5px;
+		/* Captured tab rects sit 6px apart (report.md:1398-1399). */
+		margin-right: 6px;
 		border-radius: 6px 6px 0 0;
 		cursor: pointer;
 	}
 	.tabs button.active {
-		/* Reference active tab (.nav-tabs .nav-link.active): #222 fill
-		   (--tab-active-bg) + teal text, 3px radius. The old accent-blue fill was
-		   the wrong-room navy palette. */
-		background: var(--bg-elev-2);
+		/* Measured active chat tab: color #fff on bg rgb(69,162,255) #45a2ff
+		   (--tab-active-bg, report.md:1412). */
+		background: var(--tab-active-bg, #45a2ff);
 		border-color: transparent;
-		color: var(--accent);
+		color: #ffffff;
 	}
 	.tabs button:hover:not(.active) {
 		color: #ffffff;
@@ -659,6 +799,15 @@
 	.actions button:hover {
 		background: rgba(255, 255, 255, 0.18);
 	}
+	.gear-menu {
+		position: relative;
+		display: inline-flex;
+	}
+	.menu.gear-dropdown {
+		top: 100%;
+		left: auto;
+		right: 0;
+	}
 	.messages {
 		list-style: none;
 		margin: 0;
@@ -683,8 +832,8 @@
 		padding: 0;
 	}
 	.separator {
-		/* Reference .separator is a flat, full-width gray bar (#e8e8e8) with the
-		   readable light-theme date color (#373c42) — not a rounded blue pill. */
+		/* Reference .separator is a flat, full-width gray bar (#e8e8e8) with a
+		   centered clickable date (#373c42). Button chrome zeroed. */
 		display: block;
 		width: 100%;
 		text-align: center;
@@ -694,15 +843,18 @@
 		font-weight: 300;
 		padding: 0;
 		line-height: 1.5;
+		border: none;
 		border-radius: 0;
 		white-space: nowrap;
+		cursor: pointer;
 	}
 
 	.msg-box {
 		position: relative;
-		padding: 0.6rem 0.85rem 0.25rem;
-		/* Reference chat .msg-box: bg --msgs-bg (light, computed) = #fff, flat, with
-		   a top divider --msg-border-color = #d9d9d9. */
+		/* Captured admin chat row computes padding 2px 0 4px — zero side padding
+		   (report.md:1426). */
+		padding: 2px 0 4px;
+		/* Reference chat .msg-box: bg #fff, flat, top divider #e1e1e1. */
 		background: var(--content-bg);
 		border-top: 1px solid var(--content-border);
 		font-size: var(--msg-font-size);
@@ -754,10 +906,9 @@
 		justify-content: center;
 		background: transparent;
 		border: none;
-		/* Reference .msgMenu: the "⠇" glyph at 20px / weight 600 in the username
-		   colour (light-theme --username-color resolves to #000), flat (no radius);
-		   hover #8c8686 (--light-brown) at weight 900. */
-		color: #000;
+		/* Measured kebab base color: rgb(10,109,177) = var(--username-color)
+		   #0a6db1 !important (report.md:2055); hover #8c8686 at weight 900. */
+		color: var(--username-color, #0a6db1);
 		font-weight: 600;
 		cursor: pointer;
 		padding: 0.1rem;
@@ -778,13 +929,15 @@
 		   left edge (no role-based flip). */
 		left: 0;
 		right: auto;
-		z-index: 5;
-		min-width: 9rem;
+		/* Reference .dropdown-menu base: min-width 10rem (160px), z-index 1000,
+		   shadowless — the only painting shadow in the app is the modal's
+		   (report.md:1785-1792,3009). */
+		z-index: 1000;
+		min-width: 10rem;
 		margin-top: 0.2rem;
 		background: var(--content-bg);
 		border: 1px solid #e3e5ec;
 		border-radius: 8px;
-		box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
 		padding: 0.25rem;
 		display: flex;
 		flex-direction: column;
@@ -809,29 +962,20 @@
 		color: var(--negative, #bb352a);
 	}
 
-	.avatar,
-	.avatar-img {
-		width: 36px;
-		height: 36px;
-		flex-shrink: 0;
-		/* Square avatars — reference gravatars are square (Bootstrap "Darkly",
-		   --rosterImg-border-radius: 0); object-fit crops the image to the box. */
-		border-radius: 0;
-		object-fit: cover;
-	}
 	.avatar {
+		/* Captured message avatar: 35x35, square (radius 0), object-fit cover
+		   (report.md:1314 — the shared app-st-message row template). */
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
+		width: 35px;
+		height: 35px;
+		flex-shrink: 0;
 		border-radius: 0;
 		background: #e7e9ef;
 		color: #5a6273;
 		font-size: 0.78rem;
 		font-weight: 700;
-	}
-	.avatar-img {
-		border-radius: 0;
-		object-fit: cover;
 	}
 
 	.username {
@@ -873,19 +1017,34 @@
 	}
 
 	.body {
-		/* Body lines up under the USERNAME (the content column past the avatar), like
-		   the alert rows — not flush-left under the avatar. The kebab is on the LEFT
-		   for every row (kebab + avatar + gaps push the username to ~86px), so the
-		   body indents ~72px uniformly (admin/super-admin rows no longer flip). */
-		margin: 0.35rem 0 0 72px;
-		/* Reference chat body (div.msg-left) computed colour --lightTheme-msg-color =
-		   #676767 (per the presenter-deep computed style) — NOT #1a1a1a; 13px /
-		   line-height 1.5 (19.5px). */
+		/* Body lines up under the USERNAME. Captured shared row template: the body
+		   column's left edge sits at x=58 (report.md:1315), so the body indents
+		   58px (kebab + 35px avatar + gaps). */
+		margin: 0.35rem 8px 0 58px;
+		/* Reference chat body (div.msg-left): #676767, 13px / line-height 1.5. */
 		color: var(--content-text);
 		line-height: 1.5;
 		word-break: break-word;
 		white-space: pre-wrap;
 		font-size: var(--msg-font-size);
+	}
+	.img-open {
+		display: block;
+		background: transparent;
+		border: none;
+		padding: 0;
+		cursor: pointer;
+		text-align: left;
+	}
+	.body-img {
+		display: block;
+		/* Captured inline-image constraints: max-width 300, max-height 200,
+		   click → lightbox (report.md:1342,1738). */
+		max-width: 300px;
+		max-height: 200px;
+		margin-top: 0.35rem;
+		border-radius: 6px;
+		object-fit: cover;
 	}
 	form {
 		display: flex;
@@ -967,7 +1126,8 @@
 		border: none;
 		color: var(--content-text);
 		cursor: pointer;
-		padding: 0.25rem;
+		/* Captured composer buttons compute padding 5px (report.md:1473). */
+		padding: 5px;
 		border-radius: 6px;
 	}
 	.textAreaBtns:hover:not(:disabled) {
@@ -978,10 +1138,9 @@
 		cursor: not-allowed;
 	}
 	.textAreaBtns.gif {
-		/* Reference GIF button: 12px text. */
+		/* Captured GIF label: 300 12px/18px, #676767 (report.md:1470). */
 		font-size: 12px;
-		font-weight: 800;
-		letter-spacing: 0.02em;
+		font-weight: 300;
 	}
 	/* Emoji picker popover — opens above the button (the composer sits at the
 	   bottom of the panel), mirroring ReactionBar's native-glyph grid. */
@@ -1002,7 +1161,6 @@
 		background: var(--content-bg);
 		border: 1px solid #e3e5ec;
 		border-radius: 10px;
-		box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
 		padding: 0.3rem;
 	}
 	.emoji-cell {
@@ -1020,6 +1178,60 @@
 	}
 	.emoji-cell:hover {
 		background: #f0f4fb;
+	}
+	/* GIF search popover — mirrors the emoji popover chrome. */
+	.gif-wrap {
+		position: relative;
+		display: inline-flex;
+	}
+	.gif-pop {
+		position: absolute;
+		bottom: calc(100% + 0.3rem);
+		right: 0;
+		z-index: 20;
+		width: 18rem;
+		background: var(--content-bg);
+		border: 1px solid #e3e5ec;
+		border-radius: 10px;
+		padding: 0.4rem;
+	}
+	.gif-pop input {
+		width: 100%;
+		box-sizing: border-box;
+		border: 1px solid #e3e5ec;
+		border-radius: 6px;
+		padding: 0.3rem 0.5rem;
+		font-size: 12px;
+		color: var(--content-text);
+		background: var(--content-bg);
+		margin-bottom: 0.35rem;
+	}
+	.gif-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 0.25rem;
+		max-height: 14rem;
+		overflow-y: auto;
+	}
+	.gif-cell {
+		background: transparent;
+		border: none;
+		padding: 0;
+		cursor: pointer;
+		border-radius: 6px;
+		overflow: hidden;
+	}
+	.gif-cell img {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
+	.gif-note {
+		grid-column: 1 / -1;
+		margin: 0.4rem 0;
+		text-align: center;
+		color: #8a909c;
+		font-size: 12px;
 	}
 	.readonly {
 		margin: 0;
