@@ -4,11 +4,14 @@ import { browser } from '$app/environment';
 /**
  * Base URL of the Rust API.
  *
- * - **Local dev (default):** empty string → same-origin `/api/*` via the Vite proxy
- *   (`vite.config.ts`). Session cookies stay first-party on :5173.
- * - **Deployed / direct API:** set `PUBLIC_API_URL=https://api.example.com` (no trailing slash).
+ * - **Vite dev:** always same-origin (`''`) so `/api/*` is proxied to the Rust API
+ *   (`vite.config.ts`). Ignores a stale `PUBLIC_API_URL=http://localhost:8080` that
+ *   would make the browser call `:8080` directly and break session cookies.
+ * - **Production / preview:** use `PUBLIC_API_URL` if set (no trailing slash).
  */
-export const API_URL = (env.PUBLIC_API_URL ?? '').replace(/\/$/, '');
+export const API_URL = import.meta.env.DEV
+	? ''
+	: (env.PUBLIC_API_URL ?? '').replace(/\/$/, '');
 
 /**
  * WebSocket origin for the room hub.
