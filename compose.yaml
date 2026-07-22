@@ -2,7 +2,7 @@ name: pro-room
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     environment:
       POSTGRES_USER: proroom
       POSTGRES_PASSWORD: proroom
@@ -20,7 +20,7 @@ services:
       retries: 10
 
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     command: ["redis-server", "--appendonly", "yes"]
     ports:
       # Host 6380 (not 6379) to avoid clashing with other local Redis
@@ -41,10 +41,10 @@ services:
   # `docker compose up -d livekit` starts ONLY this service (won't touch the
   # postgres/redis you may already run under another compose project).
   livekit:
-    # Pinned to 1.13.1 — the version LiveKit Cloud ran (protocol 17). Older 1.8.x
-    # lacks the `/rtc/v1` path that livekit-client 2.19 prefers, which causes a
+    # Pinned to latest stable LiveKit server (protocol 17+). Older 1.8.x
+    # lacks the `/rtc/v1` path that livekit-client 2.x prefers, which causes a
     # noisy "v1 RTC path not found – Retrying" warning on every connect.
-    image: livekit/livekit-server:v1.13.1
+    image: livekit/livekit-server:v1.13.4
     command: ["--config", "/etc/livekit.yaml"]
     ports:
       - "7880:7880" # signaling (HTTP/WS) — browser + API connect here
