@@ -11,7 +11,13 @@ import { test, expect, type Page } from '@playwright/test';
  */
 
 const API = 'http://localhost:8081';
+const SHOTS = 'e2e/screenshots';
 let roomId: string;
+
+/** Save a viewport screenshot under a stable, browsable name (snapshot evidence). */
+async function shot(page: Page, name: string) {
+	await page.screenshot({ path: `${SHOTS}/${name}.png` });
+}
 
 test.beforeAll(async ({ request, playwright }) => {
 	const res = await request.get(`${API}/api/rooms`);
@@ -54,6 +60,14 @@ test.beforeAll(async ({ request, playwright }) => {
 });
 
 async function enterRoom(page: Page) {
+	// Simulate a user who has dragged the alerts/chat splitter to give chat room.
+	// The dock defaults to alerts-dominant (acdock.fraction 0.814 — reference
+	// faithful), which leaves the chat message list ~53px tall and its per-row
+	// "Message options" kebab unreachable in automation. Persisting fraction 0.35
+	// (measured: chat ≈ 471px) before mount makes the chat features interactable.
+	// No app code changes — this is the same state a user reaches by dragging the
+	// horizontal gutter down.
+	await page.addInitScript(() => localStorage.setItem('acdock.fraction', '0.35'));
 	await page.goto(`/rooms/${roomId}`);
 	await expect(page.locator('.main-stage')).toBeVisible({ timeout: 20_000 });
 	await expect(page.locator('.alerts-pane')).toBeVisible();
@@ -118,6 +132,7 @@ test('alert popup toast fires on another user’s new alert', async ({ page }) =
 	const toast = page.locator('.toast', { hasText: 'E2ETOAST' });
 	await expect(toast).toBeVisible({ timeout: 8_000 });
 	await expect(toast).toContainText('Alert from @');
+	await shot(page, 'f01-alert-toast');
 });
 
 test('alert filter hides a trader and persists', async ({ page }) => {
@@ -134,6 +149,7 @@ test('alert filter hides a trader and persists', async ({ page }) => {
 		expect(await page.locator('ul.feed .msg-box').count()).toBeLessThan(before);
 	}).toPass({ timeout: 5_000 });
 	expect(await page.evaluate(() => localStorage.getItem('ptr.alertFilter.map'))).toBeTruthy();
+	await shot(page, 'f02-alert-filter');
 	await dialog.getByRole('button', { name: 'Unselect All' }).click();
 });
 
@@ -154,6 +170,7 @@ test('Edit my Info updates the display name', async ({ page }) => {
 	await expect(page.locator('.toast', { hasText: 'Profile updated' })).toBeVisible({
 		timeout: 8_000
 	});
+	await shot(page, 'f03-edit-my-info');
 	const me = await page.evaluate(
 		async () =>
 			await (await fetch('http://localhost:8081/api/auth/me', { credentials: 'include' })).json()
@@ -184,6 +201,7 @@ test('mute a user hides their chat + lists them in Manage Muted Users', async ({
 	// And he's listed in the Manage Muted Users modal.
 	await openSidebarItem(page, 'Manage Muted Users');
 	await expect(page.getByRole('dialog')).toContainText('Mike');
+	await shot(page, 'f04-manage-muted-users');
 });
 
 test('Alert Logs loads real entries', async ({ page }) => {
@@ -191,6 +209,7 @@ test('Alert Logs loads real entries', async ({ page }) => {
 	const dialog = page.getByRole('dialog');
 	await expect(dialog).toContainText('Alerts Logs');
 	await expect(dialog.locator('.list-group-item').first()).toBeVisible({ timeout: 8_000 });
+	await shot(page, 'f05-alert-logs');
 });
 
 test('Chat Logs loads real entries', async ({ page }) => {
@@ -198,6 +217,7 @@ test('Chat Logs loads real entries', async ({ page }) => {
 	const dialog = page.getByRole('dialog');
 	await expect(dialog).toContainText('Chat Logs');
 	await expect(dialog.locator('.list-group-item').first()).toBeVisible({ timeout: 8_000 });
+	await shot(page, 'f06-chat-logs');
 });
 
 test('Connectivity Check runs a real probe (rows resolve, not all-pending)', async ({ page }) => {
@@ -211,6 +231,7 @@ test('Connectivity Check runs a real probe (rows resolve, not all-pending)', asy
 	}).toPass({ timeout: 12_000 });
 	const passed = await dialog.locator('.status-icon.pass').count();
 	expect(passed).toBeGreaterThan(0); // at least UDP/host resolves
+	await shot(page, 'f07-connectivity-check');
 });
 
 test('Debug Log shows captured session lifecycle lines', async ({ page }) => {
@@ -218,6 +239,7 @@ test('Debug Log shows captured session lifecycle lines', async ({ page }) => {
 	const ta = page.getByRole('dialog').locator('textarea');
 	await expect(ta).toBeVisible();
 	await expect(ta).toHaveValue(/\[\d{1,2}:\d{2}:\d{2}.*\](.|\n)*WS connected/, { timeout: 8_000 });
+	await shot(page, 'f08-debug-log');
 });
 
 test('General Settings Compact Mode applies to the chat list', async ({ page }) => {
@@ -228,6 +250,7 @@ test('General Settings Compact Mode applies to the chat list', async ({ page }) 
 	// applied rather than visibility.
 	await expect(page.locator('ul.messages')).toHaveClass(/compact/, { timeout: 5_000 });
 	expect(await page.evaluate(() => localStorage.getItem('ptr.pref.chatMode'))).toBe('compact');
+	await shot(page, 'f09-compact-mode');
 });
 
 test('1:1 Private Chat sends a message that appears once', async ({ page }) => {
@@ -243,6 +266,7 @@ test('1:1 Private Chat sends a message that appears once', async ({ page }) => {
 	await panel.getByRole('button', { name: 'Send' }).click();
 	// Appears exactly once (POST + WS echo de-duped by id).
 	await expect(panel.locator('.bubble', { hasText: body })).toHaveCount(1, { timeout: 8_000 });
+	await shot(page, 'f10-private-chat');
 });
 
 test('Audio/Video Settings opens with device selects', async ({ page }) => {
@@ -252,9 +276,11 @@ test('Audio/Video Settings opens with device selects', async ({ page }) => {
 	await dialog.getByRole('tab', { name: 'Presenter' }).click();
 	await expect(dialog.locator('#av-mic')).toBeVisible();
 	await expect(dialog.locator('#av-camera')).toBeVisible();
+	await shot(page, 'f11-av-settings');
 });
 
 test('Mobile App Info opens with store links', async ({ page }) => {
 	await openSidebarItem(page, 'Mobile App Info');
 	await expect(page.getByRole('dialog')).toContainText(/mobile app/i);
+	await shot(page, 'f12-mobile-app-info');
 });

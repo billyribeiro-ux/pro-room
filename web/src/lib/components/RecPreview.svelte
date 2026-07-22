@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { API_URL } from '$lib/config';
 	import { playSound } from '$lib/sound.svelte';
+	import { onDestroy } from 'svelte';
 	import Icon from './Icon.svelte';
 
 	interface Props {
@@ -141,6 +142,14 @@
 		const r = s % 60;
 		return `${m}:${r.toString().padStart(2, '0')}`;
 	}
+
+	// Guarantee teardown if the room page unmounts mid-recording (navigating away).
+	// Without this the getDisplayMedia tracks stay live (the browser keeps showing
+	// the "sharing your screen" indicator) and the elapsed-timer interval leaks.
+	onDestroy(() => {
+		if (recorder && recorder.state !== 'inactive') recorder.stop();
+		stopTracks();
+	});
 </script>
 
 {#if open}

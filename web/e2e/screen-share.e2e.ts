@@ -57,6 +57,7 @@ test('screen share renders in the stage and the zoom/snapshot/stop controls work
 	// THE FIX TARGET: the shared screen loads in the stage.
 	await expect(page.locator('.screencast-pan video')).toBeVisible({ timeout: 15_000 });
 	await expect(page.locator('.screens-tabs .nav-link')).toContainText('(you)');
+	await page.screenshot({ path: 'e2e/screenshots/f15-screen-share.png' });
 
 	// Zoom control changes the video transform (1× → 1.5×).
 	const container = page.locator('.video-screen-container');

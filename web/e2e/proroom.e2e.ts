@@ -122,21 +122,33 @@ test('post an alert through the Post Alert modal', async ({ page }) => {
 	await shot(page, '07-alert-posted');
 });
 
-test('"Post on X" opens a pre-filled tweet intent', async ({ page, context }) => {
+test('"Post on X" opens a pre-filled tweet intent', async ({ page }) => {
+	// External-link feature: the app calls window.open('https://x.com/intent/tweet?text=…')
+	// (PostAlertModal shareToX). x.com is NOT reachable from CI (no external egress) and
+	// is not the unit under test — so capture the exact URL the app asks to open and assert
+	// it is the correct pre-filled intent. Deterministic; no dependency on x.com loading.
+	await page.addInitScript(() => {
+		(window as unknown as { __opened: string[] }).__opened = [];
+		window.open = ((url?: string | URL) => {
+			(window as unknown as { __opened: string[] }).__opened.push(String(url ?? ''));
+			return null;
+		}) as typeof window.open;
+	});
+	await enterRoom(page); // re-enter so the init-script stub is installed before any window.open
+
 	await page.getByRole('button', { name: 'Post an alert' }).click();
 	const dialog = page.getByRole('dialog');
 	await dialog.locator('textarea').fill('$SPY pin risk into the close — watch 540');
 	await dialog.getByText('Post on X? (tweet)').click();
+	await shot(page, '06b-post-on-x');
+	await dialog.getByRole('button', { name: 'Post Alert' }).click();
+	await expect(dialog).toBeHidden();
 
-	// The successful post opens twitter.com/intent/tweet in a new tab.
-	const [popup] = await Promise.all([
-		context.waitForEvent('page', { timeout: 8_000 }),
-		dialog.getByRole('button', { name: 'Post Alert' }).click()
-	]);
-	// twitter.com/intent/tweet 301-redirects to x.com/intent/tweet — accept either.
-	expect(popup.url()).toMatch(/(twitter|x)\.com\/intent\/tweet/);
-	expect(decodeURIComponent(popup.url())).toContain('$SPY');
-	await popup.close();
+	const opened = await page.evaluate(() => (window as unknown as { __opened: string[] }).__opened);
+	expect(opened.length).toBe(1);
+	// twitter.com/intent/tweet 301-redirects to x.com/intent/tweet — accept either host.
+	expect(opened[0]).toMatch(/(twitter|x)\.com\/intent\/tweet/);
+	expect(decodeURIComponent(opened[0])).toContain('$SPY');
 });
 
 test('admin deletes an alert via the row ⋮ menu', async ({ page }) => {

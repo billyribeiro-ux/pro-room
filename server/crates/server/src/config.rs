@@ -126,6 +126,11 @@ impl Config {
             .unwrap_or("720")
             .parse()
             .map_err(|_| ConfigError::Invalid("SESSION_TTL_HOURS", "expected an integer".into()))?;
+        // Fail fast on an absurd TTL instead of silently wrapping the seconds
+        // computation in a release build (`hours * 3600` overflows `u64`).
+        let ttl_secs = ttl_hours
+            .checked_mul(3600)
+            .ok_or_else(|| ConfigError::Invalid("SESSION_TTL_HOURS", "value is too large".into()))?;
 
         // Defense in depth for the dev-only auth bypass: refuse to even start a
         // release build with it enabled. (The extractor branch is additionally
@@ -154,7 +159,7 @@ impl Config {
             redis_url: opt("REDIS_URL").unwrap_or_else(|| "redis://localhost:6379".to_owned()),
             uploads_dir: opt("APP_UPLOADS_DIR").unwrap_or_else(|| "./uploads".to_owned()),
             session_secret,
-            session_ttl: Duration::from_secs(ttl_hours * 3600),
+            session_ttl: Duration::from_secs(ttl_secs),
             auth_dev_bypass,
             livekit: optional_group(&[
                 ("LIVEKIT_URL", true),

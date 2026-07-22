@@ -115,7 +115,13 @@ pub async fn ensure_system_action(
 fn decision_to_result(decision: &Decision) -> AppResult<()> {
     match decision {
         Decision::Allow => Ok(()),
-        Decision::Deny { reason } => Err(AppError::Forbidden(reason)),
+        // The precise engine reason (e.g. "rbac: role lacks required permission")
+        // is already recorded in the audit log by the caller's `audit()` call. The
+        // client gets a generic message so internal policy taxonomy is not disclosed
+        // — consistent with error.rs's contract that causes are logged, never leaked.
+        Decision::Deny { reason: _ } => Err(AppError::Forbidden(
+            "you do not have permission to perform this action",
+        )),
     }
 }
 

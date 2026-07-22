@@ -38,7 +38,7 @@
 		<form onsubmit={submit}>
 			<label>
 				Display name
-				<input bind:value={displayName} required />
+				<input bind:value={displayName} autocomplete="nickname" required />
 			</label>
 			<label>
 				Email
