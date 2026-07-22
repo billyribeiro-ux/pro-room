@@ -68,8 +68,10 @@ pnpm dev:backend   # infra then API
 pnpm dev           # vite (SvelteKit)
 ```
 
-Media is **local browser only** for now (getUserMedia / getDisplayMedia) — no LiveKit SFU.
-Screen share and webcam work on this client; multi-party media is not wired yet.
+**Media (LiveKit — free):** open-source SFU via `docker compose up -d livekit`
+(included in `pnpm dev:infra` / `dev:all`), or LiveKit Cloud free tier by setting
+`LIVEKIT_URL` / `LIVEKIT_API_KEY` / `LIVEKIT_API_SECRET` in `server/.env`
+(see `server/.env.example`).
 
 See `web/.env.example` and `server/.env.example` for configuration (database URL
 on host port **5433**, Redis on **6380**, LiveKit, OAuth, SMTP).
