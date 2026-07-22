@@ -10,12 +10,19 @@ import {
 } from 'livekit-client';
 import { logEvent } from './stores/sessionLog.svelte';
 
-/** A participant currently sharing their screen, plus the attachable track. */
+/** A participant currently sharing their screen, plus the attachable video track. */
 export interface SharePublisher {
 	identity: string;
 	name: string;
 	isLocal: boolean;
-	track: Track;
+	/**
+	 * Browser MediaStreamTrack for reliable `<video srcObject>` attach.
+	 * Prefer this over LiveKit's Track.attach for local screen share (attach can
+	 * race / leave a black stage even when the track is publishing).
+	 */
+	track: MediaStreamTrack;
+	/** LiveKit track when available (remote + local); optional for attach fallback. */
+	lkTrack?: Track;
 }
 
 /**
@@ -254,15 +261,49 @@ export class ScreenShareRoom {
 
 	/** Start sharing this user's screen (admins/super admins only). */
 	async startSharing(): Promise<void> {
-		if (!this.#room) return;
+		if (!this.#room) {
+			this.error = 'Not connected to media yet — wait for LiveKit, then try again.';
+			return;
+		}
 		try {
-			await this.#room.localParticipant.setScreenShareEnabled(true, { audio: true });
+			// Returns the LocalTrackPublication once the display-media track is published.
+			const pub = await this.#room.localParticipant.setScreenShareEnabled(true, {
+				audio: true,
+				// Prefer the current tab / full surface; browser still shows the picker.
+				selfBrowserSurface: 'include',
+				surfaceSwitching: 'include',
+				systemAudio: 'include'
+			});
+			const hasVideo = !!(pub?.track?.mediaStreamTrack ?? this.#screenTrackFromRoom());
+			if (!hasVideo) {
+				// Rare race: enable resolved before track is on the publication.
+				await new Promise((r) => setTimeout(r, 50));
+			}
 			this.publishing = true;
 			this.#refresh();
+			// Second pass after LocalTrackPublished settles (Svelte needs the reassignment).
+			queueMicrotask(() => this.#refresh());
+			setTimeout(() => this.#refresh(), 150);
+			if (this.publishers.length === 0) {
+				this.error =
+					'Screen share is on but the stage has no video track yet. Click Share again or check browser permissions.';
+				logEvent('Screen-share: publishers empty after setScreenShareEnabled');
+			} else {
+				this.error = null;
+				logEvent(`Screen-share live (${this.publishers.length} stage track(s))`);
+			}
 		} catch (e) {
 			logEvent(`Screen-share error: ${e instanceof Error ? e.message : String(e)}`);
 			this.error = avErrorMessage(e, 'Screen share');
+			this.publishing = false;
+			this.#refresh();
 		}
+	}
+
+	/** Best-effort read of the local screen video MediaStreamTrack from the room. */
+	#screenTrackFromRoom(): MediaStreamTrack | null {
+		const pub = this.#room?.localParticipant.getTrackPublication(Track.Source.ScreenShare);
+		return pub?.track?.mediaStreamTrack ?? null;
 	}
 
 	/**
@@ -549,8 +590,25 @@ export class ScreenShareRoom {
 			isLocal: boolean
 		) => {
 			for (const pub of pubs) {
-				if (!pub.track) continue;
-				const entry = { identity, name: name || identity, isLocal, track: pub.track };
+				const lk = pub.track;
+				const mst = lk?.mediaStreamTrack;
+				// Skip ended/missing tracks (black tiles / empty stage).
+				if (!lk || !mst || mst.readyState === 'ended') continue;
+				// Unique id per source so screen + camera from same user don't collide.
+				const sourceKey =
+					pub.source === Track.Source.ScreenShare
+						? 'screen'
+						: pub.source === Track.Source.Camera
+							? 'camera'
+							: String(pub.source);
+				const entry: SharePublisher = {
+					identity: `${identity}:${sourceKey}`,
+					name: name || identity,
+					isLocal,
+					track: mst,
+					lkTrack: lk
+				};
+				// ScreenShareAudio is audio-only — never put it on the stage.
 				if (pub.source === Track.Source.ScreenShare) {
 					screens.push(entry);
 				} else if (pub.source === Track.Source.Camera) {
@@ -574,6 +632,7 @@ export class ScreenShareRoom {
 				false
 			);
 		}
+		// Always reassign arrays so Svelte 5 $state subscribers fire.
 		this.publishers = screens;
 		this.cameraPublishers = cams;
 	}

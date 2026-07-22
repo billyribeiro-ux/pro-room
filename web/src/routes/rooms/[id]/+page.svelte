@@ -167,16 +167,13 @@
 						: 60
 	);
 
-	// Map LiveKit camera publishers (local + remote) to the webcam strip's shape.
-	// WebcamHolder is LiveKit-agnostic, so hand it the raw MediaStreamTrack.
+	// Map camera publishers to the webcam strip (MediaStreamTrack already).
 	const webcamPublishers = $derived(
 		screen.cameraPublishers.map((p) => ({
 			id: p.identity,
 			name: p.name,
 			isLocal: p.isLocal,
-			// Null-safe: a momentarily-null track during teardown must never throw
-			// while this $derived recomputes (WebcamHolder clears srcObject on null).
-			track: p.track?.mediaStreamTrack ?? null
+			track: p.track ?? null
 		}))
 	);
 
