@@ -6,7 +6,7 @@
 	"scripts": {
 		"dev": "vite dev",
 		"dev:env": "bash ../scripts/ensure-dev-env.sh",
-		"dev:infra": "docker compose -f ../compose.yaml up -d --wait postgres redis",
+		"dev:infra": "docker compose -f ../compose.yaml up -d --wait postgres redis livekit",
 		"dev:api": "cd ../server && cargo run -q -p server",
 		"dev:backend": "pnpm run dev:infra && pnpm run dev:api",
 		"dev:all": "pnpm run dev:env && concurrently -k -n api,web -c yellow,cyan \"pnpm run dev:backend\" \"pnpm run dev\"",

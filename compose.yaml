@@ -56,6 +56,13 @@ services:
     volumes:
       - ./livekit.yaml:/etc/livekit.yaml:ro
     restart: unless-stopped
+    # Signaling port answers HTTP; used by `docker compose up --wait`.
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:7880"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 3s
 
 volumes:
   pgdata:
