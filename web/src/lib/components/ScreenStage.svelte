@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { SharePublisher } from '$lib/livekit.svelte';
+	import type { Track } from 'livekit-client';
 	import type { Attachment } from 'svelte/attachments';
 	import Icon from './Icon.svelte';
 
@@ -16,15 +17,13 @@
 	// The publisher shown in the surface: the selected one, else the first.
 	const active = $derived(publishers.find((p) => p.identity === selected) ?? publishers[0] ?? null);
 
-	// Attachment that binds a MediaStreamTrack to a <video> element.
-	function track(t: MediaStreamTrack): Attachment<HTMLVideoElement> {
+	// Attachment that binds a LiveKit track to a <video> element. Re-runs (with
+	// cleanup) automatically when the track changes.
+	function track(t: Track): Attachment<HTMLVideoElement> {
 		return (node) => {
-			if (typeof MediaStream === 'undefined') return;
-			node.srcObject = new MediaStream([t]);
-			node.muted = true;
-			void node.play().catch(() => {});
+			t.attach(node);
 			return () => {
-				node.srcObject = null;
+				t.detach(node);
 			};
 		};
 	}
