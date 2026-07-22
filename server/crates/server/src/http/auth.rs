@@ -146,9 +146,13 @@ async fn login(
 ) -> AppResult<(CookieJar, Json<MeResponse>)> {
     let email = normalize_email(&body.email)?;
 
+    // 10/min is fine in production; local dev hammering the form (or a stuck
+    // autofill loop) trips it instantly and surfaces as "too many requests" on
+    // top of 401s. Loosen under debug so QA is not locked out for 60s.
+    let login_limit: u64 = if cfg!(debug_assertions) { 120 } else { 10 };
     if !state
         .cache
-        .rate_limit(&format!("login:{email}"), 10, 60)
+        .rate_limit(&format!("login:{email}"), login_limit, 60)
         .await?
     {
         return Err(AppError::RateLimited);
