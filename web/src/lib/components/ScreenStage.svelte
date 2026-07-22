@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { SharePublisher } from '$lib/livekit.svelte';
-	import type { Track } from 'livekit-client';
 	import type { Attachment } from 'svelte/attachments';
 	import Icon from './Icon.svelte';
 
@@ -17,13 +16,20 @@
 	// The publisher shown in the surface: the selected one, else the first.
 	const active = $derived(publishers.find((p) => p.identity === selected) ?? publishers[0] ?? null);
 
-	// Attachment that binds a LiveKit track to a <video> element. Re-runs (with
-	// cleanup) automatically when the track changes.
-	function track(t: Track): Attachment<HTMLVideoElement> {
+	// Attach a MediaStreamTrack via srcObject (works for local screen share and
+	// remote LiveKit tracks' underlying mediaStreamTrack).
+	function track(t: MediaStreamTrack): Attachment<HTMLVideoElement> {
 		return (node) => {
-			t.attach(node);
+			if (typeof MediaStream === 'undefined') return;
+			const stream = new MediaStream([t]);
+			node.srcObject = stream;
+			// Local screens must be muted for autoplay; remote audio is separate.
+			node.muted = true;
+			void node.play().catch(() => {
+				/* autoplay can still fail; user gesture elsewhere may unlock */
+			});
 			return () => {
-				t.detach(node);
+				node.srcObject = null;
 			};
 		};
 	}
@@ -437,24 +443,25 @@
 		width: 100%;
 	}
 	.video-screen-container {
-		position: relative;
-		top: 0;
-		left: 0;
-		/* Reference has no high z-index here; as the last positioned child of
-		   .screencast-pan it naturally stacks above the pan/zoom scaffold. */
-		width: inherit;
-		height: inherit;
+		/* Absolute fill so height:inherit cannot collapse to 0 when the pan
+		   scaffold contributes no in-flow height. */
+		position: absolute;
+		inset: 0;
+		z-index: 2;
+		width: 100%;
+		height: 100%;
 		/* Zoom/pan from the centre, applied via inline transform on this box. */
 		transform-origin: center center;
 		transition: transform 0.12s ease-out;
+		background: #000;
 	}
 	/* video.webcamScreen — fills, contains, no own pointer events. */
 	video {
+		display: block;
 		width: 100%;
 		height: 100%;
 		object-fit: contain;
-		vertical-align: top;
 		pointer-events: none;
-		max-height: 100vh;
+		background: #000;
 	}
 </style>
