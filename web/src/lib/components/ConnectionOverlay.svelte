@@ -62,37 +62,35 @@
 
 <div class="overlay" aria-live="polite">
 	{#if showConnected}
-		<div class="banner up" role="status" transition:fade={{ duration: 200 }}>
-			<Icon name="check-circle" />
-			<span class="label">Connected</span>
+		<!-- HARD EVIDENCE (mixed-files/connected.html + bundle CSS): the transient
+		     connected chip is #connectedMsg.notConnectedOverlay — fa-check + "Conected"
+		     (the reference's literal spelling), animated fadeIn. -->
+		<div class="banner up" role="status" transition:fade={{ duration: 1000 }}>
+			<Icon name="check" /> Conected
 		</div>
 	{/if}
 </div>
 
 <style>
+	/* HARD EVIDENCE (bundle CSS): .notConnectedOverlay { display:block;
+	   position:absolute; bottom:5px; right:5px; z-index:10000; background-color:#000;
+	   color:var(--presenter-noRecording-color) (#fff live room); opacity:.7 }.
+	   Fixed-position equivalent (the room wrapper fills the viewport). */
 	.overlay {
 		position: fixed;
-		top: 1rem;
-		left: 0;
-		right: 0;
-		z-index: 900;
-		display: flex;
-		justify-content: center;
+		bottom: 5px;
+		right: 5px;
+		z-index: 10000;
 		/* Never intercept clicks meant for the room shell underneath. */
 		pointer-events: none;
 	}
 
 	.banner {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.5rem;
-		padding: 0.45rem 0.85rem;
-		border-radius: 999px;
-		font-size: 0.8rem;
-		font-weight: 600;
-		line-height: 1;
-		color: var(--text, #ffffff);
-		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+		display: block;
+		background-color: #000;
+		color: #fff;
+		opacity: 0.7;
+		padding: 2px 8px;
 	}
 
 	.offline-body {
@@ -117,13 +115,9 @@
 	}
 
 	.banner.up {
-		background: var(--bg-elev-2);
-		border: 1px solid var(--positive, #92d528);
-		color: var(--positive, #92d528);
-	}
-
-	.label {
-		color: var(--text, #ffffff);
+		background: #000;
+		border: none;
+		color: #fff;
 	}
 
 	.spin {

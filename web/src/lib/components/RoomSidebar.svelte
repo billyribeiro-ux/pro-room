@@ -1019,6 +1019,9 @@
 	.roster-name {
 		font-size: 16px;
 		font-weight: bolder;
+		/* HARD EVIDENCE (live room :root): --nickname-color: #0a6db1 (.nickName
+		   { color: var(--nickname-color) }). */
+		color: #0a6db1;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
