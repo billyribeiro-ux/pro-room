@@ -115,7 +115,10 @@
 	/* In-modal .btn-primary maps to --modal-btn-close-bg #0a6db1 (Reload Log /
 	   Start Test / etc.) — room blue, not Darkly #375a7f. */
 	--modal-btn-primary: #0a6db1;
-	--modal-btn-secondary: #444444;
+	/* Bootstrap "secondary" gray — the reference Close/Cancel buttons compute
+	   rgb(108,117,125) (#6c757d) across every captured modal (mobileApp, settings,
+	   alert-logs, reply). NOT Darkly #444. */
+	--modal-btn-secondary: #6c757d;
 	/* App font — Open Sans is the reference's effective app font; Lato fallback. */
 	--font-sans:
 		'Open Sans', 'Lato', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica,

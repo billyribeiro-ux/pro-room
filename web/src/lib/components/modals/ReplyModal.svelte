@@ -13,7 +13,12 @@
 	let { open, onClose, recipient, onSend }: Props = $props();
 
 	let text = $state('');
-	// Reference title is the recipient name + colon (the private-reply target).
+	// HONEST GAP: the reference header is a private-reply QUOTE block — a bold
+	// sender label (15px/700) followed by the quoted original message text
+	// (span.do-private-reply, 15px/500). ReplyModal does not receive the quoted
+	// original message as a prop, so the quote text cannot be rendered without
+	// fabricating it. Keep the "{recipient}:" title until the original message is
+	// wired in as a prop.
 	const title = $derived(recipient ? `${recipient}:` : 'Reply');
 
 	function send() {
@@ -89,19 +94,21 @@
 	textarea:focus {
 		outline: none;
 	}
+	/* Reference: emoji + image icons sit side-by-side on the white input row,
+	   as bare icons (no dark button chrome). */
 	.tools {
 		display: flex;
-		flex-direction: column;
+		flex-direction: row;
 		gap: 0.4rem;
+		background: #ffffff;
 	}
 	.tool {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		background: var(--bg-elev);
-		border: 1px solid var(--border);
-		color: var(--text-dim);
-		border-radius: var(--radius);
+		background: transparent;
+		border: none;
+		color: #676767;
 		padding: 0.4rem;
 		line-height: 0;
 		cursor: pointer;
@@ -113,8 +120,8 @@
 	.btn {
 		border-radius: var(--radius);
 		padding: 0.45rem 0.95rem;
-		font-size: 0.85rem;
-		font-weight: 700;
+		font-size: 1rem;
+		font-weight: 400;
 		border: 1px solid transparent;
 		cursor: pointer;
 	}

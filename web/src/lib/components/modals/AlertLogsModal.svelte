@@ -31,11 +31,6 @@
 	$effect(() => {
 		if (open) void reload();
 	});
-
-	function bodyText(a: Alert): string {
-		const head = a.side ? `${a.symbol} ${a.side}` : a.symbol;
-		return a.note ? `${head} ${a.note}` : head;
-	}
 </script>
 
 {#snippet footer()}
@@ -44,7 +39,7 @@
 {/snippet}
 
 <!-- Reference h5 is the plural "Alerts Logs". -->
-<Modal {open} {onClose} title="Alerts Logs" {footer}>
+<Modal {open} {onClose} title="Alerts Logs" maxWidth={1000} {footer}>
 	<button class="btn primary reload" type="button" onclick={reload} disabled={loading}>
 		{loading ? 'Loading…' : 'Reload Log List'}
 	</button>
@@ -58,10 +53,14 @@
 			{#each logs as log (log.id)}
 				<div class="list-group-item">
 					<div class="lg-head">
-						<span class="lg-by">{log.author_name ?? 'Trader'}</span>
-						<span class="lg-date">{formatStamp(log.created_at)}</span>
+						<strong class="fw-bold lg-date">{formatStamp(log.created_at)}</strong>
+						<div class="lg-by">
+							<strong class="fw-bold">By:</strong>
+							<!-- HONEST GAP: reference shows the author's email in the italic slot;
+							     the component only receives author_name, so we render that. -->
+							<em>{log.author_name ?? 'Trader'}</em>
+						</div>
 					</div>
-					<div class="lg-body">{bodyText(log)}</div>
 				</div>
 			{/each}
 		</div>
@@ -99,35 +98,30 @@
 		border: 1px solid #dee2e6;
 		border-radius: 6px;
 		color: #212529;
-		padding: 0.5rem 0.7rem;
+		padding: 0.5rem 1rem;
 		margin-bottom: 0.4rem;
 	}
 
+	/* Reference: each entry is a centered stack — bold date on line 1,
+	   bold "By:" + italic author on line 2. */
 	.lg-head {
-		display: flex;
-		justify-content: space-between;
-		gap: 0.5rem;
-		margin-bottom: 0.15rem;
-	}
-	.lg-by {
-		font-weight: 700;
-		font-size: 0.82rem;
+		display: block;
 	}
 	.lg-date {
-		font-size: 0.75rem;
-		color: var(--text-dim);
+		font-weight: 700;
 		white-space: nowrap;
 	}
-	.lg-body {
-		font-size: 0.85rem;
-		word-break: break-word;
-		white-space: pre-wrap;
+	.lg-by {
+		margin-top: 0.15rem;
+	}
+	.lg-by em {
+		font-style: italic;
 	}
 	.btn {
 		border-radius: var(--radius);
 		padding: 0.45rem 0.9rem;
-		font-weight: 700;
-		font-size: 0.85rem;
+		font-weight: 400;
+		font-size: 1rem;
 		border: 1px solid transparent;
 		cursor: pointer;
 	}

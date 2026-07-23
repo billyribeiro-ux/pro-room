@@ -165,10 +165,10 @@
 	<button class="btn success" type="button" onclick={copyResults}>
 		<Icon name="copy" size={14} /> Copy Results
 	</button>
-	<button class="btn ghost" type="button" onclick={onClose}>Close</button>
+	<button class="btn secondary" type="button" onclick={onClose}>Close</button>
 {/snippet}
 
-<Modal {open} {onClose} title="Connectivity/Mic Troubleshooter" {footer}>
+<Modal {open} {onClose} title="Connectivity/Mic Troubleshooter" {footer} maxWidth={540}>
 	<!-- Reference: p.text-muted.mb-4, no leading icon (files/file30.html). -->
 	<p class="intro">This tool checks your network and connectivity to essential WebRTC servers.</p>
 
@@ -188,7 +188,9 @@
 <style>
 	.intro {
 		margin: 0 0 1.5rem;
-		color: var(--text-dim);
+		font-weight: 500;
+		font-size: 0.95rem;
+		color: #e5e7eb;
 	}
 	.rows {
 		display: flex;
@@ -208,16 +210,21 @@
 		margin-bottom: 16px;
 		color: #212529;
 	}
+	.rows .status-item:last-child {
+		margin-bottom: 24px;
+	}
 	.fw-medium {
-		font-weight: 500;
+		font-weight: 600;
+		font-size: 0.95rem;
+		color: #1a202c;
 	}
 	.status-icon {
-		font-size: 1rem;
+		font-size: 1.5rem;
 		line-height: 1;
 		color: var(--text-dim);
 	}
 	.status-icon.pending {
-		color: var(--text-dim);
+		color: #64748b;
 	}
 	.status-icon.pass {
 		color: var(--positive);
@@ -231,21 +238,22 @@
 		gap: 0.35rem;
 		border-radius: var(--radius);
 		padding: 0.5rem 0.9rem;
-		font-weight: 600;
-		font-size: 0.85rem;
+		font-weight: 400;
+		font-size: 1rem;
 		border: 1px solid var(--border);
 	}
-	.btn.ghost {
-		background: transparent;
-		color: var(--text-dim);
+	.btn.secondary {
+		background: #6c757d;
+		border-color: #6c757d;
+		color: #fff;
 	}
-	.btn.ghost:hover {
-		color: var(--text);
-		border-color: var(--accent);
+	.btn.secondary:hover {
+		background: #5c636a;
+		border-color: #565e64;
 	}
 	.btn.primary {
-		background: var(--accent);
-		border-color: var(--accent);
+		background: var(--modal-btn-primary, #0a6db1);
+		border-color: var(--modal-btn-primary, #0a6db1);
 		color: #fff;
 	}
 	.btn.primary:hover:not(:disabled) {

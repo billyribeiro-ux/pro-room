@@ -663,7 +663,7 @@
 		top: 100%;
 		left: 5px;
 		z-index: 1000;
-		min-width: 10rem;
+		width: 246px;
 		background: #0e3651;
 		border-radius: 6px;
 		padding: 0.5rem 0;
@@ -692,7 +692,10 @@
 		opacity: 0.85;
 	}
 	.archives-item:disabled {
-		opacity: 0.55;
+		/* Reference renders the disabled Transcript History item at FULL opacity,
+		   matching Alert Logs / Chat Logs — the feature is still pending backend so
+		   it stays disabled, but it is NOT visually dimmed (captured reference). */
+		opacity: 1;
 		cursor: not-allowed;
 	}
 	.item:disabled {
@@ -812,11 +815,14 @@
 		top: 100%;
 		right: 0;
 		z-index: 1000;
-		min-width: 9rem;
+		width: 228px;
 		background: #ffffff;
 		border: 1px solid #d9d9d9;
 		border-radius: 6px;
-		padding: 0.5rem 0;
+		/* Reference ul is 38px tall over a 32px item (~3px vertical inset) with a
+		   2px left inset; container font-size is 13px (button items stay 14px). */
+		padding: 3px 0 3px 2px;
+		font-size: 13px;
 	}
 	.cog-menu button {
 		display: block;

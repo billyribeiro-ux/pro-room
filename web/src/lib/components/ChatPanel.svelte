@@ -179,15 +179,6 @@
 		openMenuId = openMenuId === id ? null : id;
 	}
 
-	async function copyBody(m: ChatItem) {
-		try {
-			await navigator.clipboard.writeText(m.body);
-		} catch {
-			// Clipboard can reject (permissions/insecure context); nothing to recover.
-		}
-		openMenuId = null;
-	}
-
 	function openUserInfo(m: ChatItem) {
 		infoUser = {
 			display_name: m.author_name,
@@ -475,10 +466,7 @@
 									<Icon name="user" size={14} /> User Info
 								</button>
 								<button type="button" role="menuitem" onclick={() => mention(m)}>
-									<Icon name="reply" size={14} /> Mention
-								</button>
-								<button type="button" role="menuitem" onclick={() => copyBody(m)}>
-									<Icon name="copy" size={14} /> Copy
+									<Icon name="reply" size={14} /> Mention / Reply
 								</button>
 								{#if canManage && onDelete}
 									<button
@@ -959,11 +947,14 @@
 		gap: 0.45rem;
 		background: transparent;
 		border: none;
-		/* Reference dropdown-item: accent blue #45a2ff, 16px, padding 4px 16px. */
+		/* Reference dropdown-item: accent blue #45a2ff, 16px, padding 4px 16px.
+		   Measured item height is 32px; enforce it with min-height so the ~27px
+		   default (icon + 4px padding) matches the reference. */
 		color: var(--accent, #45a2ff);
 		font-size: 16px;
 		text-align: left;
 		padding: 4px 16px;
+		min-height: 32px;
 		border-radius: 0;
 		cursor: pointer;
 	}

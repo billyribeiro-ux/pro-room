@@ -38,8 +38,8 @@
 	.empty {
 		text-align: center;
 		padding: 1.25rem 0.5rem;
-		color: var(--text-dim);
-		font-size: 0.9rem;
+		color: var(--modal-color, #f4f4f4);
+		font-size: 16px;
 	}
 	.user-list {
 		list-style: none;
@@ -101,9 +101,9 @@
 	}
 	.btn {
 		border-radius: var(--radius);
-		padding: 0.5rem 0.9rem;
-		font-weight: 700;
-		font-size: 0.85rem;
+		padding: 0.375rem 0.75rem;
+		font-weight: 400;
+		font-size: 1rem;
 		border: 1px solid transparent;
 		cursor: pointer;
 	}
