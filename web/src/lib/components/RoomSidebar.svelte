@@ -106,7 +106,8 @@
 	// Roster header toggles/focuses the roster (report.md:701).
 	let rosterCollapsed = $state(false);
 
-	// Per-user ⋮ menu (reference `.msgMenu.dropright` → User Info / Mention / Reply).
+	// Per-user ⋮ menu (reference `.msgMenu.dropright` → User Info / Mention / Copy,
+	// inventory.menus roster `users-dropdown-options`).
 	let rosterMenuId = $state<string | null>(null);
 	let userInfoOpen = $state(false);
 	let userInfoUser = $state<
@@ -123,6 +124,14 @@
 	}
 	function mentionRosterUser(u: PresentUser) {
 		mentionBus.request(u.display_name);
+		rosterMenuId = null;
+	}
+	// HARD EVIDENCE (inventory.menus roster `dropdown-menu users-dropdown-options`
+	// = ["User Info","Mention","Copy"]): the Copy item copies the display name to
+	// the clipboard, then closes the menu. Clipboard failures are swallowed
+	// (unavailable / permission-denied contexts) so the menu still closes.
+	function copyRosterUser(u: PresentUser) {
+		navigator.clipboard?.writeText(u.display_name).catch(() => {});
 		rosterMenuId = null;
 	}
 
@@ -462,8 +471,8 @@
 									class="roster-img"
 									src={u.avatar_url}
 									alt={u.display_name}
-									width="32"
-									height="32"
+									width="45"
+									height="45"
 								/>
 							{:else}
 								<span class="avatar" aria-hidden="true">{initialOf(u.display_name)}</span>
@@ -486,7 +495,10 @@
 												<Icon name="user" size={14} /> User Info
 											</button>
 											<button type="button" role="menuitem" onclick={() => mentionRosterUser(u)}>
-												<Icon name="reply" size={14} /> Mention / Reply
+												<Icon name="reply" size={14} /> Mention
+											</button>
+											<button type="button" role="menuitem" onclick={() => copyRosterUser(u)}>
+												<Icon name="copy" size={14} /> Copy
 											</button>
 										</div>
 									{/if}
@@ -946,13 +958,24 @@
 		flex-direction: column;
 		gap: 0.25rem;
 	}
-	/* Reference roster row = .media: circular avatar left, .media-body right. */
+	/* Reference roster row = .media: circular avatar left, .media-body right.
+	   HARD EVIDENCE (.regUser rule: background-color:var(--roster-bg)=
+	   --lightTheme-roster-bg #f1f1f1; border-bottom:1px solid var(--dark-gray)=#aaa)
+	   + HARD EVIDENCE (.room-roster-container rule: min-height:42px). */
 	.roster-item {
 		display: flex;
 		align-items: center;
 		gap: 0.55rem;
 		padding: 0.35rem 0.45rem;
 		border-radius: 0;
+		min-height: 42px;
+		background: #f1f1f1;
+		border-bottom: 1px solid #aaa;
+	}
+	/* HARD EVIDENCE (.presUser rule: background-color:var(--roster-bg-adm)=
+	   --lightTheme-roster-bg-adm #e1e1e1) — presenter/staff row fill. */
+	.roster-item.presenter {
+		background: #e1e1e1;
 	}
 	.roster-item:hover {
 		background: var(--bg-elev-2);
@@ -960,10 +983,12 @@
 	/* Reference img.rosterImg — CIRCULAR avatar (--rosterImg-border-radius: 50%,
 	   report.md:2885,3004). Gravatar (server-derived); the initial span is the
 	   fallback when a user has no avatar_url. */
+	/* HARD EVIDENCE (.rosterImg rule: width:45px;height:45px;object-fit:cover;
+	   border-radius:var(--rosterImg-border-radius)=50%). */
 	.roster-img {
-		width: 32px;
-		height: 32px;
-		flex: 0 0 32px;
+		width: 45px;
+		height: 45px;
+		flex: 0 0 45px;
 		border-radius: 50%;
 		object-fit: cover;
 		background: var(--bg-elev-2);
@@ -972,9 +997,9 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		width: 32px;
-		height: 32px;
-		flex: 0 0 32px;
+		width: 45px;
+		height: 45px;
+		flex: 0 0 45px;
 		border-radius: 50%;
 		background: var(--bg-elev-2);
 		border: 1px solid var(--border);
@@ -990,8 +1015,10 @@
 		align-items: center;
 		gap: 0.3rem;
 	}
+	/* HARD EVIDENCE (.nickName rule: font-weight:bolder;font-size:16px). */
 	.roster-name {
-		font-size: 14px;
+		font-size: 16px;
+		font-weight: bolder;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -1008,17 +1035,22 @@
 		margin-left: auto;
 		flex: none;
 	}
+	/* HARD EVIDENCE (.msgMenu rule: padding-left:5px;font-size:20px;font-weight:600;
+	   color:var(--username-color)=#0a6db1 in this presenter/admin context). */
 	.msg-menu {
 		background: transparent;
 		border: none;
-		color: var(--text-dim);
-		font-size: 16px;
+		color: #0a6db1;
+		font-size: 20px;
+		font-weight: 600;
 		line-height: 1;
-		padding: 0 2px;
+		padding-left: 5px;
 		cursor: pointer;
 	}
+	/* HARD EVIDENCE (.msgMenu:hover rule: font-weight:900;color:var(--light-brown)=#8c8686). */
 	.msg-menu:hover {
-		color: var(--text);
+		color: #8c8686;
+		font-weight: 900;
 	}
 	/* Reference users-dropdown-options — navy menu with accent-blue items, matching
 	   the archives / kebab menus. */

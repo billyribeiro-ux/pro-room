@@ -137,6 +137,9 @@ for (const m of SIDEBAR_MODALS) {
 
 test('composer: emoji picker opens', async ({ page }) => {
 	await enterRoom(page);
+	// The emoji/image/GIF controls live in the + "Show message options" popover
+	// (reference textAreaBtnsCol has the single fas fa-plus).
+	await page.getByRole('button', { name: 'Show message options' }).first().click();
 	await page.getByRole('button', { name: 'Add Emojis' }).first().click();
 	// The picker is a role="menu" popover (aria-label "Pick an emoji"), not a button.
 	await expect(page.getByRole('menu', { name: 'Pick an emoji' }).first()).toBeVisible({

@@ -1,15 +1,15 @@
 <script lang="ts">
-	import Icon from './Icon.svelte';
 	import type { AuthorBadges } from '$lib/types';
 
-	// The author's badge data (custom badges + trial/new/tenure indicators). Mirrors
-	// the reference's per-message badge cluster: custom badges (image or coloured
-	// text pill) → Trial → New → tenure stars, rendered right after the username.
+	// The author's badge cluster. HARD EVIDENCE (proroom-all-admin.json / full-presenter
+	// decode): the reference renders badges ONLY as <img class="user-badge-img"> — there
+	// are ZERO "New"/"Trial" text pills and ZERO tenure-star elements in the captured DOM
+	// (202 user-badge-img nodes, 0 trial-badge/new-badge/stars-container nodes). The auto
+	// is_new/is_trial/years text pills were a prose-analysis error and are removed; only
+	// the admin-defined custom badges (image, or a coloured text pill when no image) show.
 	let { data }: { data?: AuthorBadges } = $props();
 
-	const hasAny = $derived(
-		!!data && ((data.badges?.length ?? 0) > 0 || data.is_trial || data.is_new || !!data.years)
-	);
+	const hasAny = $derived(!!data && (data.badges?.length ?? 0) > 0);
 </script>
 
 {#if hasAny && data}
@@ -26,70 +26,34 @@
 				>
 			{/if}
 		{/each}
-		{#if data.is_trial}<span class="trial-badge">Trial</span>{/if}
-		{#if data.is_new}<span class="new-badge">New</span>{/if}
-		{#if data.years}
-			<span class="stars-container" title="{data.years} year{data.years === 1 ? '' : 's'}">
-				<Icon name="star" size={13} />
-				<span class="stars-num">{data.years}</span>
-			</span>
-		{/if}
 	</span>
 {/if}
 
 <style>
-	/* Reference badge cluster: sits inline after the username, shrinks before it
-	   pushes the timestamp. Colours come from the badge def (admin-set, theme-able)
-	   for custom badges; Trial/New use our theme tokens (kept on theme purpose). */
+	/* Reference wrapper is div.d-inline-block.flex-shrink-1: display:inline-block with the
+	   badge images display:inline, margin 0 — i.e. adjacent badges sit FLUSH (0px gap). */
 	.badges {
-		display: inline-flex;
-		align-items: center;
-		gap: 2px;
-		min-width: 0;
+		display: inline-block;
 		flex-shrink: 1;
+		white-space: nowrap;
+		vertical-align: middle;
 	}
-	/* Reference .user-badge { font-size: 11px } (px-1 ≈ 4px h-padding). */
-	.user-badge,
-	.trial-badge,
-	.new-badge {
+	/* Reference .user-badge (text pill, no image): font-size 11px, padding 3px 5px. */
+	.user-badge {
+		display: inline-block;
 		font-size: 11px;
 		line-height: 1.4;
-		/* Reference .new-badge/.trial-badge padding is 3px 5px. */
 		padding: 3px 5px;
 		border-radius: 4px;
 		white-space: nowrap;
+		vertical-align: middle;
 	}
-	/* Reference .user-badge-img { width:auto; height:100%; max-height:20px }. */
+	/* Reference .user-badge-img { width:auto; height:100%; max-height:20px }, display:inline,
+	   vertical-align:middle, 0 margin between adjacent images. */
 	.user-badge-img {
-		/* Reference .user-badge-img { width:auto; height:100%; max-height:20px }. */
 		height: 100%;
 		width: auto;
 		max-height: 20px;
 		vertical-align: middle;
-	}
-	.trial-badge {
-		background: var(--negative);
-		color: #ffffff;
-	}
-	.new-badge {
-		background: var(--accent);
-		color: #ffffff;
-	}
-	/* Reference .stars-container: a star glyph with the tenure number overlaid. */
-	.stars-container {
-		position: relative;
-		display: inline-flex;
-		align-items: center;
-		color: var(--accent);
-	}
-	.stars-num {
-		position: absolute;
-		inset: 0;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: 8px;
-		font-weight: 700;
-		color: #ffffff;
 	}
 </style>

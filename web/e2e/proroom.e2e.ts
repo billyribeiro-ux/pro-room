@@ -219,6 +219,8 @@ test('react to an alert with an emoji', async ({ page }) => {
 	const row = page.locator('.alerts-pane li.msg-box', { hasText: symbol });
 	await expect(row).toBeVisible({ timeout: 10_000 });
 
+	// The add-reaction affordance is hover-only (reference .chat-reaction-hover).
+	await row.hover();
 	await row.getByRole('button', { name: 'Add reaction' }).click();
 	const picker = page.locator("[role='menu'][aria-label='Pick a reaction']");
 	await expect(picker).toBeVisible();

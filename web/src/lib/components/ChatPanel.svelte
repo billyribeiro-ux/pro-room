@@ -16,6 +16,8 @@
 	import { mentionBus } from '$lib/stores/mention.svelte';
 	import ReactionBar from './ReactionBar.svelte';
 	import UserInfoModal from './modals/UserInfoModal.svelte';
+	import ReplyModal from './modals/ReplyModal.svelte';
+	import { openPrivateChat, sendPrivate } from '$lib/privateChat.svelte';
 	import AdvancedSearchModal from './modals/AdvancedSearchModal.svelte';
 	import SettingsModal from './modals/SettingsModal.svelte';
 	import EditProfileModal from './modals/EditProfileModal.svelte';
@@ -178,7 +180,32 @@
 
 	function toggleMenu(id: string) {
 		openMenuId = openMenuId === id ? null : id;
+		reactFor = null;
 	}
+
+	// "Reply" kebab item (reference dropdown-item → #replyModal): a PRIVATE reply
+	// quoting the message. Sending opens the 1:1 thread and posts through the real
+	// PM API (POST /api/rooms/{id}/pm via privateChat.sendPrivate).
+	let replyTarget = $state<ChatItem | null>(null);
+	async function sendReply(text: string) {
+		const t = replyTarget;
+		replyTarget = null;
+		if (!t) return;
+		try {
+			await openPrivateChat({ user_id: t.author_id, display_name: t.author_name });
+			await sendPrivate(text);
+		} catch {
+			showToast('Reply failed', 'Could not send the private reply.', 5000);
+		}
+	}
+
+	// "Add Reaction" kebab item (reference dropdown-item with the far fa-smile icon
+	// and a reaction popover): an inline emoji row inside the menu; picking one
+	// toggles the reaction through the same onReact path as the ReactionBar.
+	let reactFor = $state<string | null>(null);
+	// Same curated set as ReactionBar's PICKER_EMOJI (first row) — one shared source
+	// of truth would export it, but component <script> can't export consts.
+	const REACT_EMOJI = ['👍', '👎', '🔥', '🚀', '😂', '❤️', '💯', '👀'] as const;
 
 	function openUserInfo(m: ChatItem) {
 		infoUser = {
@@ -206,8 +233,12 @@
 		body = body ? `${body} @${name} ` : `@${name} `;
 	});
 
-	// ─── Composer affordances (reference: Add Emojis / Upload an Image / GIF) ──────
+	// ─── Composer affordances ──────────────────────────────────────────────────────
+	// Reference (live captured DOM): the composer's button column shows a single
+	// fas fa-plus ("Show message options"); the emoji / image / GIF controls live in
+	// the options popover it toggles.
 	let fileInputEl = $state<HTMLInputElement | null>(null);
+	let optsOpen = $state(false);
 	let emojiOpen = $state(false);
 	let uploading = $state(false);
 
@@ -289,6 +320,22 @@
 			uploading = false;
 		}
 	}
+
+	/** Close the message-options popover (the +) on Escape or an outside click. */
+	const dismissOpts: Attachment<HTMLElement> = (node) => {
+		function onKeydown(e: KeyboardEvent) {
+			if (e.key === 'Escape') optsOpen = false;
+		}
+		function onPointerdown(e: PointerEvent) {
+			if (e.target instanceof Node && !node.contains(e.target)) optsOpen = false;
+		}
+		document.addEventListener('keydown', onKeydown);
+		document.addEventListener('pointerdown', onPointerdown, true);
+		return () => {
+			document.removeEventListener('keydown', onKeydown);
+			document.removeEventListener('pointerdown', onPointerdown, true);
+		};
+	};
 
 	/** Close the emoji popover on Escape or an outside click (reuses ReactionBar's pattern). */
 	const dismissEmoji: Attachment<HTMLElement> = (node) => {
@@ -454,99 +501,149 @@
 					<button type="button" class="separator">{formatDayLabel(m.created_at)}</button>
 				</li>
 			{/if}
-			<li class="msg-box" class:elevated={!!m.author_role && m.author_role !== 'member'}>
-				<div class="row1">
-					<div class="msg-menu">
-						<button
-							type="button"
-							class="menu-trigger"
-							aria-label="Message options"
-							aria-haspopup="menu"
-							aria-expanded={openMenuId === m.id}
-							onclick={() => toggleMenu(m.id)}
-						>
-							<!-- Reference row menu is the single-column dots kebab "⠇" (U+2807:
-							     3 dots filled on the left, 3 empty on the right), 20px / weight 600
-							     in the username colour — confirmed by the reference CSS
-							     `menuTriger::after { content: "⠇" }`. -->
-							<span class="ellipsis" aria-hidden="true">⠇</span>
-						</button>
-						{#if openMenuId === m.id}
-							<div class="menu" role="menu">
-								<button type="button" role="menuitem" onclick={() => openUserInfo(m)}>
-									<Icon name="user" size={14} /> User Info
-								</button>
-								<button type="button" role="menuitem" onclick={() => mention(m)}>
-									<Icon name="reply" size={14} /> Mention / Reply
-								</button>
-								{#if canManage && onDelete}
+			{@const staff = !!m.author_role && m.author_role !== 'member'}
+			<li class="msg-box" class:elevated={staff}>
+				<!-- Reference row (captured DOM, proroom-all-admin.json): div.mr-1.d-flex
+				     .flex-row[-reverse] holding [avatar cluster: a.msgMenu ⠇ + div.avatar.pl-1
+				     > img 35x35][div.w-100 content column: header + body]. STAFF (msg-box-adm)
+				     rows are flex-row-reverse → kebab+avatar on the RIGHT and the header
+				     mirrored (created-at left, username right); member rows are flex-row. -->
+				<div class="row-flex" class:reverse={staff}>
+					<div class="side" class:reverse={staff}>
+						<div class="msg-menu">
+							<button
+								type="button"
+								class="menu-trigger"
+								aria-label="Message options"
+								aria-haspopup="menu"
+								aria-expanded={openMenuId === m.id}
+								onclick={() => toggleMenu(m.id)}
+							>
+								<span class="ellipsis" aria-hidden="true">⠇</span>
+							</button>
+							{#if openMenuId === m.id}
+								<!-- Reference chat kebab items (captured live DOM): User Info /
+								     Mention / Reply (→ replyModal) / Add Reaction. Delete is our
+								     admin-only functional extra. -->
+								<div class="menu" role="menu">
+									<button type="button" role="menuitem" onclick={() => openUserInfo(m)}>
+										<Icon name="user" size={14} /> User Info
+									</button>
+									<button type="button" role="menuitem" onclick={() => mention(m)}>
+										<Icon name="reply" size={14} /> Mention
+									</button>
 									<button
 										type="button"
 										role="menuitem"
-										class="danger"
 										onclick={() => {
-											onDelete?.(m.id);
+											replyTarget = m;
 											openMenuId = null;
 										}}
 									>
-										<Icon name="trash-alt" size={14} /> Delete
+										<Icon name="comment" size={14} /> Reply
 									</button>
-								{/if}
-							</div>
-						{/if}
+									<button
+										type="button"
+										role="menuitem"
+										aria-expanded={reactFor === m.id}
+										onclick={() => (reactFor = reactFor === m.id ? null : m.id)}
+									>
+										<Icon name="smile" family="regular" size={14} /> Add Reaction
+									</button>
+									{#if reactFor === m.id}
+										<div class="react-row" role="menu" aria-label="Pick a reaction">
+											{#each REACT_EMOJI as e (e)}
+												<button
+													type="button"
+													role="menuitem"
+													aria-label="React {e}"
+													onclick={() => {
+														onReact?.('message', m.id, e);
+														reactFor = null;
+														openMenuId = null;
+													}}>{e}</button
+												>
+											{/each}
+										</div>
+									{/if}
+									{#if canManage && onDelete}
+										<button
+											type="button"
+											role="menuitem"
+											class="danger"
+											onclick={() => {
+												onDelete?.(m.id);
+												openMenuId = null;
+											}}
+										>
+											<Icon name="trash-alt" size={14} /> Delete
+										</button>
+									{/if}
+								</div>
+							{/if}
+						</div>
+
+						<!-- Reference div.avatar.pl-1 > img: 35x35, object-fit cover; initials
+						     are the fallback when no gravatar is present. -->
+						<span class="avatar" aria-hidden="true">
+							{#if m.author_avatar}
+								<img src={m.author_avatar} alt="" width="35" height="35" />
+							{:else}
+								{initials(m.author_name)}
+							{/if}
+						</span>
 					</div>
 
-					<!-- Avatar is the author's Gravatar (35x35 object-fit cover, matching the
-					     reference `.avatar > img`); initials are the fallback. An image message
-					     keeps its avatar and renders the image in the BODY (report.md:1314). -->
-					<span class="avatar" aria-hidden="true">
-						{#if m.author_avatar}
-							<img src={m.author_avatar} alt="" width="35" height="35" />
-						{:else}
-							{initials(m.author_name)}
+					<div class="content">
+						<div class="header">
+							{#if staff}
+								<time class="created-at">{formatStamp(m.created_at)}</time>
+							{/if}
+							<div class="name-block">
+								<span
+									class="username"
+									style:color={m.author_color ?? 'var(--username-color)'}
+									role="button"
+									tabindex="0"
+									onclick={() => openUserInfo(m)}
+									onkeydown={(e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault();
+											openUserInfo(m);
+										}
+									}}>{m.author_name ?? 'trader'}</span
+								>
+								<Badges data={m.author_badges} />
+							</div>
+							{#if !staff}
+								<time class="created-at">{formatStamp(m.created_at)}</time>
+							{/if}
+						</div>
+
+						<p class="body">
+							<MessageBody text={m.body} />
+							{#if m.image_url}
+								{@const img = m.image_url}
+								<button
+									type="button"
+									class="img-open"
+									onclick={() => openLightbox(img)}
+									aria-label="Expand image"
+								>
+									<img class="body-img" src={img} alt="" />
+								</button>
+							{/if}
+						</p>
+
+						{#if onReact}
+							<ReactionBar
+								reactions={reactions[`message:${m.id}`] ?? []}
+								{canReact}
+								onToggle={(emoji) => onReact?.('message', m.id, emoji)}
+							/>
 						{/if}
-					</span>
-
-					<span
-						class="username"
-						style:color={m.author_color ?? 'var(--username-color)'}
-						role="button"
-						tabindex="0"
-						onclick={() => openUserInfo(m)}
-						onkeydown={(e) => {
-							if (e.key === 'Enter' || e.key === ' ') {
-								e.preventDefault();
-								openUserInfo(m);
-							}
-						}}>{m.author_name ?? 'trader'}</span
-					>
-					<Badges data={m.author_badges} />
-
-					<time class="created-at">{formatStamp(m.created_at)}</time>
+					</div>
 				</div>
-
-				<p class="body">
-					<MessageBody text={m.body} />
-					{#if m.image_url}
-						{@const img = m.image_url}
-						<button
-							type="button"
-							class="img-open"
-							onclick={() => openLightbox(img)}
-							aria-label="Expand image"
-						>
-							<img class="body-img" src={img} alt="" />
-						</button>
-					{/if}
-				</p>
-
-				{#if onReact}
-					<ReactionBar
-						reactions={reactions[`message:${m.id}`] ?? []}
-						{canReact}
-						onToggle={(emoji) => onReact?.('message', m.id, emoji)}
-					/>
-				{/if}
 			</li>
 		{:else}
 			<li class="empty">No messages yet.</li>
@@ -554,17 +651,19 @@
 	</ul>
 
 	{#if canPost}
-		<!-- Reference #textAreaHolder.textSendDiv: a flat white 8px-radius holder with
-		     a flex-fill textarea (div.px-0.flex-fill) and a centered icon column
-		     (div.textAreaBtnsCol) of span.textAreaBtns — Add Emojis (far fa-smile),
-		     Upload an Image (fas fa-image), Search for GIFs (12px "GIF"). There is NO
-		     Send button: Enter sends, Shift+Enter inserts a newline. -->
+		<!-- HARD EVIDENCE (live captured DOM) — literal structure:
+		     #textAreaHolder.d-flex.align-items-center.textSendDiv >
+		       .flex-fill.d-flex.mx-0 > .px-0.flex-fill > textarea#textAreaTxt
+		       [name=txt-area].txt-area.form-control.border-0 + .textAreaBtnsCol >
+		       span.textAreaBtns > i.fas.fa-plus ("Show message options").
+		     There is NO Send button: Enter sends, Shift+Enter inserts a newline. -->
 		<form onsubmit={onSubmit}>
-			<div class="pill">
-				<div class="txt-wrap">
+			<div id="textAreaHolder" class="pill textSendDiv">
+				<div class="txt-wrap px-0 flex-fill">
 					<textarea
-						id="chat-composer"
-						name="message"
+						id="textAreaTxt"
+						name="txt-area"
+						class="txt-area form-control border-0"
 						bind:this={textareaEl}
 						bind:value={body}
 						rows="1"
@@ -575,6 +674,23 @@
 						onkeydown={onComposerKeydown}></textarea>
 				</div>
 				<div class="textAreaBtnsCol">
+					<!-- HARD EVIDENCE (live captured DOM): the button column holds ONE
+					     span.textAreaBtns with i.fas.fa-plus ("Show message options"); the
+					     emoji / image / GIF controls live in the popover it toggles. -->
+					<div class="opts-wrap">
+						<button
+							type="button"
+							class="textAreaBtns"
+							aria-label="Show message options"
+							title="Show message options"
+							aria-haspopup="menu"
+							aria-expanded={optsOpen}
+							onclick={() => (optsOpen = !optsOpen)}
+						>
+							<Icon name="plus" size={16} />
+						</button>
+						{#if optsOpen}
+							<div class="opts-pop" role="menu" aria-label="Message options" {@attach dismissOpts}>
 					<!-- Add Emojis (far fa-smile) → native-Unicode picker popover. -->
 					<div class="emoji-wrap">
 						<button
@@ -673,6 +789,9 @@
 							</div>
 						{/if}
 					</div>
+							</div>
+						{/if}
+					</div>
 				</div>
 			</div>
 		</form>
@@ -685,6 +804,12 @@
 	open={infoUser !== null}
 	user={infoUser ?? undefined}
 	onClose={() => (infoUser = null)}
+/>
+<ReplyModal
+	open={replyTarget !== null}
+	recipient={replyTarget?.author_name}
+	onClose={() => (replyTarget = null)}
+	onSend={(text) => void sendReply(text)}
 />
 <AdvancedSearchModal
 	open={searchOpen}
@@ -705,7 +830,11 @@
 	.panel {
 		display: flex;
 		flex-direction: column;
-		background: var(--content-bg);
+		/* HARD EVIDENCE (stylesheet): `.chat { background-color: var(--chat-bg) }`
+		   with --chat-bg → --lightTheme-chat-bg: #eee — the chat COLUMN is #eee, so
+		   the white composer holder floats on gray. Message rows paint their own
+		   #fff / --msgs-bg-adm backgrounds on top. */
+		background: #eeeeee;
 		/* Flat: reference room-shell surfaces use border-radius: 0 (no bottom rounding). */
 		border-radius: 0;
 		overflow: hidden;
@@ -858,9 +987,9 @@
 
 	.msg-box {
 		position: relative;
-		/* Captured admin chat row computes padding 2px 0 4px — zero side padding
-		   (report.md:1426). */
-		padding: 2px 0 4px;
+		/* Reference: the row itself carries only pb-1 (4px bottom); .msg-box-adm
+		   adds padding-top:2px (see .elevated). Zero side padding. */
+		padding: 0 0 4px;
 		/* Reference chat .msg-box: bg #fff, flat, top divider #e1e1e1. */
 		background: var(--content-bg);
 		border-top: 1px solid var(--content-border);
@@ -871,10 +1000,55 @@
 		font-weight: 100;
 		line-height: 24px;
 	}
-	/* Reference .msg-box-adm: messages from an admin/super-admin (the author's
-	   effective room role) get the grey row --msgs-bg-adm = #f4f4f4. */
+	/* HARD EVIDENCE (proroom-all-admin.json): `.msg-box-adm { background-color:
+	   var(--msgs-bg-adm); padding-top: 2px }`, and the room's resolved token is
+	   --lightTheme-msgs-bg-adm = #f4f4f4 (member rows #fff). Darker captured rows
+	   carry per-author INLINE custom colors (user color system), not the theme. */
 	.msg-box.elevated {
-		background: #f4f4f4;
+		background: var(--content-bg-adm, #f4f4f4);
+		padding-top: 2px;
+	}
+	/* Reference row structure (captured DOM): div.mr-1.d-flex.flex-row[-reverse]
+	   holding [avatar cluster][.w-100 content]. Staff rows are flex-row-reverse. */
+	.row-flex {
+		display: flex;
+		margin-right: 4px; /* mr-1 */
+	}
+	.row-flex.reverse {
+		flex-direction: row-reverse;
+	}
+	/* Avatar cluster: d-flex align-items-start flex-nowrap mt-1 (kebab + avatar);
+	   mirrored on staff rows so the avatar sits outermost-right. */
+	.side {
+		display: flex;
+		align-items: flex-start;
+		justify-content: center;
+		flex-wrap: nowrap;
+		margin-top: 4px; /* mt-1 */
+	}
+	.side.reverse {
+		flex-direction: row-reverse;
+	}
+	/* Content column: div.w-100 — header line + body live INSIDE it, beside the
+	   avatar cluster (never under it). */
+	.content {
+		flex: 1 1 auto;
+		width: 100%;
+		min-width: 0;
+	}
+	/* Header line: d-flex justify-content-between align-items-center w-100 —
+	   member: [name+badges][timestamp]; staff: [timestamp][name+badges]. */
+	.header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		width: 100%;
+	}
+	.name-block {
+		display: flex;
+		align-items: center;
+		flex-wrap: nowrap;
+		min-width: 0;
 	}
 	/* "Compact Mode" (reference switchChatDisplayMode 'c'): denser rows — tighter
 	   vertical padding + smaller body, so more messages fit on screen. */
@@ -882,7 +1056,7 @@
 		padding-top: 0.3rem;
 		padding-bottom: 0.1rem;
 	}
-	.messages.compact .row1 {
+	.messages.compact .header {
 		gap: 0.35rem;
 	}
 	.messages.compact .body {
@@ -895,22 +1069,20 @@
 		max-width: 120px;
 		max-height: 120px;
 	}
-	.row1 {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
+	/* HARD EVIDENCE (stylesheet): `.chat-reaction-hover { display: none }` +
+	   `.msg-box:hover .chat-reaction-hover { display: inline-block }` — the
+	   add-reaction affordance only appears while hovering the message row. */
+	.msg-box :global(.add-wrap) {
+		display: none;
 	}
-
-	/* Reference chat rows: EVERY row is left-aligned with the ⠇ menu on the LEFT
-	   (the reference does not flip the kebab by role). An admin/super-admin row
-	   (`.msg-box-adm`) only differs by a grey row tint; the menu stays on the left. */
+	.msg-box:hover :global(.add-wrap),
+	.msg-box:focus-within :global(.add-wrap) {
+		display: inline-block;
+	}
 
 	.msg-menu {
 		position: relative;
 		flex-shrink: 0;
-		/* The kebab is the first child → left edge for ALL rows. The reference does
-		   NOT flip the kebab by role; admin/super-admin rows keep it on the left too
-		   (only the row tint differs). */
 	}
 	.menu-trigger {
 		display: inline-flex;
@@ -938,25 +1110,52 @@
 	}
 	.menu {
 		position: absolute;
-		top: 100%;
-		/* The kebab is on the left for every row, so the dropdown opens from the
-		   left edge (no role-based flip). */
-		left: 0;
+		/* HARD EVIDENCE (stylesheet): a.msgMenu is `.dropright` — `.dropright
+		   .dropdown-menu { top: 0; left: 100%; margin-left: .125rem }`. The menu
+		   opens to the SIDE of the kebab (top-aligned), not below it — this is what
+		   keeps it from being cut off by the scroll pane. */
+		top: 0;
+		left: 100%;
 		right: auto;
-		/* Reference .dropdown-menu base: min-width 10rem (160px), z-index 1000,
-		   shadowless — the only painting shadow in the app is the modal's
-		   (report.md:1785-1792,3009). */
+		margin-left: 2px;
+		/* Reference .dropdown-menu base: min-width 10rem (160px), z-index 1000. */
 		z-index: 1000;
 		min-width: 10rem;
-		margin-top: 0.2rem;
-		/* Reference kebab menu (dropdown7.json): dark navy #0e3651 panel, no
-		   border, padding 8px 0, no shadow. */
+		/* Reference kebab menu (users-dropdown-options): navy #0e3651 panel
+		   (--archives-dropdown-menu-bg-color !important), no border, padding 8px 0. */
 		background: #0e3651;
 		border: none;
 		border-radius: 8px;
 		padding: 8px 0;
 		display: flex;
 		flex-direction: column;
+	}
+	/* Staff rows have the kebab on the RIGHT edge — flip to dropleft so the menu
+	   opens inward instead of clipping off the panel. */
+	.side.reverse .menu {
+		left: auto;
+		right: 100%;
+		margin-left: 0;
+		margin-right: 2px;
+	}
+	/* Inline reaction row inside the kebab ("Add Reaction" expanded). */
+	.react-row {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 2px;
+		padding: 4px 12px;
+	}
+	.react-row button {
+		background: transparent;
+		border: none;
+		font-size: 16px;
+		padding: 2px 4px;
+		min-height: 0;
+		cursor: pointer;
+	}
+	.react-row button:hover {
+		background: #375a7f;
+		border-radius: 4px;
 	}
 	.menu button {
 		display: flex;
@@ -985,14 +1184,15 @@
 	}
 
 	.avatar {
-		/* Captured message avatar: 35x35, square (radius 0), object-fit cover
-		   (report.md:1314 — the shared app-st-message row template). */
+		/* Reference div.avatar.pl-1 > img: 35x35, square (radius 0), object-fit
+		   cover; pl-1 = 4px gap toward the kebab. */
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
 		width: 35px;
 		height: 35px;
 		flex-shrink: 0;
+		margin-left: 4px;
 		border-radius: 0;
 		overflow: hidden;
 		background: #e7e9ef;
@@ -1031,12 +1231,14 @@
 	}
 	/* Badges sit after the username and must not be squeezed — only the name
 	   truncates. (Badges renders an inline cluster as the row's next child.) */
-	.row1 :global(.badges) {
+	.name-block :global(.badges) {
 		flex-shrink: 0;
 	}
 
 	.created-at {
-		margin-left: auto;
+		/* Header is justify-content:space-between (reference), so placement comes
+		   from DOM order, not auto-margins. mx-2 = 8px side margins. */
+		margin: 0 8px;
 		font-weight: 600;
 		font-size: 12px;
 		/* Measured `600 12px/18px` (report.md:1339; pixel-diff). */
@@ -1050,10 +1252,10 @@
 	}
 
 	.body {
-		/* Body lines up under the USERNAME. Captured shared row template: the body
-		   column's left edge sits at x=58 (report.md:1315), so the body indents
-		   58px (kebab + 35px avatar + gaps). */
-		margin: 0 8px 0 58px;
+		/* HARD EVIDENCE (stylesheet .msg-left + ml-2 mr-2 p-0): the body lives
+		   INSIDE the .w-100 content column — its indent comes from the flex layout,
+		   not a gutter margin. ml-2/mr-2 = 8px side margins. */
+		margin: 0 8px;
 		/* Reference chat body (div.msg-left): #676767, 13px / line-height 1.5. */
 		color: var(--content-text);
 		line-height: 1.5;
@@ -1102,7 +1304,10 @@
 		background: var(--content-bg);
 		border: none;
 		border-radius: 8px;
-		padding: 0.15rem 0.5rem;
+		/* HARD EVIDENCE (stylesheet): #textAreaHolder { background: var(--textarea-bg);
+		   border-radius: 8px; padding: 5px; margin: 5px }. */
+		padding: 5px;
+		margin: 5px;
 	}
 	/* Reference div.px-0.flex-fill: the textarea grows to fill, no h-padding. */
 	.txt-wrap {
@@ -1111,11 +1316,19 @@
 		padding: 0;
 	}
 	.pill textarea {
+		/* BS .form-control is display:block — kills the inline baseline gap that
+		   inflated the holder to 51px (reference holder computes 45px). */
+		display: block;
 		width: 100%;
 		box-sizing: border-box;
-		/* Resting border is transparent (not `none`) so the :focus border below
-		   doesn't shift layout. */
-		border: 1px solid transparent;
+		/* HARD EVIDENCE (computed #textAreaTxt): border-top-width 0px — the element's
+		   `border-0` class (`border: 0 !important`) kills the .txt-area border entirely,
+		   so the ACTIVE effect is ONLY the soft box-shadow (no rectangle). */
+		border: 0;
+		/* Bootstrap .form-control transition — the focus shadow FADES in. */
+		transition:
+			border-color 0.15s ease-in-out,
+			box-shadow 0.15s ease-in-out;
 		outline: none;
 		background: transparent;
 		/* Reference .txt-area.form-control.border-0: --lightTheme-textarea-color
@@ -1135,10 +1348,13 @@
 	/* Reference .txt-area:focus: 1px border + 1px box-shadow. Reuses the existing
 	   --border theme token (keeps our color, introduces no new literal). */
 	.pill textarea:focus {
-		border: 1px solid var(--border);
-		box-shadow: 1px 1px 1px var(--border);
+		/* HARD EVIDENCE: `.txt-area:focus { border-color: var(--darker-gray);
+		   box-shadow: 1px 1px 1px var(--darker-gray) }` (--darker-gray #aaa6a6) — but
+		   the border never paints (border-0 wins with width 0 !important), so the
+		   ACTIVE state is the soft 1px shadow only. */
+		box-shadow: 1px 1px 1px #aaa6a6;
 	}
-	/* Reference div.textAreaBtnsCol: a centered row of the emoji/image/GIF buttons. */
+	/* Reference div.textAreaBtnsCol: centered column holding the single + button. */
 	.textAreaBtnsCol {
 		display: flex;
 		flex-direction: row;
@@ -1148,6 +1364,25 @@
 		margin: 0;
 		gap: 0.2rem;
 		flex-shrink: 0;
+	}
+	.opts-wrap {
+		position: relative;
+		display: inline-flex;
+	}
+	/* Popover the + toggles — a small white card above the button with the
+	   emoji / image / GIF controls. */
+	.opts-pop {
+		position: absolute;
+		bottom: calc(100% + 6px);
+		right: 0;
+		z-index: 30;
+		display: flex;
+		align-items: center;
+		gap: 0.2rem;
+		background: #ffffff;
+		border: 1px solid #d9d9d9;
+		border-radius: 8px;
+		padding: 2px 6px;
 	}
 	/* Reference span.textAreaBtns: icon-only button, --textarea-holder-btns-color
 	   #676767, hover --textarea-holder-btns-hover-color var(--accent). */
@@ -1164,7 +1399,8 @@
 		border-radius: 6px;
 	}
 	.textAreaBtns:hover:not(:disabled) {
-		color: var(--accent);
+		/* HARD EVIDENCE: --textarea-holder-btns-hover-color = #0a6db1. */
+		color: #0a6db1;
 	}
 	.textAreaBtns:disabled {
 		opacity: 0.4;

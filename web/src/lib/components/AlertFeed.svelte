@@ -538,6 +538,16 @@
 		cursor: pointer;
 	}
 
+	/* HARD EVIDENCE (stylesheet): the add-reaction affordance is hover-only —
+	   `.chat-reaction-hover { display:none }` + `.msg-box:hover .chat-reaction-hover
+	   { display: inline-block }`. */
+	.msg-box :global(.add-wrap) {
+		display: none;
+	}
+	.msg-box:hover :global(.add-wrap),
+	.msg-box:focus-within :global(.add-wrap) {
+		display: inline-block;
+	}
 	.msg-box {
 		position: relative;
 		/* Reference app-st-message div.msg-box.pb-1: bottom-only 4px padding — the
@@ -792,11 +802,11 @@
 		white-space: pre-wrap;
 		font-size: var(--msg-font-size);
 	}
-	/* Reference .stockColor stylesheet rule (file2.html.html): font-weight:700;
-	   font-style:italic; text-transform:uppercase — the raw CSS rule (hard
-	   evidence) carries italic, so restore it. */
+	/* HARD EVIDENCE (proroom-all-admin.json): the `.stockColor` rule is exactly
+	   `{ font-weight:700; font-style:italic; text-transform:uppercase }` with NO color —
+	   the ticker INHERITS the body colour (#676767 on white rows, computed rgb(103,103,103)).
+	   So do not pin a color; let it inherit .body. */
 	.stock {
-		color: var(--ticker-color, #1a1a1a);
 		font-weight: 700;
 		font-style: italic;
 		text-transform: uppercase;

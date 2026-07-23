@@ -193,19 +193,19 @@
 		background: transparent;
 		/* Reference idle .nav-link: transparent 1px border on all sides. */
 		border: 1px solid transparent;
-		/* Reference idle main-tab: color #fff (--tabs-color) via
-		   .mainTabset .nav-link{color:var(--tabs-color)}; weight 300. */
-		color: #fff;
+		/* HARD EVIDENCE (LIVE room cascade): `.mainTabset .nav-link { color:
+		   var(--tabs-color) }` with the room's `:root { --tabs-color: #fff }`. */
+		color: var(--tabs-color, #ffffff);
 		font-size: 12px;
 		font-weight: 300;
 		line-height: 12px;
 		/* Reference idle .nav-link: 8px padding all sides, 5px margins all sides. */
 		padding: 8px;
 		margin: 5px;
-		/* Reference .nav-tabs .nav-link: folder shape — only the TOP corners are
-		   rounded (.25rem ≈ 4px), bottom corners square. */
-		border-top-left-radius: 4px;
-		border-top-right-radius: 4px;
+		/* HARD EVIDENCE: idle tab top corners radius 6px (border-top-*-radius:6px),
+		   bottom corners square. */
+		border-top-left-radius: 6px;
+		border-top-right-radius: 6px;
 		border-bottom-left-radius: 0;
 		border-bottom-right-radius: 0;
 		cursor: pointer;
@@ -222,21 +222,33 @@
 		opacity: 0.4;
 		cursor: not-allowed;
 	}
+	/* HARD EVIDENCE (stylesheet): `.mainTabset .nav-link.active { background-color:
+	   var(--tab-active-bg); border-color: transparent; border-radius: 3px }` —
+	   generic active tabs are a flat 3px-radius pill, NO folder border. */
 	.tabbar button.active {
-		/* Measured active tab in the admin-room capture: color #fff on
-		   bg rgb(69,162,255) #45a2ff (--tab-active-bg), transparent border,
-		   3px radius, weight 300 (report.md:2454,853,211). */
 		color: #fff;
 		background: var(--tab-active-bg, #45a2ff);
 		font-weight: 300;
 		border-color: transparent;
 		border-radius: 3px;
 	}
-	/* Reference special-case: the ACTIVE Notes tab is overridden to the dark
-	   #0c2434 folder fill (`.mainTabset #presAreaTabs-notes.active` gets
-	   background-color var(--notes-tabs-bg), report.md:856). */
+	/* HARD EVIDENCE (stylesheet): ONLY the active NOTES tab is the folder —
+	   `.mainTabset .presAreaTabs-notes.active { border-bottom: transparent;
+	   padding-bottom: 15px; margin-bottom: -1px; border-radius: 3px 3px 0 0;
+	   background-color: var(--notes-tabs-bg) }` + `.presAreaTabs-notes.active
+	   { position: relative; z-index: 10 }`, with the #0a6db1 top/right/left border
+	   (computed a#notes-tab.active: rgb(10,109,177) 1px, bottom 0). */
 	.tabbar button.active.notes-tab {
 		background: var(--notes-tabs-bg, #0c2434);
+		border-top: 1px solid var(--tabs-border-color, #0a6db1);
+		border-right: 1px solid var(--tabs-border-color, #0a6db1);
+		border-left: 1px solid var(--tabs-border-color, #0a6db1);
+		border-bottom: 0;
+		border-radius: 3px 3px 0 0;
+		padding-bottom: 15px;
+		margin-bottom: -1px;
+		position: relative;
+		z-index: 10;
 	}
 	.locked-pill {
 		display: inline-flex;

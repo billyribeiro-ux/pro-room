@@ -66,7 +66,10 @@
 	   chrome. Surfaces #fff/#e1e1e1, body #676767, date #8394a9, borders
 	   #d9d9d9, separator #e8e8e8; the panel HEADER bar is dark #111/#ccc. */
 	--content-bg: #ffffff;
-	/* Admin chat-row highlight — spec --lightTheme-msgs-bg-adm (report.md:2843). */
+	/* Staff (admin/mod/presenter) chat-row highlight. HARD EVIDENCE (proroom-all-admin
+	   .json resolved room tokens): --lightTheme-msgs-bg-adm = #f4f4f4 (member rows
+	   --lightTheme-msgs-bg = #fff). The darker #d7d7d7/#e8e8e8 seen on some captured
+	   rows are per-AUTHOR inline custom colors (the user color system), not the theme. */
 	--content-bg-adm: #f4f4f4;
 	--content-text: #676767;
 	/* Timestamp/date gray — spec --lightTheme-date-color (report.md:2846). */
