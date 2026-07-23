@@ -257,21 +257,27 @@
 		color: #fff;
 	}
 	.btn.primary:hover:not(:disabled) {
-		background: var(--accent-hover);
-		border-color: var(--accent-hover);
+		/* HARD EVIDENCE (modals-core.md §Resolved `.modal-content .btn:hover{
+		   opacity:var(--modal-btn-hover-opacity)}` = 0.9): in-modal buttons dim on
+		   hover; they do NOT swap to the #45a2ff accent (which the old --accent-hover
+		   mapping did, flipping the #0a6db1 Start Test button blue). */
+		opacity: 0.9;
 	}
 	.btn.primary:disabled {
 		opacity: 0.6;
 		cursor: not-allowed;
 	}
-	/* Darkly btn-success — filled green, matching the reference Copy Results button. */
+	/* HARD EVIDENCE (modals-core.md §DOM webrtc L100: footer "Copy Results" is `btn
+	   btn-success`; §Resolved L273: an in-`.modal-content` `.btn-success` computes bg
+	   #92d528 = --modal-btn-success-bg via the app override — NOT the Darkly badge
+	   #00bc8c). --modal-success is the #92d528 alias in layout.css. */
 	.btn.success {
-		background: var(--modal-success, #00bc8c);
-		border-color: var(--modal-success, #00bc8c);
+		background: var(--modal-success, #92d528);
+		border-color: var(--modal-success, #92d528);
 		color: #fff;
 	}
 	.btn.success:hover {
-		background: color-mix(in srgb, var(--modal-success, #00bc8c) 88%, #000);
-		border-color: color-mix(in srgb, var(--modal-success, #00bc8c) 88%, #000);
+		background: color-mix(in srgb, var(--modal-success, #92d528) 88%, #000);
+		border-color: color-mix(in srgb, var(--modal-success, #92d528) 88%, #000);
 	}
 </style>

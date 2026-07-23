@@ -1,3 +1,4 @@
+import { devLoginIfBounced, resolveApi } from './util';
 import { test, expect, type Page } from '@playwright/test';
 
 /**
@@ -10,7 +11,7 @@ import { test, expect, type Page } from '@playwright/test';
  * localStorage prefs/filters don't leak between tests.
  */
 
-const API = 'http://localhost:8081';
+let API = 'http://localhost:8080'; // resolved by resolveApi() in beforeAll
 const SHOTS = 'e2e/screenshots';
 let roomId: string;
 
@@ -20,6 +21,7 @@ async function shot(page: Page, name: string) {
 }
 
 test.beforeAll(async ({ request, playwright }) => {
+	API = await resolveApi(request);
 	const res = await request.get(`${API}/api/rooms`);
 	expect(res.ok(), 'GET /api/rooms (is the Rust API up on :8081?)').toBeTruthy();
 	const rooms = (await res.json()) as Array<{ id: string; is_live: boolean }>;
@@ -69,6 +71,7 @@ async function enterRoom(page: Page) {
 	// horizontal gutter down.
 	await page.addInitScript(() => localStorage.setItem('acdock.fraction', '0.35'));
 	await page.goto(`/rooms/${roomId}`);
+	await devLoginIfBounced(page, `/rooms/${roomId}`);
 	await expect(page.locator('.main-stage')).toBeVisible({ timeout: 20_000 });
 	await expect(page.locator('.alerts-pane')).toBeVisible();
 }
@@ -123,23 +126,23 @@ test('alert popup toast fires on another user’s new alert', async ({ page }) =
 	// password is never reset). A per-run email always registers cleanly and gives
 	// a viewer that differs from the dev-bypass admin author.
 	const memberEmail = `member-e2e-${Date.now()}@ptr.test`;
-	const reg = await page.request.post('http://localhost:8081/api/auth/register', {
+	const reg = await page.request.post(`${API}/api/auth/register`, {
 		data: { email: memberEmail, password: 'proom1234', display_name: 'PtrMember' }
 	});
 	expect(reg.ok(), 'member register').toBeTruthy();
-	const login = await page.request.post('http://localhost:8081/api/auth/login', {
+	const login = await page.request.post(`${API}/api/auth/login`, {
 		data: { email: memberEmail, password: 'proom1234' }
 	});
 	expect(login.ok(), 'member login').toBeTruthy();
 	await enterRoom(page); // re-enter now that the member session cookie is set
-	await page.evaluate(async (rid) => {
-		await fetch(`http://localhost:8081/api/rooms/${rid}/alerts`, {
+	await page.evaluate(async ({ rid, api }) => {
+		await fetch(`${api}/api/rooms/${rid}/alerts`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			credentials: 'omit', // no member cookie → dev-bypass admin authors it
+			credentials: 'omit',
 			body: JSON.stringify({ symbol: 'E2ETOAST', side: 'buy', note: 'popup' })
 		});
-	}, roomId);
+	}, { rid: roomId, api: API });
 	const toast = page.locator('.ngx-toastr', { hasText: 'E2ETOAST' });
 	await expect(toast).toBeVisible({ timeout: 8_000 });
 	await expect(toast).toContainText('Alert from @');
@@ -183,20 +186,20 @@ test('Edit my Info updates the display name', async ({ page }) => {
 	});
 	await shot(page, 'f03-edit-my-info');
 	const me = await page.evaluate(
-		async () =>
-			await (await fetch('http://localhost:8081/api/auth/me', { credentials: 'include' })).json()
+		async (api) => await (await fetch(`${api}/api/auth/me`, { credentials: 'include' })).json(),
+		API
 	);
 	expect(me.user.display_name).toBe(name);
 	// reset
 	await page.evaluate(
-		async () =>
-			await fetch('http://localhost:8081/api/auth/me', {
+		async (api) =>
+			await fetch(`${api}/api/auth/me`, {
 				method: 'PATCH',
 				headers: { 'Content-Type': 'application/json' },
 				credentials: 'include',
 				body: JSON.stringify({ display_name: 'DevAdmin' })
 			})
-	);
+	, API);
 });
 
 test('mute a user hides their chat + lists them in Manage Muted Users', async ({ page }) => {

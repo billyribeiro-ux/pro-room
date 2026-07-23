@@ -17,10 +17,12 @@
 
 <Modal {open} {onClose} title="Followed Chat Users" {footer}>
 	{#if followed.users.length === 0}
-		<!-- Reference body is a single centered text node, no icon. -->
-		<div class="empty">You don't have any followed users.</div>
+		<!-- Reference body is a single centered text node, no icon. The
+		     `followed-users-body` marker lets the scoped `:global(.panel:has(...))`
+		     rule drop this dialog's stacking to z-1054 without editing Modal.svelte. -->
+		<div class="empty followed-users-body">You don't have any followed users.</div>
 	{:else}
-		<ul class="user-list">
+		<ul class="user-list followed-users-body">
 			{#each followed.users as u (u.id)}
 				<li class="row">
 					<span class="avatar" aria-hidden="true">{(u.name[0] || '?').toUpperCase()}</span>
@@ -35,6 +37,15 @@
 </Modal>
 
 <style>
+	/* HARD EVIDENCE (modals-admin.md §Scoped CSS app-followed-users-modal:
+	   `#followedUsersModal{z-index:1054!important}` + Resolved "followed = z-index
+	   1054" vs 1055 elsewhere — deliberate stacking so Followed opens BELOW the
+	   standard modal layer). The shared Modal panel is z-1055; drop it to 1054 only
+	   when it hosts this dialog, keyed on the `.followed-users-body` marker (the
+	   UserInfoModal `:has()` precedent — no edit to Modal.svelte). */
+	:global(.panel:has(.followed-users-body)) {
+		z-index: 1054;
+	}
 	.empty {
 		text-align: center;
 		padding: 1.25rem 0.5rem;

@@ -214,7 +214,10 @@
 		{:else}
 			<!-- Reference Image/GIF/Video tab: url input + "OR..." + upload/drop zone + rows=2 message. -->
 			<div class="field input-group">
-				<span class="prepend" aria-hidden="true"><Icon name="link" size={14} /></span>
+				<!-- The image-tab addon is `#addon-img`, which the post-alert scoped rule
+				     paints #0a6db1 (--modal-input-group-bg) — distinct from the url tab's
+				     `#addon-url` (global .input-group-text #fff). -->
+				<span class="prepend prepend-img" aria-hidden="true"><Icon name="link" size={14} /></span>
 				<input
 					id="alert-media-url"
 					name="alert-media-url"
@@ -368,16 +371,28 @@
 		align-items: stretch;
 		gap: 0;
 	}
+	/* HARD EVIDENCE (modals-core.md §Resolved L281: post-alert `#addon-url` (the
+	   Text-Url tab prepend) = global `.input-group-text` → background var(--white) #fff,
+	   color --bs-body-color #212529, border 1px solid --lighter-gray #eee). This is the
+	   default addon; the image-tab addon overrides it below. */
 	.prepend {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
 		padding: 0 0.6rem;
-		background: var(--bg-elev-2);
-		border: 1px solid var(--border);
+		background: #ffffff;
+		border: 1px solid #eeeeee;
 		border-right: none;
 		border-radius: var(--radius) 0 0 var(--radius);
-		color: var(--text-dim);
+		color: #212529;
+	}
+	/* HARD EVIDENCE (modals-core.md §Scoped CSS L133 `#addon-img{background-color:var(
+	   --modal-input-group-bg)}` + §Resolved L280 → #0a6db1). The image-tab addon is the
+	   own-color blue, distinct from the white url-tab addon. */
+	.prepend-img {
+		background: var(--modal-input-bg, #0a6db1);
+		border-color: var(--modal-input-bg, #0a6db1);
+		color: #ffffff;
 	}
 	.input-group input {
 		flex: 1;
@@ -472,9 +487,14 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.4rem;
-		/* HARD EVIDENCE (proroom-all-admin.json inventory.buttons): the "Post Alert"
-		   button is `btn btn-success` — GREEN, not the accent blue. */
-		background: var(--positive, #00bc8c);
+		/* HARD EVIDENCE (modals-core.md §DOM post-alert L94: footer "Post Alert" is
+		   `btn btn-success`; §Resolved L273: an in-`.modal-content` `.btn-success`
+		   (webrtc Copy / av Save) computes bg #92d528 = --modal-btn-success-bg via the
+		   app override `.modal-content .btn-success{background-color:var(--modal-btn-success-bg)}`,
+		   L196 — NOT the Darkly badge green #00bc8c). PollModal's Send Poll is #198754
+		   only because it is a FLOATING panel outside .modal-content; Post-Alert lives
+		   inside the modal shell, so the modal override wins. */
+		background: var(--modal-success, #92d528);
 		color: #fff;
 		border: none;
 		border-radius: var(--radius);
@@ -483,7 +503,9 @@
 		font-weight: 700;
 	}
 	.primary:hover:not(:disabled) {
-		background: color-mix(in srgb, var(--positive, #00bc8c) 88%, #000);
+		/* --modal-btn-hover-opacity 0.9 for in-modal buttons (modals-core.md
+		   §Resolved `.modal-content .btn:hover{opacity:.9}`). */
+		opacity: 0.9;
 	}
 	.primary:disabled {
 		opacity: 0.6;

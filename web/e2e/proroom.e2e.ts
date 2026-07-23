@@ -1,3 +1,4 @@
+import { devLoginIfBounced, resolveApi } from './util';
 import { test, expect, type Page } from '@playwright/test';
 
 /**
@@ -15,7 +16,7 @@ import { test, expect, type Page } from '@playwright/test';
  * a live room. The web server is started by playwright.config.ts (vite dev:4173).
  */
 
-const API = 'http://localhost:8081';
+let API = 'http://localhost:8080'; // resolved by resolveApi() in beforeAll
 const SHOTS = 'e2e/screenshots';
 
 let roomId: string;
@@ -28,6 +29,7 @@ async function shot(page: Page, name: string) {
 /** Navigate into the room and wait for the shell to be interactive. */
 async function enterRoom(page: Page) {
 	await page.goto(`/rooms/${roomId}`);
+	await devLoginIfBounced(page, `/rooms/${roomId}`);
 	// The layout calls /api/auth/me on mount; dev-bypass returns a super-admin so
 	// we land in the room rather than bouncing to /login.
 	await expect(page.locator('.main-stage')).toBeVisible({ timeout: 20_000 });
@@ -64,6 +66,7 @@ async function closeModal(page: Page) {
 }
 
 test.beforeAll(async ({ request }) => {
+	API = await resolveApi(request);
 	// Discover a room and make sure it is live so presenter capabilities are on.
 	const res = await request.get(`${API}/api/rooms`);
 	expect(res.ok(), 'GET /api/rooms should succeed (is the Rust API up on :8081?)').toBeTruthy();
@@ -176,7 +179,7 @@ test('admin deletes an alert via the row ⋮ menu', async ({ page }) => {
 
 test('send chat messages and switch channels', async ({ page }) => {
 	const stamp = `chat-${Date.now()}`;
-	const composer = page.locator('.chat-pane .pill textarea');
+	const composer = page.locator('.chat-pane #textAreaTxt');
 
 	await composer.fill(`gm room, watching $TSLA ${stamp}`);
 	await composer.press('Enter');
@@ -205,15 +208,15 @@ test('react to an alert with an emoji', async ({ page }) => {
 	// reaction, so the 🚀 toggle deterministically lands as "mine".
 	const symbol = `RX${Date.now() % 1_000_000}`;
 	await page.evaluate(
-		async ({ rid, sym }) => {
-			await fetch(`http://localhost:8081/api/rooms/${rid}/alerts`, {
+		async ({ rid, sym, api }) => {
+			await fetch(`${api}/api/rooms/${rid}/alerts`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				credentials: 'include',
 				body: JSON.stringify({ symbol: sym, side: 'buy', note: 'react-test' })
 			});
 		},
-		{ rid: roomId, sym: symbol }
+		{ rid: roomId, sym: symbol, api: API }
 	);
 
 	const row = page.locator('.alerts-pane li.msg-box', { hasText: symbol });
@@ -222,11 +225,13 @@ test('react to an alert with an emoji', async ({ page }) => {
 	// The add-reaction affordance is hover-only (reference .chat-reaction-hover).
 	await row.hover();
 	await row.getByRole('button', { name: 'Add reaction' }).click();
-	const picker = page.locator("[role='menu'][aria-label='Pick a reaction']");
+	const picker = page.locator('.emoji-mart').first();
 	await expect(picker).toBeVisible();
 	await shot(page, '11-reaction-picker');
 
-	await picker.getByRole('menuitem', { name: '🚀' }).click();
+	// EmojiMart replica: search narrows the grid; pick the rocket cell.
+	await picker.locator('.emoji-mart-search input').fill('rocket');
+	await picker.locator(".emoji-mart-scroll [role='button'][title='Rocket']").first().click();
 	// Pills are server-aggregated (not optimistic) — wait for the broadcast, then for
 	// the mine state to settle (WS echo can render mine=false a beat before the POST
 	// response sets it true).
@@ -240,10 +245,17 @@ test('react to an alert with an emoji', async ({ page }) => {
 // reference, where doPollUI sits beside doPostAlertUI — not the main navbar).
 test('create, vote on, and close a poll', async ({ page }) => {
 	await page.getByRole('button', { name: 'Create a poll' }).click();
-	// PollModal is a draggable floating "Polls" panel (not a role=dialog).
-	const panel = page.locator("section[aria-label='Polls']");
+	// PollModal is a draggable floating "Polls" panel (not a role=dialog). The
+	// active-poll panel now shares the same reference window chrome/aria-label,
+	// so pin the CREATE panel by its question input.
+	const panel = page.locator("section[aria-label='Polls']", {
+		has: page.locator('#pollQuestionTxt')
+	});
 	await expect(panel).toBeVisible();
-	await panel.locator('#pollQuestionTxt').fill('Best setup for tomorrow? $SPY');
+	// Unique question per run — polls persist, so a repeated question would match
+	// multiple floating panels (strict-mode violation).
+	const pollQ = `Best setup for tomorrow? $SPY ${Date.now() % 1_000_000}`;
+	await panel.locator('#pollQuestionTxt').fill(pollQ);
 	// Choices are added one at a time via the choice input + "Add Choice".
 	for (const choice of ['Breakout', 'Pullback', 'Range-bound']) {
 		await panel.locator('#pollChoiceTxt').fill(choice);
@@ -253,17 +265,35 @@ test('create, vote on, and close a poll', async ({ page }) => {
 
 	await panel.getByRole('button', { name: 'Send Poll' }).click();
 
-	const poll = page.locator("section[aria-label='Poll']", { hasText: 'Best setup for tomorrow' });
+	const poll = page.locator("section[aria-label='Polls']", { hasText: pollQ });
 	await expect(poll).toBeVisible({ timeout: 10_000 });
 	await shot(page, '14-poll-created');
 
+	// All poll windows float centered (reference pollModalHolder) — a parallel
+	// worker's window can stack over ours at any moment. Minimize others, then
+	// act, retrying like a real user.
+	const minimizeOthers = async () => {
+		const others = page
+			.locator('section.poll-panel', { hasNotText: pollQ })
+			.locator("[aria-label='Minimize']");
+		for (const btn of await others.all()) {
+			await btn.click({ timeout: 1_000 }).catch(() => {});
+		}
+	};
+
 	// Vote for the first option.
-	await poll.locator('button.option-btn').first().click();
+	await expect(async () => {
+		await minimizeOthers();
+		await poll.locator('button.option-btn').first().click({ timeout: 2_000 });
+	}).toPass({ timeout: 20_000 });
 	await expect(poll.locator('.total')).toContainText('vote', { timeout: 10_000 });
 	await shot(page, '15-poll-voted');
 
 	// Close the poll (admin only).
-	await poll.locator('button.close-btn').click();
+	await expect(async () => {
+		await minimizeOthers();
+		await poll.locator('button.close-btn').click({ timeout: 2_000 });
+	}).toPass({ timeout: 20_000 });
 	await expect(poll.locator('.badge.closed')).toBeVisible({ timeout: 10_000 });
 	await shot(page, '16-poll-closed');
 });

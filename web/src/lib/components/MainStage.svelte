@@ -250,6 +250,30 @@
 		position: relative;
 		z-index: 10;
 	}
+	/* HARD EVIDENCE (proroom-modals-and-deep.md File 3 §"Responsive deltas",
+	   docs/reference/captures/proroom-deep-member-833px.json @ innerWidth 833):
+	   at ≤833px the active-tab treatment flips from the #45a2ff pill (wide) to
+	   the navy #0c2434 folder tab bordered #0a6db1 — measured on the (then
+	   default-active) Notes tab: bg rgb(12,36,52), color #fff, height 36.5px,
+	   padding-bottom 15px, margin-bottom -1px, border-bottom-width 0px,
+	   border-top/right/left-color rgb(10,109,177) #0a6db1, border-top-radius 3px.
+	   Finding 1: this is the generic active-tab treatment at the breakpoint, so it
+	   applies to whichever tab is active (Screens/Notes/Files), not just Notes. */
+	@media (max-width: 833px) {
+		.tabbar button.active {
+			background: var(--notes-tabs-bg, #0c2434);
+			color: #fff;
+			border-top: 1px solid var(--tabs-border-color, #0a6db1);
+			border-right: 1px solid var(--tabs-border-color, #0a6db1);
+			border-left: 1px solid var(--tabs-border-color, #0a6db1);
+			border-bottom: 0;
+			border-radius: 3px 3px 0 0;
+			padding-bottom: 15px;
+			margin-bottom: -1px;
+			position: relative;
+			z-index: 10;
+		}
+	}
 	.locked-pill {
 		display: inline-flex;
 		align-items: center;

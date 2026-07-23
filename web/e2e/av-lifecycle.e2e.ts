@@ -1,3 +1,4 @@
+import { devLoginIfBounced, resolveApi } from './util';
 import { test, expect } from '@playwright/test';
 
 /**
@@ -13,10 +14,11 @@ import { test, expect } from '@playwright/test';
  * can_publish_screen, so the camera/mic controls are reachable) and a live room.
  */
 
-const API = 'http://localhost:8081';
+let API = 'http://localhost:8080'; // resolved by resolveApi() in beforeAll
 let roomId: string;
 
 test.beforeAll(async ({ request }) => {
+	API = await resolveApi(request);
 	const res = await request.get(`${API}/api/rooms`);
 	expect(res.ok(), 'GET /api/rooms should succeed (is the Rust API up on :8081?)').toBeTruthy();
 	const rooms = (await res.json()) as Array<{ id: string; is_live: boolean }>;
@@ -30,6 +32,7 @@ test.beforeAll(async ({ request }) => {
 
 test('camera X removes the tile — no lingering black tile (BUG A)', async ({ page }) => {
 	await page.goto(`/rooms/${roomId}`);
+	await devLoginIfBounced(page, `/rooms/${roomId}`);
 
 	// The Camera control enables once LiveKit connects.
 	const startCam = page.getByRole('button', { name: 'Camera', exact: true });
@@ -43,7 +46,15 @@ test('camera X removes the tile — no lingering black tile (BUG A)', async ({ p
 
 	// Click the X. THE FIX: the tile is fully removed (pre-fix it lingered, black,
 	// because the muted-but-published track kept #refresh re-adding it).
-	await closeX.click();
+	// A parallel worker's poll window (reference-centered, draggable) can float
+	// over the tile at ANY moment — minimize panels then click, retrying like a
+	// real user would.
+	await expect(async () => {
+		for (const btn of await page.locator(".poll-panel [aria-label='Minimize']").all()) {
+			await btn.click({ timeout: 1_000 }).catch(() => {});
+		}
+		await closeX.click({ timeout: 2_000 });
+	}).toPass({ timeout: 25_000 });
 	await expect(closeX).toHaveCount(0, { timeout: 10_000 });
 
 	// Toolbar returns to the start-Camera state.
@@ -59,6 +70,7 @@ test('mic start/stop completes without a thrown error (BUG A + AV-Settings regre
 	});
 
 	await page.goto(`/rooms/${roomId}`);
+	await devLoginIfBounced(page, `/rooms/${roomId}`);
 	const startMic = page.getByRole('button', { name: 'Microphone', exact: true });
 	await expect(startMic).toBeEnabled({ timeout: 25_000 });
 	await startMic.click();

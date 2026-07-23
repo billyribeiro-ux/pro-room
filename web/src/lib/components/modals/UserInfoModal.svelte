@@ -176,12 +176,16 @@
 		font-weight: 700;
 		border-radius: 0.25rem;
 		padding: 0.1rem 0.45rem;
-		/* Online = Darkly success; Offline = badge-danger (reference). */
-		background: var(--modal-success, #00bc8c);
+		/* HARD EVIDENCE (proroom-modals-and-deep.md, rendered User-Info popup):
+		   the status badges use the Darkly BADGE scale — Online badge-success
+		   #00bc8c, Offline badge-danger #E74C3C (--danger) — NOT the modal
+		   BUTTON tokens (--modal-success #92d528 / --modal-danger #bb352a),
+		   which the previous var() mappings resolved to. */
+		background: var(--positive, #00bc8c);
 		color: #fff;
 	}
 	.status-badge.offline {
-		background: var(--modal-danger, #e74c3c);
+		background: var(--negative, #e74c3c);
 	}
 	.tabs {
 		display: flex;
@@ -253,7 +257,11 @@
 		color: #fff;
 	}
 	.close-btn {
-		background: var(--modal-btn-secondary, #444);
+		/* HARD EVIDENCE (proroom-modals-and-deep.md §Buttons [15] "THE OWN-COLOR
+		   FINDING"): the User-Info modal footer Close is `button.btn.btn-primary`
+		   computing bg rgb(10,109,177) = #0a6db1 (--modal-btn-close-bg), text #fff —
+		   NOT the grey btn-secondary #6c757d. */
+		background: var(--modal-close-bg, #0a6db1);
 		color: #fff;
 		border: none;
 		border-radius: var(--radius);

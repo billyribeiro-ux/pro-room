@@ -1,5 +1,7 @@
 <script lang="ts">
 	import Icon from './Icon.svelte';
+	import EmojiMart from './EmojiMart.svelte';
+	import { fixedPopoverStyle } from '$lib/popoverPosition';
 	import type { Attachment } from 'svelte/attachments';
 
 	/** A single aggregated reaction for one emoji on a message. */
@@ -19,29 +21,13 @@
 	}
 	let { reactions, onToggle, canReact = true }: Props = $props();
 
-	// Curated common set — no emoji-mart dependency.
-	const PICKER_EMOJI = [
-		'👍',
-		'👎',
-		'🔥',
-		'🚀',
-		'😂',
-		'❤️',
-		'💯',
-		'👀',
-		'✅',
-		'❌',
-		'🎯',
-		'💪',
-		'🙏',
-		'😮',
-		'📈',
-		'📉'
-	] as const;
-
 	let pickerOpen = $state(false);
+	let addBtnEl = $state<HTMLElement | null>(null);
+	let pickerStyle = $state('');
 
 	function togglePicker() {
+		// container="body" equivalent: escape the chat scroller's clipping.
+		if (!pickerOpen && addBtnEl) pickerStyle = fixedPopoverStyle(addBtnEl);
 		pickerOpen = !pickerOpen;
 	}
 
@@ -100,24 +86,18 @@
 					aria-label="Add reaction"
 					aria-haspopup="menu"
 					aria-expanded={pickerOpen}
+					bind:this={addBtnEl}
 					onclick={togglePicker}
 				>
 					<Icon name="smile" family="regular" size={12} />
 				</button>
 
 				{#if pickerOpen}
-					<div class="picker" role="menu" aria-label="Pick a reaction" {@attach dismissable}>
-						{#each PICKER_EMOJI as emoji (emoji)}
-							<button
-								type="button"
-								class="picker-emoji"
-								role="menuitem"
-								aria-label="React with {emoji}"
-								onclick={() => pick(emoji)}
-							>
-								{emoji}
-							</button>
-						{/each}
+					<!-- HARD EVIDENCE (chat-panel.md:381): the "Add Reaction" affordance
+					     opens an emoji-mart popover (ngbPopover, shown/hidden handlers).
+					     Hosted in the same dismissable wrapper; picking closes it. -->
+					<div class="picker" style={pickerStyle} {@attach dismissable}>
+						<EmojiMart onSelect={(native) => pick(native)} />
 					</div>
 				{/if}
 			</div>
@@ -192,36 +172,14 @@
 		cursor: pointer;
 	}
 
+	/* Hosts the EmojiMart replica (its own #d9d9d9 border/5px radius is the
+	   popover chrome, per popOverDiv's zero-padding body). */
 	.picker {
 		position: absolute;
 		bottom: 100%;
 		left: 0;
 		z-index: 10;
 		margin-bottom: 0.3rem;
-		display: grid;
-		grid-template-columns: repeat(8, 1fr);
-		gap: 0.1rem;
-		width: max-content;
-		max-width: 15rem;
-		background: #ffffff;
-		border: 1px solid #e3e5ec;
-		border-radius: 10px;
-		padding: 0.3rem;
-	}
-	.picker-emoji {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		background: transparent;
-		border: none;
-		border-radius: 6px;
-		width: 1.6rem;
-		height: 1.6rem;
-		font-size: 1rem;
-		line-height: 1;
-		cursor: pointer;
-	}
-	.picker-emoji:hover {
-		background: #f0f4fb;
+		padding: 0;
 	}
 </style>

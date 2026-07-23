@@ -1,0 +1,215 @@
+<app-poll-modal
+    _ngcontent-ng-c977335924=""
+    id="pollModalCompHolder"
+    class="pollModalHolder"
+    _nghost-ng-c3558549984=""
+    ><div
+        _ngcontent-ng-c3558549984=""
+        id="pollPanelTitlebar"
+        class="poll-panel-titlebar"
+    >
+        <span _ngcontent-ng-c3558549984="" class="poll-panel-title">Polls</span>
+        <div _ngcontent-ng-c3558549984="" class="poll-panel-controls">
+            <button
+                _ngcontent-ng-c3558549984=""
+                type="button"
+                title="Minimize"
+                class="poll-panel-btn"
+            >
+                <i
+                    _ngcontent-ng-c3558549984=""
+                    class="fa fa-window-minimize"
+                ></i></button
+            ><button
+                _ngcontent-ng-c3558549984=""
+                type="button"
+                title="Maximize"
+                class="poll-panel-btn"
+            >
+                <i
+                    _ngcontent-ng-c3558549984=""
+                    class="fa fa-window-maximize"
+                ></i></button
+            ><button
+                _ngcontent-ng-c3558549984=""
+                type="button"
+                aria-label="Close"
+                title="Close"
+                class="poll-panel-btn poll-panel-btn-close"
+            >
+                <i _ngcontent-ng-c3558549984="" class="fa fa-times"></i>
+            </button>
+        </div>
+    </div>
+    <div
+        _ngcontent-ng-c3558549984=""
+        class="poll-panel-body"
+        style="display: block"
+    >
+        <div _ngcontent-ng-c3558549984="" class="row">
+            <ul
+                _ngcontent-ng-c3558549984=""
+                id="nav-tab"
+                role="tablist"
+                class="nav nav-tabs"
+            >
+                <li _ngcontent-ng-c3558549984="" class="nav-item">
+                    <a
+                        _ngcontent-ng-c3558549984=""
+                        id="sendpolltab"
+                        aria-controls="sendpoll"
+                        data-bs-target="#sendpoll"
+                        role="tab"
+                        data-bs-toggle="tab"
+                        aria-selected="true"
+                        class="nav-link active"
+                        >Create New Poll
+                    </a>
+                </li>
+                <li _ngcontent-ng-c3558549984="" class="nav-item">
+                    <a
+                        _ngcontent-ng-c3558549984=""
+                        ria-controls="savedPolls"
+                        role="tab"
+                        data-bs-target="#savedPolls"
+                        data-bs-toggle="tab"
+                        aria-selected="false"
+                        class="nav-link"
+                        >Pre-Canned Polls
+                    </a>
+                </li>
+            </ul>
+            <div _ngcontent-ng-c3558549984="" class="tab-content w-100 p-2">
+                <div
+                    _ngcontent-ng-c3558549984=""
+                    role="tabpanel"
+                    id="sendpoll"
+                    class="tab-pane active"
+                >
+                    <div _ngcontent-ng-c3558549984="" class="p-2">
+                        <h3 _ngcontent-ng-c3558549984="">
+                            <span
+                                _ngcontent-ng-c3558549984=""
+                                class="label label-warning"
+                                >1</span
+                            >
+                            Enter your poll question:
+                        </h3>
+                        <input
+                            _ngcontent-ng-c3558549984=""
+                            type="text"
+                            id="pollQuestionTxt"
+                            placeholder="Main poll question (i.e. Where do you think the market is going?)"
+                            class="form-control ng-untouched ng-pristine ng-valid"
+                        />
+                        <hr _ngcontent-ng-c3558549984="" />
+                        <h3 _ngcontent-ng-c3558549984="">
+                            <span
+                                _ngcontent-ng-c3558549984=""
+                                class="label label-warning"
+                                >2</span
+                            >
+                            Add Choices/Answers:
+                        </h3>
+                        <div _ngcontent-ng-c3558549984="" class="input-group">
+                            <input
+                                _ngcontent-ng-c3558549984=""
+                                type="text"
+                                id="pollChoiceTxt"
+                                placeholder="Enter a choice (i.e. Up, Down, Sideways)"
+                                class="form-control ng-untouched ng-pristine ng-valid"
+                            /><span
+                                _ngcontent-ng-c3558549984=""
+                                class="input-group-btn"
+                                ><button
+                                    _ngcontent-ng-c3558549984=""
+                                    type="button"
+                                    class="btn btn-outline-light"
+                                >
+                                    <i
+                                        _ngcontent-ng-c3558549984=""
+                                        aria-hidden="true"
+                                        class="fa fa-plus-circle"
+                                    ></i
+                                    >&nbsp;&nbsp;Add Choice
+                                </button></span
+                            >
+                        </div>
+                        <ol _ngcontent-ng-c3558549984="">
+                            <!---->
+                        </ol>
+                        <hr _ngcontent-ng-c3558549984="" />
+                        <h3 _ngcontent-ng-c3558549984="">
+                            <span
+                                _ngcontent-ng-c3558549984=""
+                                class="label label-warning"
+                                >3</span
+                            >
+                            When done editing, Send your poll
+                        </h3>
+                        <div
+                            _ngcontent-ng-c3558549984=""
+                            class="anonymous-poll-container"
+                        >
+                            <input
+                                _ngcontent-ng-c3558549984=""
+                                type="checkbox"
+                                name="anonymous-poll"
+                                id="anonymous-poll"
+                                title="Anonymous Poll"
+                                class="form-check-input ng-untouched ng-pristine ng-valid"
+                            /><label
+                                _ngcontent-ng-c3558549984=""
+                                for="anonymous-poll"
+                                class="form-check-label"
+                            >
+                                Anonymous Poll (Does not show the voting
+                                name/email, just results)
+                            </label>
+                        </div>
+                        <div
+                            _ngcontent-ng-c3558549984=""
+                            class="poll-panel-footer"
+                        >
+                            <button
+                                _ngcontent-ng-c3558549984=""
+                                type="button"
+                                class="btn btn-outline-light pull-right"
+                                style="text-align: center"
+                            >
+                                <i
+                                    _ngcontent-ng-c3558549984=""
+                                    aria-hidden="true"
+                                    class="fa fa-floppy-o"
+                                ></i
+                                >&nbsp;Save To Canned</button
+                            ><button
+                                _ngcontent-ng-c3558549984=""
+                                type="button"
+                                class="btn btn-success centered float-right"
+                                style="text-align: center"
+                            >
+                                Send Poll
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div
+                    _ngcontent-ng-c3558549984=""
+                    role="tabpanel"
+                    id="savedPolls"
+                    class="tab-pane"
+                >
+                    <p _ngcontent-ng-c3558549984="">
+                        You can store polls you use often here. Just type the
+                        poll on the create poll tab and press "save"
+                    </p>
+                    <ul _ngcontent-ng-c3558549984="" class="list-group">
+                        <!---->
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <!----><!----><!---->
+    </div></app-poll-modal
+>

@@ -1,3 +1,4 @@
+import { devLoginIfBounced, resolveApi } from './util';
 import { test, expect, type Page } from '@playwright/test';
 
 /**
@@ -8,7 +9,7 @@ import { test, expect, type Page } from '@playwright/test';
  * API (:8081, AUTH_DEV_BYPASS → super-admin) and a live room.
  */
 
-const API = 'http://localhost:8081';
+let API = 'http://localhost:8080'; // resolved by resolveApi() in beforeAll
 const SHOTS = 'e2e/screenshots';
 let roomId: string;
 
@@ -17,6 +18,7 @@ async function shot(page: Page, name: string) {
 }
 
 test.beforeAll(async ({ request }) => {
+	API = await resolveApi(request);
 	const res = await request.get(`${API}/api/rooms`);
 	expect(res.ok(), 'GET /api/rooms (is the Rust API up on :8081?)').toBeTruthy();
 	const rooms = (await res.json()) as Array<{ id: string; is_live: boolean }>;
@@ -93,6 +95,7 @@ test('route: admin user administration', async ({ page }) => {
 async function enterRoom(page: Page) {
 	await page.addInitScript(() => localStorage.setItem('acdock.fraction', '0.35'));
 	await page.goto(`/rooms/${roomId}`);
+	await devLoginIfBounced(page, `/rooms/${roomId}`);
 	await expect(page.locator('.main-stage')).toBeVisible({ timeout: 20_000 });
 	await expect(page.locator('.alerts-pane')).toBeVisible();
 }
@@ -141,10 +144,9 @@ test('composer: emoji picker opens', async ({ page }) => {
 	// (reference textAreaBtnsCol has the single fas fa-plus).
 	await page.getByRole('button', { name: 'Show message options' }).first().click();
 	await page.getByRole('button', { name: 'Add Emojis' }).first().click();
-	// The picker is a role="menu" popover (aria-label "Pick an emoji"), not a button.
-	await expect(page.getByRole('menu', { name: 'Pick an emoji' }).first()).toBeVisible({
-		timeout: 5_000
-	});
+	// The picker is the static emoji-mart replica (anchors/search/grid/preview).
+	await expect(page.locator('.emoji-mart').first()).toBeVisible({ timeout: 5_000 });
+	await expect(page.locator('.emoji-mart .emoji-mart-scroll').first()).toBeVisible();
 	await shot(page, 't01-emoji-picker');
 });
 

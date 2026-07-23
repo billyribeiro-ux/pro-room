@@ -166,10 +166,16 @@
 		--text: var(--modal-color);
 		--text-dim: #b8c9d8;
 		background: var(--modal-bg);
-		border: 1px solid var(--modal-border);
-		/* Reference .modal-content radius: 6px — the dominant radius token, 245
-		   uses (report.md:1573). */
-		border-radius: 6px;
+		/* HARD EVIDENCE (proroom-modals-and-deep.md §Shell [0] "border (all sides)"
+		   = 1px solid rgba(0,0,0,0.176); modals-core.md Resolved ".modal-content
+		   border = 1px solid rgba(0,0,0,0.176)"). The --modal-border token is
+		   #103d5c (navy-on-navy, invisible); the captured shell paints a faint
+		   translucent-black hairline instead. */
+		border: 1px solid rgba(0, 0, 0, 0.176);
+		/* HARD EVIDENCE (proroom-modals-and-deep.md §Shell [0] "border-radius (all
+		   corners) 8px"; modals-core.md Resolved ".modal-content border-radius 8px
+		   in ALL captured modals"). */
+		border-radius: 8px;
 		color: var(--modal-color);
 		/* The single painting shadow in the reference palette (report.md:1574). */
 		box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.5);
@@ -188,8 +194,13 @@
 		justify-content: space-between;
 		gap: 0.75rem;
 		padding: 1rem;
-		/* Reference `.modal-content .modal-header{border-color:var(
-		   --modal-active-tab-border-color)!important}` = blue #45a2ff divider. */
+		/* HARD EVIDENCE — conflict resolved: proroom-all-admin.json computes this
+		   header border-bottom SOLID #45a2ff across FIVE rendered standard modals
+		   (modals-core.md Resolved); the lone `none` reading (modals-and-deep
+		   §Shell [1]) comes from the hamburger-modals capture whose 8 keys are all
+		   the SAME byte-identical User-Info POPUP — a popup variant, not the
+		   standard .modal-content shell. Five real modal renders beat one popup:
+		   the standard shell paints the solid blue divider. */
 		border-bottom: 1px solid var(--modal-active-tab-border, #45a2ff);
 	}
 	.title {

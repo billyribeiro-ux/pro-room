@@ -208,7 +208,9 @@
 					onclick={() => (expanded = !expanded)}
 					aria-label={expanded ? 'Shrink' : 'Expand'}
 				>
-					{#if expanded}<Icon name="compress" size={14} />{:else}<Icon
+					<!-- HARD EVIDENCE (decoded webcams-stage.md DOM 4 line 101 + §States
+					     line 369): expandRecPreview ? fa-compress-arrows-alt : fa-expand. -->
+					{#if expanded}<Icon name="compress-arrows-alt" size={14} />{:else}<Icon
 							name="expand"
 							size={14}
 						/>{/if}
@@ -229,7 +231,12 @@
 					<p>Recorded {mmss(recordedSecs)}</p>
 				</div>
 			{:else}
-				<p class="paused">{error ?? 'Recording paused.'}</p>
+				<!-- HARD EVIDENCE (decoded webcams-stage.md DOM 4 lines 103-104 + §States
+				     line 370): else branch = div.text-center.py-4.text-white > <h4>
+				     "Recording paused.". Real error text (if any) shown honestly. -->
+				<div class="paused-box">
+					<h4 class="paused">{error ?? 'Recording paused.'}</h4>
+				</div>
 			{/if}
 		</div>
 
@@ -267,12 +274,16 @@
 <style>
 	.rec {
 		position: fixed;
-		/* Reference .recsHolderScreen sits above the screenshare card
-		   (bottom:265px right:0) so the two don't overlap. */
+		/* HARD EVIDENCE (decoded webcams-stage.md §Scoped CSS .recsHolderScreen
+		   line 178 + Resolved lines 338-342): 350x260, position fixed,
+		   bottom:265px right:0 (stacked above the 260px screenshare card),
+		   z-index 100, border 1px solid #fafafa, background #000. z-index kept at
+		   1040 to clear our z-1030 nav (documented divergence). */
 		right: 0;
 		bottom: 265px;
 		z-index: 1040; /* floating layer: above the z-1030 nav, below modals */
 		width: 350px;
+		height: 260px;
 		background: #000;
 		border: 1px solid #fafafa;
 		border-radius: var(--radius);
@@ -281,8 +292,12 @@
 		flex-direction: column;
 		overflow: hidden;
 	}
+	/* HARD EVIDENCE (decoded webcams-stage.md §Scoped CSS .recsHolderScreen-lg
+	   line 179 + Resolved line 343): expanded = 700x520. Capped to viewport so
+	   the card can't overflow small screens. */
 	.rec.expanded {
-		width: min(640px, calc(100vw - 2rem));
+		width: min(700px, calc(100vw - 2rem));
+		height: min(520px, calc(100vh - 2rem));
 	}
 	.head {
 		display: flex;
@@ -347,7 +362,12 @@
 	}
 	.body {
 		position: relative;
-		aspect-ratio: 16 / 9;
+		/* HARD EVIDENCE (decoded webcams-stage.md §Scoped CSS line 180:
+		   .recsHolderScreen .card-body{padding:0;width:100%;height:100%}). The card
+		   is a fixed 350x260 / 700x520 box, so the body fills the remaining space
+		   between header and footer rather than driving its own aspect-ratio. */
+		flex: 1;
+		min-height: 0;
 		background: #000000;
 		display: flex;
 		align-items: center;
@@ -381,10 +401,16 @@
 		color: var(--text);
 		font-size: 0.85rem;
 	}
+	/* HARD EVIDENCE (decoded webcams-stage.md DOM 4 line 103): else branch =
+	   div.text-center.py-4.text-white (centered, 1.5rem vertical padding, #fff). */
+	.paused-box {
+		text-align: center;
+		padding: 1.5rem 0;
+		color: #fff;
+	}
 	.paused {
 		margin: 0;
-		color: var(--text-dim);
-		font-size: 0.85rem;
+		color: #fff;
 	}
 	.foot {
 		display: flex;

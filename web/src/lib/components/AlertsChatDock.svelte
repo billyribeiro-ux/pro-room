@@ -39,6 +39,11 @@
 		/** P1-2: called (throttled by ChatPanel) when the user types, to fan out a
 		    typing frame over the room socket. */
 		onTyping?: () => void;
+		/** Poll-restore trio (alerts-panel.md E2e blink link) — forwarded to
+		    AlertFeed so a minimized poll shows the pulsing "Poll" restore link. */
+		pollActive?: boolean;
+		pollMinimized?: boolean;
+		onRestorePoll?: () => void;
 	}
 	let {
 		roomId,
@@ -61,7 +66,10 @@
 		onChannel,
 		onCreatePoll,
 		typingNames = [],
-		onTyping
+		onTyping,
+		pollActive = false,
+		pollMinimized = false,
+		onRestorePoll
 	}: Props = $props();
 
 	// The column's WIDTH is now owned by the outer <Split> gutter in the room
@@ -166,6 +174,9 @@
 			onDelete={onDeleteAlert}
 			canPost={canPostAlert}
 			{onCreatePoll}
+			{pollActive}
+			{pollMinimized}
+			{onRestorePoll}
 		/>
 	</div>
 

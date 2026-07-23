@@ -1,0 +1,1190 @@
+<app-user-settings-modal _ngcontent-ng-c977335924="" _nghost-ng-c124836360=""
+    ><div
+        _ngcontent-ng-c124836360=""
+        id="user-settings-modal"
+        tabindex="-1"
+        role="dialog"
+        aria-labelledby="user-settings-modal"
+        aria-hidden="true"
+        class="modal fade"
+    >
+        <div _ngcontent-ng-c124836360="" role="document" class="modal-dialog">
+            <div _ngcontent-ng-c124836360="" class="modal-content">
+                <div _ngcontent-ng-c124836360="" class="modal-header">
+                    <h5 _ngcontent-ng-c124836360="">General Settings</h5>
+                    <button
+                        _ngcontent-ng-c124836360=""
+                        type="button"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"
+                        class="btn-close btn-close-white"
+                    ></button>
+                </div>
+                <div _ngcontent-ng-c124836360="" class="modal-body">
+                    <ul
+                        _ngcontent-ng-c124836360=""
+                        id="userSettingsTab"
+                        role="tablist"
+                        class="nav nav-tabs"
+                    >
+                        <li _ngcontent-ng-c124836360="" class="nav-item">
+                            <a
+                                _ngcontent-ng-c124836360=""
+                                id="user-app-settings-tab"
+                                data-bs-toggle="tab"
+                                href="#user-app-settings"
+                                role="tab"
+                                aria-controls="user-app-settings"
+                                aria-selected="true"
+                                class="nav-link active"
+                                >App Settings</a
+                            >
+                        </li>
+                        <li _ngcontent-ng-c124836360="" class="nav-item">
+                            <a
+                                _ngcontent-ng-c124836360=""
+                                id="user-alert-settings-tab"
+                                data-bs-toggle="tab"
+                                href="#user-alert-settings"
+                                role="tab"
+                                aria-controls="user-alert-settings"
+                                aria-selected="false"
+                                class="nav-link"
+                                >Alert Settings</a
+                            >
+                        </li>
+                        <li _ngcontent-ng-c124836360="" class="nav-item">
+                            <a
+                                _ngcontent-ng-c124836360=""
+                                id="user-chat-settings-tab"
+                                data-bs-toggle="tab"
+                                href="#user-chat-settings"
+                                role="tab"
+                                aria-controls="user-chat-settings"
+                                aria-selected="false"
+                                class="nav-link"
+                                >Chat Settings</a
+                            >
+                        </li>
+                        <!----><!---->
+                    </ul>
+                    <div
+                        _ngcontent-ng-c124836360=""
+                        id="userSettingsTabContent"
+                        class="tab-content"
+                    >
+                        <div
+                            _ngcontent-ng-c124836360=""
+                            id="user-app-settings"
+                            role="tabpanel"
+                            aria-labelledby="user-app-settings-tab"
+                            class="tab-pane fade show active"
+                        >
+                            <div _ngcontent-ng-c124836360="" class="p-2 themes">
+                                <div
+                                    _ngcontent-ng-c124836360=""
+                                    id="colorTheme"
+                                    title="Choose Color Theme"
+                                    class="pb-2"
+                                >
+                                    <i
+                                        _ngcontent-ng-c124836360=""
+                                        class="fas fa-palette"
+                                    ></i
+                                    ><span
+                                        _ngcontent-ng-c124836360=""
+                                        class="pl-2"
+                                        >Choose Color Theme:</span
+                                    >
+                                </div>
+                                <div _ngcontent-ng-c124836360="" class="ml-5">
+                                    <input
+                                        _ngcontent-ng-c124836360=""
+                                        type="radio"
+                                        name="app-color-theme"
+                                        value="Light Theme"
+                                        id="app-light-theme"
+                                        class="form-check-input"
+                                    /><label
+                                        _ngcontent-ng-c124836360=""
+                                        for="app-light-theme"
+                                        class="form-check-label"
+                                    >
+                                        Light Theme
+                                    </label>
+                                </div>
+                                <div _ngcontent-ng-c124836360="" class="ml-5">
+                                    <input
+                                        _ngcontent-ng-c124836360=""
+                                        type="radio"
+                                        name="app-color-theme"
+                                        value="Dark Theme"
+                                        id="app-dark-theme"
+                                        class="form-check-input"
+                                    /><label
+                                        _ngcontent-ng-c124836360=""
+                                        for="app-dark-theme"
+                                        class="form-check-label"
+                                    >
+                                        Dark Theme
+                                    </label>
+                                </div>
+                            </div>
+                            <div _ngcontent-ng-c124836360="" class="p-2 themes">
+                                <div
+                                    _ngcontent-ng-c124836360=""
+                                    id="roomLayout"
+                                    title="Choose Room Layout"
+                                    class="pb-2"
+                                >
+                                    <i
+                                        _ngcontent-ng-c124836360=""
+                                        class="fa fa-columns"
+                                    ></i
+                                    ><span
+                                        _ngcontent-ng-c124836360=""
+                                        class="pl-2"
+                                        >Room Layout:</span
+                                    >
+                                </div>
+                                <div _ngcontent-ng-c124836360="" class="ml-5">
+                                    <div
+                                        _ngcontent-ng-c124836360=""
+                                        class="form-check"
+                                    >
+                                        <input
+                                            _ngcontent-ng-c124836360=""
+                                            type="radio"
+                                            name="roomLayoutOptions"
+                                            id="chat-alerts-left"
+                                            value="chat-alerts-left"
+                                            class="form-check-input"
+                                        /><label
+                                            _ngcontent-ng-c124836360=""
+                                            for="chat-alerts-left"
+                                            class="form-check-label"
+                                        >
+                                            Chat and Alerts left
+                                        </label>
+                                    </div>
+                                    <div
+                                        _ngcontent-ng-c124836360=""
+                                        class="form-check"
+                                    >
+                                        <input
+                                            _ngcontent-ng-c124836360=""
+                                            type="radio"
+                                            name="roomLayoutOptions"
+                                            id="chat-alerts-top"
+                                            value="chat-alerts-top"
+                                            class="form-check-input"
+                                        /><label
+                                            _ngcontent-ng-c124836360=""
+                                            for="chat-alerts-top"
+                                            class="form-check-label"
+                                        >
+                                            Chat and Alerts top
+                                        </label>
+                                    </div>
+                                    <div
+                                        _ngcontent-ng-c124836360=""
+                                        class="form-check"
+                                    >
+                                        <input
+                                            _ngcontent-ng-c124836360=""
+                                            type="radio"
+                                            name="roomLayoutOptions"
+                                            id="chat-alerts-right"
+                                            value="chat-alerts-right"
+                                            class="form-check-input"
+                                        /><label
+                                            _ngcontent-ng-c124836360=""
+                                            for="chat-alerts-right"
+                                            class="form-check-label"
+                                        >
+                                            Chat and Alerts right
+                                        </label>
+                                    </div>
+                                    <div
+                                        _ngcontent-ng-c124836360=""
+                                        class="form-check"
+                                    >
+                                        <input
+                                            _ngcontent-ng-c124836360=""
+                                            type="radio"
+                                            name="roomLayoutOptions"
+                                            id="chat-alerts-bottom"
+                                            value="chat-alerts-bottom"
+                                            class="form-check-input"
+                                        /><label
+                                            _ngcontent-ng-c124836360=""
+                                            for="chat-alerts-bottom"
+                                            class="form-check-label"
+                                        >
+                                            Chat and Alerts bottom
+                                        </label>
+                                    </div>
+                                </div>
+                                <div _ngcontent-ng-c124836360="" class="ml-5">
+                                    <hr _ngcontent-ng-c124836360="" />
+                                    <input
+                                        _ngcontent-ng-c124836360=""
+                                        type="checkbox"
+                                        name="pm-window-layout"
+                                        value="appService.globals.preferences.pmLogsOnRight"
+                                        id="pm-window-layout"
+                                        class="form-check-input ng-untouched ng-pristine ng-valid"
+                                    /><label
+                                        _ngcontent-ng-c124836360=""
+                                        for="pm-window-layout"
+                                        class="form-check-label"
+                                    >
+                                        PM logs on the right
+                                    </label>
+                                </div>
+                            </div>
+                            <div
+                                _ngcontent-ng-c124836360=""
+                                class="p-2 d-flex align-items-end justify-content-between"
+                            >
+                                <div
+                                    _ngcontent-ng-c124836360=""
+                                    class="flex-fill"
+                                >
+                                    <div
+                                        _ngcontent-ng-c124836360=""
+                                        id="chatColorMode"
+                                        title="Chat Color Mode"
+                                        class="pb-2"
+                                    >
+                                        <i
+                                            _ngcontent-ng-c124836360=""
+                                            class="fas fa-wrench"
+                                        ></i
+                                        ><span
+                                            _ngcontent-ng-c124836360=""
+                                            class="pl-2"
+                                            >Colors &amp; Size:</span
+                                        >
+                                    </div>
+                                    <div
+                                        _ngcontent-ng-c124836360=""
+                                        class="ml-5"
+                                    >
+                                        <input
+                                            _ngcontent-ng-c124836360=""
+                                            type="color"
+                                            name="chat-text-color"
+                                            value="chatStyle.color"
+                                            id="chat-text-color"
+                                            class="form-check-input ng-untouched ng-pristine ng-valid"
+                                        /><label
+                                            _ngcontent-ng-c124836360=""
+                                            for="chat-text-color"
+                                            class="form-check-label ml-4 pl-2"
+                                        >
+                                            Text Color
+                                        </label>
+                                    </div>
+                                    <div
+                                        _ngcontent-ng-c124836360=""
+                                        class="ml-5"
+                                    >
+                                        <input
+                                            _ngcontent-ng-c124836360=""
+                                            type="color"
+                                            name="chat-username-color"
+                                            value="chatStyle.usernameColor"
+                                            id="chat-username-color"
+                                            class="form-check-input ng-untouched ng-pristine ng-valid"
+                                        /><label
+                                            _ngcontent-ng-c124836360=""
+                                            for="chat-username-color"
+                                            class="form-check-label ml-4 pl-2"
+                                        >
+                                            Username Color
+                                        </label>
+                                    </div>
+                                    <div
+                                        _ngcontent-ng-c124836360=""
+                                        class="ml-5"
+                                    >
+                                        <input
+                                            _ngcontent-ng-c124836360=""
+                                            type="color"
+                                            name="chat-bg-color"
+                                            value="chatStyle.bgColor"
+                                            id="chat-bg-color"
+                                            class="form-check-input ng-untouched ng-pristine ng-valid"
+                                        /><label
+                                            _ngcontent-ng-c124836360=""
+                                            for="chat-bg-color"
+                                            class="form-check-label ml-4 pl-2"
+                                        >
+                                            Background Color
+                                        </label>
+                                    </div>
+                                    <div
+                                        _ngcontent-ng-c124836360=""
+                                        class="ml-5"
+                                    >
+                                        <input
+                                            _ngcontent-ng-c124836360=""
+                                            type="color"
+                                            name="chat-ticker-color"
+                                            value="chatStyle.tickerColor"
+                                            id="chat-ticker-color"
+                                            class="form-check-input ng-untouched ng-pristine ng-valid"
+                                        /><label
+                                            _ngcontent-ng-c124836360=""
+                                            for="chat-ticker-color"
+                                            class="form-check-label ml-4 pl-2"
+                                        >
+                                            Ticker Color
+                                        </label>
+                                    </div>
+                                    <div
+                                        _ngcontent-ng-c124836360=""
+                                        class="ml-5"
+                                    >
+                                        <input
+                                            _ngcontent-ng-c124836360=""
+                                            type="number"
+                                            name="chat-text-size"
+                                            value="chatStyle.fontSize"
+                                            id="chat-text-size"
+                                            class="form-check-input ng-untouched ng-pristine ng-valid"
+                                        /><label
+                                            _ngcontent-ng-c124836360=""
+                                            for="chat-text-size"
+                                            class="form-check-label ml-4 pl-2"
+                                        >
+                                            Text Size
+                                        </label>
+                                    </div>
+                                </div>
+                                <div
+                                    _ngcontent-ng-c124836360=""
+                                    class="text-right"
+                                >
+                                    <button
+                                        _ngcontent-ng-c124836360=""
+                                        type="button"
+                                        class="btn btn-outline-danger mx-1"
+                                    >
+                                        Reset</button
+                                    ><button
+                                        _ngcontent-ng-c124836360=""
+                                        type="button"
+                                        class="btn btn-outline-light"
+                                    >
+                                        Save changes
+                                    </button>
+                                </div>
+                            </div>
+                            <div
+                                _ngcontent-ng-c124836360=""
+                                class="p-2 text-mode-box"
+                            >
+                                <div
+                                    _ngcontent-ng-c124836360=""
+                                    id="appDoNotDisturb"
+                                    title="Do not disturb"
+                                    class="pb-2"
+                                >
+                                    <i
+                                        _ngcontent-ng-c124836360=""
+                                        class="fas fa-bell-slash"
+                                    ></i
+                                    ><span
+                                        _ngcontent-ng-c124836360=""
+                                        class="pl-2"
+                                        >Do not disturb:</span
+                                    >
+                                </div>
+                                <div _ngcontent-ng-c124836360="" class="ml-5">
+                                    <input
+                                        _ngcontent-ng-c124836360=""
+                                        type="checkbox"
+                                        name="app-donot-disturb"
+                                        value="Do not disturb"
+                                        id="app-donot-disturb"
+                                        class="form-check-input"
+                                    /><label
+                                        _ngcontent-ng-c124836360=""
+                                        for="app-donot-disturb"
+                                        class="form-check-label"
+                                        ><span _ngcontent-ng-c124836360=""
+                                            >Don't Disturb</span
+                                        ><!----><!----></label
+                                    >
+                                </div>
+                                <div _ngcontent-ng-c124836360="" class="ml-5">
+                                    <input
+                                        _ngcontent-ng-c124836360=""
+                                        type="checkbox"
+                                        name="app-recording-start-sound"
+                                        value="Do not disturb"
+                                        id="app-recording-start-sound"
+                                        class="form-check-input"
+                                    /><label
+                                        _ngcontent-ng-c124836360=""
+                                        for="app-recording-start-sound"
+                                        class="form-check-label"
+                                    >
+                                        Start recording sound
+                                        <span _ngcontent-ng-c124836360=""
+                                            >on</span
+                                        ><!----><!----></label
+                                    >
+                                </div>
+                                <div _ngcontent-ng-c124836360="" class="ml-5">
+                                    <input
+                                        _ngcontent-ng-c124836360=""
+                                        type="checkbox"
+                                        name="app-recording-stop-sound"
+                                        value="Do not disturb"
+                                        id="app-recording-stop-sound"
+                                        class="form-check-input"
+                                    /><label
+                                        _ngcontent-ng-c124836360=""
+                                        for="app-recording-stop-sound"
+                                        class="form-check-label"
+                                    >
+                                        Stop recording sound
+                                        <span _ngcontent-ng-c124836360=""
+                                            >on</span
+                                        ><!----><!----></label
+                                    >
+                                </div>
+                                <!---->
+                                <div _ngcontent-ng-c124836360="" class="ml-5">
+                                    <input
+                                        _ngcontent-ng-c124836360=""
+                                        type="checkbox"
+                                        name="app-reactions-popup"
+                                        value="Do not disturb"
+                                        id="app-reactions-popup"
+                                        class="form-check-input"
+                                    /><label
+                                        _ngcontent-ng-c124836360=""
+                                        for="app-reactions-popup"
+                                        class="form-check-label"
+                                    >
+                                        Reactions Response
+                                        <span _ngcontent-ng-c124836360=""
+                                            >on</span
+                                        ><!----><!----></label
+                                    >
+                                </div>
+                                <!---->
+                                <div _ngcontent-ng-c124836360="" class="ml-5">
+                                    <input
+                                        _ngcontent-ng-c124836360=""
+                                        type="checkbox"
+                                        name="app-reactions-popup-qa"
+                                        value="Do not disturb"
+                                        id="app-reactions-popup-qa"
+                                        class="form-check-input"
+                                    /><label
+                                        _ngcontent-ng-c124836360=""
+                                        for="app-reactions-popup-qa"
+                                        class="form-check-label"
+                                    >
+                                        Reactions QA Response
+                                        <span _ngcontent-ng-c124836360=""
+                                            >on</span
+                                        ><!----><!----></label
+                                    >
+                                </div>
+                                <!----><!----><!---->
+                            </div>
+                            <!---->
+                            <div
+                                _ngcontent-ng-c124836360=""
+                                class="p-2 text-mode-box"
+                            >
+                                <div
+                                    _ngcontent-ng-c124836360=""
+                                    id="appDisableVideo"
+                                    title="Disable/Enable Video"
+                                    class="pb-2"
+                                >
+                                    <i
+                                        _ngcontent-ng-c124836360=""
+                                        class="fas fa-desktop"
+                                    ></i
+                                    ><span
+                                        _ngcontent-ng-c124836360=""
+                                        class="pl-2"
+                                        >Disable/Enable Video:</span
+                                    >
+                                </div>
+                                <div _ngcontent-ng-c124836360="" class="ml-5">
+                                    <input
+                                        _ngcontent-ng-c124836360=""
+                                        type="checkbox"
+                                        name="app-disable-video"
+                                        value="Disable video"
+                                        id="app-disable-video"
+                                        class="form-check-input"
+                                    /><label
+                                        _ngcontent-ng-c124836360=""
+                                        for="app-disable-video"
+                                        class="form-check-label"
+                                    >
+                                        Video&nbsp;
+                                        <span _ngcontent-ng-c124836360=""
+                                            >Enabled</span
+                                        ><!----><!----></label
+                                    >
+                                </div>
+                            </div>
+                            <div
+                                _ngcontent-ng-c124836360=""
+                                class="p-2 text-mode-box"
+                            >
+                                <div
+                                    _ngcontent-ng-c124836360=""
+                                    id="appSpeechRecoOverlay"
+                                    title="Show Speech Recognition Overlay"
+                                    class="pb-2"
+                                >
+                                    <i
+                                        _ngcontent-ng-c124836360=""
+                                        class="fas fa-closed-captioning"
+                                    ></i
+                                    ><span
+                                        _ngcontent-ng-c124836360=""
+                                        class="pl-2"
+                                        >Show Closed Captions Overlay:</span
+                                    >
+                                </div>
+                                <div _ngcontent-ng-c124836360="" class="ml-5">
+                                    <input
+                                        _ngcontent-ng-c124836360=""
+                                        type="checkbox"
+                                        name="app-speech-reco-overlay"
+                                        value="Show Speech Recognition Overlay"
+                                        id="app-speech-reco-overlay"
+                                        class="form-check-input"
+                                    /><label
+                                        _ngcontent-ng-c124836360=""
+                                        for="app-speech-reco-overlay"
+                                        class="form-check-label"
+                                        ><span _ngcontent-ng-c124836360=""
+                                            >Enabled</span
+                                        ><!----><!----></label
+                                    >
+                                </div>
+                            </div>
+                            <!---->
+                            <div
+                                _ngcontent-ng-c124836360=""
+                                class="p-2 text-mode-box"
+                            >
+                                <div _ngcontent-ng-c124836360="" class="mx-3">
+                                    <!----><button
+                                        _ngcontent-ng-c124836360=""
+                                        class="btn btn-warning btn-sm m-1"
+                                    >
+                                        <i
+                                            _ngcontent-ng-c124836360=""
+                                            class="fas fa-user-tie me-1"
+                                        ></i>
+                                        Edit my Info and Avatar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div
+                            _ngcontent-ng-c124836360=""
+                            id="user-alert-settings"
+                            role="tabpanel"
+                            aria-labelledby="user-alert-settings-tab"
+                            class="tab-pane fade"
+                        >
+                            <div
+                                _ngcontent-ng-c124836360=""
+                                class="p-2 text-mode-box"
+                            >
+                                <div
+                                    _ngcontent-ng-c124836360=""
+                                    id="alertTextMode"
+                                    title="Alert Text Mode"
+                                    class="pb-2"
+                                >
+                                    <i
+                                        _ngcontent-ng-c124836360=""
+                                        class="fas fa-file-alt"
+                                    ></i
+                                    ><span
+                                        _ngcontent-ng-c124836360=""
+                                        class="pl-2"
+                                        >Text Mode:</span
+                                    >
+                                </div>
+                                <div _ngcontent-ng-c124836360="" class="ml-5">
+                                    <input
+                                        _ngcontent-ng-c124836360=""
+                                        type="radio"
+                                        name="alert-text-mode"
+                                        value="Alert Regular Mode"
+                                        id="alert-regular-mode"
+                                        class="form-check-input"
+                                    /><label
+                                        _ngcontent-ng-c124836360=""
+                                        for="alert-regular-mode"
+                                        class="form-check-label"
+                                    >
+                                        Regular Mode
+                                    </label>
+                                </div>
+                                <div _ngcontent-ng-c124836360="" class="ml-5">
+                                    <input
+                                        _ngcontent-ng-c124836360=""
+                                        type="radio"
+                                        name="alert-text-mode"
+                                        value="Alert Compact Mode"
+                                        id="alert-compact-mode"
+                                        class="form-check-input"
+                                    /><label
+                                        _ngcontent-ng-c124836360=""
+                                        for="alert-compact-mode"
+                                        class="form-check-label"
+                                    >
+                                        Compact Mode
+                                    </label>
+                                </div>
+                            </div>
+                            <div
+                                _ngcontent-ng-c124836360=""
+                                class="p-2 text-mode-box"
+                            >
+                                <div
+                                    _ngcontent-ng-c124836360=""
+                                    id="alertDoNotDisturb"
+                                    title="Alert Do not disturb"
+                                    class="pb-2"
+                                >
+                                    <i
+                                        _ngcontent-ng-c124836360=""
+                                        class="fas fa-bell-slash"
+                                    ></i
+                                    ><span
+                                        _ngcontent-ng-c124836360=""
+                                        class="pl-2"
+                                        >Do not disturb:</span
+                                    >
+                                </div>
+                                <div _ngcontent-ng-c124836360="" class="ml-5">
+                                    <input
+                                        _ngcontent-ng-c124836360=""
+                                        type="checkbox"
+                                        name="alert-popup-donot-disturb"
+                                        value="Alert Popup Do not disturb"
+                                        id="alert-popup-donot-disturb"
+                                        class="form-check-input"
+                                    /><label
+                                        _ngcontent-ng-c124836360=""
+                                        for="alert-popup-donot-disturb"
+                                        class="form-check-label"
+                                    >
+                                        Alert / QA Popup
+                                        <span _ngcontent-ng-c124836360=""
+                                            >on</span
+                                        ><!----><!----></label
+                                    >
+                                    <hr _ngcontent-ng-c124836360="" />
+                                </div>
+                                <div _ngcontent-ng-c124836360="" class="ml-5">
+                                    <input
+                                        _ngcontent-ng-c124836360=""
+                                        type="checkbox"
+                                        name="alert-donot-disturb"
+                                        value="Alert Do not disturb"
+                                        id="alert-donot-disturb"
+                                        class="form-check-input"
+                                    /><label
+                                        _ngcontent-ng-c124836360=""
+                                        for="alert-donot-disturb"
+                                        class="form-check-label"
+                                    >
+                                        Alert sound
+                                        <span _ngcontent-ng-c124836360=""
+                                            >on</span
+                                        ><!----><!----></label
+                                    >
+                                </div>
+                                <div _ngcontent-ng-c124836360="" class="ml-5">
+                                    <input
+                                        _ngcontent-ng-c124836360=""
+                                        type="checkbox"
+                                        name="qa-donot-disturb"
+                                        value="QA Do not disturb"
+                                        id="qa-donot-disturb"
+                                        class="form-check-input"
+                                    /><label
+                                        _ngcontent-ng-c124836360=""
+                                        for="qa-donot-disturb"
+                                        class="form-check-label"
+                                    >
+                                        QA sound
+                                        <span _ngcontent-ng-c124836360=""
+                                            >on</span
+                                        ><!----><!----></label
+                                    >
+                                </div>
+                                <div _ngcontent-ng-c124836360="" class="ml-5">
+                                    <input
+                                        _ngcontent-ng-c124836360=""
+                                        type="checkbox"
+                                        name="app-reactions-sound-qa"
+                                        value="Do not disturb"
+                                        id="app-reactions-sound-qa"
+                                        class="form-check-input"
+                                    /><label
+                                        _ngcontent-ng-c124836360=""
+                                        for="app-reactions-sound-qa"
+                                        class="form-check-label"
+                                    >
+                                        QA Reactions Sound
+                                        <span _ngcontent-ng-c124836360=""
+                                            >on</span
+                                        ><!----><!----></label
+                                    >
+                                </div>
+                                <!---->
+                                <div _ngcontent-ng-c124836360="" class="ml-5">
+                                    <input
+                                        _ngcontent-ng-c124836360=""
+                                        type="checkbox"
+                                        name="non-trade-alert"
+                                        value="Alert Do not disturb"
+                                        id="non-trade-alert"
+                                        class="form-check-input"
+                                    /><label
+                                        _ngcontent-ng-c124836360=""
+                                        for="non-trade-alert"
+                                        class="form-check-label"
+                                    >
+                                        Non-trade alert sound
+                                        <span _ngcontent-ng-c124836360=""
+                                            >on</span
+                                        ><!----><!----></label
+                                    >
+                                </div>
+                            </div>
+                            <div
+                                _ngcontent-ng-c124836360=""
+                                class="p-2 text-mode-box"
+                            >
+                                <div
+                                    _ngcontent-ng-c124836360=""
+                                    id="alertPopup"
+                                    title="Alert popup"
+                                    class="pb-2"
+                                >
+                                    <i
+                                        _ngcontent-ng-c124836360=""
+                                        class="fas fa-bell"
+                                    ></i
+                                    ><span
+                                        _ngcontent-ng-c124836360=""
+                                        class="pl-2"
+                                        >Alert popup:</span
+                                    >
+                                </div>
+                                <div _ngcontent-ng-c124836360="" class="ml-5">
+                                    <input
+                                        _ngcontent-ng-c124836360=""
+                                        type="checkbox"
+                                        name="longer-alert-popup"
+                                        value="Longer alert popup"
+                                        id="longer-alert-popup"
+                                        class="form-check-input"
+                                    /><label
+                                        _ngcontent-ng-c124836360=""
+                                        for="longer-alert-popup"
+                                        class="form-check-label"
+                                    >
+                                        Longer alert popup
+                                        <span _ngcontent-ng-c124836360=""
+                                            >off</span
+                                        ><!----><!----></label
+                                    >
+                                </div>
+                                <button
+                                    _ngcontent-ng-c124836360=""
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#alert-filter-modal"
+                                    class="btn btn-primary btn-sm mt-4 ml-4"
+                                >
+                                    <i
+                                        _ngcontent-ng-c124836360=""
+                                        class="fas fa-filter me-1"
+                                    ></i>
+                                    Filter out alerts</button
+                                ><!---->
+                            </div>
+                        </div>
+                        <div
+                            _ngcontent-ng-c124836360=""
+                            id="user-chat-settings"
+                            role="tabpanel"
+                            aria-labelledby="user-chat-settings-tab"
+                            class="tab-pane fade"
+                        >
+                            <div
+                                _ngcontent-ng-c124836360=""
+                                class="p-2 text-mode-box"
+                            >
+                                <div
+                                    _ngcontent-ng-c124836360=""
+                                    id="chatTextMode"
+                                    title="Chat Text Mode"
+                                    class="pb-2"
+                                >
+                                    <i
+                                        _ngcontent-ng-c124836360=""
+                                        class="fas fa-file-alt"
+                                    ></i
+                                    ><span
+                                        _ngcontent-ng-c124836360=""
+                                        class="pl-2"
+                                        >Text Mode:</span
+                                    >
+                                </div>
+                                <div _ngcontent-ng-c124836360="" class="ml-5">
+                                    <input
+                                        _ngcontent-ng-c124836360=""
+                                        type="radio"
+                                        name="chat-text-mode"
+                                        value="Chat Regular Mode"
+                                        id="chat-regular-mode"
+                                        aria-checked="true"
+                                        class="form-check-input"
+                                    /><label
+                                        _ngcontent-ng-c124836360=""
+                                        for="chat-regular-mode"
+                                        class="form-check-label"
+                                    >
+                                        Regular Mode
+                                    </label>
+                                </div>
+                                <div _ngcontent-ng-c124836360="" class="ml-5">
+                                    <input
+                                        _ngcontent-ng-c124836360=""
+                                        type="radio"
+                                        name="chat-text-mode"
+                                        value="Chat Compact Mode"
+                                        id="chat-compact-mode"
+                                        class="form-check-input"
+                                    /><label
+                                        _ngcontent-ng-c124836360=""
+                                        for="chat-compact-mode"
+                                        class="form-check-label"
+                                    >
+                                        Compact Mode
+                                    </label>
+                                </div>
+                            </div>
+                            <div
+                                _ngcontent-ng-c124836360=""
+                                class="p-2 text-mode-box"
+                            >
+                                <div
+                                    _ngcontent-ng-c124836360=""
+                                    id="chatImagePreview"
+                                    title="Chat Image Preview"
+                                    class="pb-2"
+                                >
+                                    <i
+                                        _ngcontent-ng-c124836360=""
+                                        class="fas fa-image"
+                                    ></i
+                                    ><span
+                                        _ngcontent-ng-c124836360=""
+                                        class="pl-2"
+                                        >Image Preview:</span
+                                    >
+                                </div>
+                                <div _ngcontent-ng-c124836360="" class="ml-5">
+                                    <input
+                                        _ngcontent-ng-c124836360=""
+                                        type="checkbox"
+                                        name="small-image-preview"
+                                        value="Small image preview"
+                                        id="small-image-preview"
+                                        class="form-check-input"
+                                    /><label
+                                        _ngcontent-ng-c124836360=""
+                                        for="small-image-preview"
+                                        class="form-check-label"
+                                    >
+                                        Smaller image preview
+                                        <span _ngcontent-ng-c124836360=""
+                                            >on</span
+                                        ><!----><!----></label
+                                    >
+                                </div>
+                            </div>
+                            <div
+                                _ngcontent-ng-c124836360=""
+                                class="p-2 text-mode-box"
+                            >
+                                <div
+                                    _ngcontent-ng-c124836360=""
+                                    id="chatDoNotDisturb"
+                                    title="chat Do not disturb"
+                                    class="pb-2"
+                                >
+                                    <i
+                                        _ngcontent-ng-c124836360=""
+                                        class="fas fa-bell-slash"
+                                    ></i
+                                    ><span
+                                        _ngcontent-ng-c124836360=""
+                                        class="pl-2"
+                                        >Do not disturb:</span
+                                    >
+                                </div>
+                                <div _ngcontent-ng-c124836360="" class="ml-5">
+                                    <input
+                                        _ngcontent-ng-c124836360=""
+                                        type="checkbox"
+                                        name="chat-gif-donot-disturb"
+                                        value="Chat Gif Do not disturb"
+                                        id="chat-gif-donot-disturb"
+                                        class="form-check-input"
+                                    /><label
+                                        _ngcontent-ng-c124836360=""
+                                        for="chat-gif-donot-disturb"
+                                        class="form-check-label"
+                                    >
+                                        Gif
+                                        <span _ngcontent-ng-c124836360=""
+                                            >on</span
+                                        ><!----><!----></label
+                                    >
+                                </div>
+                                <div _ngcontent-ng-c124836360="" class="ml-5">
+                                    <input
+                                        _ngcontent-ng-c124836360=""
+                                        type="checkbox"
+                                        name="chat-badges-donot-disturb"
+                                        value="Chat Badges Do not disturb"
+                                        id="chat-badges-donot-disturb"
+                                        class="form-check-input"
+                                    /><label
+                                        _ngcontent-ng-c124836360=""
+                                        for="chat-badges-donot-disturb"
+                                        class="form-check-label"
+                                    >
+                                        Badges
+                                        <span _ngcontent-ng-c124836360=""
+                                            >on</span
+                                        ><!----><!----></label
+                                    >
+                                </div>
+                                <div _ngcontent-ng-c124836360="" class="ml-5">
+                                    <input
+                                        _ngcontent-ng-c124836360=""
+                                        type="checkbox"
+                                        name="chat-popup-donot-disturb"
+                                        value="Chat Popup Do not disturb"
+                                        id="chat-popup-donot-disturb"
+                                        class="form-check-input"
+                                    /><label
+                                        _ngcontent-ng-c124836360=""
+                                        for="chat-popup-donot-disturb"
+                                        class="form-check-label"
+                                    >
+                                        Chat / PM Popup
+                                        <span _ngcontent-ng-c124836360=""
+                                            >off</span
+                                        ><!----><!----></label
+                                    >
+                                    <hr _ngcontent-ng-c124836360="" />
+                                </div>
+                                <div _ngcontent-ng-c124836360="" class="ml-5">
+                                    <input
+                                        _ngcontent-ng-c124836360=""
+                                        type="checkbox"
+                                        name="chat-donot-disturb"
+                                        value="Chat Do not disturb"
+                                        id="chat-donot-disturb"
+                                        class="form-check-input"
+                                    /><label
+                                        _ngcontent-ng-c124836360=""
+                                        for="chat-donot-disturb"
+                                        class="form-check-label"
+                                    >
+                                        Chat sound
+                                        <span _ngcontent-ng-c124836360=""
+                                            >on</span
+                                        ><!----><!----></label
+                                    >
+                                </div>
+                            </div>
+                            <div
+                                _ngcontent-ng-c124836360=""
+                                class="p-2 text-mode-box"
+                            >
+                                <div
+                                    _ngcontent-ng-c124836360=""
+                                    id="extraChatColumn"
+                                    title="Extra Chat Column"
+                                    class="pb-2"
+                                >
+                                    <i
+                                        _ngcontent-ng-c124836360=""
+                                        class="fas fa-comment"
+                                    ></i
+                                    ><span
+                                        _ngcontent-ng-c124836360=""
+                                        class="pl-2"
+                                        >Extra chat column:</span
+                                    >
+                                </div>
+                                <div _ngcontent-ng-c124836360="" class="ml-5">
+                                    <input
+                                        _ngcontent-ng-c124836360=""
+                                        type="checkbox"
+                                        name="extra-chat-column"
+                                        value="Extra Chat Column"
+                                        id="extra-chat-column"
+                                        class="form-check-input"
+                                    /><label
+                                        _ngcontent-ng-c124836360=""
+                                        for="extra-chat-column"
+                                        class="form-check-label"
+                                    >
+                                        Chat column
+                                        <span _ngcontent-ng-c124836360=""
+                                            >off</span
+                                        ><!----><!----></label
+                                    >
+                                </div>
+                            </div>
+                            <div
+                                _ngcontent-ng-c124836360=""
+                                class="p-2 text-mode-box"
+                            >
+                                <div
+                                    _ngcontent-ng-c124836360=""
+                                    id="alwaysScrollToBottom"
+                                    title="Always Scroll To Bottom"
+                                    class="pb-2"
+                                >
+                                    <i
+                                        _ngcontent-ng-c124836360=""
+                                        class="fas fa-scroll"
+                                    ></i
+                                    ><span
+                                        _ngcontent-ng-c124836360=""
+                                        class="pl-2"
+                                        >Always Scroll To Bottom:</span
+                                    >
+                                </div>
+                                <div _ngcontent-ng-c124836360="" class="ml-5">
+                                    <input
+                                        _ngcontent-ng-c124836360=""
+                                        type="checkbox"
+                                        name="chat-always-scroll"
+                                        value="Chat Always Scroll To Bottom"
+                                        id="chat-always-scroll"
+                                        class="form-check-input"
+                                    /><label
+                                        _ngcontent-ng-c124836360=""
+                                        for="chat-always-scroll"
+                                        class="form-check-label"
+                                    >
+                                        Always scroll to bottom
+                                        <span _ngcontent-ng-c124836360=""
+                                            >off</span
+                                        ><!----><!----></label
+                                    >
+                                </div>
+                            </div>
+                            <div
+                                _ngcontent-ng-c124836360=""
+                                class="p-2 text-mode-box"
+                            >
+                                <div
+                                    _ngcontent-ng-c124836360=""
+                                    id="trimChatlogFat"
+                                    title="Reduce Chatlog Memory"
+                                    class="pb-2"
+                                >
+                                    <i
+                                        _ngcontent-ng-c124836360=""
+                                        class="fas fa-trash"
+                                    ></i
+                                    ><span
+                                        _ngcontent-ng-c124836360=""
+                                        class="pl-2"
+                                        >Reduce Chatlog Memory:</span
+                                    >
+                                </div>
+                                <div _ngcontent-ng-c124836360="" class="ml-5">
+                                    <input
+                                        _ngcontent-ng-c124836360=""
+                                        type="checkbox"
+                                        name="chat-mem-clear"
+                                        value="Reduce Chatlog Memory"
+                                        id="chat-mem-clear"
+                                        class="form-check-input"
+                                    /><label
+                                        _ngcontent-ng-c124836360=""
+                                        for="chat-mem-clear"
+                                        class="form-check-label"
+                                    >
+                                        Reduce Chatlog Memory
+                                        <span _ngcontent-ng-c124836360=""
+                                            >on</span
+                                        ><!----><!----></label
+                                    >
+                                </div>
+                                <div _ngcontent-ng-c124836360="" class="ml-5">
+                                    <input
+                                        _ngcontent-ng-c124836360=""
+                                        type="checkbox"
+                                        name="visibility-change-enabled"
+                                        value="Tab sleep optimization"
+                                        id="visibility-change-enabled"
+                                        class="form-check-input"
+                                    /><label
+                                        _ngcontent-ng-c124836360=""
+                                        for="visibility-change-enabled"
+                                        class="form-check-label"
+                                    >
+                                        Tab sleep optimization
+                                        <span _ngcontent-ng-c124836360=""
+                                            >on</span
+                                        ><!----><!----></label
+                                    >
+                                </div>
+                            </div>
+                            <!---->
+                        </div>
+                        <!----><!---->
+                    </div>
+                </div>
+                <div
+                    _ngcontent-ng-c124836360=""
+                    class="modal-footer text-center"
+                >
+                    <button
+                        _ngcontent-ng-c124836360=""
+                        type="button"
+                        data-bs-dismiss="modal"
+                        class="btn btn-secondary"
+                    >
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div></app-user-settings-modal
+>

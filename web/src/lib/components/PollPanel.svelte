@@ -9,8 +9,30 @@
 		poll: PollDetail;
 		canManage?: boolean;
 		onChange?: (poll: PollDetail) => void;
+		/** HARD EVIDENCE (alerts-panel.md E2e): reference minimize HIDES the whole
+		 * window; a pulsing "Poll" link in the alerts header restores it. When the
+		 * parent supplies this callback it owns minimize (hides the window);
+		 * without it we fall back to the local collapse. */
+		onMinimize?: () => void;
+		/**
+		 * The current viewer's user id. Used ONLY to decide whether this viewer is
+		 * the poll's creator (`poll.author_id`) — a non-creator viewing an OPEN
+		 * poll they haven't voted on gets the reference `answer` "Choose-card"
+		 * (poll.md §answer mode xTe). Optional: when the parent does not supply it
+		 * we CANNOT prove the viewer is a non-creator, so we honestly fall back to
+		 * the results view rather than guess. No fabricated identity.
+		 */
+		viewerId?: string;
+		/**
+		 * Optional dismiss hook. Reference close on a poll the viewer does NOT own
+		 * just hides the panel (poll.md §Behavior "Otherwise just hidePanel()").
+		 * When absent, the close button hides the panel locally.
+		 */
+		onClose?: () => void;
 	}
-	let { poll, canManage = false, onChange }: Props = $props();
+	let { poll, canManage = false, onChange, viewerId, onClose,
+		onMinimize
+	}: Props = $props();
 
 	// Always present for the /rooms/[id] route.
 	const roomId = page.params.id as string;
@@ -21,6 +43,11 @@
 	// the parent re-keys the panel when it wants a fresh mount.
 	let votedOptionId = $state<string | null>(null);
 
+	// Floating-window chrome state (reference titlebar min/max/close controls).
+	let minimized = $state(false);
+	let maximized = $state(false);
+	let hidden = $state(false);
+
 	// In-flight option id during a vote. We deliberately do NOT use a coarse
 	// loading flag that hides the whole panel — that would flash a skeleton and
 	// cause CLS. Bars stay rendered; only the buttons disable.
@@ -30,6 +57,33 @@
 
 	const isClosed = $derived(poll.status === 'closed');
 	const busy = $derived(pendingOptionId !== null || closing);
+
+	// HARD EVIDENCE (decoded poll.md §Role variants L179-181 + §answer mode xTe):
+	// the split is sender-vs-everyone-else, keyed on identity, NOT on a role
+	// string. A viewer is the poll's creator when their id === poll.author_id.
+	// Only shown when `viewerId` is provably known (no guessing).
+	const isCreator = $derived(viewerId !== undefined && viewerId === poll.author_id);
+	// HARD EVIDENCE (decoded poll.md §answer mode + §Behavior L372-374): a
+	// non-creator viewing an OPEN poll they have not yet voted on sees the
+	// "Choose-card"; after one `sendAnswer` the panel flips to results. We show
+	// the Choose-card only while all of: known non-creator, poll open, no local
+	// vote recorded. After voting (`votedOptionId` set) it falls through to the
+	// existing results view — matching "after voting, show the existing results".
+	const answerMode = $derived(
+		viewerId !== undefined && !isCreator && !isClosed && votedOptionId === null
+	);
+
+	function closePanel() {
+		// Reference: owner-close on an active poll ENDS it (bootbox confirm →
+		// pollDone); a non-owner close just hides the window. We map: managers
+		// end the poll (existing close()); everyone else hides locally.
+		if (canManage && !isClosed) {
+			void close();
+			return;
+		}
+		if (onClose) onClose();
+		else hidden = true;
+	}
 
 	function pct(votes: number): number {
 		if (poll.total_votes <= 0) return 0;
@@ -70,78 +124,254 @@
 	}
 </script>
 
-<section class="poll" aria-label="Poll">
-	<header class="head">
-		<h3 class="question">
-			{#each parseMessage(poll.question) as seg, si (si)}{#if seg.kind === 'ticker'}<span
-						class="ticker">{seg.value}</span
-					>{:else if seg.kind === 'link'}<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- external user-supplied URL, not an internal route --><a
-						href={seg.href}
-						target="_blank"
-						rel="noopener noreferrer">{seg.value}</a
-					>{:else}{seg.value}{/if}{/each}
-		</h3>
-		{#if isClosed}
-			<span class="badge closed"><Icon name="lock" size={12} /> Closed</span>
-		{/if}
-	</header>
-
-	<ul class="options">
-		{#each poll.options as option (option.id)}
-			{@const share = pct(option.votes)}
-			{@const chosen = votedOptionId === option.id}
-			<li class="option">
+{#if !hidden}
+	<!-- HARD EVIDENCE (decoded poll.md §DOM structure L34-45 + Scoped CSS L190-198 +
+	     Resolved L286-298): the reference is ONE floating window — host bg #1e1e1e,
+	     titlebar #2c2c2c "Polls" + poll-panel-controls (min/max/close, 28×28), close
+	     hover #c0392b. setup+answer+results share this chrome. Our PollPanel renders
+	     the active/results surface inside that same window. -->
+	<section class="poll-panel" class:maximized aria-label="Polls">
+		<div class="poll-panel-titlebar">
+			<span class="poll-panel-title">Polls</span>
+			<div class="poll-panel-controls">
 				<button
-					class="option-btn"
-					class:chosen
 					type="button"
-					onclick={() => vote(option.id)}
-					disabled={isClosed || busy}
-					aria-pressed={chosen}
+					class="poll-panel-btn"
+					title="Minimize"
+					aria-label="Minimize"
+					onclick={() => (onMinimize ? onMinimize() : (minimized = !minimized))}
 				>
-					<span class="bar" style:width={`${share}%`} aria-hidden="true"></span>
-					<span class="row">
-						<span class="opt-label">
-							{#if chosen}<Icon name="check-circle" size={14} />{/if}
-							{#each parseMessage(option.label) as seg, si (si)}{#if seg.kind === 'ticker'}<span
+					<Icon name="window-minimize" size={12} />
+				</button>
+				<button
+					type="button"
+					class="poll-panel-btn"
+					title="Maximize"
+					aria-label="Maximize"
+					onclick={() => {
+						maximized = !maximized;
+						minimized = false;
+					}}
+				>
+					<!-- HARD EVIDENCE (poll.md L28/46/335): icon toggles
+					     fa-window-restore ⇄ fa-window-maximize on the maximized flag. -->
+					<Icon name={maximized ? 'window-restore' : 'window-maximize'} size={12} />
+				</button>
+				<button
+					type="button"
+					class="poll-panel-btn poll-panel-btn-close"
+					title="Close"
+					aria-label="Close"
+					onclick={closePanel}
+				>
+					<Icon name="times" size={12} />
+				</button>
+			</div>
+		</div>
+
+		{#if !minimized}
+			<div class="poll-panel-body">
+				{#if answerMode}
+					<!-- HARD EVIDENCE (decoded poll.md §answer mode xTe/kTe L136-151):
+					     <div class="row"><div class="p-2" style="text-align:center">
+					       <h1>{question}</h1><hr>
+					       <ol style="text-align:left">
+					         <li class="p-2"> {choice}
+					           <button class="btn btn-primary float-right btn-sm"
+					                   style="color:white">&nbsp;Choose</button>
+					           <br clear="both"></li></ol></div></div>
+					     After one sendAnswer($index) → results view. -->
+					<div class="row answer-row">
+						<div class="answer-inner p-2">
+							<h1 class="answer-question">
+								{#each parseMessage(poll.question) as seg, si (si)}{#if seg.kind === 'ticker'}<span
+											class="ticker">{seg.value}</span
+										>{:else if seg.kind === 'link'}<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- external user-supplied URL, not an internal route --><a
+											href={seg.href}
+											target="_blank"
+											rel="noopener noreferrer">{seg.value}</a
+										>{:else}{seg.value}{/if}{/each}
+							</h1>
+							<hr />
+							<ol class="answer-choices">
+								{#each poll.options as option (option.id)}
+									<li class="answer-choice p-2">
+										<span class="answer-choice-text"
+											>{#each parseMessage(option.label) as seg, si (si)}{#if seg.kind === 'ticker'}<span
+														class="ticker">{seg.value}</span
+													>{:else if seg.kind === 'link'}<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- external user-supplied URL, not an internal route --><a
+														href={seg.href}
+														target="_blank"
+														rel="noopener noreferrer">{seg.value}</a
+													>{:else}{seg.value}{/if}{/each}</span
+										>
+										<button
+											type="button"
+											class="btn btn-primary btn-sm choose-btn float-right"
+											onclick={() => vote(option.id)}
+											disabled={busy}
+										>
+											&nbsp;{pendingOptionId === option.id ? 'Choosing…' : 'Choose'}
+										</button>
+										<br style="clear: both" />
+									</li>
+								{/each}
+							</ol>
+							{#if error}<p class="field-err" role="alert">{error}</p>{/if}
+						</div>
+					</div>
+				{:else}
+					<header class="head">
+						<h3 class="question">
+							{#each parseMessage(poll.question) as seg, si (si)}{#if seg.kind === 'ticker'}<span
 										class="ticker">{seg.value}</span
 									>{:else if seg.kind === 'link'}<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- external user-supplied URL, not an internal route --><a
 										href={seg.href}
 										target="_blank"
 										rel="noopener noreferrer">{seg.value}</a
 									>{:else}{seg.value}{/if}{/each}
-						</span>
-						<span class="opt-count">
-							<span class="pct">{share}%</span>
-							<span class="votes">{option.votes}</span>
-						</span>
-					</span>
-				</button>
-			</li>
-		{/each}
-	</ul>
+						</h3>
+						{#if isClosed}
+							<span class="badge closed"><Icon name="lock" size={12} /> Closed</span>
+						{/if}
+					</header>
 
-	<footer class="foot">
-		<span class="total">{poll.total_votes} {poll.total_votes === 1 ? 'vote' : 'votes'}</span>
-		{#if canManage && !isClosed}
-			<button class="close-btn" type="button" onclick={close} disabled={busy}>
-				{closing ? 'Closing…' : 'Close poll'}
-			</button>
+					<ul class="options">
+						{#each poll.options as option (option.id)}
+							{@const share = pct(option.votes)}
+							{@const chosen = votedOptionId === option.id}
+							<li class="option">
+								<button
+									class="option-btn"
+									class:chosen
+									type="button"
+									onclick={() => vote(option.id)}
+									disabled={isClosed || busy}
+									aria-pressed={chosen}
+								>
+									<span class="bar" style:width={`${share}%`} aria-hidden="true"></span>
+									<span class="row">
+										<span class="opt-label">
+											{#if chosen}<Icon name="check-circle" size={14} />{/if}
+											{#each parseMessage(option.label) as seg, si (si)}{#if seg.kind === 'ticker'}<span
+														class="ticker">{seg.value}</span
+													>{:else if seg.kind === 'link'}<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- external user-supplied URL, not an internal route --><a
+														href={seg.href}
+														target="_blank"
+														rel="noopener noreferrer">{seg.value}</a
+													>{:else}{seg.value}{/if}{/each}
+										</span>
+										<span class="opt-count">
+											<span class="pct">{share}%</span>
+											<span class="votes">{option.votes}</span>
+										</span>
+									</span>
+								</button>
+							</li>
+						{/each}
+					</ul>
+
+					<footer class="foot">
+						<span class="total">{poll.total_votes} {poll.total_votes === 1 ? 'vote' : 'votes'}</span
+						>
+						{#if canManage && !isClosed}
+							<button class="close-btn" type="button" onclick={close} disabled={busy}>
+								{closing ? 'Closing…' : 'Close poll'}
+							</button>
+						{/if}
+					</footer>
+
+					{#if error}<p class="field-err" role="alert">{error}</p>{/if}
+				{/if}
+			</div>
 		{/if}
-	</footer>
-
-	{#if error}<p class="field-err" role="alert">{error}</p>{/if}
-</section>
+	</section>
+{/if}
 
 <style>
-	.poll {
-		border: 1px solid var(--border);
-		border-radius: var(--radius);
-		background: var(--bg-elev);
-		padding: 0.75rem 0.85rem;
+	/* HARD EVIDENCE (decoded poll.md Scoped CSS L190 + Resolved L286-290): host
+	   window — bg #1e1e1e, 1px solid rgb(133,133,133) border, 4px radius, box-shadow
+	   0 4px 20px #00000080, 10px padding. (Width/position are governed by the parent
+	   `.poll-overlay`; we keep the reference chrome/colours, not the fixed 580×553
+	   drag geometry, since these render docked in the overlay.) */
+	.poll-panel {
+		border: 1px solid rgb(133, 133, 133);
+		border-radius: 4px;
+		background: #1e1e1e;
+		box-shadow: 0 4px 20px #00000080;
+		color: #ddd;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+	}
+	.poll-panel.maximized {
+		width: min(720px, calc(100vw - 2rem));
+	}
+	/* HARD EVIDENCE (decoded poll.md Scoped CSS L191 + Resolved L291-292):
+	   titlebar bg #2c2c2c, 1px solid #555 bottom border, flex space-between,
+	   6px 10px padding, cursor move, user-select none. */
+	.poll-panel-titlebar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 6px 10px;
+		background-color: #2c2c2c;
+		border-bottom: 1px solid #555;
+		cursor: move;
+		user-select: none;
+		-webkit-user-select: none;
+	}
+	/* HARD EVIDENCE (poll.md Scoped CSS L192 + Resolved L293): title 700/14px/#fff. */
+	.poll-panel-title {
+		font-weight: 700;
+		font-size: 14px;
+		color: #fff;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	/* HARD EVIDENCE (poll.md Scoped CSS L193 + Resolved L294): controls flex, gap 6px. */
+	.poll-panel-controls {
+		display: flex;
+		gap: 6px;
+		flex-shrink: 0;
+	}
+	/* HARD EVIDENCE (poll.md Scoped CSS L194-196 + Resolved L295-296 + States
+	   L332-333): 28×28 transparent buttons, 1px solid #666 border, #ccc text, 3px
+	   radius, 12px font, 0 padding; hover bg #444/#fff; close hover bg #c0392b/#fff. */
+	.poll-panel-btn {
+		background: transparent;
+		border: 1px solid #666;
+		color: #ccc;
+		width: 28px;
+		height: 28px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 3px;
+		cursor: pointer;
+		font-size: 12px;
+		padding: 0;
+	}
+	.poll-panel-btn:hover {
+		background-color: #444;
+		color: #fff;
+	}
+	.poll-panel-btn-close:hover {
+		background-color: #c0392b;
+		color: #fff;
+	}
+	/* HARD EVIDENCE (poll.md Scoped CSS L197 + Resolved L297): body padding 10px,
+	   overflow x hidden / y auto, text #ddd. */
+	.poll-panel-body {
+		padding: 10px;
+		overflow-x: hidden;
+		overflow-y: auto;
+		color: #ddd;
 		display: flex;
 		flex-direction: column;
 		gap: 0.6rem;
+		max-height: calc(100vh - 200px);
 	}
 	.head {
 		display: flex;
@@ -301,5 +531,68 @@
 		margin: 0;
 		color: var(--negative);
 		font-size: 0.78rem;
+	}
+
+	/* ---- Member `answer` (Choose-card) mode ---- */
+	/* HARD EVIDENCE (decoded poll.md §answer mode L136-151):
+	   [10] .row · [43] .p-2 {text-align:center} · [44] <ol> {text-align:left} ·
+	   [18] <li> .p-2 · button [45] .btn.btn-primary.float-right.btn-sm {color:white}. */
+	.answer-row {
+		display: flex;
+		flex-wrap: wrap;
+	}
+	.answer-inner {
+		width: 100%;
+		padding: 0.5rem; /* .p-2 = .5rem */
+		text-align: center;
+	}
+	.answer-question {
+		margin: 0 0 0.5rem;
+		font-size: 1.4rem;
+		font-weight: 700;
+		line-height: 1.25;
+		word-break: break-word;
+		color: #fff;
+	}
+	.answer-inner hr {
+		border: 0;
+		border-top: 1px solid #555;
+		margin: 0.5rem 0;
+	}
+	.answer-choices {
+		list-style: decimal inside;
+		margin: 0;
+		padding: 0;
+		text-align: left;
+	}
+	.answer-choice {
+		padding: 0.5rem; /* .p-2 */
+		font-size: 0.95rem;
+	}
+	.answer-choice-text {
+		word-break: break-word;
+	}
+	/* HARD EVIDENCE (poll.md const [45] + Resolved L319): btn-primary bg #0d6efd
+	   (BS5), inline color:white, btn-sm, floated right. */
+	.choose-btn {
+		float: right;
+		display: inline-flex;
+		align-items: center;
+		background: #0d6efd;
+		border: 1px solid #0d6efd;
+		color: #fff;
+		border-radius: 0.2rem;
+		padding: 0.25rem 0.5rem;
+		font-size: 0.78rem;
+		font-weight: 600;
+		cursor: pointer;
+	}
+	.choose-btn:hover:not(:disabled) {
+		background: #0b5ed7;
+		border-color: #0a58ca;
+	}
+	.choose-btn:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
 	}
 </style>
