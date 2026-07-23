@@ -175,45 +175,51 @@
 				<Icon name="wrench" />
 				<span>Colors &amp; Size</span>
 			</div>
-			<ul class="colors">
-				{#each colorControls as control (control.key)}
-					<li class="color-row">
+			<!-- Reference lays the color list (left, flex-fill) beside a right-aligned
+			     Reset/Save column: parent flex, space-between, align-items flex-end. -->
+			<div class="cs-block">
+				<div class="cs-list">
+					<ul class="colors">
+						{#each colorControls as control (control.key)}
+							<li class="color-row">
+								<input
+									id="color-{control.key}"
+									name="color-{control.key}"
+									type="color"
+									value={theme.tokens[control.key]}
+									onchange={(e) => onColor(control.key, e)}
+									aria-label={control.label}
+								/>
+								<span class="color-label">{control.label}</span>
+							</li>
+						{/each}
+					</ul>
+					<div class="size-row">
+						<label class="size-label" for="settings-text-size">Text Size</label>
+						<!-- Reference uses an <input type="number"> stepper (not a range slider),
+						     which avoids hard-clamping the typed value to min/max. -->
 						<input
-							id="color-{control.key}"
-							name="color-{control.key}"
-							type="color"
-							value={theme.tokens[control.key]}
-							onchange={(e) => onColor(control.key, e)}
-							aria-label={control.label}
+							id="settings-text-size"
+							type="number"
+							min="10"
+							max="28"
+							step="1"
+							value={theme.fontSize}
+							oninput={onSize}
 						/>
-						<span class="color-label">{control.label}</span>
-					</li>
-				{/each}
-			</ul>
-			<div class="size-row">
-				<label class="size-label" for="settings-text-size">Text Size</label>
-				<!-- Reference uses an <input type="number"> stepper (not a range slider),
-				     which avoids hard-clamping the typed value to min/max. -->
-				<input
-					id="settings-text-size"
-					type="number"
-					min="10"
-					max="28"
-					step="1"
-					value={theme.fontSize}
-					oninput={onSize}
-				/>
-				<span class="size-val">{theme.fontSize}px</span>
-			</div>
-			<div class="cs-actions">
-				<!-- Reference: Reset = btn-outline-danger, Save changes =
-				     btn-outline-light (report.md:1704,1706). -->
-				<button class="btn outline-danger" type="button" onclick={() => theme.reset()}>
-					<Icon name="undo-alt" size={15} /> Reset
-				</button>
-				<button class="btn outline-light" type="button" onclick={() => theme.apply()}>
-					<Icon name="save" size={15} /> Save changes
-				</button>
+						<span class="size-val">{theme.fontSize}px</span>
+					</div>
+				</div>
+				<div class="cs-actions">
+					<!-- Reference: Reset = btn-outline-danger, Save changes =
+					     btn-outline-light (report.md:1704,1706). -->
+					<button class="btn outline-danger" type="button" onclick={() => theme.reset()}>
+						<Icon name="undo-alt" size={15} /> Reset
+					</button>
+					<button class="btn outline-light" type="button" onclick={() => theme.apply()}>
+						<Icon name="save" size={15} /> Save changes
+					</button>
+				</div>
 			</div>
 
 			<!-- Do not disturb -->
@@ -639,7 +645,7 @@
 		color: #f4f4f4;
 		padding: 8px 16px;
 		margin-bottom: -1px;
-		font-weight: 400;
+		font-weight: 300;
 		font-size: 16px;
 		border-radius: 6px 6px 0 0;
 		cursor: pointer;
@@ -678,7 +684,7 @@
 	}
 	.section-head :global(svg),
 	.section-head :global(i) {
-		color: var(--accent);
+		color: var(--modal-color, #f4f4f4);
 		flex: 0 0 auto;
 	}
 
@@ -738,12 +744,11 @@
 	/* Trailing live on/off state word the reference shows on each toggle label.
 	   `margin-left: auto` floats it to the right edge of the row. */
 	.state {
-		margin-left: auto;
-		font-size: 0.75rem;
+		font-size: 16px;
 		font-weight: 700;
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
-		color: var(--text-dim);
+		color: var(--modal-color, #f4f4f4);
 	}
 
 	/* Reference dividers between control sub-groups (after Room Layout, after the
@@ -766,19 +771,14 @@
 		display: flex;
 		align-items: center;
 		gap: 0.65rem;
-		background: var(--bg-elev);
-		border: 1px solid var(--border);
-		border-radius: var(--radius);
-		padding: 0.45rem 0.75rem;
 	}
 	.color-row input[type='color'] {
 		appearance: none;
 		-webkit-appearance: none;
-		width: 34px;
-		height: 34px;
+		width: 45px;
+		height: 20px;
 		padding: 0;
 		border: 1px solid var(--border);
-		border-radius: 8px;
 		background: transparent;
 		cursor: pointer;
 		flex: 0 0 auto;
@@ -791,7 +791,7 @@
 		border-radius: 6px;
 	}
 	.color-label {
-		font-weight: 600;
+		font-weight: 300;
 	}
 
 	.size-row {
@@ -806,13 +806,14 @@
 		flex: 0 0 auto;
 	}
 	.size-row input[type='number'] {
-		width: 5rem;
+		width: 45px;
 		background: var(--bg-elev);
 		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		color: var(--text);
 		padding: 0.4rem 0.5rem;
 		font-weight: 600;
+		font-size: 13px;
 		accent-color: var(--accent);
 	}
 	.size-row input[type='number']:focus {
@@ -827,10 +828,24 @@
 		text-align: right;
 	}
 
+	/* Reference: color list (left, flex-fill) beside a right-aligned Reset/Save
+	   column — parent space-between, bottom-aligned. */
+	.cs-block {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-end;
+		gap: 1rem;
+	}
+	.cs-list {
+		flex: 1 1 auto;
+		min-width: 0;
+	}
 	.cs-actions {
 		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
 		gap: 0.5rem;
-		margin-top: 0.75rem;
+		flex: 0 0 auto;
 	}
 
 	.btn {
@@ -859,8 +874,8 @@
 	}
 	/* Bootstrap variants per the captured footer buttons (report.md:1698-1706). */
 	.btn.secondary {
-		background: #444;
-		border-color: #444;
+		background: #6c757d;
+		border-color: #6c757d;
 		color: #fff;
 	}
 	.btn.secondary:hover {
@@ -877,11 +892,11 @@
 	}
 	.btn.outline-danger {
 		background: transparent;
-		border-color: var(--modal-danger, #e74c3c);
-		color: var(--modal-danger, #e74c3c);
+		border-color: #dc3545;
+		color: #dc3545;
 	}
 	.btn.outline-danger:hover {
-		background: var(--modal-danger, #e74c3c);
+		background: #dc3545;
 		color: #fff;
 	}
 	.btn.wide {

@@ -11,6 +11,10 @@
 		footer?: Snippet;
 		/** Bootstrap dialog size: md (default ~500px), lg (~800px), xl (~1140px). */
 		size?: 'md' | 'lg' | 'xl';
+		/** Exact dialog max-width in px, overriding `size` — for captured widths that
+		 * don't map to a Bootstrap preset (e.g. the WebRTC modal's 540px, the
+		 * alert/chat-logs modals' 1000px). */
+		maxWidth?: number;
 		/** Centered footer (reference `modal-footer text-center` on the Settings /
 		 * WebRTC / Offline shells — report.md:1686). */
 		footerCenter?: boolean;
@@ -25,6 +29,7 @@
 		children,
 		footer,
 		size = 'md',
+		maxWidth,
 		footerCenter = false,
 		header
 	}: Props = $props();
@@ -81,6 +86,7 @@
 			class="panel"
 			class:lg={size === 'lg'}
 			class:xl={size === 'xl'}
+			style:max-width={maxWidth ? `${maxWidth}px` : null}
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby={header ? undefined : titleId}
@@ -149,7 +155,12 @@
 		--bg-elev: var(--modal-input-bg);
 		--bg-elev-2: var(--modal-bg);
 		--border: var(--modal-border);
-		--accent: var(--modal-active-tab);
+		/* --accent must be the modal's accent FILL (#45a2ff = --modal-active-tab-bg),
+		   NOT --modal-active-tab (#fff, the active-tab TEXT color). Mapping it to the
+		   white text token made every child that fills with var(--accent) render
+		   white-on-white (Start Test button, UserInfo/Badges/RichText/Media buttons,
+		   focus borders). Keep it the same blue as the base :root --accent. */
+		--accent: var(--modal-active-tab-bg);
 		--accent-hover: var(--accent);
 		--positive: var(--modal-success);
 		--text: var(--modal-color);

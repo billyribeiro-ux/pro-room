@@ -1,8 +1,7 @@
 <script lang="ts">
 	import Modal from '../Modal.svelte';
 	import { api, ApiError } from '$lib/api';
-	import { formatStamp } from '$lib/message';
-	import type { Message } from '$lib/types';
+	import type { ChatChannel, Message } from '$lib/types';
 
 	interface Props {
 		open: boolean;
@@ -11,16 +10,23 @@
 	}
 	let { open, onClose, roomId }: Props = $props();
 
-	let channel = $state<'main' | 'off_topic'>('main');
 	let logs = $state<Message[]>([]);
 	let loading = $state(false);
 	let error = $state<string | null>(null);
 
+	// Reference has no channel picker; the log list is one combined index across
+	// channels, so we fetch both channels and merge (newest first).
 	async function reload() {
 		loading = true;
 		error = null;
 		try {
-			logs = await api.get<Message[]>(`/api/rooms/${roomId}/messages?channel=${channel}`);
+			const [main, offTopic] = await Promise.all([
+				api.get<Message[]>(`/api/rooms/${roomId}/messages?channel=main`),
+				api.get<Message[]>(`/api/rooms/${roomId}/messages?channel=off_topic`)
+			]);
+			logs = [...main, ...offTopic].sort(
+				(a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+			);
 		} catch (e) {
 			error = e instanceof ApiError ? e.message : 'Failed to load chat log';
 		} finally {
@@ -28,11 +34,21 @@
 		}
 	}
 
-	// Load when the modal opens or the channel changes.
+	// Reference date line, e.g. "Jul 21, 2026".
+	function formatLogDate(iso: string): string {
+		const d = new Date(iso);
+		if (Number.isNaN(d.getTime())) return iso;
+		return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+	}
+
+	const CHANNEL_LABELS: Record<ChatChannel, string> = {
+		main: 'Main Chat',
+		off_topic: 'Off Topic'
+	};
+
+	// Load when the modal opens.
 	$effect(() => {
 		if (open) {
-			// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- bare read registers the $effect dependency on channel
-			channel;
 			void reload();
 		}
 	});
@@ -42,12 +58,8 @@
 	<button class="btn secondary" type="button" onclick={onClose}>Close</button>
 {/snippet}
 
-<Modal {open} {onClose} title="Chat Logs" {footer}>
+<Modal {open} {onClose} title="Chat Logs" maxWidth={1000} {footer}>
 	<div class="bar">
-		<select aria-label="Channel" bind:value={channel}>
-			<option value="main">Main Chat</option>
-			<option value="off_topic">Off Topic</option>
-		</select>
 		<button class="btn primary reload" type="button" onclick={reload} disabled={loading}>
 			{loading ? 'Loading…' : 'Reload Log List'}
 		</button>
@@ -56,16 +68,18 @@
 	{#if error}
 		<p class="err" role="alert">{error}</p>
 	{:else if !loading && logs.length === 0}
-		<div class="empty">No chat messages logged for this channel yet.</div>
+		<div class="empty">No chat messages logged yet.</div>
 	{:else}
 		<div class="list-group">
 			{#each logs as log (log.id)}
 				<div class="list-group-item">
-					<div class="lg-head">
-						<span class="lg-by">{log.author_name ?? 'trader'}</span>
-						<span class="lg-date">{formatStamp(log.created_at)}</span>
+					<strong class="lg-date">{formatLogDate(log.created_at)}</strong>
+					<!-- HONEST GAP: reference shows the author's email; Message only carries
+					     author_name, so the display name is shown here instead. -->
+					<div class="lg-line"><strong>By:</strong> <em>{log.author_name ?? 'trader'}</em></div>
+					<div class="lg-line">
+						<strong>Channel:</strong> <em>{CHANNEL_LABELS[log.channel] ?? log.channel}</em>
 					</div>
-					<div class="lg-body">{log.body}</div>
 				</div>
 			{/each}
 		</div>
@@ -78,14 +92,6 @@
 		align-items: center;
 		gap: 0.5rem;
 		margin: 0.5rem 0 0.75rem;
-	}
-	.bar select {
-		background: var(--bg-elev);
-		border: 1px solid var(--border);
-		color: var(--text);
-		border-radius: var(--radius);
-		padding: 0.4rem 0.5rem;
-		font-size: 0.82rem;
 	}
 	.err {
 		margin: 0.25rem 0;
@@ -104,8 +110,8 @@
 		max-height: 50vh;
 		overflow-y: auto;
 	}
-	/* Reference log entries are WHITE cards with dark centered text and light
-	   #dee2e6 borders (not dark left-aligned rows). */
+	/* Reference log entries are WHITE cards with dark CENTERED text (a stack of
+	   three lines) and light #dee2e6 borders. */
 	.list-group-item {
 		display: block;
 		width: 100%;
@@ -117,32 +123,19 @@
 		padding: 0.5rem 0.7rem;
 		margin-bottom: 0.4rem;
 	}
-
-	.lg-head {
-		display: flex;
-		justify-content: space-between;
-		gap: 0.5rem;
+	.lg-date {
+		display: block;
+		font-weight: 700;
 		margin-bottom: 0.15rem;
 	}
-	.lg-by {
-		font-weight: 700;
-		font-size: 0.82rem;
-	}
-	.lg-date {
-		font-size: 0.75rem;
-		color: var(--text-dim);
-		white-space: nowrap;
-	}
-	.lg-body {
-		font-size: 0.85rem;
-		word-break: break-word;
-		white-space: pre-wrap;
+	.lg-line {
+		font-size: 0.9rem;
 	}
 	.btn {
 		border-radius: var(--radius);
 		padding: 0.45rem 0.9rem;
-		font-weight: 700;
-		font-size: 0.85rem;
+		font-weight: 400;
+		font-size: 1rem;
 		border: 1px solid transparent;
 		cursor: pointer;
 	}

@@ -651,11 +651,15 @@
 		margin: 0.6rem 0;
 		width: 100%;
 	}
-	/* Reference .room-sound-options: text-align:left; padding-left:30px. Each row
-	   is div.my-1 > input.form-check-input + label.form-check-label. */
+	/* Reference .room-sound-options (captured volumeControl, volume-dropdown.json):
+	   text-align:left; each row is div.my-1 > input.form-check-input (x=panel+11) +
+	   label (text column x=panel+31) + span state. The checkbox pokes ~20px left of
+	   the text column (Bootstrap .form-check negative margin), so the label+state fit
+	   inside the 160px panel with ~24px right clearance. */
 	.sound-options {
 		text-align: left;
-		padding-left: 30px;
+		/* checkbox column at panel+11 (capture: input.form-check-input x=1729, panel x=1718). */
+		padding-left: 11px;
 		display: flex;
 		flex-direction: column;
 		gap: 0.35rem;
@@ -663,7 +667,8 @@
 	.sound-options label {
 		display: flex;
 		align-items: center;
-		gap: 0.45rem;
+		/* checkbox(16px) + 4px → text column at panel+31 (capture: label x=1749). */
+		gap: 4px;
 		/* Reference sound rows: 16px, #ccc (report.md:1819-1820). */
 		font-size: 16px;
 		color: #ccc;
@@ -673,10 +678,15 @@
 		opacity: 0.85;
 	}
 	.sound-options input[type='checkbox'] {
+		flex: none;
 		accent-color: var(--accent);
 	}
+	/* State word ("on"/"off") flows INLINE right after the label — NOT right-aligned.
+	   HARD EVIDENCE: in the capture the span x tracks label width (QA→1825, Chat→1836),
+	   which only happens with inline flow; margin-left:auto (right-align) clipped it at
+	   the panel edge. ~7px gap ≈ the captured ~11px total lead from the label text. */
 	.sound-options .status {
-		margin-left: auto;
+		margin-left: 3px;
 		font-size: 0.75rem;
 		color: #ccc;
 	}
