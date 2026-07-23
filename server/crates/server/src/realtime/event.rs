@@ -114,6 +114,16 @@ pub enum MediaKind {
 pub struct PresentUser {
     pub user_id: UserId,
     pub display_name: String,
+    /// Gravatar URL derived server-side from the user's email (`d=mm` fallback), so
+    /// the roster renders the reference's `img.rosterImg` avatar without exposing
+    /// the raw email to clients.
+    pub avatar_url: String,
+    /// Staff/presenter (effective role above `member`) → the reference's `.presUser`
+    /// styling; regular members are `.regUser`.
+    pub is_presenter: bool,
+    /// The user's badge cluster (custom badges + trial/new/tenure), reusing the same
+    /// resolution as message/alert authors so the roster shows `img.user-badge-img`.
+    pub author_badges: AuthorBadges,
 }
 
 impl RoomEvent {

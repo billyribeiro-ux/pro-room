@@ -194,21 +194,6 @@ pub async fn set_status(pool: &PgPool, id: UserId, status: UserStatus) -> anyhow
     Ok(())
 }
 
-/// Fetch `(id, display_name)` for a set of users, for presence display.
-pub async fn display_names(
-    pool: &PgPool,
-    ids: &[uuid::Uuid],
-) -> anyhow::Result<Vec<(UserId, String)>> {
-    let rows = sqlx::query!("SELECT id, display_name FROM users WHERE id = ANY($1)", ids,)
-        .fetch_all(pool)
-        .await
-        .context("fetch display names")?;
-    Ok(rows
-        .into_iter()
-        .map(|r| (UserId::from_uuid(r.id), r.display_name))
-        .collect())
-}
-
 /// Flat projection for [`find_highest_privilege`]. `email` is Postgres `citext`
 /// (decodes to `String`); `global_role`/`status` are the enum columns cast to
 /// `text` in the query, then `.parse()`d into the domain enums by the mapping

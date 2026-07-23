@@ -143,7 +143,8 @@ async fn room_socket(
     }
 }
 
-/// Compute the room's present users (with display names) and broadcast them.
+/// Compute the room's present users — enriched with the reference roster fields
+/// (Gravatar avatar, presenter flag, badge cluster) — and broadcast them.
 async fn publish_presence(state: &AppState, room: RoomId) {
     let ids = match state.cache.presence_list(room).await {
         Ok(ids) => ids,
@@ -153,18 +154,40 @@ async fn publish_presence(state: &AppState, room: RoomId) {
         }
     };
     let uuids: Vec<uuid::Uuid> = ids.iter().map(domain::UserId::as_uuid).collect();
-    let names = crate::db::users::display_names(&state.db, &uuids)
+    // Effective role + email (for Gravatar) per present user.
+    let roster = crate::db::members::present_roster(&state.db, room, &uuids)
         .await
         .unwrap_or_default();
-    let users = names
+    // Badge cluster per present user — the SAME resolution used for message/alert
+    // authors, so the roster shows the identical badge icons.
+    let user_ids: Vec<domain::UserId> = roster.iter().map(|r| r.user_id).collect();
+    let mut badges = crate::db::badges::for_authors(&state.db, &user_ids)
+        .await
+        .unwrap_or_default();
+    let users = roster
         .into_iter()
-        .map(|(user_id, display_name)| PresentUser {
-            user_id,
-            display_name,
+        .map(|r| {
+            let author_badges = badges.remove(&r.user_id).unwrap_or_default();
+            PresentUser {
+                avatar_url: gravatar_url(&r.email),
+                is_presenter: r.role != domain::Role::Member,
+                author_badges,
+                user_id: r.user_id,
+                display_name: r.display_name,
+            }
         })
         .collect();
     let _ = state
         .hub
         .publish(room, &RoomEvent::Presence { users }.to_json())
         .await;
+}
+
+/// Reference roster avatars are Gravatars keyed by the trimmed, lowercased email
+/// (md5) with the `mm` "mystery man" fallback at 50px — matching the captured
+/// `secure.gravatar.com/avatar/<hash>?d=mm&s=50` URLs. The email itself never
+/// leaves the server; only this derived URL is broadcast.
+fn gravatar_url(email: &str) -> String {
+    let digest = md5::compute(email.trim().to_lowercase().as_bytes());
+    format!("https://secure.gravatar.com/avatar/{digest:x}?d=mm&s=50")
 }

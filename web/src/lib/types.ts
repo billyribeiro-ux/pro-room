@@ -120,6 +120,14 @@ export interface Message {
 export interface PresentUser {
 	user_id: string;
 	display_name: string;
+	/** Gravatar URL derived server-side from the user's email (`d=mm` fallback) —
+	 * the roster's `img.rosterImg` avatar. */
+	avatar_url?: string;
+	/** Staff/presenter (effective role above member) → reference `.presUser` row. */
+	is_presenter?: boolean;
+	/** Badge cluster (custom badges + trial/new/tenure), rendered next to the name
+	 * with the shared `Badges` component — same data as message/alert authors. */
+	author_badges?: AuthorBadges;
 }
 
 export interface Note {
