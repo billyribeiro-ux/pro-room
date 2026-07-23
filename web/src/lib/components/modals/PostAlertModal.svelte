@@ -311,8 +311,9 @@
 				/> Add Legal Disclosure?
 			</label>
 		</div>
+		<!-- HARD EVIDENCE (mixed-files/file12.html): <button class="btn btn-success">
+		     Post Alert</button> — text only, NO icon. -->
 		<button type="button" class="primary" onclick={post} disabled={posting || uploading}>
-			<Icon name="paper-plane" size={14} />
 			{posting ? 'Posting…' : 'Post Alert'}
 		</button>
 	{/snippet}
@@ -394,9 +395,12 @@
 	input[type='url'] {
 		width: 100%;
 		box-sizing: border-box;
-		background: var(--bg-elev);
-		border: 1px solid var(--border);
-		color: var(--text);
+		/* HARD EVIDENCE (proroom-all-admin.json, textarea.txt-area.form-control): the
+		   alert/message textarea is WHITE (rgb(255,255,255)) with #676767 (rgb(103,103,103))
+		   text — NOT the navy --bg-elev/--modal-input-bg #0a6db1 that made it render blue. */
+		background: #ffffff;
+		border: 1px solid #ced4da;
+		color: #676767;
 		border-radius: var(--radius);
 		padding: 0.5rem 0.6rem;
 		font: inherit;
@@ -468,7 +472,9 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.4rem;
-		background: var(--accent);
+		/* HARD EVIDENCE (proroom-all-admin.json inventory.buttons): the "Post Alert"
+		   button is `btn btn-success` — GREEN, not the accent blue. */
+		background: var(--positive, #00bc8c);
 		color: #fff;
 		border: none;
 		border-radius: var(--radius);
@@ -477,7 +483,7 @@
 		font-weight: 700;
 	}
 	.primary:hover:not(:disabled) {
-		background: var(--accent-hover);
+		background: color-mix(in srgb, var(--positive, #00bc8c) 88%, #000);
 	}
 	.primary:disabled {
 		opacity: 0.6;

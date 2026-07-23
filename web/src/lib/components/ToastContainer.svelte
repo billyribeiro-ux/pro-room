@@ -5,65 +5,99 @@
 
 <!-- Top-right stack (reference toastr "toast-top-right"). Click a toast to dismiss
      it early; each also auto-dismisses on its timer. role=status + aria-live so a
-     new alert is announced without stealing focus. -->
-<div class="toasts" role="status" aria-live="polite">
+     new alert is announced without stealing focus. The reference fires every alert
+     via toastr.warning(...), so each toast renders as .ngx-toastr.toast-warning. -->
+<div class="toast-container toast-top-right" role="status" aria-live="polite">
 	{#each toasts as t (t.id)}
 		<button
-			class="toast"
+			class="ngx-toastr toast-warning"
 			type="button"
 			onclick={() => dismissToast(t.id)}
 			in:fade={{ duration: 140 }}
 			out:fade={{ duration: 200 }}
 		>
-			<span class="toast-title">{t.title}</span>
+			<div class="toast-title">{t.title}</div>
 			<!-- Plain text, NOT {@html}: our alert body is user-entered, so no enableHtml. -->
-			<span class="toast-body">{t.body}</span>
+			<div class="toast-message">{t.body}</div>
 		</button>
 	{/each}
 </div>
 
 <style>
-	.toasts {
-		position: fixed;
-		/* Clear the 49px fixed room nav; lift above it (nav z-1030). */
-		top: 60px;
-		right: 1rem;
-		z-index: 1040;
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-		max-width: min(90vw, 340px);
+	/* HARD EVIDENCE (toastr css: .toast-container { pointer-events: none; position:
+	   fixed; z-index: 999999; }) plus the final overriding rule
+	   (toastr css: .toast-container { top: 70px !important; }). We inline that final
+	   top (no !important needed here — no competing rule) and keep right from
+	   (toastr css: .toast-top-right { top: 12px; right: 12px; }) where right: 12px
+	   survives the top override. */
+	.toast-container {
 		pointer-events: none;
+		position: fixed;
+		z-index: 999999;
 	}
-	.toast {
+	/* HARD EVIDENCE (toastr css: .toast-top-right { top: 12px; right: 12px; }); the
+	   later cascade rule (toastr css: .toast-container { top: 70px !important; })
+	   replaces the 12px top, so we resolve it to 70px here. */
+	.toast-top-right {
+		top: 70px;
+		right: 12px;
+	}
+	/* HARD EVIDENCE (toastr css: .toast-container * { box-sizing: border-box; }) */
+	.toast-container :global(*) {
+		box-sizing: border-box;
+	}
+
+	/* HARD EVIDENCE (toastr css: .toast-container .ngx-toastr { position: relative;
+	   overflow: hidden; margin: 0px 0px 6px; padding: 15px 15px 15px 50px; width:
+	   300px; border-radius: 3px; background-position: 15px center; background-repeat:
+	   no-repeat; background-size: 24px; box-shadow: rgb(153,153,153) 0px 0px 12px;
+	   color: rgb(255,255,255); }) and base (toastr css: .ngx-toastr {
+	   background-color: rgb(3,3,3); pointer-events: auto; }). We add text-align:left
+	   and font:inherit because our node is a <button>, whose UA styles would
+	   otherwise center text and shrink the font — not part of the reference <div>. */
+	.ngx-toastr {
+		position: relative;
+		overflow: hidden;
+		margin: 0 0 6px;
+		padding: 15px 15px 15px 50px;
+		width: 300px;
+		max-width: 100%;
+		border-radius: 3px;
+		background-position: 15px center;
+		background-repeat: no-repeat;
+		background-size: 24px;
+		box-shadow: rgb(153, 153, 153) 0 0 12px;
+		background-color: rgb(3, 3, 3);
+		color: rgb(255, 255, 255);
 		pointer-events: auto;
-		display: flex;
-		flex-direction: column;
-		gap: 0.15rem;
 		text-align: left;
-		width: 100%;
-		cursor: pointer;
-		/* Reference toastr-warning is amber; match it with an amber left rail on the
-		   app's elevated surface so it reads as a notification, not a chat bubble. */
-		background: var(--bg-elev);
-		color: var(--text);
-		border: 1px solid var(--border);
-		border-left: 4px solid var(--warn, #f0ad4e);
-		border-radius: var(--radius);
-		padding: 0.55rem 0.75rem;
-		box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
 		font: inherit;
+		border: 0;
+		cursor: pointer;
 	}
-	.toast:hover {
-		border-color: var(--warn, #f0ad4e);
+	/* HARD EVIDENCE (toastr css: .toast-container .ngx-toastr:hover { box-shadow:
+	   rgb(0,0,0) 0px 0px 12px; opacity: 1; cursor: pointer; }) */
+	.ngx-toastr:hover {
+		box-shadow: rgb(0, 0, 0) 0 0 12px;
+		opacity: 1;
+		cursor: pointer;
 	}
+
+	/* HARD EVIDENCE (toastr css: .toast-warning { background-color: rgb(248,148,6); }
+	   and .toast-warning { background-image: url(data:image/svg+xml;base64,...) } — the
+	   amber warning icon at background-position 15px center, 24px). The base64 SVG is
+	   copied verbatim from the extracted .toast-warning rule. */
+	.toast-warning {
+		background-color: rgb(248, 148, 6);
+		background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCA1NzYgNTEyJyB3aWR0aD0nNTc2JyBoZWlnaHQ9JzUxMic+PHBhdGggZmlsbD0ncmdiKDI1NSwyNTUsMjU1KScgZD0nTTU2OS41MTcgNDQwLjAxM0M1ODcuOTc1IDQ3Mi4wMDcgNTY0LjgwNiA1MTIgNTI3Ljk0IDUxMkg0OC4wNTRjLTM2LjkzNyAwLTU5Ljk5OS00MC4wNTUtNDEuNTc3LTcxLjk4N0wyNDYuNDIzIDIzLjk4NWMxOC40NjctMzIuMDA5IDY0LjcyLTMxLjk1MSA4My4xNTQgMGwyMzkuOTQgNDE2LjAyOHpNMjg4IDM1NGMtMjUuNDA1IDAtNDYgMjAuNTk1LTQ2IDQ2czIwLjU5NSA0NiA0NiA0NiA0Ni0yMC41OTUgNDYtNDYtMjAuNTk1LTQ2LTQ2LTQ2em0tNDMuNjczLTE2NS4zNDZsNy40MTggMTM2Yy4zNDcgNi4zNjQgNS42MDkgMTEuMzQ2IDExLjk4MiAxMS4zNDZoNDguNTQ2YzYuMzczIDAgMTEuNjM1LTQuOTgyIDExLjk4Mi0xMS4zNDZsNy40MTgtMTM2Yy4zNzUtNi44NzQtNS4wOTgtMTIuNjU0LTExLjk4Mi0xMi42NTRoLTYzLjM4M2MtNi44ODQgMC0xMi4zNTYgNS43OC0xMS45ODEgMTIuNjU0eicvPjwvc3ZnPg==');
+	}
+
+	/* HARD EVIDENCE (toastr css: .toast-title { font-weight: 700; }) */
 	.toast-title {
 		font-weight: 700;
-		font-size: 0.82rem;
 	}
-	.toast-body {
-		font-size: 0.85rem;
-		word-break: break-word;
-		white-space: pre-wrap;
+	/* HARD EVIDENCE (toastr css: .toast-message { overflow-wrap: break-word; }) */
+	.toast-message {
+		overflow-wrap: break-word;
 	}
 </style>

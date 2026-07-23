@@ -148,23 +148,25 @@
 		}
 	}
 
+	// HARD EVIDENCE (tab:Files DOM per row: span.st-fileSize "297Kb"): the reference
+	// renders size as an integer count of Kb suffixed with "Kb" (e.g. 297Kb), and
+	// 0Kb for anything under 1Kb — NOT KB/MB/GB. `.st-fileSize` color #b2b2b2, 12px.
 	function formatSize(bytes: number): string {
-		if (bytes < 1024) return `${bytes} B`;
-		const units = ['KB', 'MB', 'GB'];
-		let v = bytes / 1024;
-		let i = 0;
-		while (v >= 1024 && i < units.length - 1) {
-			v /= 1024;
-			i++;
-		}
-		return `${v.toFixed(v < 10 ? 1 : 0)} ${units[i]}`;
+		return `${Math.round(bytes / 1024)}Kb`;
 	}
 
+	// HARD EVIDENCE (tab:Files DOM per row: div.st-fileName > <i>May 4, 2026,
+	// 4:09:55 PM</i>): the italic line under the name is the full localized
+	// date-TIME (en-US, "Month D, YYYY, h:mm:ss AM/PM"), not a bare short date.
 	function formatDate(iso: string): string {
-		return new Date(iso).toLocaleDateString([], {
+		return new Date(iso).toLocaleString('en-US', {
 			year: 'numeric',
-			month: 'short',
-			day: 'numeric'
+			month: 'long',
+			day: 'numeric',
+			hour: 'numeric',
+			minute: '2-digit',
+			second: '2-digit',
+			hour12: true
 		});
 	}
 </script>
@@ -180,10 +182,12 @@
 				onclick={() => (category = c.key)}
 			>
 				{c.label}
-				{#if counts[c.key] > 0}
-					<!-- Reference badge hides at 0 (.badge:empty { display:none }). -->
-					<span class="badge">{counts[c.key]}</span>
-				{/if}
+				<!-- HARD EVIDENCE (tab:Files sub-tab badges = span.badge.rounded-pill
+				     .bg-danger.files-badge; capture shows Files 50 / Images 11 /
+				     Sounds 0): red danger pill showing the REAL per-category count,
+				     ALWAYS rendered including 0. `.files-badge` notches up-right
+				     (margin-top:-9px; margin-left:3px). -->
+				<span class="badge">{counts[c.key]}</span>
 			</button>
 		{/each}
 
@@ -228,7 +232,6 @@
 			<thead>
 				<tr>
 					<th>Name</th>
-					<th class="num">Size</th>
 					<th class="act"></th>
 				</tr>
 			</thead>
@@ -239,21 +242,32 @@
 							{#if f.category === 'image'}
 								<img class="thumb" src={fileUrl(f)} alt={f.filename} loading="lazy" />
 							{/if}
-							{#if f.category === 'sound'}
-								<button
-									type="button"
-									class="fn sound-link"
-									onclick={() => playSound(f)}
-									title={playingId === f.id ? 'Stop' : 'Play'}
-								>
-									<Icon name={playingId === f.id ? 'stop' : 'play'} size={10} />
-									{f.filename}
-								</button>
-							{:else}
-								<span class="fn">{f.filename}</span>
-							{/if}
+							<!-- HARD EVIDENCE (tab:Files td1: div.d-flex.flex-column > div >
+							     span.st-fileName + span.st-fileSize.ml-2 + div.st-fileName >
+							     <i>date-time</i>): name (+ inline size) stacked over the
+							     italic full date-time line. -->
+							<div class="name-col">
+								<div class="name-row">
+									{#if f.category === 'sound'}
+										<button
+											type="button"
+											class="fn sound-link"
+											onclick={() => playSound(f)}
+											title={playingId === f.id ? 'Stop' : 'Play'}
+										>
+											<Icon name={playingId === f.id ? 'stop' : 'play'} size={10} />
+											{f.filename}
+										</button>
+									{:else}
+										<span class="fn">{f.filename}</span>
+									{/if}
+									<!-- span.st-fileSize.ml-2: #b2b2b2, integer Kb + "Kb". -->
+									<span class="size-inline">{formatSize(f.size_bytes)}</span>
+								</div>
+								<!-- div.st-fileName > <i>: italic full date-time under the name. -->
+								<div class="date-line"><i>{formatDate(f.created_at)}</i></div>
+							</div>
 						</td>
-						<td class="num">{formatSize(f.size_bytes)}</td>
 						<td class="act">
 							<button type="button" class="download" onclick={() => download(f)}>
 								<Icon name="download" size={14} /> Download
@@ -273,7 +287,7 @@
 					</tr>
 				{:else}
 					<tr>
-						<td class="empty" colspan="3">
+						<td class="empty" colspan="2">
 							{query ? 'No files match your search.' : 'No files in this category yet.'}
 						</td>
 					</tr>
@@ -466,13 +480,6 @@
 		padding: 0.5rem 0.85rem;
 		border-bottom: 1px solid var(--content-separator-bg, #e8e8e8);
 	}
-	th.num,
-	td.num {
-		text-align: right;
-		white-space: nowrap;
-		/* .st-fileSize: color var(--file-size-color) = #b2b2b2 */
-		color: #b2b2b2;
-	}
 	/* Reference striped rows: even #f4f4f4 / odd #fff (report.md:744,2932). */
 	tbody tr:nth-child(even) {
 		background: var(--file-list-even-bg, #f4f4f4);
@@ -486,6 +493,19 @@
 		align-items: center;
 		gap: 0.5rem;
 	}
+	/* HARD EVIDENCE (tab:Files td1 = div.d-flex.flex-column): name row stacked
+	   over the italic date-time line. */
+	.name-col {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+	}
+	.name-row {
+		display: flex;
+		align-items: baseline;
+		flex-wrap: wrap;
+		gap: 0.2rem;
+	}
 	.thumb {
 		width: 32px;
 		height: 32px;
@@ -494,9 +514,26 @@
 		flex-shrink: 0;
 	}
 	.fn {
-		word-break: break-word;
-		/* Reference --file-name-color #0a6db1 (report.md:745). */
+		/* .st-fileName { word-break: break-all; color: var(--file-name-color) }. */
+		word-break: break-all;
 		color: var(--file-name-color, #0a6db1);
+	}
+	/* .st-fileSize.ml-2: color var(--file-size-color) #b2b2b2; 12px. */
+	.size-inline {
+		margin-left: 0.5rem;
+		color: var(--file-size-color, #b2b2b2);
+		font-size: 12px;
+		white-space: nowrap;
+	}
+	/* div.st-fileName > <i>: italic full date-time line under the name; inherits
+	   .st-fileName color #0a6db1, renders 12px italic. */
+	.date-line {
+		color: var(--file-name-color, #0a6db1);
+		font-size: 12px;
+		font-style: italic;
+	}
+	.date-line i {
+		font-style: italic;
 	}
 	.sound-link {
 		display: inline-flex;
@@ -508,14 +545,17 @@
 		font-size: 12px;
 		cursor: pointer;
 	}
+	/* HARD EVIDENCE (tab:Files td2: centered a.btn.st-fileDownload): the download
+	   cell is centered, not right-aligned. */
 	td.act {
-		text-align: right;
+		text-align: center;
 		white-space: nowrap;
 	}
 	.download {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.3rem;
+		/* i.fas.fa-download.mr-2 (0.5rem) BEFORE the "Download" text. */
+		gap: 0.5rem;
 		/* a.st-fileDownload: bg var(--file-download-bg) #92d528; color var(--tabs-color) #fff;
 		   font-size 12px; .fileDownload width 120px. */
 		justify-content: center;

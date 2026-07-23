@@ -1,0 +1,125 @@
+{
+  "surface": "badges (author badge cluster)",
+  "authority": "/Users/billyribeiro/Desktop/pro-room/proroom-all-admin.json",
+  "finding": "Reference renders author badges as <img class=\"user-badge-img\"> ONLY. Zero text pills.",
+  "counts": {
+    "user-badge-img (image badges)": 202,
+    "badge-cluster wrappers (div.d-inline-block.flex-shrink-1)": 47,
+    "user-badge (TEXT pill class)": 0,
+    "new-badge": 0,
+    "trial-badge": 0,
+    "stars-container / stars-num": 0,
+    "standalone text \"New\"/\"Trial\"": 0
+  },
+  "clusterWrapper": [
+    {
+      "tag": "div",
+      "class": "d-inline-block flex-shrink-1 ng-star-inserted",
+      "rect": {
+        "x": 98,
+        "y": -2234,
+        "w": 80,
+        "h": 24
+      },
+      "style": {
+        "display": "block",
+        "flex-direction": "row",
+        "align-items": "normal",
+        "gap": "normal",
+        "flex-shrink": "1"
+      },
+      "childrenAllImages": true
+    }
+  ],
+  "imageBadgeSample": [
+    {
+      "tag": "img",
+      "class": "user-badge-img",
+      "src": "https://i.imgur.com/EwVGWGS.png",
+      "alt": "https://i.imgur.com/EwVGWGS.png",
+      "rect": {
+        "x": 98,
+        "y": -2231,
+        "w": 20,
+        "h": 20
+      },
+      "style": {
+        "display": "inline",
+        "height": "20px",
+        "width": "20px",
+        "max-height": "20px",
+        "vertical-align": "middle",
+        "object-fit": "fill",
+        "margin-left": "0px",
+        "margin-right": "0px",
+        "border-top-left-radius": "0px"
+      }
+    },
+    {
+      "tag": "img",
+      "class": "user-badge-img",
+      "src": "https://i.imgur.com/w0vevvY.png",
+      "alt": "https://i.imgur.com/w0vevvY.png",
+      "rect": {
+        "x": 118,
+        "y": -2231,
+        "w": 20,
+        "h": 20
+      },
+      "style": {
+        "display": "inline",
+        "height": "20px",
+        "width": "20px",
+        "max-height": "20px",
+        "vertical-align": "middle",
+        "object-fit": "fill",
+        "margin-left": "0px",
+        "margin-right": "0px",
+        "border-top-left-radius": "0px"
+      }
+    },
+    {
+      "tag": "img",
+      "class": "user-badge-img",
+      "src": "https://i.imgur.com/p5iXYiw.png",
+      "alt": "https://i.imgur.com/p5iXYiw.png",
+      "rect": {
+        "x": 138,
+        "y": -2231,
+        "w": 20,
+        "h": 20
+      },
+      "style": {
+        "display": "inline",
+        "height": "20px",
+        "width": "20px",
+        "max-height": "20px",
+        "vertical-align": "middle",
+        "object-fit": "fill",
+        "margin-left": "0px",
+        "margin-right": "0px",
+        "border-top-left-radius": "0px"
+      }
+    }
+  ],
+  "siblingOrder": [
+    {
+      "tag": "div",
+      "class": "avatar pl-1",
+      "x": 19,
+      "note": "avatar LEFT"
+    },
+    {
+      "tag": "strong",
+      "class": "username mx-1",
+      "text": "ROM...",
+      "x": 62
+    },
+    {
+      "tag": "div",
+      "class": "d-inline-block flex-shrink-1",
+      "x": 98,
+      "note": "badge cluster AFTER username"
+    }
+  ]
+}

@@ -178,7 +178,8 @@
 						class="welcome-badge"
 						title="This note is the Welcome Mat, and will be shown by default when nobody is presenting"
 					>
-						<Icon name="home" size={12} />
+						<!-- HARD EVIDENCE (states["pane:Notes"] node7 i.fas.fa-home font-size 9px). -->
+					<Icon name="home" size={9} />
 					</span>
 				{/if}
 				{n.title}
@@ -202,39 +203,48 @@
 			<div class="rendered">{@html sanitize(selected.body)}</div>
 		</div>
 
+		<!-- HARD EVIDENCE (states["pane:Notes"] node42 .noteOptions
+			 justify-content:space-between): LEFT cell (node43 div) holds the
+			 Download button (node44 .noteDownload); RIGHT cell holds the manage
+			 controls. -->
 		<div class="options">
+			<div class="left">
+				<button type="button" class="download" onclick={() => download(selected)}>
+					<!-- HARD EVIDENCE (node45 i.fas.fa-download font-size 14px). -->
+					<Icon name="download" size={14} /> Download
+				</button>
+			</div>
 			{#if canManage}
-				<button
-					type="button"
-					class="ic"
-					onclick={() => reorder(-1)}
-					disabled={busy || selectedIndex <= 0}
-					aria-label="Move left"
-				>
-					<Icon name="caret-left" />
-				</button>
-				<button
-					type="button"
-					class="ic"
-					onclick={() => reorder(1)}
-					disabled={busy || selectedIndex >= notes.length - 1}
-					aria-label="Move right"
-				>
-					<Icon name="caret-right" />
-				</button>
-				<button type="button" class="ic" onclick={() => (editorOpen = true)} aria-label="Edit">
-					<Icon name="pen" />
-				</button>
-				<button type="button" class="ic" onclick={() => rename(selected)} aria-label="Rename">
-					<Icon name="pencil-alt" />
-				</button>
-				<button type="button" class="ic del" onclick={() => remove(selected)} aria-label="Delete">
-					<Icon name="trash-alt" />
-				</button>
+				<div class="right">
+					<button
+						type="button"
+						class="ic"
+						onclick={() => reorder(-1)}
+						disabled={busy || selectedIndex <= 0}
+						aria-label="Move left"
+					>
+						<Icon name="caret-left" />
+					</button>
+					<button
+						type="button"
+						class="ic"
+						onclick={() => reorder(1)}
+						disabled={busy || selectedIndex >= notes.length - 1}
+						aria-label="Move right"
+					>
+						<Icon name="caret-right" />
+					</button>
+					<button type="button" class="ic" onclick={() => (editorOpen = true)} aria-label="Edit">
+						<Icon name="pen" />
+					</button>
+					<button type="button" class="ic" onclick={() => rename(selected)} aria-label="Rename">
+						<Icon name="pencil-alt" />
+					</button>
+					<button type="button" class="ic del" onclick={() => remove(selected)} aria-label="Delete">
+						<Icon name="trash-alt" />
+					</button>
+				</div>
 			{/if}
-			<button type="button" class="download" onclick={() => download(selected)}>
-				<Icon name="download" size={15} /> Download
-			</button>
 		</div>
 	{:else}
 		<div class="empty">
@@ -278,7 +288,10 @@
 		gap: 0.3rem;
 		background: transparent;
 		border: 1px solid transparent;
-		color: #ffffff;
+		/* HARD EVIDENCE (states["pane:Notes"] node10 .nav-link color rgb(204,204,204)):
+		   idle sub-tab color = var(--tabs-color); LIVE room cascade sets
+		   --tabs-color: #fff (the earlier #ccc came from a stale capture state). */
+		color: var(--tabs-color, #ffffff);
 		font-size: 12px;
 		line-height: 12px;
 		font-weight: 300;
@@ -315,25 +328,32 @@
 		justify-content: center;
 		background: var(--positive, #00bc8c);
 		color: #ffffff;
-		border-radius: 4px;
-		padding: 2px 4px;
+		/* HARD EVIDENCE (states["pane:Notes"] node6 .badge.badge-success.p-0):
+		   border-top-left-radius 6px, padding 0px all sides. */
+		border-radius: 6px;
+		padding: 0;
 		line-height: 0;
 	}
 	/* Reference .noteOptions: sticky BOTTOM bar, --note-options-bg #f4f4f4,
 	   padding 10px, holding the action buttons (Download etc.). */
+	/* HARD EVIDENCE (states["pane:Notes"] node42 .noteOptions): display:flex,
+	   justify-content:space-between, padding 10px, border-top-width 0px. */
 	.options {
 		display: flex;
 		align-items: center;
+		justify-content: space-between;
 		gap: 0.3rem;
 		position: sticky;
 		bottom: 0;
 		padding: 10px;
 		background: var(--note-options-bg, #f4f4f4);
-		border-top: 1px solid #eceef3;
 		flex-shrink: 0;
 	}
-	.options .download {
-		margin-left: auto;
+	/* LEFT cell (node43) holds Download; RIGHT cell holds the .ic manage row. */
+	.options .right {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
 	}
 	.ic {
 		display: inline-flex;
@@ -371,9 +391,10 @@
 		align-items: center;
 		gap: 0.35rem;
 		border: none;
-		border-radius: 6px;
-		padding: 0.35rem 0.7rem;
-		/* Reference .noteDownload (.btn-sm): 14px / weight 400. */
+		/* HARD EVIDENCE (states["pane:Notes"] node44 .noteDownload.btn-sm):
+		   border-radius 4px, padding 4px 8px, font-size 14px / weight 400. */
+		border-radius: 4px;
+		padding: 4px 8px;
 		font-size: 14px;
 		font-weight: 400;
 		color: #ffffff;

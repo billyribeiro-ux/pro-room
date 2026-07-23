@@ -140,7 +140,7 @@ test('alert popup toast fires on another user’s new alert', async ({ page }) =
 			body: JSON.stringify({ symbol: 'E2ETOAST', side: 'buy', note: 'popup' })
 		});
 	}, roomId);
-	const toast = page.locator('.toast', { hasText: 'E2ETOAST' });
+	const toast = page.locator('.ngx-toastr', { hasText: 'E2ETOAST' });
 	await expect(toast).toBeVisible({ timeout: 8_000 });
 	await expect(toast).toContainText('Alert from @');
 	await shot(page, 'f01-alert-toast');
@@ -178,7 +178,7 @@ test('Edit my Info updates the display name', async ({ page }) => {
 	const name = `E2EName${Date.now() % 100000}`;
 	await dialog.getByRole('textbox', { name: 'Display name' }).fill(name);
 	await dialog.getByRole('button', { name: 'Save' }).click();
-	await expect(page.locator('.toast', { hasText: 'Profile updated' })).toBeVisible({
+	await expect(page.locator('.ngx-toastr', { hasText: 'Profile updated' })).toBeVisible({
 		timeout: 8_000
 	});
 	await shot(page, 'f03-edit-my-info');
