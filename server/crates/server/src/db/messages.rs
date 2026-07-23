@@ -180,3 +180,59 @@ pub async fn list_recent(
     }
     Ok(views)
 }
+
+/// A single admin-only chat-log entry: identity + created time + channel + the
+/// author's email. Admin-only — served from the `ManageMembers`-gated
+/// `/chat-logs` endpoint, never the member `/messages` feed (chat authors are
+/// members, so their emails must not reach other members).
+#[derive(Serialize)]
+pub struct ChatLogEntry {
+    pub id: MessageId,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: time::OffsetDateTime,
+    pub channel: String,
+    pub author_name: String,
+    pub author_email: String,
+}
+
+#[derive(sqlx::FromRow)]
+struct ChatLogRow {
+    id: Uuid,
+    created_at: time::OffsetDateTime,
+    channel: String,
+    author_name: String,
+    author_email: String,
+}
+
+/// Recent chat messages across ALL channels as admin log entries (newest first),
+/// including the author's email. Admin-only — caller must hold
+/// `Action::ManageMembers`.
+pub async fn list_logs(
+    pool: &PgPool,
+    room_id: RoomId,
+    limit: i64,
+) -> anyhow::Result<Vec<ChatLogEntry>> {
+    let rows: Vec<ChatLogRow> = sqlx::query_as(
+        "SELECT m.id, m.created_at, m.channel, \
+                u.display_name AS author_name, u.email::text AS author_email \
+         FROM messages m \
+         JOIN users u ON u.id = m.author_id \
+         WHERE m.room_id = $1 \
+         ORDER BY m.created_at DESC LIMIT $2",
+    )
+    .bind(room_id.as_uuid())
+    .bind(limit)
+    .fetch_all(pool)
+    .await
+    .context("load chat logs")?;
+    Ok(rows
+        .into_iter()
+        .map(|r| ChatLogEntry {
+            id: MessageId::from_uuid(r.id),
+            created_at: r.created_at,
+            channel: r.channel,
+            author_name: r.author_name,
+            author_email: r.author_email,
+        })
+        .collect())
+}

@@ -2,7 +2,7 @@
 	import Modal from '../Modal.svelte';
 	import { api, ApiError } from '$lib/api';
 	import { formatStamp } from '$lib/message';
-	import type { Alert } from '$lib/types';
+	import type { AlertLogEntry } from '$lib/types';
 
 	interface Props {
 		open: boolean;
@@ -11,7 +11,7 @@
 	}
 	let { open, onClose, roomId }: Props = $props();
 
-	let logs = $state<Alert[]>([]);
+	let logs = $state<AlertLogEntry[]>([]);
 	let loading = $state(false);
 	let error = $state<string | null>(null);
 
@@ -19,7 +19,8 @@
 		loading = true;
 		error = null;
 		try {
-			logs = await api.get<Alert[]>(`/api/rooms/${roomId}/alerts`);
+			// Admin-only endpoint (ManageMembers-gated) that includes author emails.
+			logs = await api.get<AlertLogEntry[]>(`/api/rooms/${roomId}/alert-logs`);
 		} catch (e) {
 			error = e instanceof ApiError ? e.message : 'Failed to load alert log';
 		} finally {
@@ -56,12 +57,10 @@
 						<strong class="fw-bold lg-date">{formatStamp(log.created_at)}</strong>
 						<div class="lg-by">
 							<strong class="fw-bold">By:</strong>
-							<!-- The reference shows the author's email here, but this modal reuses
-							     the member-facing /alerts endpoint; putting emails on that payload
-							     would expose them to every member (a privacy leak), so we show the
-							     author's display name. Literal-email parity would need a dedicated
-							     admin-only logs endpoint. -->
-							<em>{log.author_name ?? 'Trader'}</em>
+							<!-- The author's email, matching the reference. Sourced from the
+							     admin-only /alert-logs endpoint (ManageMembers-gated), so it only
+							     ever reaches admins. -->
+							<em>{log.author_email}</em>
 						</div>
 					</div>
 				</div>

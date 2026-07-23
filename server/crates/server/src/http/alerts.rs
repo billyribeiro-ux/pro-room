@@ -17,7 +17,10 @@ use domain::{Action, RoomId};
 use serde::Deserialize;
 
 pub fn router() -> Router<AppState> {
-    Router::new().route("/api/rooms/{id}/alerts", get(list).post(create))
+    Router::new()
+        .route("/api/rooms/{id}/alerts", get(list).post(create))
+        // Admin-only log view (includes author emails) — gated on ManageMembers.
+        .route("/api/rooms/{id}/alert-logs", get(list_logs))
 }
 
 const MAX_ALERTS: i64 = 100;
@@ -106,5 +109,21 @@ async fn list(
     ctx.ensure(&state, Action::ReadAlert).await?;
     Ok(Json(
         db::alerts::list_recent(&state.db, id, MAX_ALERTS).await?,
+    ))
+}
+
+/// Admin-only alert log — identity + the author's EMAIL. Gated on
+/// [`Action::ManageMembers`] (admin / super-admin), the same gate as the admin
+/// presence/IP view: emails are sensitive and must never reach a member. A denial
+/// returns `403` before any log data is read.
+async fn list_logs(
+    State(state): State<AppState>,
+    CurrentUser(user): CurrentUser,
+    Path(id): Path<RoomId>,
+) -> AppResult<Json<Vec<db::alerts::AlertLogEntry>>> {
+    let ctx = RoomContext::load(&state, &user, id).await?;
+    ctx.ensure(&state, Action::ManageMembers).await?;
+    Ok(Json(
+        db::alerts::list_logs(&state.db, id, MAX_ALERTS).await?,
     ))
 }

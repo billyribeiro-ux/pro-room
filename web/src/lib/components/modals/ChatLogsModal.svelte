@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Modal from '../Modal.svelte';
 	import { api, ApiError } from '$lib/api';
-	import type { ChatChannel, Message } from '$lib/types';
+	import type { ChatChannel, ChatLogEntry } from '$lib/types';
 
 	interface Props {
 		open: boolean;
@@ -10,23 +10,18 @@
 	}
 	let { open, onClose, roomId }: Props = $props();
 
-	let logs = $state<Message[]>([]);
+	let logs = $state<ChatLogEntry[]>([]);
 	let loading = $state(false);
 	let error = $state<string | null>(null);
 
-	// Reference has no channel picker; the log list is one combined index across
-	// channels, so we fetch both channels and merge (newest first).
+	// Admin-only endpoint (ManageMembers-gated): one combined index across all
+	// channels, newest-first, that includes author emails. Reference has no channel
+	// picker.
 	async function reload() {
 		loading = true;
 		error = null;
 		try {
-			const [main, offTopic] = await Promise.all([
-				api.get<Message[]>(`/api/rooms/${roomId}/messages?channel=main`),
-				api.get<Message[]>(`/api/rooms/${roomId}/messages?channel=off_topic`)
-			]);
-			logs = [...main, ...offTopic].sort(
-				(a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-			);
+			logs = await api.get<ChatLogEntry[]>(`/api/rooms/${roomId}/chat-logs`);
 		} catch (e) {
 			error = e instanceof ApiError ? e.message : 'Failed to load chat log';
 		} finally {
@@ -74,12 +69,10 @@
 			{#each logs as log (log.id)}
 				<div class="list-group-item">
 					<strong class="lg-date">{formatLogDate(log.created_at)}</strong>
-					<!-- The reference shows the author's email here, but chat authors are
-					     members and this reuses the member-facing /messages endpoint — putting
-					     emails on it would leak every member's email to all members. We show
-					     the display name; literal-email parity would need an admin-only logs
-					     endpoint that gates emails behind admin privilege. -->
-					<div class="lg-line"><strong>By:</strong> <em>{log.author_name ?? 'trader'}</em></div>
+					<!-- The author's email, matching the reference. Sourced from the
+					     admin-only /chat-logs endpoint (ManageMembers-gated), so member emails
+					     only ever reach admins. -->
+					<div class="lg-line"><strong>By:</strong> <em>{log.author_email}</em></div>
 					<div class="lg-line">
 						<strong>Channel:</strong> <em>{CHANNEL_LABELS[log.channel] ?? log.channel}</em>
 					</div>
