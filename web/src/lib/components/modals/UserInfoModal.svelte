@@ -2,6 +2,7 @@
 	import Modal from '../Modal.svelte';
 	import Icon from '../Icon.svelte';
 	import { openPrivateChat } from '$lib/privateChat.svelte';
+	import { mentionBus } from '$lib/stores/mention.svelte';
 	import { muted, followed } from '$lib/stores/social.svelte';
 
 	interface User {
@@ -37,7 +38,15 @@
 {/snippet}
 
 {#snippet footer()}
-	<button type="button" class="action" aria-label="Mention this user">
+	<button
+		type="button"
+		class="action"
+		aria-label="Mention this user"
+		onclick={() => {
+			mentionBus.request(name);
+			onClose();
+		}}
+	>
 		<Icon name="at" size={15} /> @Mention
 	</button>
 	<button

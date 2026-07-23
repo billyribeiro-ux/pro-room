@@ -152,9 +152,13 @@ pub async fn effective_role(
     room_id: RoomId,
     user_id: UserId,
 ) -> anyhow::Result<Option<Role>> {
+    // Selects `email` too — not used here, but `RosterRow` (shared with
+    // `present_roster`) has a non-optional `email` field, so the column must be
+    // present for `FromRow` to deserialize.
     let row: Option<RosterRow> = sqlx::query_as(
         "SELECT u.id, \
                 u.display_name, \
+                u.email::text AS email, \
                 u.global_role::text AS global_role, \
                 m.role::text AS room_role \
          FROM users u \
@@ -192,6 +196,9 @@ pub async fn effective_role(
 struct RosterRow {
     id: Uuid,
     display_name: String,
+    /// Account email — used server-side only to derive the Gravatar avatar URL for
+    /// the roster (never serialized to clients; only the resulting URL is sent).
+    email: String,
     /// The user's account-wide role (always present).
     global_role: String,
     /// The per-room role from `room_members`, or NULL if the present user is not
@@ -203,6 +210,9 @@ struct RosterRow {
 pub struct RosterEntry {
     pub user_id: UserId,
     pub display_name: String,
+    /// Account email (server-side only) — the presence broadcaster derives a
+    /// Gravatar URL from it; it is not part of any client-facing payload.
+    pub email: String,
     pub role: Role,
 }
 
@@ -221,6 +231,7 @@ pub async fn present_roster(
     let rows: Vec<RosterRow> = sqlx::query_as(
         "SELECT u.id, \
                 u.display_name, \
+                u.email::text AS email, \
                 u.global_role::text AS global_role, \
                 m.role::text AS room_role \
          FROM users u \
@@ -249,6 +260,7 @@ pub async fn present_roster(
             Ok(RosterEntry {
                 user_id: UserId::from_uuid(r.id),
                 display_name: r.display_name,
+                email: r.email,
                 role,
             })
         })

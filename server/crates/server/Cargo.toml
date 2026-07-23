@@ -38,6 +38,10 @@ base64 = "0.22.1"
 jsonwebtoken = { version = "10.4.0", features = ["rust_crypto"] }
 dotenvy = "0.15.7"
 url = "2.5.8"
+# Gravatar avatar hashing for the presence roster (email → md5 → avatar URL). The
+# simple `md5` crate exposes `compute()` returning a `LowerHex` digest — distinct
+# from the transitive RustCrypto `md-5` (Digest-trait) crate already in the tree.
+md5 = "0.7.0"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 getrandom = "0.4.3"
 reqwest = { version = "0.13.4", default-features = false, features = ["rustls-no-provider", "json", "charset", "http2", "form"] }

@@ -13,6 +13,7 @@
 	import { shouldThrottle } from '$lib/stores/visibility.svelte';
 	import MessageBody from './MessageBody.svelte';
 	import Badges from './Badges.svelte';
+	import { mentionBus } from '$lib/stores/mention.svelte';
 	import ReactionBar from './ReactionBar.svelte';
 	import UserInfoModal from './modals/UserInfoModal.svelte';
 	import AdvancedSearchModal from './modals/AdvancedSearchModal.svelte';
@@ -194,6 +195,16 @@
 		body = body ? `${body} @${name} ` : `@${name} `;
 		openMenuId = null;
 	}
+
+	// External mention requests (roster ⋮ menu / User Info modal, which live in a
+	// different subtree) splice "@name " into the composer via the shared bus — the
+	// same effect as the in-chat Mention item, without prop-drilling.
+	$effect(() => {
+		const name = mentionBus.pending;
+		if (!name) return;
+		mentionBus.take();
+		body = body ? `${body} @${name} ` : `@${name} `;
+	});
 
 	// ─── Composer affordances (reference: Add Emojis / Upload an Image / GIF) ──────
 	let fileInputEl = $state<HTMLInputElement | null>(null);

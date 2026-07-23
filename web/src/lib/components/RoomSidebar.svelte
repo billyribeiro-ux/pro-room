@@ -3,6 +3,9 @@
 	import type { ScreenShareRoom } from '$lib/livekit.svelte';
 	import { resolve } from '$app/paths';
 	import Icon from './Icon.svelte';
+	import Badges from './Badges.svelte';
+	import UserInfoModal from './modals/UserInfoModal.svelte';
+	import { mentionBus } from '$lib/stores/mention.svelte';
 	import MobileAppInfoModal from './modals/MobileAppInfoModal.svelte';
 	import ConnectivityCheckModal from './modals/ConnectivityCheckModal.svelte';
 	import AVSettingsModal from './modals/AVSettingsModal.svelte';
@@ -98,14 +101,37 @@
 	// Roster header toggles/focuses the roster (report.md:701).
 	let rosterCollapsed = $state(false);
 
+	// Per-user ⋮ menu (reference `.msgMenu.dropright` → User Info / Mention / Reply).
+	let rosterMenuId = $state<string | null>(null);
+	let userInfoOpen = $state(false);
+	let userInfoUser = $state<
+		{ display_name?: string; user_id?: string; online?: boolean } | undefined
+	>(undefined);
+
+	function toggleRosterMenu(id: string) {
+		rosterMenuId = rosterMenuId === id ? null : id;
+	}
+	function openRosterUserInfo(u: PresentUser) {
+		userInfoUser = { display_name: u.display_name, user_id: u.user_id, online: true };
+		userInfoOpen = true;
+		rosterMenuId = null;
+	}
+	function mentionRosterUser(u: PresentUser) {
+		mentionBus.request(u.display_name);
+		rosterMenuId = null;
+	}
+
 	const rosterShown = $derived.by(() => {
 		let list = present;
 		const q = rosterQuery.trim().toLowerCase();
 		if (q) list = list.filter((u) => u.display_name.toLowerCase().includes(q));
-		if (sortAlpha) {
-			list = [...list].sort((a, b) => a.display_name.localeCompare(b.display_name));
-		}
-		return list;
+		// Presenters/staff (.presUser) sort above regular members (.regUser), matching
+		// the reference roster order; alpha within/across groups when the sort toggle
+		// is on. Stable sort preserves server order otherwise.
+		return [...list].sort((a, b) => {
+			if (!!a.is_presenter !== !!b.is_presenter) return a.is_presenter ? -1 : 1;
+			return sortAlpha ? a.display_name.localeCompare(b.display_name) : 0;
+		});
 	});
 </script>
 
@@ -418,9 +444,44 @@
 			{#if !rosterCollapsed}
 				<ul class="roster-list">
 					{#each rosterShown as u (u.user_id)}
-						<li class="roster-item">
-							<span class="avatar" aria-hidden="true">{initialOf(u.display_name)}</span>
-							<span class="roster-name" title={u.display_name}>{u.display_name}</span>
+						<!-- Reference roster row: .room-roster-container > .presUser/.regUser >
+						     .media (img.rosterImg + .media-body > .nickName{name + badges + ⋮ menu}). -->
+						<li class="roster-item" class:presenter={u.is_presenter}>
+							{#if u.avatar_url}
+								<img
+									class="roster-img"
+									src={u.avatar_url}
+									alt={u.display_name}
+									width="32"
+									height="32"
+								/>
+							{:else}
+								<span class="avatar" aria-hidden="true">{initialOf(u.display_name)}</span>
+							{/if}
+							<span class="media-body">
+								<span class="roster-name" title={u.display_name}>{u.display_name}</span>
+								<Badges data={u.author_badges} />
+								<span class="menu-wrap">
+									<button
+										type="button"
+										class="msg-menu"
+										aria-label="User options"
+										aria-haspopup="menu"
+										aria-expanded={rosterMenuId === u.user_id}
+										onclick={() => toggleRosterMenu(u.user_id)}>⠇</button
+									>
+									{#if rosterMenuId === u.user_id}
+										<div class="user-menu" role="menu">
+											<button type="button" role="menuitem" onclick={() => openRosterUserInfo(u)}>
+												<Icon name="user" size={14} /> User Info
+											</button>
+											<button type="button" role="menuitem" onclick={() => mentionRosterUser(u)}>
+												<Icon name="reply" size={14} /> Mention / Reply
+											</button>
+										</div>
+									{/if}
+								</span>
+							</span>
 						</li>
 					{:else}
 						<li class="roster-empty">
@@ -452,6 +513,7 @@
 <ChatLogsModal open={chatLogsOpen} onClose={() => (chatLogsOpen = false)} {roomId} />
 <MutedUsersModal open={mutedUsersOpen} onClose={() => (mutedUsersOpen = false)} />
 <FollowedUsersModal open={followedUsersOpen} onClose={() => (followedUsersOpen = false)} />
+<UserInfoModal open={userInfoOpen} onClose={() => (userInfoOpen = false)} user={userInfoUser} />
 <SettingsModal
 	open={settingsOpen}
 	onClose={() => (settingsOpen = false)}
@@ -874,6 +936,7 @@
 		flex-direction: column;
 		gap: 0.25rem;
 	}
+	/* Reference roster row = .media: circular avatar left, .media-body right. */
 	.roster-item {
 		display: flex;
 		align-items: center;
@@ -884,28 +947,99 @@
 	.roster-item:hover {
 		background: var(--bg-elev-2);
 	}
+	/* Reference img.rosterImg — CIRCULAR avatar (--rosterImg-border-radius: 50%,
+	   report.md:2885,3004). Gravatar (server-derived); the initial span is the
+	   fallback when a user has no avatar_url. */
+	.roster-img {
+		width: 32px;
+		height: 32px;
+		flex: 0 0 32px;
+		border-radius: 50%;
+		object-fit: cover;
+		background: var(--bg-elev-2);
+	}
 	.avatar {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		width: 26px;
-		height: 26px;
-		flex: 0 0 26px;
-		/* Roster avatars are CIRCULAR — --rosterImg-border-radius: 50%
-		   (report.md:2885,3004). Message-row avatars stay square (measured
-		   radius 0, report.md:1314). */
+		width: 32px;
+		height: 32px;
+		flex: 0 0 32px;
 		border-radius: 50%;
 		background: var(--bg-elev-2);
 		border: 1px solid var(--border);
 		color: var(--text);
-		font-size: 0.75rem;
+		font-size: 0.8rem;
 		font-weight: 700;
+	}
+	/* .media-body holds the name + badge cluster + ⋮ menu on one row. */
+	.media-body {
+		flex: 1 1 auto;
+		min-width: 0;
+		display: flex;
+		align-items: center;
+		gap: 0.3rem;
 	}
 	.roster-name {
 		font-size: 14px;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
+		flex: 0 1 auto;
+		min-width: 0;
+	}
+	/* Badge cluster sits inline after the name (shared Badges component). */
+	.media-body :global(.badges) {
+		flex: 0 0 auto;
+	}
+	/* ⋮ per-user menu (reference .msgMenu.dropright), pushed to the row's right. */
+	.menu-wrap {
+		position: relative;
+		margin-left: auto;
+		flex: none;
+	}
+	.msg-menu {
+		background: transparent;
+		border: none;
+		color: var(--text-dim);
+		font-size: 16px;
+		line-height: 1;
+		padding: 0 2px;
+		cursor: pointer;
+	}
+	.msg-menu:hover {
+		color: var(--text);
+	}
+	/* Reference users-dropdown-options — navy menu with accent-blue items, matching
+	   the archives / kebab menus. */
+	.user-menu {
+		position: absolute;
+		top: 100%;
+		right: 0;
+		z-index: 1000;
+		min-width: 150px;
+		background: #0e3651;
+		border-radius: 6px;
+		padding: 8px 0;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+	}
+	.user-menu button {
+		display: flex;
+		align-items: center;
+		gap: 0.45rem;
+		width: 100%;
+		background: transparent;
+		border: none;
+		text-align: left;
+		color: var(--accent, #45a2ff);
+		font-size: 16px;
+		padding: 4px 16px;
+		min-height: 32px;
+		cursor: pointer;
+	}
+	.user-menu button:hover {
+		background: #375a7f;
+		color: #ffffff;
 	}
 	.roster-empty {
 		padding: 0.5rem 0.45rem;
