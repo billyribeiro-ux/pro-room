@@ -118,6 +118,47 @@
 			// Captions are ephemeral + best-effort; a dropped phrase is non-fatal.
 		}
 	}
+	// ── P1-2 typing indicator ────────────────────────────────────────────────
+	// Ephemeral per-user typing state: user_id → { name, expiresAt }. A `typing`
+	// event (re)sets the entry ~3s into the future; a reactive tick prunes expired
+	// ones so the indicator clears ~3s after the last keystroke. Own events are
+	// ignored (excluded via detail.viewer_id). The reactive Map lets the derived
+	// `typingNames` recompute as entries land/expire.
+	// eslint-disable-next-line svelte/prefer-svelte-reactivity -- pruned+reassigned wholesale; a plain Map inside $state.raw semantics would need manual reassignment anyway
+	let typingUntil = $state<Record<string, { name: string; expiresAt: number }>>({});
+	// A monotonically-advancing clock the derived reads so expiry re-evaluates even
+	// without a new event. Ticked by an interval while anyone is typing.
+	let typingNow = $state(0);
+	let typingTimer: ReturnType<typeof setInterval> | null = null;
+	const TYPING_TTL = 3000; // show the name for ~3s after the last event (P1-2)
+	function noteTyping(userId: string, name: string) {
+		// Own typing frames are echoed back room-wide; never show ourselves.
+		if (userId === detail?.viewer_id) return;
+		typingNow = Date.now();
+		typingUntil = { ...typingUntil, [userId]: { name, expiresAt: typingNow + TYPING_TTL } };
+		if (!typingTimer) {
+			typingTimer = setInterval(() => {
+				typingNow = Date.now();
+				// Prune expired entries; stop the ticker once nobody's typing.
+				const next = Object.fromEntries(
+					Object.entries(typingUntil).filter(([, v]) => v.expiresAt > typingNow)
+				);
+				if (Object.keys(next).length !== Object.keys(typingUntil).length) typingUntil = next;
+				if (Object.keys(next).length === 0 && typingTimer) {
+					clearInterval(typingTimer);
+					typingTimer = null;
+				}
+			}, 500);
+		}
+	}
+	// The live list of names currently typing (expired entries excluded via the
+	// reactive `typingNow` read). Passed to ChatPanel for the composer indicator.
+	const typingNames = $derived(
+		Object.values(typingUntil)
+			.filter((v) => v.expiresAt > typingNow)
+			.map((v) => v.name)
+	);
+
 	let mediaVolume = $state(70);
 	// Presenter media-for-all currently playing for the room (SoundCloud/YouTube
 	// iframe, or a direct mp3/video file).
@@ -274,7 +315,11 @@
 						...ev.alert,
 						author_name: ev.author_name,
 						author_avatar: ev.author_avatar,
-						author_badges: ev.author_badges
+						author_badges: ev.author_badges,
+						// P1-1: merge the per-author colours onto the live item (same as
+						// author_avatar) so AlertFeed can apply the inline styles.
+						author_bg_color: ev.author_bg_color,
+						author_text_color: ev.author_text_color
 					}
 				].slice(-100);
 				// The server echoes the alert back to its author too; don't self-notify
@@ -300,7 +345,11 @@
 					author_name: ev.author_name,
 					author_avatar: ev.author_avatar,
 					author_role: ev.author_role,
-					author_badges: ev.author_badges
+					author_badges: ev.author_badges,
+					// P1-1: merge the per-author colours onto the live message (same as
+					// author_avatar) so ChatPanel can apply the inline styles.
+					author_bg_color: ev.author_bg_color,
+					author_text_color: ev.author_text_color
 				};
 				if (ev.message.channel === 'off_topic') {
 					offTopicMessages = [...offTopicMessages, item].slice(-100);
@@ -326,6 +375,11 @@
 			case 'caption':
 				// Live presenter caption — shown in the stage bar when CC is on.
 				showCaption(ev.speaker_name, ev.text);
+				break;
+			case 'typing':
+				// P1-2: room-wide ephemeral typing signal. Track the author's name for
+				// ~3s; noteTyping ignores our own echo via detail.viewer_id.
+				noteTyping(ev.user_id, ev.display_name);
 				break;
 			case 'presence':
 				present = ev.users;
@@ -411,6 +465,12 @@
 
 	async function postMessageTo(ch: ChatChannel, body: string) {
 		await api.post(`/api/rooms/${roomId}/messages`, { body, channel: ch });
+	}
+
+	// P1-2: send a typing frame over the WS. ChatPanel throttles to ≥2s and calls
+	// this on composer input; the server fans it out room-wide (ephemeral).
+	function sendTyping() {
+		socket?.send('{"type":"typing"}');
 	}
 	async function postMessage(body: string) {
 		await postMessageTo(channel, body);
@@ -504,6 +564,7 @@
 	onDestroy(() => {
 		socket?.close();
 		void screen.disconnect();
+		if (typingTimer) clearInterval(typingTimer);
 	});
 </script>
 
@@ -885,6 +946,8 @@
 		onPostOffTopic={(body) => postMessageTo('off_topic', body)}
 		onChannel={selectChannel}
 		onCreatePoll={caps?.can_post_alert ? () => (showCreatePoll = true) : undefined}
+		{typingNames}
+		onTyping={sendTyping}
 	/>
 {/snippet}
 

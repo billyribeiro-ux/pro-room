@@ -9,6 +9,8 @@
 	import { dnd, setDnd } from '$lib/stores/dnd.svelte';
 	import { prefs, setPref } from '$lib/stores/prefs.svelte';
 	import { openFilter } from '$lib/stores/alertFilter.svelte';
+	import { api, ApiError } from '$lib/api';
+	import { showToast } from '$lib/stores/toast.svelte';
 	import Modal from '../Modal.svelte';
 	import Icon from '../Icon.svelte';
 
@@ -60,6 +62,36 @@
 
 	function onColor(key: ThemeTokenKey, e: Event) {
 		theme.set(key, (e.currentTarget as HTMLInputElement).value);
+	}
+
+	// P1-1: the Background Color + Text Color pickers ALSO persist to the backend
+	// profile (users.msg_bg_color / msg_text_color) via the existing profile PATCH
+	// endpoint (`/api/auth/me`, same pattern as display_name), so a member's custom
+	// row/text colour is applied to their chat + alert rows for everyone. The local
+	// theme behaviour (theme.apply) is preserved alongside. `<input type=color>`
+	// always yields a valid lowercase `#rrggbb`, matching the server's validator.
+	// Username/Ticker pickers are unaffected — only these two hit the profile.
+	let savingColors = $state(false);
+	async function saveColorsAndSize() {
+		if (savingColors) return;
+		savingColors = true;
+		// Preserve the existing local-theme apply (writes all tokens + font size).
+		theme.apply();
+		try {
+			await api.patch('/api/auth/me', {
+				msg_bg_color: theme.tokens['--bg-elev'],
+				msg_text_color: theme.tokens['--text']
+			});
+			showToast('Colors saved', 'Your message colours were updated.', 4000);
+		} catch (e) {
+			showToast(
+				'Save failed',
+				e instanceof ApiError ? e.message : 'Could not save your message colours.',
+				6000
+			);
+		} finally {
+			savingColors = false;
+		}
 	}
 
 	function onSize(e: Event) {
@@ -216,7 +248,12 @@
 					<button class="btn outline-danger" type="button" onclick={() => theme.reset()}>
 						<Icon name="undo-alt" size={15} /> Reset
 					</button>
-					<button class="btn outline-light" type="button" onclick={() => theme.apply()}>
+					<button
+						class="btn outline-light"
+						type="button"
+						disabled={savingColors}
+						onclick={saveColorsAndSize}
+					>
 						<Icon name="save" size={15} /> Save changes
 					</button>
 				</div>

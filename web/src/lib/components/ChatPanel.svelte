@@ -33,6 +33,8 @@
 		image_url?: string;
 		/** Per-message username colour; wins over the theme token when set. */
 		author_color?: string;
+		// P1-1 per-author custom colours (from users.msg_bg_color / msg_text_color).
+		// `author_bg_color` / `author_text_color` are inherited from Message.
 	};
 
 	interface Props {
@@ -53,6 +55,12 @@
 		/** Admin: delete any message (shown in the row menu). */
 		canManage?: boolean;
 		onDelete?: (id: string) => void;
+		/** P1-2: names of users currently typing (self already excluded upstream) —
+		    drives the typing indicator above the composer. */
+		typingNames?: string[];
+		/** P1-2: called (throttled here to ≥2s) when the user types in the composer,
+		    so the parent can fan out a typing frame over the room socket. */
+		onTyping?: () => void;
 	}
 	let {
 		roomId,
@@ -67,8 +75,27 @@
 		canReact = false,
 		onReact,
 		canManage = false,
-		onDelete
+		onDelete,
+		typingNames = [],
+		onTyping
 	}: Props = $props();
+
+	// P1-2: throttle typing frames to ≥2s apart (client-side), per the wire
+	// contract. A plain (non-reactive) timestamp — it never drives the UI.
+	let lastTypingSent = 0;
+	function notifyTyping() {
+		if (!onTyping) return;
+		const now = Date.now();
+		if (now - lastTypingSent < 2000) return;
+		lastTypingSent = now;
+		onTyping();
+	}
+
+	// P1-2: the emphasized name shown in the indicator (first typer). The template
+	// renders `<em>Name</em> is typing`; extra typers add a "+N" count prefix
+	// (`.users-count`). Empty typingNames → the container is hidden entirely.
+	const typingLeadName = $derived(typingNames[0] ?? '');
+	const typingExtra = $derived(Math.max(0, typingNames.length - 1));
 
 	let body = $state('');
 	let sending = $state(false);
@@ -502,7 +529,24 @@
 				</li>
 			{/if}
 			{@const staff = !!m.author_role && m.author_role !== 'member'}
-			<li class="msg-box" class:elevated={staff}>
+			<!-- P1-1 derived styles (live DOM mechanics):
+			     - metaColor / metaFilter: when a custom row bg is set, the kebab,
+			       username, and created-at are `color: <bg>; filter: invert(1)`.
+			     - usernameColor: bg inversion WINS; otherwise keep the existing
+			       author_color (or the theme default) with NO filter.
+			     - author_text_color drives the name-block wrapper + body colour.
+			     Absent values → undefined → NO inline style (stylesheet default). -->
+			{@const metaColor = m.author_bg_color ?? undefined}
+			{@const metaFilter = m.author_bg_color ? 'invert(1)' : undefined}
+			{@const usernameColor = m.author_bg_color ?? m.author_color ?? 'var(--username-color)'}
+			<!-- P1-1 (live DOM): a per-author custom row bg is applied INLINE on the row
+			     (div.msg-box.pb-1 style="background-color: <bg>"). Absent → no inline
+			     style, stylesheet default wins. -->
+			<li
+				class="msg-box"
+				class:elevated={staff}
+				style:background-color={m.author_bg_color ?? undefined}
+			>
 				<!-- Reference row (captured DOM, proroom-all-admin.json): div.mr-1.d-flex
 				     .flex-row[-reverse] holding [avatar cluster: a.msgMenu ⠇ + div.avatar.pl-1
 				     > img 35x35][div.w-100 content column: header + body]. STAFF (msg-box-adm)
@@ -511,12 +555,17 @@
 				<div class="row-flex" class:reverse={staff}>
 					<div class="side" class:reverse={staff}>
 						<div class="msg-menu">
+							<!-- P1-1 (live DOM): with a custom row bg, the kebab (a.msgMenu) is
+							     tinted `color: <bg>; filter: invert(1)` so it reads against its
+							     own inverted row. No bg → no inline style. -->
 							<button
 								type="button"
 								class="menu-trigger"
 								aria-label="Message options"
 								aria-haspopup="menu"
 								aria-expanded={openMenuId === m.id}
+								style:color={m.author_bg_color ?? undefined}
+								style:filter={m.author_bg_color ? 'invert(1)' : undefined}
 								onclick={() => toggleMenu(m.id)}
 							>
 								<span class="ellipsis" aria-hidden="true">⠇</span>
@@ -597,12 +646,17 @@
 					<div class="content">
 						<div class="header">
 							{#if staff}
-								<time class="created-at">{formatStamp(m.created_at)}</time>
+								<!-- P1-1: created-at inverts from the row bg when custom. -->
+								<time class="created-at" style:color={metaColor} style:filter={metaFilter}
+									>{formatStamp(m.created_at)}</time
+								>
 							{/if}
-							<div class="name-block">
+							<!-- P1-1: name-block wrapper carries the author text colour (absent → none). -->
+							<div class="name-block" style:color={m.author_text_color ?? undefined}>
 								<span
 									class="username"
-									style:color={m.author_color ?? 'var(--username-color)'}
+									style:color={usernameColor}
+									style:filter={metaFilter}
 									role="button"
 									tabindex="0"
 									onclick={() => openUserInfo(m)}
@@ -616,11 +670,15 @@
 								<Badges data={m.author_badges} />
 							</div>
 							{#if !staff}
-								<time class="created-at">{formatStamp(m.created_at)}</time>
+								<!-- P1-1: created-at inverts from the row bg when custom. -->
+								<time class="created-at" style:color={metaColor} style:filter={metaFilter}
+									>{formatStamp(m.created_at)}</time
+								>
 							{/if}
 						</div>
 
-						<p class="body">
+						<!-- P1-1: body (.msg-left) carries the author text colour (absent → none). -->
+						<p class="body" style:color={m.author_text_color ?? undefined}>
 							<MessageBody text={m.body} />
 							{#if m.image_url}
 								{@const img = m.image_url}
@@ -650,6 +708,20 @@
 		{/each}
 	</ul>
 
+	<!-- P1-2 typing indicator (EXACT bundle template):
+	     .d-flex.align-items-center.typing-indicator-container >
+	       .users-count.me-1 + .users-typing + .typing-indicator(3 spans).
+	     Rendered only while someone is typing; hidden otherwise. -->
+	{#if typingNames.length > 0}
+		<div class="typing-indicator-container">
+			{#if typingExtra > 0}<span class="users-count">+{typingExtra}</span>{/if}
+			<span class="users-typing"><em>{typingLeadName}</em> is typing</span>
+			<span class="typing-indicator" aria-hidden="true">
+				<span></span><span></span><span></span>
+			</span>
+		</div>
+	{/if}
+
 	{#if canPost}
 		<!-- HARD EVIDENCE (live captured DOM) — literal structure:
 		     #textAreaHolder.d-flex.align-items-center.textSendDiv >
@@ -670,7 +742,11 @@
 						spellcheck="true"
 						maxlength="2000"
 						placeholder="Type your message here.."
-						oninput={autogrow}
+						oninput={() => {
+							autogrow();
+							// P1-2: signal typing (throttled ≥2s inside notifyTyping).
+							notifyTyping();
+						}}
 						onkeydown={onComposerKeydown}></textarea>
 				</div>
 				<div class="textAreaBtnsCol">
@@ -1510,5 +1586,71 @@
 		color: #8a909c;
 		font-size: 0.8rem;
 		text-align: center;
+	}
+
+	/* ── P1-2 typing indicator (EXACT bundle CSS, IMPLEMENTATION-PLAN.md P1-2) ──
+	   `.typing-indicator-container { margin: 4px 16px }`; the row is a flex line
+	   (.d-flex.align-items-center). */
+	.typing-indicator-container {
+		display: flex;
+		align-items: center;
+		margin: 4px 16px;
+	}
+	/* `.users-count, .users-typing { color:#90949c; font-size:12px }`; the
+	   .users-count carries a me-1 (4px right margin). */
+	.users-count,
+	.users-typing {
+		color: #90949c;
+		font-size: 12px;
+	}
+	.users-count {
+		margin-right: 4px; /* me-1 */
+	}
+	/* `.users-typing` ellipsis-truncates a long name; `.users-typing em` is 700. */
+	.users-typing {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.users-typing em {
+		font-weight: 700;
+		font-style: normal;
+	}
+	/* `.typing-indicator span`: three 3px dots, #9e9ea1, blink 1.5s staggered at
+	   .33s / .66s / .99s. */
+	.typing-indicator {
+		display: inline-flex;
+		align-items: center;
+		margin-left: 4px;
+	}
+	.typing-indicator span {
+		display: inline-block;
+		width: 3px;
+		height: 3px;
+		margin: 0 1px;
+		border-radius: 50%;
+		background: #9e9ea1;
+		animation: typing-blink 1.5s infinite;
+	}
+	.typing-indicator span:nth-child(1) {
+		animation-delay: 0.33s;
+	}
+	.typing-indicator span:nth-child(2) {
+		animation-delay: 0.66s;
+	}
+	.typing-indicator span:nth-child(3) {
+		animation-delay: 0.99s;
+	}
+	/* Blink keyframes: opacity .4 → 1 → .4 (P1-2). */
+	@keyframes typing-blink {
+		0% {
+			opacity: 0.4;
+		}
+		50% {
+			opacity: 1;
+		}
+		100% {
+			opacity: 0.4;
+		}
 	}
 </style>

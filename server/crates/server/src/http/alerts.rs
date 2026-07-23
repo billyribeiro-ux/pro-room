@@ -90,11 +90,18 @@ async fn create(
     )
     .await?;
     let author_badges = db::badges::for_author(&state.db, user.user_id).await?;
+    // Per-author message colors (P1-1 · IMPLEMENTATION-PLAN.md). `CurrentUser` lacks
+    // these columns, so read the poster's row and attach them to the live event as
+    // the listing endpoint does; `None` → FE stylesheet defaults.
+    let (author_bg_color, author_text_color) =
+        db::users::msg_colors(&state.db, user.user_id).await?;
     let event = RoomEvent::Alert {
         alert: alert.clone(),
         author_name: user.display_name.clone(),
         author_avatar: crate::util::gravatar_url(&user.email),
         author_badges,
+        author_bg_color,
+        author_text_color,
     };
     let _ = state.hub.publish(id, &event.to_json()).await;
     Ok(Json(alert))
