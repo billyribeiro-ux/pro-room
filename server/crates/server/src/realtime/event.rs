@@ -11,19 +11,22 @@ use serde::Serialize;
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum RoomEvent {
     /// A new trade alert was posted. `author_badges` carries the poster's badges +
-    /// trial/new/tenure indicators so the live row renders them inline.
+    /// trial/new/tenure indicators, and `author_avatar` the poster's Gravatar URL,
+    /// so the live row renders the avatar + badges inline.
     Alert {
         alert: Alert,
         author_name: String,
+        author_avatar: String,
         author_badges: AuthorBadges,
     },
     /// A new chat message was posted. `author_role` is the poster's effective
     /// room role so clients can style admin/super-admin messages distinctly
-    /// without a follow-up lookup. `author_badges` carries the badge data for the
-    /// live row.
+    /// without a follow-up lookup. `author_avatar` is the poster's Gravatar URL and
+    /// `author_badges` the badge data for the live row.
     Chat {
         message: Message,
         author_name: String,
+        author_avatar: String,
         author_role: Role,
         author_badges: AuthorBadges,
     },

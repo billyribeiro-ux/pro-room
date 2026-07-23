@@ -56,8 +56,11 @@
 						<strong class="fw-bold lg-date">{formatStamp(log.created_at)}</strong>
 						<div class="lg-by">
 							<strong class="fw-bold">By:</strong>
-							<!-- HONEST GAP: reference shows the author's email in the italic slot;
-							     the component only receives author_name, so we render that. -->
+							<!-- The reference shows the author's email here, but this modal reuses
+							     the member-facing /alerts endpoint; putting emails on that payload
+							     would expose them to every member (a privacy leak), so we show the
+							     author's display name. Literal-email parity would need a dedicated
+							     admin-only logs endpoint. -->
 							<em>{log.author_name ?? 'Trader'}</em>
 						</div>
 					</div>

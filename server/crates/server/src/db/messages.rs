@@ -20,6 +20,9 @@ pub struct MessageView {
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: time::OffsetDateTime,
     pub author_name: String,
+    /// The author's Gravatar URL (derived from their email) — rendered as the
+    /// message-row `img` avatar, matching the reference.
+    pub author_avatar: String,
     /// The author's effective role in this room (super admin globally wins, then
     /// the per-room membership role, then their global role). Clients style
     /// admin/super-admin messages distinctly (kebab on the right + grey row).
@@ -42,6 +45,7 @@ struct MessageRow {
     channel: String,
     created_at: time::OffsetDateTime,
     author_name: String,
+    author_email: String,
     /// The author's account-wide role (always present).
     global_role: String,
     /// The author's per-room role, or NULL when they have no membership row.
@@ -119,6 +123,7 @@ pub async fn list_recent(
     let rows: Vec<MessageRow> = sqlx::query_as(
         "SELECT m.id, m.room_id, m.author_id, m.body, m.channel, m.created_at, \
                 u.display_name AS author_name, \
+                u.email::text AS author_email, \
                 u.global_role::text AS global_role, \
                 rm.role::text AS room_role \
          FROM messages m \
@@ -157,6 +162,7 @@ pub async fn list_recent(
                 body: row.body,
                 channel: row.channel,
                 created_at: row.created_at,
+                author_avatar: crate::util::gravatar_url(&row.author_email),
                 author_name: row.author_name,
                 author_role,
                 author_badges: AuthorBadges::default(),

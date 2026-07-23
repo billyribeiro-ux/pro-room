@@ -78,6 +78,7 @@ async fn create(
     let event = RoomEvent::Chat {
         message: message.clone(),
         author_name: user.display_name.clone(),
+        author_avatar: crate::util::gravatar_url(&user.email),
         author_role,
         author_badges,
     };

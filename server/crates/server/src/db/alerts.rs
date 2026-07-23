@@ -61,6 +61,9 @@ pub struct AlertView {
     pub post_to_x: Option<bool>,
     pub no_push: Option<bool>,
     pub author_name: String,
+    /// The author's Gravatar URL (derived from their email) — the reference renders
+    /// this as the message-row `img` avatar.
+    pub author_avatar: String,
     /// Author badges plus trial / new / tenure indicators — rendered next to the
     /// username.
     pub author_badges: AuthorBadges,
@@ -79,6 +82,7 @@ struct AlertViewRow {
     post_to_x: Option<bool>,
     no_push: Option<bool>,
     author_name: String,
+    author_email: String,
 }
 
 impl From<AlertViewRow> for AlertView {
@@ -93,6 +97,7 @@ impl From<AlertViewRow> for AlertView {
             created_at: row.created_at,
             post_to_x: row.post_to_x,
             no_push: row.no_push,
+            author_avatar: crate::util::gravatar_url(&row.author_email),
             author_name: row.author_name,
             author_badges: AuthorBadges::default(),
         }
@@ -150,7 +155,8 @@ pub async fn list_recent(
 ) -> anyhow::Result<Vec<AlertView>> {
     let rows: Vec<AlertViewRow> = sqlx::query_as(
         "SELECT a.id, a.room_id, a.author_id, a.symbol, a.side, a.note, a.created_at, \
-                a.post_to_x, a.no_push, u.display_name AS author_name \
+                a.post_to_x, a.no_push, u.display_name AS author_name, \
+                u.email::text AS author_email \
          FROM alerts a \
          JOIN users u ON u.id = a.author_id \
          WHERE a.room_id = $1 \

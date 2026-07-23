@@ -94,6 +94,8 @@ export interface Alert {
 	note: string | null;
 	created_at: string;
 	author_name?: string;
+	/** Author's Gravatar URL (server-derived) — the message-row `img` avatar. */
+	author_avatar?: string;
 	/** Author's delivery-intent flags from the Post Alert form (backend Option<bool>). */
 	post_to_x: boolean | null;
 	no_push: boolean | null;
@@ -109,6 +111,8 @@ export interface Message {
 	channel: ChatChannel;
 	created_at: string;
 	author_name?: string;
+	/** Author's Gravatar URL (server-derived) — the message-row `img` avatar. */
+	author_avatar?: string;
 	/** The author's effective room role; present on listed messages (MessageView)
 	 * and merged onto live messages from the chat event. Clients style
 	 * admin/super_admin messages distinctly (kebab on the right + grey row). */
@@ -210,11 +214,18 @@ export interface PrivateThreadSummary {
 }
 
 export type RoomEvent =
-	| { type: 'alert'; alert: Alert; author_name: string; author_badges?: AuthorBadges }
+	| {
+			type: 'alert';
+			alert: Alert;
+			author_name: string;
+			author_avatar?: string;
+			author_badges?: AuthorBadges;
+	  }
 	| {
 			type: 'chat';
 			message: Message;
 			author_name: string;
+			author_avatar?: string;
 			author_role: Role;
 			author_badges?: AuthorBadges;
 	  }

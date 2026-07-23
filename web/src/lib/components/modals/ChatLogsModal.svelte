@@ -74,8 +74,11 @@
 			{#each logs as log (log.id)}
 				<div class="list-group-item">
 					<strong class="lg-date">{formatLogDate(log.created_at)}</strong>
-					<!-- HONEST GAP: reference shows the author's email; Message only carries
-					     author_name, so the display name is shown here instead. -->
+					<!-- The reference shows the author's email here, but chat authors are
+					     members and this reuses the member-facing /messages endpoint — putting
+					     emails on it would leak every member's email to all members. We show
+					     the display name; literal-email parity would need an admin-only logs
+					     endpoint that gates emails behind admin privilege. -->
 					<div class="lg-line"><strong>By:</strong> <em>{log.author_name ?? 'trader'}</em></div>
 					<div class="lg-line">
 						<strong>Channel:</strong> <em>{CHANNEL_LABELS[log.channel] ?? log.channel}</em>

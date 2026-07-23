@@ -325,9 +325,17 @@
 								</div>
 							{/if}
 						</div>
-						<!-- Avatar is ALWAYS author identity (initials). The alert image_url is the
-						     ATTACHMENT, rendered inline in the body below — never as the avatar. -->
-						<span class="avatar" aria-hidden="true">{initials(a.author_name)}</span>
+						<!-- Avatar is the author's Gravatar (35x35 object-fit cover, matching the
+						     reference `.avatar > img`); initials are the fallback when no avatar
+						     URL is present. The alert image_url is the body ATTACHMENT, never the
+						     avatar. -->
+						<span class="avatar" aria-hidden="true">
+							{#if a.author_avatar}
+								<img src={a.author_avatar} alt="" width="35" height="35" />
+							{:else}
+								{initials(a.author_name)}
+							{/if}
+						</span>
 					</div>
 
 					<div class="content">
@@ -685,10 +693,17 @@
 		flex-shrink: 0;
 		margin-left: 4px;
 		border-radius: 0;
+		overflow: hidden;
 		background: #e7e9ef;
 		color: #5a6273;
 		font-size: 0.78rem;
 		font-weight: 700;
+	}
+	.avatar img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		display: block;
 	}
 
 	.username {
