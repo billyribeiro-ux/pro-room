@@ -29,6 +29,10 @@
 		open: boolean;
 		present: PresentUser[];
 		canManage?: boolean;
+		/** Room-scoped ManageMembers (admin+). Gates the Archives log view — the logs
+		 * expose author emails and are served only from ManageMembers-gated
+		 * endpoints, so members must not even see the option. */
+		canManageMembers?: boolean;
 		roomId: string;
 		/** Live LiveKit room — lets AV Settings apply device changes to the call. */
 		screen?: ScreenShareRoom;
@@ -48,6 +52,7 @@
 		open,
 		present,
 		canManage = false,
+		canManageMembers = false,
 		roomId,
 		screen,
 		onPlayMedia,
@@ -193,6 +198,10 @@
 				</button>
 			</div>
 
+			<!-- Archives (Alert/Chat Logs) is ADMIN-ONLY: the logs expose author emails
+			     and are served from ManageMembers-gated endpoints, so members must not
+			     even see the option. -->
+			{#if canManageMembers}
 			<div class="nav-item">
 				<!-- Reference Archives is a click-toggled dropdown (a.nav-link
 				     .sidebar-item.dropdown-toggle with a caret) whose menu renders three
@@ -247,6 +256,7 @@
 					{/if}
 				</div>
 			</div>
+			{/if}
 
 			<div class="nav-item compact">
 				<button

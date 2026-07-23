@@ -16,11 +16,30 @@ use domain::{Action, Role, RoomId};
 use serde::Deserialize;
 
 pub fn router() -> Router<AppState> {
-    Router::new().route("/api/rooms/{id}/messages", get(list).post(create))
+    Router::new()
+        // Admin-only log view (includes author emails) — gated on ManageMembers.
+        .route("/api/rooms/{id}/chat-logs", get(list_logs))
+        .route("/api/rooms/{id}/messages", get(list).post(create))
 }
 
 const MAX_MESSAGES: i64 = 100;
 const MAX_BODY_LEN: usize = 2000;
+
+/// Admin-only chat log across all channels — identity + channel + the author's
+/// EMAIL. Gated on [`Action::ManageMembers`] (admin / super-admin): chat authors
+/// are members, so their emails must never reach the member `/messages` feed. A
+/// denial returns `403` before any log data is read.
+async fn list_logs(
+    State(state): State<AppState>,
+    CurrentUser(user): CurrentUser,
+    Path(id): Path<RoomId>,
+) -> AppResult<Json<Vec<db::messages::ChatLogEntry>>> {
+    let ctx = RoomContext::load(&state, &user, id).await?;
+    ctx.ensure(&state, Action::ManageMembers).await?;
+    Ok(Json(
+        db::messages::list_logs(&state.db, id, MAX_MESSAGES).await?,
+    ))
+}
 
 /// Validate a chat channel, defaulting to `"main"`. Rejects unknown values.
 fn parse_channel(channel: Option<&str>) -> AppResult<&'static str> {

@@ -178,3 +178,55 @@ pub async fn list_recent(
     }
     Ok(views)
 }
+
+/// A single admin-only alert-log entry: identity + created time + the author's
+/// email. Admins may see member emails (mirroring the admin presence/IP view);
+/// this is served ONLY from the `ManageMembers`-gated `/alert-logs` endpoint,
+/// never the member `/alerts` feed.
+#[derive(Serialize)]
+pub struct AlertLogEntry {
+    pub id: AlertId,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: time::OffsetDateTime,
+    pub author_name: String,
+    pub author_email: String,
+}
+
+#[derive(sqlx::FromRow)]
+struct AlertLogRow {
+    id: Uuid,
+    created_at: time::OffsetDateTime,
+    author_name: String,
+    author_email: String,
+}
+
+/// Recent alerts as admin log entries (newest first), including the author's
+/// email. Admin-only — the caller must hold `Action::ManageMembers`.
+pub async fn list_logs(
+    pool: &PgPool,
+    room_id: RoomId,
+    limit: i64,
+) -> anyhow::Result<Vec<AlertLogEntry>> {
+    let rows: Vec<AlertLogRow> = sqlx::query_as(
+        "SELECT a.id, a.created_at, \
+                u.display_name AS author_name, u.email::text AS author_email \
+         FROM alerts a \
+         JOIN users u ON u.id = a.author_id \
+         WHERE a.room_id = $1 \
+         ORDER BY a.created_at DESC LIMIT $2",
+    )
+    .bind(room_id.as_uuid())
+    .bind(limit)
+    .fetch_all(pool)
+    .await
+    .context("load alert logs")?;
+    Ok(rows
+        .into_iter()
+        .map(|r| AlertLogEntry {
+            id: AlertId::from_uuid(r.id),
+            created_at: r.created_at,
+            author_name: r.author_name,
+            author_email: r.author_email,
+        })
+        .collect())
+}

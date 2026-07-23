@@ -121,6 +121,25 @@ export interface Message {
 	author_badges?: AuthorBadges;
 }
 
+/** One admin-only alert-log entry (from the ManageMembers-gated `/alert-logs`
+ * endpoint) — includes the author's email, which only admins ever receive. */
+export interface AlertLogEntry {
+	id: string;
+	created_at: string;
+	author_name: string;
+	author_email: string;
+}
+
+/** One admin-only chat-log entry (from the ManageMembers-gated `/chat-logs`
+ * endpoint, all channels) — includes the author's email (admins only). */
+export interface ChatLogEntry {
+	id: string;
+	created_at: string;
+	channel: ChatChannel;
+	author_name: string;
+	author_email: string;
+}
+
 export interface PresentUser {
 	user_id: string;
 	display_name: string;

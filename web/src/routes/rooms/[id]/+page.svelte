@@ -576,6 +576,7 @@
 				open={sidebarOpen}
 				{present}
 				canManage={caps?.can_manage_room ?? false}
+				canManageMembers={caps?.can_manage_members ?? false}
 				{roomId}
 				{screen}
 				onPlayMedia={playMedia}
