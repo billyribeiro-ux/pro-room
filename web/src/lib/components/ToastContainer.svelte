@@ -7,20 +7,25 @@
      it early; each also auto-dismisses on its timer. role=status + aria-live so a
      new alert is announced without stealing focus. The reference fires every alert
      via toastr.warning(...), so each toast renders as .ngx-toastr.toast-warning. -->
-<div class="toast-container toast-top-right" role="status" aria-live="polite">
-	{#each toasts as t (t.id)}
-		<button
-			class="ngx-toastr toast-warning"
-			type="button"
-			onclick={() => dismissToast(t.id)}
-			in:fade={{ duration: 140 }}
-			out:fade={{ duration: 200 }}
-		>
-			<div class="toast-title">{t.title}</div>
-			<!-- Plain text, NOT {@html}: our alert body is user-entered, so no enableHtml. -->
-			<div class="toast-message">{t.body}</div>
-		</button>
-	{/each}
+<!-- HARD EVIDENCE (live DOM): <div class="overlay-container" aria-live="polite">
+     <div id="toast-container" class="toast-top-right toast-container"> — the
+     aria-live sits on the OUTER overlay-container. -->
+<div class="overlay-container" aria-live="polite">
+	<div id="toast-container" class="toast-top-right toast-container">
+		{#each toasts as t (t.id)}
+			<button
+				class="ngx-toastr toast-warning"
+				type="button"
+				onclick={() => dismissToast(t.id)}
+				in:fade={{ duration: 140 }}
+				out:fade={{ duration: 200 }}
+			>
+				<div class="toast-title">{t.title}</div>
+				<!-- Plain text, NOT {@html}: our alert body is user-entered, so no enableHtml. -->
+				<div class="toast-message">{t.body}</div>
+			</button>
+		{/each}
+	</div>
 </div>
 
 <style>

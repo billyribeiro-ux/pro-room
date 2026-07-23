@@ -30,6 +30,16 @@ export class RoomSocket {
 		this.#connect();
 	}
 
+	/**
+	 * Send a raw text frame over the socket if it's open (no-op otherwise).
+	 * Used for the P1-2 typing indicator: the composer sends the throttled
+	 * `{"type":"typing"}` frame through this on input. Silently drops when the
+	 * socket isn't connected — a lost typing frame is ephemeral and non-fatal.
+	 */
+	send(data: string): void {
+		if (this.#ws?.readyState === WebSocket.OPEN) this.#ws.send(data);
+	}
+
 	close(): void {
 		this.#closed = true;
 		this.#stopHeartbeat();

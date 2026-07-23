@@ -67,6 +67,13 @@ pub struct AlertView {
     /// Author badges plus trial / new / tenure indicators — rendered next to the
     /// username.
     pub author_badges: AuthorBadges,
+    /// The author's per-author row background color (`#rrggbb`) or `None` (P1-1 ·
+    /// IMPLEMENTATION-PLAN.md). Present → FE paints row bg + inverts the meta;
+    /// absent → stylesheet default. (Alert rows never flip; only colors carry over.)
+    pub author_bg_color: Option<String>,
+    /// The author's per-author body/name-block text color (`#rrggbb`) or `None`
+    /// (P1-1). Present → FE colors the name-block/QA button/body; absent → default.
+    pub author_text_color: Option<String>,
 }
 
 /// `Uuid`-typed decode target for [`list_recent`], mapped into [`AlertView`].
@@ -83,6 +90,9 @@ struct AlertViewRow {
     no_push: Option<bool>,
     author_name: String,
     author_email: String,
+    /// The author's per-author message colors (P1-1), NULL when unset.
+    author_bg_color: Option<String>,
+    author_text_color: Option<String>,
 }
 
 impl From<AlertViewRow> for AlertView {
@@ -100,6 +110,8 @@ impl From<AlertViewRow> for AlertView {
             author_avatar: crate::util::gravatar_url(&row.author_email),
             author_name: row.author_name,
             author_badges: AuthorBadges::default(),
+            author_bg_color: row.author_bg_color,
+            author_text_color: row.author_text_color,
         }
     }
 }
@@ -156,7 +168,9 @@ pub async fn list_recent(
     let rows: Vec<AlertViewRow> = sqlx::query_as(
         "SELECT a.id, a.room_id, a.author_id, a.symbol, a.side, a.note, a.created_at, \
                 a.post_to_x, a.no_push, u.display_name AS author_name, \
-                u.email::text AS author_email \
+                u.email::text AS author_email, \
+                u.msg_bg_color AS author_bg_color, \
+                u.msg_text_color AS author_text_color \
          FROM alerts a \
          JOIN users u ON u.id = a.author_id \
          WHERE a.room_id = $1 \

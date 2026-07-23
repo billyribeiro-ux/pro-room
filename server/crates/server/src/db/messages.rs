@@ -30,6 +30,14 @@ pub struct MessageView {
     /// The author's badges plus trial / new / tenure indicators — the reference
     /// renders these next to the username.
     pub author_badges: AuthorBadges,
+    /// The author's per-author row background color (`#rrggbb`) or `None` (P1-1 ·
+    /// IMPLEMENTATION-PLAN.md). When present the FE paints the row bg + inverts the
+    /// meta (username/timestamp/kebab); absent → stylesheet default (no inline style).
+    pub author_bg_color: Option<String>,
+    /// The author's per-author body/name-block text color (`#rrggbb`) or `None`
+    /// (P1-1). When present the FE colors the name-block wrapper, QA button, and
+    /// message body; absent → stylesheet default (#676767 body).
+    pub author_text_color: Option<String>,
 }
 
 /// Row shape for [`list_recent`]. Uses the runtime `query_as` API rather than the
@@ -50,6 +58,9 @@ struct MessageRow {
     global_role: String,
     /// The author's per-room role, or NULL when they have no membership row.
     room_role: Option<String>,
+    /// The author's per-author message colors (P1-1), NULL when unset.
+    author_bg_color: Option<String>,
+    author_text_color: Option<String>,
 }
 
 pub async fn create(
@@ -125,7 +136,9 @@ pub async fn list_recent(
                 u.display_name AS author_name, \
                 u.email::text AS author_email, \
                 u.global_role::text AS global_role, \
-                rm.role::text AS room_role \
+                rm.role::text AS room_role, \
+                u.msg_bg_color AS author_bg_color, \
+                u.msg_text_color AS author_text_color \
          FROM messages m \
          JOIN users u ON u.id = m.author_id \
          LEFT JOIN room_members rm ON rm.room_id = m.room_id AND rm.user_id = m.author_id \
@@ -166,6 +179,8 @@ pub async fn list_recent(
                 author_name: row.author_name,
                 author_role,
                 author_badges: AuthorBadges::default(),
+                author_bg_color: row.author_bg_color,
+                author_text_color: row.author_text_color,
             })
         })
         .collect::<anyhow::Result<Vec<MessageView>>>()?;

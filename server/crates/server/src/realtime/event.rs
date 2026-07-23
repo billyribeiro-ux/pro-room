@@ -18,6 +18,11 @@ pub enum RoomEvent {
         author_name: String,
         author_avatar: String,
         author_badges: AuthorBadges,
+        /// The poster's per-author message colors (P1-1 · IMPLEMENTATION-PLAN.md),
+        /// so the live row renders identically to the listing endpoint. `None` when
+        /// the author set no custom color → FE uses the stylesheet default.
+        author_bg_color: Option<String>,
+        author_text_color: Option<String>,
     },
     /// A new chat message was posted. `author_role` is the poster's effective
     /// room role so clients can style admin/super-admin messages distinctly
@@ -29,11 +34,25 @@ pub enum RoomEvent {
         author_avatar: String,
         author_role: Role,
         author_badges: AuthorBadges,
+        /// The poster's per-author message colors (P1-1 · IMPLEMENTATION-PLAN.md).
+        /// `None` when unset → FE uses the stylesheet defaults (no inline style).
+        author_bg_color: Option<String>,
+        author_text_color: Option<String>,
     },
     /// A live closed-caption phrase from the presenter. Ephemeral (not persisted):
     /// members joining later won't see past captions. Clients render it in the
     /// stage caption bar when their captions overlay is on.
     Caption { speaker_name: String, text: String },
+    /// A room member is typing in the chat composer (P1-2 · IMPLEMENTATION-PLAN.md).
+    /// Ephemeral (NOT persisted, not stored anywhere): the client sends a throttled
+    /// `{"type":"typing"}` text frame on keystroke and the server fans this out
+    /// room-wide. Recipients show `<em>display_name</em> is typing…` for ~3s after
+    /// the last event and ignore their OWN `user_id`. Members joining later see
+    /// nothing until the next keystroke.
+    Typing {
+        user_id: UserId,
+        display_name: String,
+    },
     /// The set of present users changed.
     Presence { users: Vec<PresentUser> },
     /// The room's live/broadcasting state changed.

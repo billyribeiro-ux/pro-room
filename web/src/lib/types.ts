@@ -101,6 +101,12 @@ export interface Alert {
 	no_push: boolean | null;
 	/** Author's badges + trial/new/tenure indicators, rendered next to the name. */
 	author_badges?: AuthorBadges;
+	/** Per-author custom row background colour (users.msg_bg_color, `#rrggbb` or null).
+	 * P1-1: present → row inline bg + inverted username/timestamp/kebab. */
+	author_bg_color?: string | null;
+	/** Per-author custom body/name text colour (users.msg_text_color, `#rrggbb` or null).
+	 * P1-1: present → name-block wrapper, QA button, and body inline colour. */
+	author_text_color?: string | null;
 }
 
 export interface Message {
@@ -119,6 +125,12 @@ export interface Message {
 	author_role?: Role;
 	/** Author's badges + trial/new/tenure indicators, rendered next to the name. */
 	author_badges?: AuthorBadges;
+	/** Per-author custom row background colour (users.msg_bg_color, `#rrggbb` or null).
+	 * P1-1: present → row inline bg + inverted username/timestamp/kebab. */
+	author_bg_color?: string | null;
+	/** Per-author custom body/name text colour (users.msg_text_color, `#rrggbb` or null).
+	 * P1-1: present → name-block wrapper and body inline colour. */
+	author_text_color?: string | null;
 }
 
 /** One admin-only alert-log entry (from the ManageMembers-gated `/alert-logs`
@@ -239,6 +251,10 @@ export type RoomEvent =
 			author_name: string;
 			author_avatar?: string;
 			author_badges?: AuthorBadges;
+			/** P1-1 per-author colours, carried on the live alert event (same join as
+			 * author_name) — merged onto the feed item like author_avatar. */
+			author_bg_color?: string | null;
+			author_text_color?: string | null;
 	  }
 	| {
 			type: 'chat';
@@ -247,7 +263,15 @@ export type RoomEvent =
 			author_avatar?: string;
 			author_role: Role;
 			author_badges?: AuthorBadges;
+			/** P1-1 per-author colours, carried on the live chat event (same join as
+			 * author_name) — merged onto the message item like author_avatar. */
+			author_bg_color?: string | null;
+			author_text_color?: string | null;
 	  }
+	// P1-2 typing indicator: ephemeral, room-wide, never persisted. The server
+	// fans out one frame per typing keystroke (throttled client-side ≥2s); the FE
+	// shows `display_name` for ~3s after the last event and ignores its own.
+	| { type: 'typing'; user_id: string; display_name: string }
 	| { type: 'private_message'; message: PrivateMessageView }
 	| { type: 'caption'; speaker_name: string; text: string }
 	| { type: 'presence'; users: PresentUser[] }

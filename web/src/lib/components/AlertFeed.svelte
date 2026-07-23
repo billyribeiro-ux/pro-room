@@ -269,16 +269,29 @@
 					<button type="button" class="separator">{formatDayLabel(a.created_at)}</button>
 				</li>
 			{/if}
-			<li class="msg-box">
+			<!-- P1-1 derived styles (live DOM mechanics), mirroring ChatPanel:
+			     - metaColor/metaFilter: kebab, username, created-at get
+			       `color: <bg>; filter: invert(1)` when a custom row bg is set.
+			     - usernameColor: bg inversion WINS; else keep author_color / theme.
+			     - author_text_color drives the name-wrap, QA button, and body colour.
+			     Absent values → undefined → NO inline style. Alert rows never flip. -->
+			{@const metaColor = a.author_bg_color ?? undefined}
+			{@const metaFilter = a.author_bg_color ? 'invert(1)' : undefined}
+			{@const usernameColor = a.author_bg_color ?? a.author_color ?? 'var(--username-color)'}
+			<!-- P1-1 (live DOM): custom per-author row bg applied INLINE on the row. -->
+			<li class="msg-box" style:background-color={a.author_bg_color ?? undefined}>
 				<div class="msg-row">
 					<div class="gutter">
 						<div class="msg-menu">
+							<!-- P1-1: kebab inverts from the row bg when custom. -->
 							<button
 								type="button"
 								class="menu-trigger"
 								aria-label="Message options"
 								aria-haspopup="menu"
 								aria-expanded={openMenuId === a.id}
+								style:color={metaColor}
+								style:filter={metaFilter}
 								onclick={() => toggleMenu(a.id)}
 							>
 								<!-- Reference kebab is "⠇" (U+2807, the single braille column). Reference
@@ -340,18 +353,21 @@
 
 					<div class="content">
 						<div class="meta-line">
-							<div class="name-wrap">
-								<span class="username" style:color={a.author_color ?? 'var(--username-color)'}
+							<!-- P1-1: name-wrap carries the author text colour (absent → none). -->
+							<div class="name-wrap" style:color={a.author_text_color ?? undefined}>
+								<span class="username" style:color={usernameColor} style:filter={metaFilter}
 									>{a.author_name ?? 'Trader'}</span
 								>
 								<Badges data={a.author_badges} />
 							</div>
 							<div class="meta-right">
 								<!-- Reference .alert-qa: optional (N) count + fa-question-circle (10px) +
-								     trailing ✅ when answered. Pinned right by the meta-line space-between. -->
+								     trailing ✅ when answered. Pinned right by the meta-line space-between.
+								     P1-1: the QA button takes the author text colour when set. -->
 								<button
 									type="button"
 									class="alert-qa"
+									style:color={a.author_text_color ?? undefined}
 									onclick={() => openQa(a)}
 									title="Ask a question"
 									aria-label="Ask a question"
@@ -361,7 +377,10 @@
 											class="qa-check">✅</span
 										>{/if}
 								</button>
-								<time class="created-at">{formatStamp(a.created_at)}</time>
+								<!-- P1-1: created-at inverts from the row bg when custom. -->
+								<time class="created-at" style:color={metaColor} style:filter={metaFilter}
+									>{formatStamp(a.created_at)}</time
+								>
 							</div>
 						</div>
 
@@ -369,7 +388,8 @@
 						     .msg-left.text-formated.ml-2); image nested INSIDE, not a sibling.
 						     The leading symbol renders as the reference span.stockColor ticker
 						     (report.md:1326,1303,1341). -->
-						<div class="body">
+						<!-- P1-1: body (.msg-left) carries the author text colour (absent → none). -->
+						<div class="body" style:color={a.author_text_color ?? undefined}>
 							<span class="stock">{a.symbol}</span>{#if a.side}&nbsp;{a.side}{/if}
 							{#if a.note}<MessageBody text={a.note} />{/if}
 							{#if a.image_url}

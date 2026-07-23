@@ -56,6 +56,10 @@ async fn upgrade(
     // for the admin view only — never broadcast to room members.
     let ip = util::client_ip(&headers, Some(peer));
     let user_id = user.user_id;
+    // The poster's display name — carried into the socket task so a `typing` frame
+    // can fan out `RoomEvent::Typing { user_id, display_name }` (P1-2 ·
+    // IMPLEMENTATION-PLAN.md) without a per-keystroke DB lookup.
+    let display_name = user.display_name.clone();
     // The socket is receive-mostly (clients send only tiny heartbeats), so cap
     // inbound message/frame size hard — this bounds the work an abusive client can
     // force per frame (each inbound message drives a Redis presence write) and
@@ -64,7 +68,7 @@ async fn upgrade(
     Ok(ws
         .max_message_size(64 * 1024)
         .max_frame_size(64 * 1024)
-        .on_upgrade(move |socket| room_socket(state, socket, id, user_id, ip)))
+        .on_upgrade(move |socket| room_socket(state, socket, id, user_id, display_name, ip)))
 }
 
 async fn room_socket(
@@ -72,6 +76,7 @@ async fn room_socket(
     socket: WebSocket,
     room: RoomId,
     user: UserId,
+    display_name: String,
     ip: Option<String>,
 ) {
     let (mut sink, mut stream) = socket.split();
@@ -123,9 +128,34 @@ async fn room_socket(
                 Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => {}
                 Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
             },
-            // Inbound from this client: heartbeats refresh presence; close ends.
+            // Inbound from this client: heartbeats refresh presence; a `typing`
+            // frame additionally fans out a `RoomEvent::Typing` (P1-2); close ends.
             inbound = stream.next() => match inbound {
-                Some(Ok(Message::Text(_) | Message::Ping(_))) => {
+                Some(Ok(Message::Text(text))) => {
+                    // Every inbound text frame is also a heartbeat.
+                    let _ = state.cache.presence_touch(room, user).await;
+                    // The typing signal is the exact frame `{"type":"typing"}` (the
+                    // client throttles to >=2s; we keep it minimal and don't parse
+                    // arbitrary JSON per keystroke). Any other text keeps the
+                    // heartbeat-only behavior. Server-side rate-limit to >=1/sec per
+                    // user so a misbehaving client can't spam the room broadcast;
+                    // over the limit we silently drop the fan-out (the frame still
+                    // counted as a heartbeat above).
+                    if is_typing_frame(&text)
+                        && state
+                            .cache
+                            .rate_limit(&format!("typing:{room}:{user}"), 1, 1)
+                            .await
+                            .unwrap_or(true)
+                    {
+                        let event = RoomEvent::Typing {
+                            user_id: user,
+                            display_name: display_name.clone(),
+                        };
+                        let _ = state.hub.publish(room, &event.to_json()).await;
+                    }
+                }
+                Some(Ok(Message::Ping(_))) => {
                     let _ = state.cache.presence_touch(room, user).await;
                 }
                 Some(Ok(Message::Close(_)) | Err(_)) | None => break,
@@ -141,6 +171,23 @@ async fn room_socket(
         let _ = state.cache.presence_remove_ip(room, user).await;
         publish_presence(&state, room).await;
     }
+}
+
+/// Whether an inbound text frame is the typing signal `{"type":"typing"}` (P1-2 ·
+/// IMPLEMENTATION-PLAN.md). Parsed as JSON (tolerating whitespace/extra keys) so a
+/// value-typed match is robust; a non-JSON or non-typing frame returns `false` and
+/// the caller treats it as a plain heartbeat. Cheap: frames are size-capped at 64
+/// KiB by the upgrade and this only runs on inbound text.
+fn is_typing_frame(text: &str) -> bool {
+    serde_json::from_str::<serde_json::Value>(text)
+        .ok()
+        .and_then(|v| {
+            v.get("type")
+                .and_then(serde_json::Value::as_str)
+                .map(str::to_owned)
+        })
+        .as_deref()
+        == Some("typing")
 }
 
 /// Compute the room's present users — enriched with the reference roster fields

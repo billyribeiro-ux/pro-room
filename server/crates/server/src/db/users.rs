@@ -164,6 +164,51 @@ pub async fn set_display_name(pool: &PgPool, id: UserId, name: &str) -> anyhow::
     Ok(())
 }
 
+/// Update a user's per-author message colors (P1-1 · IMPLEMENTATION-PLAN.md).
+/// `bg`/`text` are the already-validated `#rrggbb` strings, or `None` to CLEAR
+/// that column (the "no custom color → stylesheet default" state). Both columns
+/// are written every call so passing `None` explicitly nulls them. Runtime query
+/// (no .sqlx cache needed for the bare UPDATE); the caller validates the format
+/// (`^#[0-9a-fA-F]{6}$`) before this is reached.
+pub async fn set_msg_colors(
+    pool: &PgPool,
+    id: UserId,
+    bg: Option<&str>,
+    text: Option<&str>,
+) -> anyhow::Result<()> {
+    let affected = sqlx::query(
+        "UPDATE users SET msg_bg_color = $1, msg_text_color = $2, updated_at = now() \
+         WHERE id = $3",
+    )
+    .bind(bg)
+    .bind(text)
+    .bind(id.as_uuid())
+    .execute(pool)
+    .await
+    .context("set message colors")?
+    .rows_affected();
+    anyhow::ensure!(affected == 1, "user not found");
+    Ok(())
+}
+
+/// Fetch just a user's per-author message colors (P1-1). Used when broadcasting a
+/// live Chat/Alert event: `CurrentUser`/`SessionUser` does not carry these two
+/// columns, so the poster's row is read here to populate `author_bg_color` /
+/// `author_text_color` on the event. Runtime query. Returns `(bg, text)` — either
+/// may be `None` (no custom color).
+pub async fn msg_colors(
+    pool: &PgPool,
+    id: UserId,
+) -> anyhow::Result<(Option<String>, Option<String>)> {
+    let row: Option<(Option<String>, Option<String>)> =
+        sqlx::query_as("SELECT msg_bg_color, msg_text_color FROM users WHERE id = $1")
+            .bind(id.as_uuid())
+            .fetch_optional(pool)
+            .await
+            .context("load message colors")?;
+    Ok(row.unwrap_or((None, None)))
+}
+
 /// Replace a user's argon2 password hash (self-service change-password). Runtime
 /// query (no sqlx macro cache needed for the bare UPDATE). The caller hashes off
 /// the async worker.

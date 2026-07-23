@@ -33,6 +33,12 @@
 		onChannel: (channel: ChatChannel) => void;
 		/** Open the create-poll modal (rendered in the alerts header). */
 		onCreatePoll?: () => void;
+		/** P1-2: names currently typing (self already excluded) — forwarded to the
+		    main ChatPanel for the composer's typing indicator. */
+		typingNames?: string[];
+		/** P1-2: called (throttled by ChatPanel) when the user types, to fan out a
+		    typing frame over the room socket. */
+		onTyping?: () => void;
 	}
 	let {
 		roomId,
@@ -53,7 +59,9 @@
 		onPostMessage,
 		onPostOffTopic,
 		onChannel,
-		onCreatePoll
+		onCreatePoll,
+		typingNames = [],
+		onTyping
 	}: Props = $props();
 
 	// The column's WIDTH is now owned by the outer <Split> gutter in the room
@@ -198,6 +206,8 @@
 				canPost={canPostMessage}
 				onPost={onPostMessage}
 				{onChannel}
+				{typingNames}
+				{onTyping}
 			/>
 		</div>
 		{#if prefs.extraChatColumn}

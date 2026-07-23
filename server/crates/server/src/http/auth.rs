@@ -211,34 +211,125 @@ async fn me(CurrentUser(user): CurrentUser) -> Json<MeResponse> {
     Json(me_response(&user))
 }
 
+/// Body for the self-service profile PATCH. Every field is optional so a caller
+/// can update the display name, the per-author message colors (P1-1 ·
+/// IMPLEMENTATION-PLAN.md), or any subset in one request. The colors use a nested
+/// `Option<Option<String>>` so serde distinguishes three cases: field absent
+/// (`None`, leave unchanged), field explicitly `null` (`Some(None)`, CLEAR the
+/// color back to the stylesheet default), or a `"#rrggbb"` string (`Some(Some)`,
+/// set it). `default` + `deserialize_with = double_option` make the absent case
+/// resolve to `None` rather than an error.
 #[derive(Deserialize)]
+// The nested Option is deliberate serde semantics (absent vs null vs value) —
+// see the doc comment above; a wrapper enum would obscure the wire contract.
+#[allow(clippy::option_option)]
 struct UpdateMeBody {
-    display_name: String,
+    #[serde(default)]
+    display_name: Option<String>,
+    #[serde(default, deserialize_with = "double_option")]
+    msg_bg_color: Option<Option<String>>,
+    #[serde(default, deserialize_with = "double_option")]
+    msg_text_color: Option<Option<String>>,
 }
 
-/// Update the caller's OWN display name (reference "Edit my Info"). Self-scoped via
-/// `CurrentUser` — a user may only edit their own profile, so no RBAC policy beyond
-/// authentication is required. Returns the refreshed `me` view.
+/// Deserialize a present-but-maybe-null JSON field into `Option<Option<T>>`:
+/// missing key → `None` (handled by `#[serde(default)]`), `null` → `Some(None)`,
+/// value → `Some(Some(value))`. Lets `update_me` tell "clear this color" (explicit
+/// null) apart from "don't touch this color" (key absent).
+#[allow(clippy::option_option)]
+fn double_option<'de, T, D>(deserializer: D) -> Result<Option<Option<T>>, D::Error>
+where
+    T: Deserialize<'de>,
+    D: serde::Deserializer<'de>,
+{
+    Ok(Some(Option::deserialize(deserializer)?))
+}
+
+/// Validate a per-author message color against `^#[0-9a-fA-F]{6}$` (P1-1). The
+/// reference emits inline `background-color`/`color` per author; we store the
+/// author's chosen `#rrggbb` and reject anything else server-side (fail loud — no
+/// silent normalization). Case is accepted either way (the regex allows a-fA-F);
+/// the caller persists the string as-received.
+fn validate_msg_color(value: &str) -> AppResult<()> {
+    let ok = value.len() == 7
+        && value.starts_with('#')
+        && value[1..].chars().all(|c| c.is_ascii_hexdigit());
+    if ok {
+        Ok(())
+    } else {
+        Err(AppError::BadRequest(
+            "Color must be a #rrggbb hex value.".into(),
+        ))
+    }
+}
+
+/// Update the caller's OWN profile: display name (reference "Edit my Info") and/or
+/// the per-author message colors (P1-1 · IMPLEMENTATION-PLAN.md "Colors & Size").
+/// Self-scoped via `CurrentUser` — a user may only edit their own profile, so no
+/// RBAC policy beyond authentication is required. Any subset of fields may be sent;
+/// an omitted field is left unchanged, an explicit `null` color CLEARS it back to
+/// the stylesheet default. Returns the refreshed `me` view.
 async fn update_me(
     State(state): State<AppState>,
     CurrentUser(mut user): CurrentUser,
     Json(body): Json<UpdateMeBody>,
 ) -> AppResult<Json<MeResponse>> {
-    let name = body.display_name.trim();
-    // Validate server-side (never trust the client): alphanumeric, 3..=40 chars
-    // (reference "Username can only contain letters and numbers" + a max length so
-    // it can't grow unbounded — matches the bound in validate_display_name).
-    if name.chars().count() < 3
-        || name.chars().count() > 40
-        || !name.chars().all(|c| c.is_ascii_alphanumeric())
-    {
-        return Err(AppError::BadRequest(
-            "Display name must be 3-40 letters or numbers (no spaces).".into(),
-        ));
+    // Display name (optional). Validate server-side (never trust the client):
+    // alphanumeric, 3..=40 chars (reference "Username can only contain letters and
+    // numbers" + a max length so it can't grow unbounded — matches the bound in
+    // validate_display_name).
+    if let Some(raw) = body.display_name.as_deref() {
+        let name = raw.trim();
+        if name.chars().count() < 3
+            || name.chars().count() > 40
+            || !name.chars().all(|c| c.is_ascii_alphanumeric())
+        {
+            return Err(AppError::BadRequest(
+                "Display name must be 3-40 letters or numbers (no spaces).".into(),
+            ));
+        }
+        db::users::set_display_name(&state.db, user.user_id, name).await?;
+        user.display_name = name.to_owned();
     }
-    db::users::set_display_name(&state.db, user.user_id, name).await?;
-    user.display_name = name.to_owned();
+
+    // Per-author message colors (optional). Each field distinguishes absent (leave
+    // as-is) from explicit null (clear). Validate any provided string against
+    // `^#[0-9a-fA-F]{6}$` before persisting — reject otherwise (400, fail loud).
+    // Only write when at least one color field was present in the request so a
+    // display-name-only PATCH never touches the color columns.
+    if body.msg_bg_color.is_some() || body.msg_text_color.is_some() {
+        let bg: Option<String> = match &body.msg_bg_color {
+            Some(Some(v)) => {
+                validate_msg_color(v)?;
+                Some(v.clone())
+            }
+            Some(None) => None,                           // explicit null → clear
+            None => current_msg_bg(&state, &user).await?, // absent → keep current
+        };
+        let text: Option<String> = match &body.msg_text_color {
+            Some(Some(v)) => {
+                validate_msg_color(v)?;
+                Some(v.clone())
+            }
+            Some(None) => None,
+            None => current_msg_text(&state, &user).await?,
+        };
+        db::users::set_msg_colors(&state.db, user.user_id, bg.as_deref(), text.as_deref()).await?;
+    }
+
     Ok(Json(me_response(&user)))
+}
+
+/// The caller's currently-stored bg color, so a PATCH that only sets `msg_text_color`
+/// leaves `msg_bg_color` untouched (`set_msg_colors` writes both columns each call).
+async fn current_msg_bg(state: &AppState, user: &SessionUser) -> AppResult<Option<String>> {
+    Ok(db::users::msg_colors(&state.db, user.user_id).await?.0)
+}
+
+/// The caller's currently-stored text color — mirror of `current_msg_bg` for the
+/// bg-only PATCH case.
+async fn current_msg_text(state: &AppState, user: &SessionUser) -> AppResult<Option<String>> {
+    Ok(db::users::msg_colors(&state.db, user.user_id).await?.1)
 }
 
 #[derive(Deserialize)]
