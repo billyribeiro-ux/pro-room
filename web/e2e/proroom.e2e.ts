@@ -1,3 +1,4 @@
+import { devLoginIfBounced } from './util';
 import { test, expect, type Page } from '@playwright/test';
 
 /**
@@ -28,6 +29,7 @@ async function shot(page: Page, name: string) {
 /** Navigate into the room and wait for the shell to be interactive. */
 async function enterRoom(page: Page) {
 	await page.goto(`/rooms/${roomId}`);
+	await devLoginIfBounced(page, `/rooms/${roomId}`);
 	// The layout calls /api/auth/me on mount; dev-bypass returns a super-admin so
 	// we land in the room rather than bouncing to /login.
 	await expect(page.locator('.main-stage')).toBeVisible({ timeout: 20_000 });

@@ -1748,8 +1748,16 @@
 	#textAreaHolder {
 		display: flex;
 		align-items: center;
+		/* Fill the flex form row — the reference holder spans the pane minus its
+		   5px margins (elements[1086]: 569 of the 579 pane). Losing this flex
+		   made the holder shrink-to-content (206px box) — the visible bug. */
+		flex: 1 1 auto;
 		min-width: 0;
 		color: #ccc;
+		/* HARD EVIDENCE (proroom-full-member.json elements[1086-1096]): every
+		   composer element computes font-family "Open Sans", sans-serif exactly
+		   — the reference stack, not the app-wide fallback chain. */
+		font-family: 'Open Sans', sans-serif;
 		background: var(--content-bg);
 		border: none;
 		border-radius: 8px;
@@ -1831,20 +1839,29 @@
 		margin: 0;
 		flex-shrink: 0;
 		background: var(--content-bg);
+		/* HARD EVIDENCE (elements[1090]): the column computes color #aaa
+		   (--dark-gray) — the spans inside override to #676767. */
+		color: #aaa;
 	}
-	/* Reference span.textAreaBtns: icon-only button, --textarea-holder-btns-color
-	   #676767, hover --textarea-holder-btns-hover-color var(--accent). */
+	/* HARD EVIDENCE (proroom-full-member.json elements[1091-1096]): the
+	   reference buttons are SPANS computing display:block, padding 5px,
+	   radius 0, color #676767, font 16px/24px w300, text-align center,
+	   cursor auto → 26×34 boxes (GIF: 12px/18px → 29×28). Our <button>
+	   needs the UA chrome stripped + those exact metrics. */
 	.textAreaBtns {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
+		display: block;
 		background: transparent;
 		border: none;
+		border-radius: 0;
 		color: var(--content-text);
-		cursor: pointer;
-		/* Captured composer buttons compute padding 5px (report.md:1473). */
+		cursor: auto;
 		padding: 5px;
-		border-radius: 6px;
+		margin: 0;
+		font-family: inherit;
+		font-size: 16px;
+		font-weight: 300;
+		line-height: 24px;
+		text-align: center;
 	}
 	.textAreaBtns:hover:not(:disabled) {
 		/* HARD EVIDENCE: --textarea-holder-btns-hover-color = #0a6db1. */
@@ -1855,9 +1872,10 @@
 		cursor: not-allowed;
 	}
 	.textAreaBtns.gif {
-		/* Captured GIF label: 300 12px/18px, #676767 (report.md:1470). */
+		/* HARD EVIDENCE (elements[1095-1096]): GIF label 300 12px/18px. */
 		font-size: 12px;
 		font-weight: 300;
+		line-height: 18px;
 	}
 	/* Emoji picker popover — hosts the static EmojiMart replica above the button
 	   (reference ngbPopover popoverClass="popOverDiv": .popover-body padding 0,

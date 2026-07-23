@@ -1,3 +1,4 @@
+import { devLoginIfBounced } from './util';
 import { test, expect } from '@playwright/test';
 
 /**
@@ -44,6 +45,7 @@ test('screen share renders in the stage and the zoom/snapshot/stop controls work
 }) => {
 	await page.addInitScript(MOCK_DISPLAY_MEDIA);
 	await page.goto(`/rooms/${roomId}`);
+	await devLoginIfBounced(page, `/rooms/${roomId}`);
 	await expect(page.locator('.main-stage')).toBeVisible({ timeout: 20_000 });
 
 	// Wait for LiveKit to connect (the share control enables).

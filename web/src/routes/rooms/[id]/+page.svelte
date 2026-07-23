@@ -216,7 +216,7 @@
 				: layout.position === 'top'
 					? 40
 					: layout.position === 'right'
-						? 78.7636
+						? 73.27
 						: 60
 	);
 

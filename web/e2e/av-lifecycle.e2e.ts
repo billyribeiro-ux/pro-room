@@ -1,3 +1,4 @@
+import { devLoginIfBounced } from './util';
 import { test, expect } from '@playwright/test';
 
 /**
@@ -30,6 +31,7 @@ test.beforeAll(async ({ request }) => {
 
 test('camera X removes the tile — no lingering black tile (BUG A)', async ({ page }) => {
 	await page.goto(`/rooms/${roomId}`);
+	await devLoginIfBounced(page, `/rooms/${roomId}`);
 
 	// The Camera control enables once LiveKit connects.
 	const startCam = page.getByRole('button', { name: 'Camera', exact: true });
@@ -67,6 +69,7 @@ test('mic start/stop completes without a thrown error (BUG A + AV-Settings regre
 	});
 
 	await page.goto(`/rooms/${roomId}`);
+	await devLoginIfBounced(page, `/rooms/${roomId}`);
 	const startMic = page.getByRole('button', { name: 'Microphone', exact: true });
 	await expect(startMic).toBeEnabled({ timeout: 25_000 });
 	await startMic.click();

@@ -1,3 +1,4 @@
+import { devLoginIfBounced } from './util';
 import { test, expect, type Page } from '@playwright/test';
 
 /**
@@ -69,6 +70,7 @@ async function enterRoom(page: Page) {
 	// horizontal gutter down.
 	await page.addInitScript(() => localStorage.setItem('acdock.fraction', '0.35'));
 	await page.goto(`/rooms/${roomId}`);
+	await devLoginIfBounced(page, `/rooms/${roomId}`);
 	await expect(page.locator('.main-stage')).toBeVisible({ timeout: 20_000 });
 	await expect(page.locator('.alerts-pane')).toBeVisible();
 }
