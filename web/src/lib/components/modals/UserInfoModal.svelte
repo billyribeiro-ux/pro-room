@@ -176,12 +176,16 @@
 		font-weight: 700;
 		border-radius: 0.25rem;
 		padding: 0.1rem 0.45rem;
-		/* Online = Darkly success; Offline = badge-danger (reference). */
-		background: var(--modal-success, #00bc8c);
+		/* HARD EVIDENCE (proroom-modals-and-deep.md, rendered User-Info popup):
+		   the status badges use the Darkly BADGE scale — Online badge-success
+		   #00bc8c, Offline badge-danger #E74C3C (--danger) — NOT the modal
+		   BUTTON tokens (--modal-success #92d528 / --modal-danger #bb352a),
+		   which the previous var() mappings resolved to. */
+		background: var(--positive, #00bc8c);
 		color: #fff;
 	}
 	.status-badge.offline {
-		background: var(--modal-danger, #e74c3c);
+		background: var(--negative, #e74c3c);
 	}
 	.tabs {
 		display: flex;

@@ -141,10 +141,9 @@ test('composer: emoji picker opens', async ({ page }) => {
 	// (reference textAreaBtnsCol has the single fas fa-plus).
 	await page.getByRole('button', { name: 'Show message options' }).first().click();
 	await page.getByRole('button', { name: 'Add Emojis' }).first().click();
-	// The picker is a role="menu" popover (aria-label "Pick an emoji"), not a button.
-	await expect(page.getByRole('menu', { name: 'Pick an emoji' }).first()).toBeVisible({
-		timeout: 5_000
-	});
+	// The picker is the static emoji-mart replica (anchors/search/grid/preview).
+	await expect(page.locator('.emoji-mart').first()).toBeVisible({ timeout: 5_000 });
+	await expect(page.locator('.emoji-mart .emoji-mart-scroll').first()).toBeVisible();
 	await shot(page, 't01-emoji-picker');
 });
 

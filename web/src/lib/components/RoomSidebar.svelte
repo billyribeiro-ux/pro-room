@@ -24,6 +24,7 @@
 	import AddUserModal from './modals/AddUserModal.svelte';
 	import { debugLogText, logEvent } from '$lib/stores/sessionLog.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
+	import { openPrivateChat } from '$lib/privateChat.svelte';
 
 	interface Props {
 		open: boolean;
@@ -124,6 +125,14 @@
 	}
 	function mentionRosterUser(u: PresentUser) {
 		mentionBus.request(u.display_name);
+		rosterMenuId = null;
+	}
+	// HARD EVIDENCE (decoded roster.md §DOM g2e + §Behavior): the kebab menu's third
+	// item is "Private Chat" (`<i class="fas fa-comments">` consts[22]) → `startPC(user)`
+	// which opens a PM thread for the target user. We route it through the app's
+	// openPrivateChat({user_id, display_name}) (self-PM is guarded inside that fn).
+	function startPrivateChatWith(u: PresentUser) {
+		void openPrivateChat({ user_id: u.user_id, display_name: u.display_name });
 		rosterMenuId = null;
 	}
 	// HARD EVIDENCE (inventory.menus roster `dropdown-menu users-dropdown-options`
@@ -233,6 +242,21 @@
 						     leading icon (fa-bell / fa-comment / fa-closed-captioning) + a
 						     span.pl-2 label. -->
 						<div class="archives-menu" role="menu">
+							<!-- HARD EVIDENCE (decoded sidebar.md §Role variants + §Behavior):
+							     Recording (aPe, launchRecordings()) is the FIRST Archives item,
+							     shown when isPresenter || !hideRecs. ⚙ BACKEND: no recordings
+							     storage/surface exists yet, so it renders honestly disabled
+							     (never fabricated). Gated on canManage (presenter/admin). -->
+							{#if canManage}
+								<button
+									type="button"
+									class="archives-item"
+									role="menuitem"
+									title="Recordings need backend storage (pending)"
+									disabled
+									><Icon name="video" size={14} /><span class="label">Recording</span></button
+								>
+							{/if}
 							<button
 								type="button"
 								class="archives-item"
@@ -388,7 +412,10 @@
 					aria-expanded={!rosterCollapsed}
 				>
 					<Icon name="user" size={14} /> <span class="label">Users:</span>
-					<span class="roster-count">{present.length}</span>
+					<!-- HARD EVIDENCE (decoded roster.md §Resolved `.active-room-users .badge`):
+					     the count renders in a .badge pill re-themed to
+					     --users-badge-bg-color #0e3651 / --users-badge-color #f4f4f4. -->
+					<span class="roster-count badge">{present.length}</span>
 				</button>
 				<!-- Reference visual order (float-right reversed): search · sort · sync ·
 				     cog — all live controls (report.md:677,1987-1994). -->
@@ -497,6 +524,13 @@
 											<button type="button" role="menuitem" onclick={() => mentionRosterUser(u)}>
 												<Icon name="reply" size={14} /> Mention
 											</button>
+											<!-- HARD EVIDENCE (decoded roster.md §DOM g2e / consts[17,22]): third
+											     item = "Private Chat" with a fa-comments icon → startPC(user). -->
+											<button type="button" role="menuitem" onclick={() => startPrivateChatWith(u)}>
+												<Icon name="comments" size={14} /> Private Chat
+											</button>
+											<!-- Copy kept as a functional extra (fourth item) — not in the
+											     reference menu, retained for utility. -->
 											<button type="button" role="menuitem" onclick={() => copyRosterUser(u)}>
 												<Icon name="copy" size={14} /> Copy
 											</button>
@@ -858,10 +892,23 @@
 		padding: 0;
 		cursor: pointer;
 	}
+	/* HARD EVIDENCE (decoded roster.md §Resolved `.active-room-users .badge`):
+	   background-color #0e3651 (--users-badge-bg-color), color #f4f4f4
+	   (--users-badge-color). Base .badge geometry from decoded roster.md §Global CSS
+	   (.badge{padding:.25em .4em;font-size:75%;font-weight:700;border-radius:.25rem}). */
 	.roster-count {
+		display: inline-block;
+		margin-left: 4px;
+		padding: 0.25em 0.4em;
+		font-size: 75%;
 		font-weight: 700;
-		color: #676767;
-		padding-left: 4px;
+		line-height: 1;
+		text-align: center;
+		white-space: nowrap;
+		vertical-align: baseline;
+		border-radius: 0.25rem;
+		background-color: #0e3651;
+		color: #f4f4f4;
 	}
 	.roster-search {
 		margin: 0 5px 8px;

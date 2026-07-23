@@ -14,6 +14,8 @@
 	import AlertSendReportModal from './modals/AlertSendReportModal.svelte';
 	import Icon from './Icon.svelte';
 	import { prefs } from '$lib/stores/prefs.svelte';
+	import { dnd } from '$lib/stores/dnd.svelte';
+	import { parseMessage } from '$lib/message';
 	import { alertFilter, isAlertVisible, type FilterTrader } from '$lib/stores/alertFilter.svelte';
 	import { shouldThrottle } from '$lib/stores/visibility.svelte';
 	import { openLightbox } from '$lib/stores/lightbox.svelte';
@@ -46,6 +48,17 @@
 		    (the reference puts poll creation in the alerts toolbar, not the navbar).
 		    Inert/hidden when omitted. */
 		onCreatePoll?: () => void;
+		/** Whether a poll is currently active/live in the room. Reference `pollIsActive`. */
+		pollActive?: boolean;
+		/** Whether the active poll has been minimized (collapsed out of view).
+		    Reference `pollIsMinimized`. */
+		pollMinimized?: boolean;
+		/** Restore the minimized poll (reference `doPollUI()` on the member restore link).
+		    When omitted the restore blink link never renders (safe no-op). */
+		onRestorePoll?: () => void;
+		/** Optional override for whether the alert filter is active (reference
+		    `doFilteredAlerts`). Omit to derive from the in-component alertFilter store. */
+		filtered?: boolean;
 	}
 	let {
 		alerts,
@@ -57,8 +70,18 @@
 		onReact,
 		canManage = false,
 		onDelete,
-		onCreatePoll
+		onCreatePoll,
+		pollActive = false,
+		pollMinimized = false,
+		onRestorePoll,
+		filtered
 	}: Props = $props();
+
+	// HARD EVIDENCE (decoded alerts-panel.md DOM §E2e, line 34-35 + States line 283):
+	// a minimized active poll shows a `.poll-active-blink` "Poll" restore link in the
+	// alert header (`!isPresenter && pollIsMinimized`). Rendered only when the page
+	// wires the restore handler AND a poll is active+minimized — otherwise inert.
+	const showPollRestore = $derived(!!onRestorePoll && pollActive && pollMinimized);
 
 	// Trader options for the Advanced Search multi-select = the present roster.
 	const traderOptions = $derived(present.map((p) => ({ value: p.user_id, label: p.display_name })));
@@ -74,6 +97,13 @@
 	});
 	// Apply the trader filter to the feed (reference doFilteredAlerts predicate).
 	const visibleAlerts = $derived(alerts.filter((a) => isAlertVisible(a.author_id)));
+
+	// HARD EVIDENCE (decoded alerts-panel.md DOM consts[8]/w2e, line 24-26 + States
+	// line 280): the red `.badge.badge-danger.filtered-text " filtered"` shows when
+	// `modAlertFilterList && doFilteredAlerts`. Filtering is handled in THIS component
+	// via the alertFilter store, so `doFilteredAlerts` = any trader in the filter map;
+	// `filtered` prop is an optional override for when the page drives it elsewhere.
+	const filterActive = $derived(filtered ?? Object.keys(alertFilter.filtered).length > 0);
 
 	// Which row's ⠇ menu is open (alert id), or null when none.
 	let openMenuId = $state<string | null>(null);
@@ -131,6 +161,19 @@
 		return a.note ? `${head} ${a.note}` : head;
 	}
 
+	// HARD EVIDENCE (decoded alerts-panel.md line 122-123, 293-294 + color-system.md
+	// Global CSS): the body `.msg-left.text-formated` gets `mentionColor` when
+	// `msg.isMention` and `questionColor` when `txt.includes("?")`, BOTH only when the
+	// author has no custom colours (`!hasCustomFollowedUserColors`). Our equivalent
+	// "no custom colour" gate is the absence of an inline `author_text_color` (same
+	// rule as chat). mention = the body carries an `@name` token; question = a "?".
+	function isMention(a: AlertItem): boolean {
+		return parseMessage(bodyText(a)).some((seg) => seg.kind === 'mention');
+	}
+	function isQuestion(a: AlertItem): boolean {
+		return bodyText(a).includes('?');
+	}
+
 	function toggleMenu(id: string) {
 		openMenuId = openMenuId === id ? null : id;
 	}
@@ -186,8 +229,44 @@
 
 <section class="panel">
 	<header>
-		<div class="title"><Icon name="bell" size={20} /> Alerts</div>
+		<div class="title">
+			<Icon name="bell" size={20} /> Alerts
+			<!-- HARD EVIDENCE (decoded alerts-panel.md DOM consts[8]/w2e, line 24-26):
+			     `span.badge.badge-danger.ms-1.filtered-text " filtered"` next to the
+			     brand, opening `#alert-filter-modal`, shown when the filter is active. -->
+			{#if filterActive}
+				<button
+					type="button"
+					class="badge badge-danger filtered-text"
+					title="Alert Filter"
+					onclick={() => (alertFilter.open = true)}
+				>
+					filtered
+				</button>
+			{/if}
+			<!-- HARD EVIDENCE (decoded alerts-panel.md DOM consts[9]/T2e, line 27-28 +
+			     States line 280): red DND pill (`fa-bell-slash` + " DND") shown when
+			     `preferences.doNotDisturbOn` (our master `dnd.app`). -->
+			{#if dnd.app}
+				<span class="badge badge-danger dnd-badge"><Icon name="bell-slash" size={12} /> DND</span>
+			{/if}
+		</div>
 		<div class="actions">
+			<!-- HARD EVIDENCE (decoded alerts-panel.md DOM §E2e, line 34-35 + States
+			     line 283): a minimized active poll shows a pulsing amber `.poll-active-blink`
+			     "Poll" restore link (`doPollUI()`). Only renders when the page wires
+			     onRestorePoll AND the poll is active + minimized. -->
+			{#if showPollRestore}
+				<button
+					type="button"
+					class="poll-active-blink"
+					aria-label="Restore poll"
+					title="Poll"
+					onclick={() => onRestorePoll?.()}
+				>
+					<Icon name="question-circle" size={16} /> Poll
+				</button>
+			{/if}
 			{#if canPost}
 				<button
 					type="button"
@@ -388,8 +467,15 @@
 						     .msg-left.text-formated.ml-2); image nested INSIDE, not a sibling.
 						     The leading symbol renders as the reference span.stockColor ticker
 						     (report.md:1326,1303,1341). -->
-						<!-- P1-1: body (.msg-left) carries the author text colour (absent → none). -->
-						<div class="body" style:color={a.author_text_color ?? undefined}>
+						<!-- P1-1: body (.msg-left) carries the author text colour (absent → none).
+						     mentionColor/questionColor toggle ONLY when there is no inline
+						     author_text_color (reference !hasCustomFollowedUserColors). -->
+						<div
+							class="body"
+							class:mentionColor={!a.author_text_color && isMention(a)}
+							class:questionColor={!a.author_text_color && isQuestion(a)}
+							style:color={a.author_text_color ?? undefined}
+						>
 							<span class="stock">{a.symbol}</span>{#if a.side}&nbsp;{a.side}{/if}
 							{#if a.note}<MessageBody text={a.note} />{/if}
 							{#if a.image_url}
@@ -509,6 +595,59 @@
 	}
 	.actions button:hover {
 		background: rgba(255, 255, 255, 0.18);
+	}
+	/* HARD EVIDENCE (decoded alerts-panel.md scoped CSS line 149-150 + Bootstrap
+	   badge-danger): `.filtered-text{font-size:12px;vertical-align:middle}` and
+	   `.filtered-text:hover{cursor:pointer;opacity:.85}`. `.badge.badge-danger` is
+	   the Bootstrap-Darkly red pill (#e74c3c). The DND pill shares the badge chrome. */
+	.badge.badge-danger {
+		display: inline-flex;
+		align-items: center;
+		gap: 3px;
+		background: #e74c3c;
+		color: #ffffff;
+		font-size: 12px;
+		font-weight: 700;
+		line-height: 1;
+		padding: 4px 6px;
+		border: none;
+		border-radius: 0.375rem;
+		vertical-align: middle;
+	}
+	.filtered-text {
+		/* ms-1 (4px) from the brand; clickable → opens the alert-filter modal. */
+		margin-left: 4px;
+		cursor: pointer;
+	}
+	.filtered-text:hover {
+		opacity: 0.85;
+	}
+	.dnd-badge {
+		/* ms-2 (8px) from the filtered badge / brand. */
+		margin-left: 8px;
+	}
+	/* HARD EVIDENCE (decoded alerts-panel.md scoped CSS line 151-153 + States line
+	   283): `.poll-active-blink{color:#f39c12!important;animation:poll-pulse 1.5s
+	   ease-in-out infinite}` with `@keyframes poll-pulse{0%,to{opacity:1}50%{opacity:.5}}`. */
+	.poll-active-blink {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.1rem;
+		background: transparent;
+		border: none;
+		cursor: pointer;
+		padding: 0.25rem;
+		color: #f39c12;
+		animation: poll-pulse 1.5s ease-in-out infinite;
+	}
+	@keyframes poll-pulse {
+		0%,
+		100% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0.5;
+		}
 	}
 	.settings-menu {
 		position: relative;
@@ -821,6 +960,20 @@
 		word-break: break-word;
 		white-space: pre-wrap;
 		font-size: var(--msg-font-size);
+	}
+	/* HARD EVIDENCE (decoded alerts-panel.md Global CSS, line 202-203):
+	   `.mentionColor{color:#048d04!important;font-style:italic}` and
+	   `.questionColor{color:#2095f2!important}` — global, per-author body tints.
+	   questionColor is defined AFTER mentionColor to mirror the reference stylesheet
+	   source-order cascade (both !important → later wins the colour when both apply,
+	   while mention keeps its italic). Applied on the body only when there is no
+	   inline author colour (see the class:… gate in markup). */
+	.body.mentionColor {
+		color: #048d04;
+		font-style: italic;
+	}
+	.body.questionColor {
+		color: #2095f2;
 	}
 	/* HARD EVIDENCE (proroom-all-admin.json): the `.stockColor` rule is exactly
 	   `{ font-weight:700; font-style:italic; text-transform:uppercase }` with NO color —

@@ -197,23 +197,23 @@
 {/if}
 
 <style>
-	/* Reference .speech-reco-overlay: absolute bottom strip, bg #000c,
-	   z-index 9999, white 22px lines (file-1-part-D.md:141-156; presenter
-	   capture stylesheet @771222). */
+	/* HARD EVIDENCE (decoded webcams-stage.md §Scoped CSS .speech-reco-overlay
+	   line 199 + Resolved lines 349-353): absolute bottom strip, bg #000c
+	   (rgba(0,0,0,.8)), padding 12px 20px, z-index 9999, max-height 40vh,
+	   overflow-y auto, min-height 48px, flex row, gap 12px, space-between. */
 	.cc-bar {
 		position: absolute;
 		left: 0;
 		right: 0;
 		bottom: 0;
 		z-index: 9999;
-		/* Reference live caption bar is a single horizontal row (space-between),
-		   min-height 48px, gap 12px, padding 12px 20px. History mode stacks
-		   (column) via .cc-bar.history. */
 		display: flex;
 		flex-direction: row;
 		align-items: center;
 		justify-content: space-between;
 		min-height: 48px;
+		max-height: 40vh;
+		overflow-y: auto;
 		gap: 12px;
 		padding: 12px 20px;
 		background: rgba(0, 0, 0, 0.8);
@@ -227,18 +227,24 @@
 		flex: 0 0 auto;
 		margin-top: 2px;
 	}
-	/* Hover-revealed round tool buttons: 28px, 1px solid #fff, circular. */
+	/* HARD EVIDENCE (decoded webcams-stage.md §Scoped CSS lines 216-218 + §States
+	   line 373): .speech-reco-buttons is display:none at rest and revealed on
+	   overlay hover. We animate opacity (equivalent reveal, keeps focus-within
+	   keyboard access) rather than display:none↔flex. */
 	.cc-tools {
 		display: flex;
-		gap: 6px;
+		gap: 8px;
 		flex: 0 0 auto;
 		opacity: 0;
-		transition: opacity 0.15s ease;
+		transition: opacity 0.2s ease;
 	}
 	.cc-bar:hover .cc-tools,
 	.cc-bar:focus-within .cc-tools {
 		opacity: 1;
 	}
+	/* HARD EVIDENCE (decoded webcams-stage.md §Scoped CSS line 219 + Resolved
+	   line 358): .speech-reco-close-btn / -history-btn = 28x28, background
+	   transparent, 2px solid #fff, border-radius 50%, #fff, font-size 14px. */
 	.cc-round {
 		display: inline-flex;
 		align-items: center;
@@ -246,27 +252,40 @@
 		width: 28px;
 		height: 28px;
 		border-radius: 50%;
-		/* Reference .speech-reco-*-btn border is 2px solid #fff. */
 		border: 2px solid #fff;
-		background: rgba(0, 0, 0, 0.8);
+		background: transparent;
 		color: #fff;
+		font-size: 14px;
 		cursor: pointer;
 		padding: 0;
+		transition:
+			opacity 0.2s ease,
+			transform 0.2s ease;
 	}
 	.cc-live {
 		display: flex;
-		align-items: center;
-		gap: 0.5rem;
+		align-items: flex-start;
+		gap: 12px;
 		flex: 1;
 		min-width: 0;
 	}
+	/* HARD EVIDENCE (decoded webcams-stage.md §Scoped CSS .speech-reco-icon
+	   line 226 + Resolved line 356): font-size 18px, opacity .8. */
+	.cc-live :global(i) {
+		opacity: 0.8;
+	}
+	/* HARD EVIDENCE (decoded webcams-stage.md §Scoped CSS .speech-reco-line
+	   line 225 + Resolved lines 354-355): color #fff, font-size 22px,
+	   font-weight 400, line-height 1.4, apple system font stack. */
 	.cc-text {
 		margin: 0;
 		color: #fff;
-		/* Reference caption lines are 22px (file-1-part-D.md:150). */
 		font-size: 22px;
 		font-weight: 400;
-		line-height: 1.3;
+		line-height: 1.4;
+		font-family:
+			-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+		word-wrap: break-word;
 		text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
 		/* Cap at ~3 lines of caption text. */
 		display: -webkit-box;
@@ -275,8 +294,11 @@
 		-webkit-box-orient: vertical;
 		overflow: hidden;
 	}
+	/* HARD EVIDENCE (decoded webcams-stage.md §Scoped CSS .speech-reco-sender
+	   line 227 + Resolved line 357): font-weight 600, margin-right 8px. */
 	.cc-text strong {
-		font-weight: 700;
+		font-weight: 600;
+		margin-right: 8px;
 	}
 	.cc-history {
 		list-style: none;
@@ -303,8 +325,10 @@
 		font-size: 14px;
 		color: #ccc;
 	}
+	/* HARD EVIDENCE (decoded webcams-stage.md §Scoped CSS .speech-reco-sender
+	   line 227): sender is font-weight 600. */
 	.cc-line strong {
-		font-weight: 700;
+		font-weight: 600;
 	}
 	.cc-note {
 		position: absolute;
@@ -319,9 +343,46 @@
 		font-size: 0.8rem;
 		pointer-events: none;
 	}
+	/* HARD EVIDENCE (decoded webcams-stage.md §Scoped CSS lines 230-232 + §States
+	   line 376): responsive caption font 22px → 20px (≤1200) → 16px (≤768) →
+	   14px (≤480); icon 18→18→14→12; overlay padding tightens; max-height drops
+	   to 30vh at ≤480. */
+	@media only screen and (max-width: 1200px) {
+		.cc-text {
+			font-size: 20px;
+		}
+	}
+	@media only screen and (max-width: 768px) {
+		.cc-bar {
+			padding: 12px 16px;
+		}
+		.cc-text {
+			font-size: 16px;
+		}
+		.cc-live :global(i) {
+			font-size: 14px !important;
+		}
+	}
+	@media only screen and (max-width: 480px) {
+		.cc-bar {
+			padding: 12px;
+			max-height: 30vh;
+		}
+		.cc-live {
+			gap: 8px;
+		}
+		.cc-text {
+			font-size: 14px;
+		}
+		.cc-live :global(i) {
+			font-size: 12px !important;
+		}
+	}
 	@media (prefers-reduced-motion: reduce) {
 		.cc-bar,
-		.cc-note {
+		.cc-note,
+		.cc-tools,
+		.cc-round {
 			transition: none;
 		}
 	}

@@ -13,6 +13,16 @@
 		userCount: number;
 		/** Collapse/expand the room shell sidebar. */
 		onToggleSidebar: () => void;
+		/**
+		 * Whether the shell sidebar is currently open. When true the hamburger
+		 * swaps to the reference's `_Pe` active variant: fa-arrow-left glyph with
+		 * the `.active-icon` treatment (#45a2ff color+border, border-radius 5px,
+		 * transition all .5s) and title/aria "Close Sidebar". When false it is the
+		 * `bPe` "Open Sidebar" fa-bars variant.
+		 * HARD EVIDENCE (decoded top-nav.md §States "sidebar-menu open/close swap"
+		 * + DOM idx0/idx1 + Scoped CSS `.active-icon` rule line 101).
+		 */
+		sidebarOpen?: boolean;
 		/** Hard-reload the room (re-establish realtime + refetch). */
 		onReload: () => void;
 		/** Opens the mobile-app info modal. Integration phase wires MobileAppInfoModal. */
@@ -45,6 +55,7 @@
 		roomName = 'Trading Room',
 		userCount,
 		onToggleSidebar,
+		sidebarOpen = false,
 		onReload,
 		onMobileInfo,
 		speaker = null,
@@ -69,6 +80,15 @@
 	// word is therefore the inverse of the flag (`dnd[key] ? 'off' : 'on'`). The master
 	// "Don't Disturb" row maps straight to `dnd.app` (checked = DND on). Subtitles maps
 	// to the `captionsOverlay` pref (the speech-recognition overlay toggle).
+	// HARD EVIDENCE (decoded top-nav.md §States "volume icon threshold" + DOM
+	// idx31 a4e/l4e/c4e): fa-volume-up when audioVolume>50, fa-volume-down when
+	// 4<audioVolume<50, fa-volume-off when audioVolume<4. The reference uses strict
+	// inequalities, so the boundary values 50 and 4 satisfy none of up/down and fall
+	// through to volume-off — mirrored exactly by the `> 50` / `> 4 && < 50` guards.
+	const volumeGlyph = $derived(
+		volume > 50 ? 'volume-up' : volume > 4 && volume < 50 ? 'volume-down' : 'volume-off'
+	);
+
 	function liveVolume(e: Event) {
 		const v = Number((e.currentTarget as HTMLInputElement).value);
 		volume = v;
@@ -81,13 +101,19 @@
 </script>
 
 <nav class="topnav">
+	<!-- HARD EVIDENCE (decoded top-nav.md §States "sidebar-menu open/close swap",
+	     DOM idx0/idx1): two mutually-exclusive variants. Open sidebar → `.active-icon`
+	     + fa-arrow-left + title "Close Sidebar" (`_Pe`); otherwise fa-bars + "Open
+	     Sidebar" (`bPe`). Reference gates the swap on `showSidebar && !alwaysShowRoster`;
+	     the page tracks that and passes it as `sidebarOpen`. -->
 	<button
 		class="icon-btn menu-btn"
+		class:active-icon={sidebarOpen}
 		onclick={onToggleSidebar}
-		aria-label="Open Sidebar"
-		title="Open Sidebar"
+		aria-label={sidebarOpen ? 'Close Sidebar' : 'Open Sidebar'}
+		title={sidebarOpen ? 'Close Sidebar' : 'Open Sidebar'}
 	>
-		<Icon name="bars" size={18} />
+		<Icon name={sidebarOpen ? 'arrow-left' : 'bars'} size={18} />
 	</button>
 
 	<span class="users" title="Users Connected">
@@ -155,7 +181,9 @@
 			{#if muted}
 				<Icon name="volume-mute" size={32} class="nav-muted-icon" />
 			{:else}
-				<Icon name="volume-up" size={32} class="nav-muted-icon" />
+				<!-- HARD EVIDENCE (decoded top-nav.md §States "volume icon threshold"):
+				     unmuted glyph tracks the level (up/down/off). Mute state unchanged. -->
+				<Icon name={volumeGlyph} size={32} class="nav-muted-icon" />
 			{/if}
 		</button>
 
@@ -258,7 +286,13 @@
 							checked={dnd.app}
 							onchange={(e) => setDnd('app', e.currentTarget.checked)}
 						/>
-						Don't Disturb
+						<!-- HARD EVIDENCE (decoded top-nav.md §States "on/off + DON'T DISTURB
+						     label swap" + DOM idx78): the master DND label reads "DON'T DISTURB"
+						     (uppercase, checked) / "Don't Disturb" (not checked). Reference bolds
+						     the on state (700). -->
+						<span class="dnd-label" class:on={dnd.app}
+							>{dnd.app ? "DON'T DISTURB" : "Don't Disturb"}</span
+						>
 					</label>
 				</div>
 			</div>
@@ -324,6 +358,18 @@
 	.menu-btn:hover:not(:disabled) {
 		color: #eee;
 	}
+	/* HARD EVIDENCE (decoded top-nav.md Scoped CSS line 101 + §States "sidebar-menu
+	   open/close swap"): `.active-icon{color:var(--sidebar-menu-active-color) #45a2ff;
+	   border:1px solid var(--sidebar-menu-active-color) #45a2ff;border-radius:5px;
+	   transition:all .5s}`. Applied to the sidebar-menu span when the sidebar is open
+	   (fa-arrow-left / "Close Sidebar"); the glyph inherits currentColor so it turns
+	   blue with the border. */
+	.menu-btn.active-icon {
+		color: var(--sidebar-menu-active-color, #45a2ff);
+		border: 1px solid var(--sidebar-menu-active-color, #45a2ff);
+		border-radius: 5px;
+		transition: all 0.5s;
+	}
 	/* Volume + reload = reference a.nav-link wrappers: 8px padding, 0 5px margin,
 	   no background. */
 	.nav-link-btn {
@@ -347,14 +393,18 @@
 	.icon-btn :global(.nav-muted-icon) {
 		color: rgb(171, 176, 181);
 	}
-	/* Volume + reload nav-links resting at #abb0b5; on hover/focus they turn
-	   #45a2ff (--app-link-color in the presenter theme), NOT just opacity-dim,
-	   matching the reference `.navbar-dark .navbar-nav .nav-link:hover{color:
-	   var(--app-link-color)}`. The hover color targets the glyph via the merged
-	   .nav-muted-icon class on Icon.svelte's inner <i>, which needs :global. */
-	.nav-link-btn:hover:not(:disabled) :global(.nav-muted-icon),
-	.nav-link-btn:focus-visible:not(:disabled) :global(.nav-muted-icon) {
-		color: var(--accent);
+	/* HARD EVIDENCE (top-nav.md:119 scoped rule + styles.css cascade): the
+	   component's scoped `.navbar-dark[_ngcontent] .navbar-nav[_ngcontent]
+	   .nav-link[_ngcontent]{color:#abb0b5}` has specificity (0,6,0) — it BEATS
+	   the global `.navbar-dark .navbar-nav .nav-link:hover{color:
+	   var(--app-link-color)}` at (0,4,0). So in the live room, hovering these
+	   nav icons changes NOTHING — they stay #abb0b5 (only cursor:pointer from
+	   the scoped li a rule). NO blue hover. FOCUS is different: the Darkly
+	   `.navbar-dark .navbar-nav .nav-link:focus{color:#375a7f!important}`
+	   (grouped with the .bg-dark hover selectors) carries !important, which
+	   beats the scoped rule → focused nav icons wash to dark navy. */
+	.nav-link-btn:focus:not(:disabled) :global(.nav-muted-icon) {
+		color: #375a7f;
 	}
 	.users {
 		display: inline-flex;
@@ -623,11 +673,13 @@
 	.vol-ctrl:disabled {
 		opacity: 0.5;
 	}
-	/* Reference button.btn.btn-primary.btn-sm "Mute" — primary = room accent. */
+	/* HARD EVIDENCE (top-nav.md:204): button.btn.btn-primary.btn-sm "Mute" —
+	   the BS5 .btn-primary def WINS → computed rgb(13,110,253) #0d6efd,
+	   hover-bg #0b5ed7, active #0a58ca (the Darkly #375a7f loses). */
 	.mute {
 		display: inline-block;
-		background: var(--accent);
-		border: 1px solid var(--accent);
+		background: #0d6efd;
+		border: 1px solid #0d6efd;
 		color: #fff;
 		border-radius: var(--radius);
 		padding: 0.25rem 0.7rem;
@@ -636,8 +688,8 @@
 		cursor: pointer;
 	}
 	.mute:hover {
-		background: var(--accent-hover);
-		border-color: var(--accent-hover);
+		background: #0b5ed7;
+		border-color: #0a58ca;
 	}
 	.mute.on {
 		background: var(--negative);
@@ -689,5 +741,11 @@
 		margin-left: 3px;
 		font-size: 0.75rem;
 		color: #ccc;
+	}
+	/* HARD EVIDENCE (decoded top-nav.md §States "on/off + DON'T DISTURB label swap"):
+	   the master DND label uppercases AND bolds (font-weight 700) when checked. Text
+	   casing is driven in markup; the weight bump lives here. */
+	.dnd-label.on {
+		font-weight: 700;
 	}
 </style>

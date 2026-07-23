@@ -7,7 +7,10 @@
 	import { formatStamp, parseMessage } from '$lib/message';
 	import * as v from 'valibot';
 	import Icon from './Icon.svelte';
+	import EmojiMart from './EmojiMart.svelte';
+	import { fixedPopoverStyle } from '$lib/popoverPosition';
 	import MessageBody from './MessageBody.svelte';
+	import type { Attachment } from 'svelte/attachments';
 
 	interface Props {
 		alert: AlertItem | null;
@@ -40,6 +43,29 @@
 	let draft = $state('');
 	let composeError = $state<string | null>(null);
 	let sending = $state(false);
+
+	// Emoji picker (reference QA composer emoji button → the same static
+	// emoji-mart popover as every other composer — reply-qa-pm.md §DOM B).
+	let emojiOpen = $state(false);
+	let emojiBtnEl = $state<HTMLElement | null>(null);
+	let emojiPopStyle = $state('');
+	function pickEmoji(native: string) {
+		draft = draft ? `${draft}${native}` : native;
+	}
+	const dismissEmoji: Attachment<HTMLElement> = (node) => {
+		function onKeydown(e: KeyboardEvent) {
+			if (e.key === 'Escape') emojiOpen = false;
+		}
+		function onPointerdown(e: PointerEvent) {
+			if (e.target instanceof Node && !node.contains(e.target)) emojiOpen = false;
+		}
+		document.addEventListener('keydown', onKeydown);
+		document.addEventListener('pointerdown', onPointerdown, true);
+		return () => {
+			document.removeEventListener('keydown', onKeydown);
+			document.removeEventListener('pointerdown', onPointerdown, true);
+		};
+	};
 
 	// Answer/resolve composer state, keyed by question id (only one open at a time).
 	let answeringId = $state<string | null>(null);
@@ -132,22 +158,18 @@
 		}
 	}
 
-	function onKeydown(e: KeyboardEvent) {
-		if (e.key === 'Escape') onClose();
-	}
+	// HARD EVIDENCE (decoded reply-qa-pm.md §DOM B + §States "Hidden-until"):
+	// `#alertQAModal` is `data-backdrop="static"` + `data-keyboard="false"`, so it
+	// "can't be dismissed by clicking the backdrop or pressing ESC — only the X or
+	// Close button (data-bs-dismiss=modal)". We therefore bind NO Escape handler
+	// and make the backdrop non-dismissing; only the header × (onClose) closes it.
 </script>
 
-<svelte:window onkeydown={onKeydown} />
-
 {#if alert}
-	<!-- Backdrop: click outside the dialog closes it. -->
-	<div
-		class="backdrop"
-		role="presentation"
-		onclick={(e) => {
-			if (e.target === e.currentTarget) onClose();
-		}}
-	>
+	<!-- Static backdrop: clicking outside does NOT close (data-backdrop="static").
+	     HARD EVIDENCE (decoded reply-qa-pm.md §DOM B). role="presentation" with no
+	     click-to-dismiss; the only close affordance is the header × button. -->
+	<div class="backdrop" role="presentation">
 		<div class="dialog" role="dialog" aria-modal="true" aria-label="Alert questions">
 			<header>
 				<div class="head-main">
@@ -255,13 +277,37 @@
 				}}
 			>
 				<div class="compose-row">
-					<textarea bind:value={draft} placeholder="Type your question here..." rows="1"></textarea>
+					<!-- HARD EVIDENCE (decoded reply-qa-pm.md §DOM B): the QA composer textarea
+					     is `#textAreaQATxt` with placeholder "Type your question here...". -->
+					<textarea
+						id="textAreaQATxt"
+						bind:value={draft}
+						placeholder="Type your question here..."
+						rows="1"></textarea>
 					<!-- Reference Q&A composer has emoji + image affordances beside the textarea
 					     (.textAreaBtnsCol), mirroring the ReplyModal .tools pattern. -->
 					<div class="tools">
-						<button type="button" class="tool" aria-label="Add emoji" title="Add Emojis">
-							<Icon name="smile" family="regular" size={16} />
-						</button>
+						<div class="emoji-wrap">
+							<button
+								type="button"
+								class="tool"
+								aria-label="Add emoji"
+								title="Add Emojis"
+								aria-expanded={emojiOpen}
+								bind:this={emojiBtnEl}
+						onclick={() => {
+							if (!emojiOpen && emojiBtnEl) emojiPopStyle = fixedPopoverStyle(emojiBtnEl);
+							emojiOpen = !emojiOpen;
+						}}
+							>
+								<Icon name="smile" family="regular" size={16} />
+							</button>
+							{#if emojiOpen}
+								<div class="emoji-pop" style={emojiPopStyle} {@attach dismissEmoji}>
+									<EmojiMart onSelect={pickEmoji} />
+								</div>
+							{/if}
+						</div>
 						<button type="button" class="tool" aria-label="Upload an image" title="Upload an Image">
 							<Icon name="image" size={16} />
 						</button>
@@ -326,10 +372,16 @@
 		font-size: 1rem;
 		font-weight: 700;
 	}
+	/* The echoed alert quote block.
+	   HARD EVIDENCE (decoded reply-qa-pm.md §Scoped CSS + §Resolved values):
+	   `.admin-alert{border:1px solid #444;border-radius:5px;padding:5px}`. */
 	.admin-alert {
 		display: flex;
 		gap: 0.5rem;
 		align-items: flex-start;
+		border: 1px solid #444;
+		border-radius: 5px;
+		padding: 5px;
 	}
 	.aa-avatar {
 		width: 50px;
@@ -542,6 +594,18 @@
 	.tool:hover {
 		color: var(--accent);
 		border-color: var(--accent);
+	}
+	/* Emoji popover host — the EmojiMart replica brings its own chrome. */
+	.emoji-wrap {
+		position: relative;
+		display: inline-flex;
+	}
+	.emoji-pop {
+		position: absolute;
+		bottom: calc(100% + 0.3rem);
+		right: 0;
+		z-index: 20;
+		padding: 0;
 	}
 
 	textarea {

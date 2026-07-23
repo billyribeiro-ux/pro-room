@@ -169,7 +169,9 @@
 		border: 1px solid var(--modal-border);
 		/* Reference .modal-content radius: 6px — the dominant radius token, 245
 		   uses (report.md:1573). */
-		border-radius: 6px;
+		/* HARD EVIDENCE (decoded modals-core.md Resolved): .modal-content computes
+		   border-radius 8px in ALL captured modals. */
+		border-radius: 8px;
 		color: var(--modal-color);
 		/* The single painting shadow in the reference palette (report.md:1574). */
 		box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.5);

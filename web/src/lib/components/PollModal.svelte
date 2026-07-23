@@ -242,7 +242,12 @@
 
 				{#if tab === 'create'}
 					<div class="pane">
-						<h3 class="step">Enter your poll question:</h3>
+						<!-- HARD EVIDENCE (decoded poll.md §setup mode L67/72/88 + Global CSS
+						     "`.label`/`.label-warning` — NOT PRESENT" + Resolved "unstyled
+						     inline text"): the `<span class="label label-warning">1|2|3</span>`
+						     step markers render as PLAIN inline text at the h3 size — no pill,
+						     no colored badge. -->
+						<h3 class="step"><span class="step-num">1</span> Enter your poll question:</h3>
 						<input
 							id="pollQuestionTxt"
 							name="pollQuestionTxt"
@@ -254,7 +259,7 @@
 							autocomplete="off"
 						/>
 
-						<h3 class="step">Add Choices/Answers:</h3>
+						<h3 class="step"><span class="step-num">2</span> Add Choices/Answers:</h3>
 						<div class="add-choice">
 							<input
 								id="pollChoiceTxt"
@@ -291,14 +296,25 @@
 							</ol>
 						{/if}
 
+						<!-- HARD EVIDENCE (decoded poll.md §setup mode L88): step 3 heading
+						     "When done editing, Send your poll" precedes the anonymous row. -->
+						<h3 class="step"><span class="step-num">3</span> When done editing, Send your poll</h3>
+
 						<label class="anonymous-poll-container">
+							<!-- HARD EVIDENCE (decoded poll.md Scoped CSS `.form-check-input` +
+							     Resolved L314-316): round 20×20 swatch, appearance:none,
+							     border-radius:50%, unchecked bg var(--light-gray)=#ccc,
+							     checked bg var(--checkbox-bg-color)=#45a2ff (live :root token). -->
 							<input
 								id="anonymous-poll"
 								name="anonymous-poll"
+								class="form-check-input"
 								type="checkbox"
 								bind:checked={anonymous}
 							/>
-							<span>Anonymous Poll (Does not show the voting members' names)</span>
+							<span class="form-check-label"
+								>Anonymous Poll (Does not show the voting members' names)</span
+							>
 						</label>
 
 						{#if error}<p class="field-err" role="alert">{error}</p>{/if}
@@ -451,6 +467,17 @@
 		font-weight: 700;
 		color: var(--text);
 	}
+	/* HARD EVIDENCE (decoded poll.md Global CSS "`.label`/`.label-warning` — NOT
+	   PRESENT in the stylesheet" + Resolved L300 "none — unstyled inline text"):
+	   the numbered step markers get NO background/color — plain inline text at the
+	   surrounding heading size. Explicitly neutralise any inherited badge look. */
+	.step-num {
+		background: none;
+		padding: 0;
+		border-radius: 0;
+		color: inherit;
+		font: inherit;
+	}
 	.input {
 		width: 100%;
 		box-sizing: border-box;
@@ -474,22 +501,31 @@
 		flex: 1;
 		min-width: 0;
 	}
+	/* HARD EVIDENCE (decoded poll.md Resolved L308-309 + Global CSS `.btn-outline-light`):
+	   Add Choice is `.btn-outline-light` → resting color/border #f8f9fa, transparent bg;
+	   hover inverts to text #000 / bg #f8f9fa. */
 	.add-btn {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.3rem;
 		white-space: nowrap;
-		background: var(--bg-elev-2);
-		border: 1px solid var(--border);
-		color: var(--text);
+		background: transparent;
+		border: 1px solid #f8f9fa;
+		color: #f8f9fa;
 		border-radius: var(--radius);
 		padding: 0.45rem 0.7rem;
 		font-size: 0.82rem;
 		font-weight: 600;
 		cursor: pointer;
+		transition:
+			color 0.15s ease-in-out,
+			background-color 0.15s ease-in-out,
+			border-color 0.15s ease-in-out;
 	}
 	.add-btn:hover {
-		border-color: var(--accent);
+		color: #000;
+		background: #f8f9fa;
+		border-color: #f8f9fa;
 	}
 	.choices {
 		list-style: decimal inside;
@@ -528,12 +564,45 @@
 	.icon-btn:hover {
 		color: var(--negative);
 	}
+	/* HARD EVIDENCE (decoded poll.md Scoped CSS `.anonymous-poll-container`
+	   L202 + Resolved L313): margin 8px 0 8px 20px. */
 	.anonymous-poll-container {
 		display: flex;
 		align-items: center;
-		gap: 0.4rem;
+		gap: 0.5rem;
+		margin: 8px 0 8px 20px;
 		color: var(--text-dim);
 		font-size: 0.82rem;
+	}
+	/* HARD EVIDENCE (decoded poll.md Scoped CSS `.form-check-input` L203-205 +
+	   Resolved L314-316): round 20×20 custom swatch — appearance:none, radius:50%,
+	   unchecked bg var(--light-gray)=#ccc, checked bg var(--checkbox-bg-color)=#45a2ff
+	   (LIVE :root tokens, overriding Darkly's boot default). */
+	.form-check-input {
+		-webkit-appearance: none;
+		appearance: none;
+		height: 20px;
+		width: 20px;
+		flex: 0 0 auto;
+		transition: all 0.15s ease-out 0s;
+		background-color: #ccc;
+		border: none;
+		color: #fff;
+		cursor: pointer;
+		display: inline-block;
+		margin: 0;
+		outline: none;
+		position: relative;
+		border-radius: 50%;
+	}
+	.form-check-input:checked {
+		background-color: #45a2ff;
+	}
+	.form-check-label {
+		cursor: pointer;
+	}
+	.form-check-label:hover {
+		opacity: 0.85;
 	}
 	.field-err {
 		margin: 0;
@@ -558,20 +627,33 @@
 		font-weight: 700;
 		cursor: pointer;
 	}
+	/* HARD EVIDENCE (decoded poll.md Resolved L308-309 + Global CSS `.btn-outline-light`):
+	   Save To Canned is `.btn-outline-light` → resting #f8f9fa text/border, hover invert. */
 	.save {
-		background: var(--bg-elev-2);
-		border: 1px solid var(--border);
-		color: var(--text);
+		background: transparent;
+		border: 1px solid #f8f9fa;
+		color: #f8f9fa;
+		transition:
+			color 0.15s ease-in-out,
+			background-color 0.15s ease-in-out,
+			border-color 0.15s ease-in-out;
 	}
 	.save:hover {
-		border-color: var(--accent);
+		color: #000;
+		background: #f8f9fa;
+		border-color: #f8f9fa;
 	}
+	/* HARD EVIDENCE (decoded poll.md Resolved L311-312 + Global CSS `.btn-success`):
+	   Send Poll resolves through the BS5 layer to bg/border #198754 (NOT Darkly's
+	   #00bc8c), text #fff; hover bg #157347 / border #146c43. */
 	.btn-success {
-		background: var(--positive);
-		color: #07210a;
+		background: #198754;
+		border: 1px solid #198754;
+		color: #fff;
 	}
 	.btn-success:hover:not(:disabled) {
-		filter: brightness(1.08);
+		background: #157347;
+		border-color: #146c43;
 	}
 	.btn:disabled {
 		opacity: 0.6;

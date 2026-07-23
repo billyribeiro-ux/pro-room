@@ -10,6 +10,8 @@
 	import { formatStamp, dayKey, formatDayLabel } from '$lib/message';
 	import { muted } from '$lib/stores/social.svelte';
 	import { prefs } from '$lib/stores/prefs.svelte';
+	import { dnd } from '$lib/stores/dnd.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
 	import { shouldThrottle } from '$lib/stores/visibility.svelte';
 	import MessageBody from './MessageBody.svelte';
 	import Badges from './Badges.svelte';
@@ -22,6 +24,8 @@
 	import SettingsModal from './modals/SettingsModal.svelte';
 	import EditProfileModal from './modals/EditProfileModal.svelte';
 	import Icon from './Icon.svelte';
+	import EmojiMart from './EmojiMart.svelte';
+	import { fixedPopoverStyle } from '$lib/popoverPosition';
 	import { API_URL } from '$lib/config';
 	import { showToast } from '$lib/stores/toast.svelte';
 	import { openLightbox } from '$lib/stores/lightbox.svelte';
@@ -55,6 +59,15 @@
 		/** Admin: delete any message (shown in the row menu). */
 		canManage?: boolean;
 		onDelete?: (id: string) => void;
+		/** Presenter — gates presenter-only composer extras (Play YouTube For All)
+		    and the toolbar's presenter-only Archive control, per the decoded DOM
+		    (chat-composer.md i0e `isPresenter`; chat-panel.md W1e Archive presenter-only). */
+		isPresenter?: boolean;
+		/** Optional: open the room's Play-YouTube surface. When present AND the
+		    viewer is a presenter, the composer options add the reference's
+		    fa-video "Play YouTube For All" button (chat-composer.md 2b i0e). Absent
+		    → the button is an honest gap (no local plumbing to fake it). */
+		onPlayYouTube?: () => void;
 		/** P1-2: names of users currently typing (self already excluded upstream) —
 		    drives the typing indicator above the composer. */
 		typingNames?: string[];
@@ -76,6 +89,8 @@
 		onReact,
 		canManage = false,
 		onDelete,
+		isPresenter = false,
+		onPlayYouTube,
 		typingNames = [],
 		onTyping
 	}: Props = $props();
@@ -100,9 +115,37 @@
 	let body = $state('');
 	let sending = $state(false);
 
+	// HARD EVIDENCE (color-system.md §DOM / alerts-panel.md:123,201-202): the body
+	// ngClass map toggles `.mentionColor{#048d04 italic}` when the message mentions
+	// the current viewer (`isMention`) and `.questionColor{#2095f2}` when the body
+	// contains "?" — BOTH gated on `!hasCustomFollowedUserColors`, i.e. only when NO
+	// per-author inline colour is present (inline `author_text_color` WINS). The
+	// viewer's display name is the mention target (@name).
+	const viewerName = $derived((auth.user?.display_name ?? '').trim().toLowerCase());
+	// Match `@name` case-insensitively as a bounded token (avoids `@jane` matching
+	// `@janed`); only when a viewer name is known.
+	function bodyMentionsViewer(text: string): boolean {
+		if (!viewerName) return false;
+		const re = new RegExp(`@${viewerName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\w])`, 'i');
+		return re.test(text);
+	}
+
 	// Hide chat from muted users (client-side, per-device list) — matches the
-	// reference, where muting filters that user's messages locally.
-	const filteredMessages = $derived(messages.filter((m) => !muted.has(m.author_id)));
+	// reference, where muting filters that user's messages locally. The toolbar's
+	// "Show only Moderators messages" (#mod-only) and the search term further narrow
+	// the visible rows (chat-panel.md X1e/Q1e: local `searchTermChanged` + mod-only).
+	const filteredMessages = $derived(
+		messages
+			.filter((m) => !muted.has(m.author_id))
+			.filter((m) => !modOnly || (!!m.author_role && m.author_role !== 'member'))
+			.filter((m) => {
+				const term = chatSearchTerm.trim().toLowerCase();
+				if (!term) return true;
+				return (
+					m.body.toLowerCase().includes(term) || (m.author_name ?? '').toLowerCase().includes(term)
+				);
+			})
+	);
 
 	// "Reduce Chatlog Memory" (reference trimChatLogs): when on, only keep the most
 	// recent TRIM_SIZE rows in view — fewer DOM nodes + less retained state. Mirrors
@@ -148,18 +191,84 @@
 	// User-info modal target (a row's author), or null when closed.
 	let infoUser = $state<{ display_name?: string; user_id?: string; online?: boolean } | null>(null);
 
-	// Header affordances (were dead): advanced-search modal + the settings gear.
+	// Header affordances: the advanced-search modal + Settings / Edit Profile
+	// surfaces (the latter kept as a SEPARATE affordance — see the toolbar note).
 	let searchOpen = $state(false);
 	let settingsOpen = $state(false);
 	let editProfileOpen = $state(false);
-	// The gear's anchored dropdown (reference dropdown-toggle, report.md:1402).
-	let gearOpen = $state(false);
+
+	// ─── Chat toolbar (HARD EVIDENCE — chat-panel.md DOM/Behavior, X1e const 21) ──
+	// The gear is NOT a Bootstrap dropdown menu: `(click)=toggleChatToolbar()`
+	// toggles the inline `.chatToolbar` PANEL below the header (search form + the
+	// extended Save/Archive + "Show only Moderators messages" checkbox). The search
+	// icon calls `toggleChatToolbarSearchOnly()` — it opens the SAME panel showing
+	// only the search row (and focuses it).
+	// (chat-panel.md:38-41,49-67,375-376: template @ off 1451362.)
+	let toolbarOpen = $state(false);
+	// When true the extended controls (Save / Archive / mod-only) are collapsed and
+	// only the search row shows — the `showChatToolbarExtended=false` state.
+	let toolbarSearchOnly = $state(false);
+	let chatSearchInputEl = $state<HTMLInputElement | null>(null);
+	// `[(ngModel)]=chatSearchTerm` (const 35). Local search term (frontend-honest:
+	// filters the currently-visible rows, since server chat-log search is a separate
+	// backend surface — chat-panel.md Behavior `searchTermChanged`/`onEnterSearchChat`).
+	let chatSearchTerm = $state('');
+	// `#mod-only[type=checkbox]` "Show only Moderators messages" (const 43/44/45).
+	// A viewer-facing filter: show only staff/presenter-authored rows.
+	let modOnly = $state(false);
+
+	// gear → toggle the full toolbar (extended controls visible).
+	function toggleChatToolbar() {
+		if (toolbarOpen && !toolbarSearchOnly) {
+			toolbarOpen = false;
+		} else {
+			toolbarOpen = true;
+			toolbarSearchOnly = false;
+		}
+		if (toolbarOpen) focusSearchSoon();
+	}
+	// search icon → toggle the toolbar in search-only mode (focus the input).
+	function toggleChatToolbarSearchOnly() {
+		if (toolbarOpen && toolbarSearchOnly) {
+			toolbarOpen = false;
+		} else {
+			toolbarOpen = true;
+			toolbarSearchOnly = true;
+		}
+		if (toolbarOpen) focusSearchSoon();
+	}
+	function focusSearchSoon() {
+		void tick().then(() => chatSearchInputEl?.focus());
+	}
+	// Clear button (span#addon-chat-clear, const 36/37): empties the term + refocus.
+	function clearChatSearch() {
+		chatSearchTerm = '';
+		chatSearchInputEl?.focus();
+	}
+	// Save (span#addon-chat-save, const 38/39): reference `downloadLog('chat')`.
+	// Frontend-honest: export the currently-visible rows as a plain-text log.
+	function downloadChatLog() {
+		const lines = visibleMessages.map(
+			(m) => `[${formatStamp(m.created_at)}] ${m.author_name ?? 'trader'}: ${m.body}`
+		);
+		const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+		const href = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = href;
+		a.download = `chat-${channel}.txt`;
+		a.click();
+		URL.revokeObjectURL(href);
+	}
+	// Archive (div#addon-chat-archive, const 40/41 → W1e, PRESENTER ONLY):
+	// `archiveOptions()`. No local archive endpoint is wired into this file, so this
+	// is an honest disabled affordance for presenters (backend-dependent) rather
+	// than a fake action.
 
 	let textareaEl = $state<HTMLTextAreaElement | null>(null);
 
 	// Auto-grow the composer; cap at 300px to match the reference textarea's
 	// computed max-height (reference-divergences.md:351-357) and our own
-	// `.pill textarea { max-height: 300px }`. The prior 120px clamp silently
+	// `#textAreaHolder textarea { max-height: 300px }`. The prior 120px clamp silently
 	// overrode the CSS, capping growth at ~5 lines instead of the reference's ~14.
 	function autogrow() {
 		const el = textareaEl;
@@ -261,22 +370,47 @@
 	});
 
 	// ─── Composer affordances ──────────────────────────────────────────────────────
-	// Reference (live captured DOM): the composer's button column shows a single
-	// fas fa-plus ("Show message options"); the emoji / image / GIF controls live in
-	// the options popover it toggles.
 	let fileInputEl = $state<HTMLInputElement | null>(null);
-	let optsOpen = $state(false);
 	let emojiOpen = $state(false);
+	let emojiBtnEl = $state<HTMLElement | null>(null);
+	let emojiPopStyle = $state('');
 	let uploading = $state(false);
 
-	// Curated native-Unicode set — the reference uses OS color-emoji glyphs (no
-	// emoji-mart/twemoji dependency), same approach as ReactionBar.svelte.
-	// prettier-ignore
-	const EMOJI = [
-		'😀', '😂', '😅', '😍', '😎', '🤔', '😮', '😢', '😡', '👍',
-		'👎', '👏', '🙏', '🔥', '🚀', '💯', '✅', '❌', '🎯', '💪',
-		'📈', '📉', '💰', '🐂', '🐻', '⚡', '👀', '❤️', '🎉', '⭐'
-	] as const;
+	// HARD EVIDENCE (bundle @1428993 + template c0e/consts @1447220): the field
+	// starts FALSE (`this.showMessageOptions=!1`); every "resizeChatView" bus event
+	// (2s after chat/alerts log load, 1s after changeChatMode, split-drag end,
+	// window resize) recomputes it as `chatWidth.offsetWidth >= 400`, where
+	// #chatWidth is the `.flex-fill.d-flex.mx-0` ROW (`d(1,"div",62,3)`);
+	// `toggleMessageOptions()` sets it TRUE one-way (bundle: `{this.
+	// showMessageOptions=!0}`) — the + expands the buttons INLINE in the column
+	// (NOT a popover), and it stays expanded until the next resize recompute.
+	//
+	// We must NOT measure the row itself reactively: expanding swaps the 26px +
+	// for the wider button set, shrinking the row, re-firing the measurement and
+	// instantly re-collapsing (a feedback loop the reference avoids by sampling
+	// only on resizeChatView events). The HOLDER's width is independent of the
+	// branch, so we measure it and subtract the collapsed chrome to recover the
+	// row width: holder = row + 2×5px padding + 26px (+ button = 16px icon +
+	// 2×5px padding, member capture) ⇒ row ≥ 400 ⇔ holder ≥ 436.
+	let holderWidth = $state(0);
+	let showMessageOptions = $state(false);
+	// Manual expand must survive the width shift its own branch-flip causes
+	// (expanding swaps the 26px + for the wider inline set, which can push the
+	// holder at narrow panes; the observer fires and would instantly collapse
+	// it again — a loop the reference avoids by sampling only on discrete
+	// resizeChatView events). Suppress width-driven recompute briefly after the
+	// manual toggle; real drags/resizes after that window recompute normally,
+	// exactly like the reference's resizeEndChat/onResize sampling.
+	let suppressRecomputeUntil = 0;
+	function toggleMessageOptions() {
+		suppressRecomputeUntil = performance.now() + 400;
+		showMessageOptions = true;
+	}
+	$effect(() => {
+		const w = holderWidth;
+		if (performance.now() < suppressRecomputeUntil) return;
+		showMessageOptions = w - 36 >= 400;
+	});
 
 	/**
 	 * Splice `text` into the composer at the caret (fallback to append), then
@@ -348,23 +482,8 @@
 		}
 	}
 
-	/** Close the message-options popover (the +) on Escape or an outside click. */
-	const dismissOpts: Attachment<HTMLElement> = (node) => {
-		function onKeydown(e: KeyboardEvent) {
-			if (e.key === 'Escape') optsOpen = false;
-		}
-		function onPointerdown(e: PointerEvent) {
-			if (e.target instanceof Node && !node.contains(e.target)) optsOpen = false;
-		}
-		document.addEventListener('keydown', onKeydown);
-		document.addEventListener('pointerdown', onPointerdown, true);
-		return () => {
-			document.removeEventListener('keydown', onKeydown);
-			document.removeEventListener('pointerdown', onPointerdown, true);
-		};
-	};
-
-	/** Close the emoji popover on Escape or an outside click (reuses ReactionBar's pattern). */
+	/** Close the emoji popover on Escape or an outside click (reference ngbPopover
+	 * autoClose="outside" — clicks INSIDE the picker keep it open). */
 	const dismissEmoji: Attachment<HTMLElement> = (node) => {
 		function onKeydown(e: KeyboardEvent) {
 			if (e.key === 'Escape') emojiOpen = false;
@@ -433,14 +552,22 @@
 	onkeydown={(e) => {
 		if (e.key === 'Escape') {
 			openMenuId = null;
-			gearOpen = false;
+			toolbarOpen = false;
 		}
 	}}
 />
 
 <section class="panel">
 	<header>
-		<div class="lead"><Icon name="comment" size={16} /></div>
+		<div class="lead">
+			<Icon name="comment" size={16} />
+			<!-- HARD EVIDENCE (chat-panel.md DOM const 11/26, j1e:25 / Resolved
+			     .badge-danger #e74c3c): a red DND pill (fa-bell-slash + " DND") next to
+			     the brand, shown only when the master Do-Not-Disturb switch is on. -->
+			{#if dnd.app}
+				<span class="dnd-badge"><Icon name="bell-slash" size={10} /> DND</span>
+			{/if}
+		</div>
 		<div class="tabs" role="tablist" aria-label="Chat channels">
 			<button
 				type="button"
@@ -462,55 +589,130 @@
 			>
 		</div>
 		<div class="actions">
+			<!-- HARD EVIDENCE (chat-panel.md DOM const 15-17, Behavior:375): the search
+			     icon (li.nav-item.mx-1 > a.nav-link.p-0 title="Search" > i.fa-search)
+			     calls `toggleChatToolbarSearchOnly()` — it opens the SAME .chatToolbar
+			     panel in search-only mode, NOT a separate modal. -->
 			<button
 				type="button"
 				aria-label="Search chat"
 				title="Search"
-				onclick={() => (searchOpen = true)}><Icon name="search" size={16} /></button
+				aria-expanded={toolbarOpen && toolbarSearchOnly}
+				class:on={toolbarOpen && toolbarSearchOnly}
+				onclick={toggleChatToolbarSearchOnly}><Icon name="search" size={16} /></button
 			>
-			<!-- Reference chat gear is a Bootstrap dropdown-toggle (a.nav-link
-			     .dropdown-toggle, title="Settings", aria-haspopup=true —
-			     report.md:1402,1509), not a direct dialog trigger. Its menu contents
-			     were never captured; the items route to our existing settings surfaces. -->
-			<div class="gear-menu">
-				<button
-					type="button"
-					class="gear"
-					aria-label="Chat settings"
-					title="Settings"
-					aria-haspopup="menu"
-					aria-expanded={gearOpen}
-					onclick={() => (gearOpen = !gearOpen)}
-				>
-					<Icon name="cog" size={16} /><Icon name="caret-down" size={10} />
-				</button>
-				{#if gearOpen}
-					<div class="menu gear-dropdown" role="menu">
-						<button
-							type="button"
-							role="menuitem"
-							onclick={() => {
-								gearOpen = false;
-								settingsOpen = true;
-							}}
-						>
-							<Icon name="cog" size={14} /> Settings
-						</button>
-						<button
-							type="button"
-							role="menuitem"
-							onclick={() => {
-								gearOpen = false;
-								editProfileOpen = true;
-							}}
-						>
-							<Icon name="user" size={14} /> Edit Profile
-						</button>
-					</div>
-				{/if}
-			</div>
+			<!-- HARD EVIDENCE (chat-panel.md DOM const 18-20, NOTE:67 / Behavior:375):
+			     the gear is NOT a Bootstrap dropdown menu despite the .dropdown classes;
+			     `(click)=toggleChatToolbar()` toggles the inline `.chatToolbar` panel
+			     (const 21) below the header. -->
+			<button
+				type="button"
+				class="gear"
+				aria-label="Chat settings"
+				title="Settings"
+				aria-expanded={toolbarOpen && !toolbarSearchOnly}
+				class:on={toolbarOpen && !toolbarSearchOnly}
+				onclick={toggleChatToolbar}
+			>
+				<Icon name="cog" size={16} />
+			</button>
+			<!-- The decoded `.chatToolbar` DOM (X1e/Q1e) does NOT contain Settings /
+			     Edit Profile items (it holds search + Save/Archive + mod-only +
+			     Group-Chat-Control + Detach). To avoid losing that functionality we keep
+			     a SEPARATE, clearly-labelled affordance for it rather than folding it
+			     into the reference toolbar where the evidence shows no such controls. -->
+			<button
+				type="button"
+				class="gear"
+				aria-label="Profile settings"
+				title="Profile settings"
+				onclick={() => (settingsOpen = true)}
+			>
+				<Icon name="user" size={16} />
+			</button>
 		</div>
 	</header>
+
+	<!-- HARD EVIDENCE (chat-panel.md DOM const 21 + X1e:49-66): the search/settings
+	     toolbar rendered inline below the header when `showChatToolbar`. Row 1 =
+	     form#chat-settings with the search input + clear button (+ Save/Archive when
+	     extended); Row 2 (when extended) = the "Show only Moderators messages"
+	     checkbox. `.chatToolbar` shares `--msgs-header-bg`/`--msgs-header-color` with
+	     the header (scoped `.chatToolbar,.chatHeader{…}`). -->
+	{#if toolbarOpen}
+		<div class="chatToolbar shadow" role="region" aria-label="Chat search and settings">
+			<form id="chat-settings" onsubmit={(e) => e.preventDefault()}>
+				<div class="input-group">
+					<input
+						bind:this={chatSearchInputEl}
+						name="chatSearchTermTxt"
+						type="search"
+						class="form-control"
+						aria-label="Search"
+						placeholder="Type your search term, then press Enter"
+						title="Type your search term, then press Enter"
+						bind:value={chatSearchTerm}
+					/>
+					<!-- span#addon-chat-clear (const 36/37): clears the term. -->
+					<button
+						type="button"
+						id="addon-chat-clear"
+						class="input-group-text"
+						title="Clear the search"
+						aria-label="Clear the search"
+						onclick={clearChatSearch}
+					>
+						<Icon name="times" size={14} />
+					</button>
+					{#if !toolbarSearchOnly}
+						<!-- q1e extended: Save (const 38/39, downloadLog('chat')) + Archive
+						     (const 40/41 → W1e, PRESENTER ONLY, archiveOptions). -->
+						<button
+							type="button"
+							id="addon-chat-save"
+							class="input-group-text"
+							title="Save chat messages"
+							aria-label="Save chat messages"
+							onclick={downloadChatLog}
+						>
+							<Icon name="save" size={14} />
+						</button>
+						{#if isPresenter}
+							<button
+								type="button"
+								id="addon-chat-archive"
+								class="input-group-text"
+								title="Archive Chat Messages (needs the archive backend)"
+								aria-label="Archive Chat Messages"
+								disabled
+							>
+								<Icon name="trash" size={14} />
+							</button>
+						{/if}
+					{/if}
+				</div>
+			</form>
+
+			{#if !toolbarSearchOnly}
+				<!-- Q1e extended row: #mod-only checkbox "Show only Moderators messages"
+				     (const 43/44/45). A viewer-facing filter — shown to all viewers per
+				     the decoded DOM (the checkbox itself carries no presenter gate; only
+				     Archive/W1e is presenter-only). -->
+				<div class="form-check mod-only-row">
+					<input id="mod-only" type="checkbox" class="form-check-input" bind:checked={modOnly} />
+					<label for="mod-only">Show only Moderators messages</label>
+				</div>
+				<!-- The reference extended toolbar's server-side search lives in a
+				     separate archives surface (chat-panel.md Behavior); our
+				     AdvancedSearchModal is that functional surface. Kept reachable here
+				     (its former trigger, the header search icon, now opens THIS panel per
+				     the decoded behavior) so no functionality is lost. -->
+				<button type="button" class="advanced-search-link" onclick={() => (searchOpen = true)}>
+					<Icon name="search" size={12} /> Advanced search…
+				</button>
+			{/if}
+		</div>
+	{/if}
 
 	<ul
 		class="messages"
@@ -529,6 +731,9 @@
 				</li>
 			{/if}
 			{@const staff = !!m.author_role && m.author_role !== 'member'}
+			{@const hasInlineText = m.author_text_color != null}
+			{@const isMention = !hasInlineText && bodyMentionsViewer(m.body)}
+			{@const isQuestion = !hasInlineText && !isMention && m.body.includes('?')}
 			<!-- P1-1 derived styles (live DOM mechanics):
 			     - metaColor / metaFilter: when a custom row bg is set, the kebab,
 			       username, and created-at are `color: <bg>; filter: invert(1)`.
@@ -677,8 +882,19 @@
 							{/if}
 						</div>
 
-						<!-- P1-1: body (.msg-left) carries the author text colour (absent → none). -->
-						<p class="body" style:color={m.author_text_color ?? undefined}>
+						<!-- P1-1: body (.msg-left) carries the author text colour (absent → none).
+						     HARD EVIDENCE (alerts-panel.md:123,201-202 / color-system.md §DOM):
+						     the body ngClass toggles `.mentionColor{#048d04 italic}` when the
+						     message mentions the viewer and `.questionColor{#2095f2}` when the
+						     body contains "?" — BOTH gated `!hasCustomFollowedUserColors`, so we
+						     apply them ONLY when there is no inline `author_text_color` (inline
+						     wins). mention beats question (map order: mentionColor first). -->
+						<p
+							class="body"
+							class:mentionColor={isMention}
+							class:questionColor={isQuestion}
+							style:color={m.author_text_color ?? undefined}
+						>
 							<MessageBody text={m.body} />
 							{#if m.image_url}
 								{@const img = m.image_url}
@@ -730,151 +946,189 @@
 		       span.textAreaBtns > i.fas.fa-plus ("Show message options").
 		     There is NO Send button: Enter sends, Shift+Enter inserts a newline. -->
 		<form onsubmit={onSubmit}>
-			<div id="textAreaHolder" class="pill textSendDiv">
-				<div class="txt-wrap px-0 flex-fill">
-					<textarea
-						id="textAreaTxt"
-						name="txt-area"
-						class="txt-area form-control border-0"
-						bind:this={textareaEl}
-						bind:value={body}
-						rows="1"
-						spellcheck="true"
-						maxlength="2000"
-						placeholder="Type your message here.."
-						oninput={() => {
-							autogrow();
-							// P1-2: signal typing (throttled ≥2s inside notifyTyping).
-							notifyTyping();
-						}}
-						onkeydown={onComposerKeydown}></textarea>
-				</div>
-				<div class="textAreaBtnsCol">
-					<!-- HARD EVIDENCE (live captured DOM): the button column holds ONE
-					     span.textAreaBtns with i.fas.fa-plus ("Show message options"); the
-					     emoji / image / GIF controls live in the popover it toggles. -->
-					<div class="opts-wrap">
-						<button
-							type="button"
-							class="textAreaBtns"
-							aria-label="Show message options"
-							title="Show message options"
-							aria-haspopup="menu"
-							aria-expanded={optsOpen}
-							onclick={() => (optsOpen = !optsOpen)}
-						>
-							<Icon name="plus" size={16} />
-						</button>
-						{#if optsOpen}
-							<div class="opts-pop" role="menu" aria-label="Message options" {@attach dismissOpts}>
-					<!-- Add Emojis (far fa-smile) → native-Unicode picker popover. -->
-					<div class="emoji-wrap">
-						<button
-							type="button"
-							class="textAreaBtns"
-							aria-label="Add Emojis"
-							title="Add Emojis"
-							aria-haspopup="menu"
-							aria-expanded={emojiOpen}
-							onclick={() => (emojiOpen = !emojiOpen)}
-						>
-							<Icon name="smile" family="regular" size={16} />
-						</button>
-						{#if emojiOpen}
-							<div class="emoji-pop" role="menu" aria-label="Pick an emoji" {@attach dismissEmoji}>
-								{#each EMOJI as glyph (glyph)}
-									<button
-										type="button"
-										class="emoji-cell"
-										role="menuitem"
-										aria-label="Insert {glyph}"
-										onclick={() => pickEmoji(glyph)}
-									>
-										{glyph}
-									</button>
-								{/each}
-							</div>
-						{/if}
+			<!-- HARD EVIDENCE (bundle c0e + consts @1447220) — literal structure:
+			     #textAreaHolder.d-flex.align-items-center.textSendDiv (const 25)
+			       > .flex-fill.d-flex.mx-0 (const 62, ref #chatWidth — the measured row)
+			         > .px-0.flex-fill (const 63) > textarea#textAreaTxt (const 64)
+			         > .justify-content-center.d-flex.flex-row.align-items-center.p-0.m-0
+			           .text-center.textAreaBtnsCol (const 65)
+			           > t0e: span.textAreaBtns > i.fas.fa-plus  (collapsed)
+			           | l0e: emoji / image / GIF buttons        (expanded, IN the column)
+			     There is NO Send button: Enter sends, Shift+Enter inserts a newline. -->
+			<div
+				id="textAreaHolder"
+				class="d-flex align-items-center textSendDiv"
+				bind:clientWidth={holderWidth}
+			>
+				<div class="flex-fill d-flex mx-0">
+					<div class="px-0 flex-fill">
+						<textarea
+							id="textAreaTxt"
+							name="txt-area"
+							class="txt-area form-control border-0"
+							bind:this={textareaEl}
+							bind:value={body}
+							rows="1"
+							spellcheck="true"
+							maxlength="2000"
+							placeholder="Type your message here.."
+							oninput={() => {
+								autogrow();
+								// P1-2: signal typing (throttled ≥2s inside notifyTyping).
+								notifyTyping();
+							}}
+							onkeydown={onComposerKeydown}></textarea>
 					</div>
-
-					<!-- Upload an Image (fas fa-image) → hidden file input → /uploads → URL spliced in. -->
-					<button
-						type="button"
-						class="textAreaBtns"
-						aria-label="Upload an Image"
-						title="Upload an Image"
-						disabled={uploading}
-						onclick={() => fileInputEl?.click()}
+					<div
+						class="justify-content-center d-flex flex-row align-items-center p-0 m-0 text-center textAreaBtnsCol"
 					>
-						<Icon name="image" size={16} />
-					</button>
-					<input
-						bind:this={fileInputEl}
-						type="file"
-						accept="image/*"
-						hidden
-						onchange={onPickImage}
-					/>
-
-					<!-- Search for GIFs (12px "GIF" text control, GIPHY-backed —
-					     report.md:1517,3188). Enabled once PUBLIC_GIPHY_KEY is set. -->
-					<div class="gif-wrap">
-						<button
-							type="button"
-							class="textAreaBtns gif"
-							aria-label="Search for GIFs"
-							title={gifReady ? 'Search for GIFs' : 'GIF search needs a GIPHY API key'}
-							aria-haspopup="menu"
-							aria-expanded={gifOpen}
-							disabled={!gifReady}
-							onclick={toggleGifs}>GIF</button
-						>
-						{#if gifOpen}
-							<div class="gif-pop" role="menu" aria-label="GIF search" {@attach dismissGifs}>
-								<input
-									id="gif-search"
-									name="gif-search"
-									type="search"
-									placeholder="Search GIPHY…"
-									bind:value={gifQuery}
-									onkeydown={(e) => {
-										if (e.key === 'Enter') {
-											e.preventDefault();
-											void loadGifs();
-										}
-									}}
-								/>
-								<div class="gif-grid">
-									{#if gifBusy}
-										<p class="gif-note">Searching…</p>
-									{:else}
-										{#each gifs as g (g.id)}
-											<button
-												type="button"
-												class="gif-cell"
-												aria-label="Send {g.title}"
-												onclick={() => pickGif(g)}
-											>
-												<img src={g.preview} alt={g.title} width={g.width} height={g.height} />
-											</button>
-										{:else}
-											<p class="gif-note">No GIFs found.</p>
-										{/each}
-									{/if}
-								</div>
-							</div>
-						{/if}
-					</div>
-							</div>
+						{#if showMessageOptions}
+							{@render composerButtons()}
+						{:else}
+							<!-- HARD EVIDENCE (t0e + toggleMessageOptions bundle decode):
+							     the + sets showMessageOptions TRUE one-way — the buttons
+							     expand INLINE here (no popover); a later row resize
+							     recomputes the >=400 threshold. -->
+							<button
+								type="button"
+								class="textAreaBtns"
+								aria-label="Show message options"
+								title="Show message options"
+								onclick={toggleMessageOptions}
+							>
+								<Icon name="plus" size={16} />
+							</button>
 						{/if}
 					</div>
 				</div>
 			</div>
 		</form>
 	{:else}
-		<p class="readonly">You can read the chat. Join the room to participate.</p>
+		<!-- HARD EVIDENCE (chat-composer.md DOM 3 u0e:128-135 + chat-panel.md CSS:146
+		     `.chatDisabled{height:40px;min-height:40px;width:100%;bg #fff;color #000}`):
+		     the "Chat Disabled" bar replaces the composer when the viewer can't post —
+		     `div.chatDisabled.d-flex.align-items-center > h5.pl-3 > i.fa-lock
+		     + " Chat Disabled"`. -->
+		<div class="chatDisabled">
+			<h5><Icon name="lock" size={14} /> Chat Disabled</h5>
+		</div>
 	{/if}
 </section>
+
+<!-- The composer button set (emoji / image / GIF + presenter Play-YouTube),
+     rendered EITHER inline in `.textAreaBtnsCol` (width ≥ 400) OR inside the `+`
+     popover (narrower) — one source of truth for both branches. -->
+{#snippet composerButtons()}
+	<!-- Add Emojis (far fa-smile) → native-Unicode picker popover. -->
+	<div class="emoji-wrap">
+		<button
+			type="button"
+			class="textAreaBtns"
+			aria-label="Add Emojis"
+			title="Add Emojis"
+			aria-haspopup="menu"
+			aria-expanded={emojiOpen}
+			bind:this={emojiBtnEl}
+			onclick={() => {
+				if (!emojiOpen && emojiBtnEl) emojiPopStyle = fixedPopoverStyle(emojiBtnEl);
+				emojiOpen = !emojiOpen;
+			}}
+		>
+			<Icon name="smile" family="regular" size={16} />
+		</button>
+		{#if emojiOpen}
+			<!-- HARD EVIDENCE (chat-composer.md §emoji + emoji-mart.md): the emoji
+			     button's ngbPopover (popoverClass="popOverDiv", popover-body padding 0,
+			     autoClose="outside", container="body" — portaled past the chat panel's
+			     overflow clipping) hosts the static <emoji-mart> picker; selecting
+			     fires (emojiSelect)=selectEmoji($event). fixedPopoverStyle is our
+			     container="body" equivalent. -->
+			<div class="emoji-pop popOverDiv" style={emojiPopStyle} {@attach dismissEmoji}>
+				<EmojiMart onSelect={(native) => pickEmoji(native)} />
+			</div>
+		{/if}
+	</div>
+
+	<!-- Upload an Image (fas fa-image) → hidden file input → /uploads → URL spliced in. -->
+	<button
+		type="button"
+		class="textAreaBtns"
+		aria-label="Upload an Image"
+		title="Upload an Image"
+		disabled={uploading}
+		onclick={() => fileInputEl?.click()}
+	>
+		<Icon name="image" size={16} />
+	</button>
+	<input bind:this={fileInputEl} type="file" accept="image/*" hidden onchange={onPickImage} />
+
+	<!-- HARD EVIDENCE (chat-composer.md DOM 2b i0e:97-100 / Behavior:337): the
+	     presenter-only fa-video "Play YouTube For All" button (data-bs-target
+	     #play-youtube-modal, gated `isPresenter`). Wired here ONLY when the parent
+	     passes an `onPlayYouTube` callback — otherwise omitted as an honest gap
+	     (no local plumbing to open the YouTube surface from this file). -->
+	{#if isPresenter && onPlayYouTube}
+		<button
+			type="button"
+			class="textAreaBtns"
+			aria-label="Play YouTube For All"
+			title="Play YouTube For All"
+			onclick={() => onPlayYouTube?.()}
+		>
+			<Icon name="video" size={16} />
+		</button>
+	{/if}
+
+	<!-- Search for GIFs (12px "GIF" text control, GIPHY-backed —
+	     report.md:1517,3188). Enabled once PUBLIC_GIPHY_KEY is set. -->
+	<div class="gif-wrap">
+		<button
+			type="button"
+			class="textAreaBtns gif"
+			aria-label="Search for GIFs"
+			title={gifReady ? 'Search for GIFs' : 'GIF search needs a GIPHY API key'}
+			aria-haspopup="menu"
+			aria-expanded={gifOpen}
+			disabled={!gifReady}
+			onclick={toggleGifs}>GIF</button
+		>
+		{#if gifOpen}
+			<div class="gif-pop" role="menu" aria-label="GIF search" {@attach dismissGifs}>
+				<input
+					id="gif-search"
+					name="gif-search"
+					type="search"
+					placeholder="Search GIPHY…"
+					bind:value={gifQuery}
+					onkeydown={(e) => {
+						if (e.key === 'Enter') {
+							e.preventDefault();
+							void loadGifs();
+						}
+					}}
+				/>
+				<div class="gif-grid">
+					{#if gifBusy}
+						<p class="gif-note">Searching…</p>
+					{:else}
+						{#each gifs as g (g.id)}
+							<button
+								type="button"
+								class="gif-cell"
+								aria-label="Send {g.title}"
+								onclick={() => pickGif(g)}
+							>
+								<img src={g.preview} alt={g.title} width={g.width} height={g.height} />
+							</button>
+						{:else}
+							<p class="gif-note">No GIFs found.</p>
+						{/each}
+					{/if}
+				</div>
+			</div>
+		{/if}
+	</div>
+{/snippet}
 
 <UserInfoModal
 	open={infoUser !== null}
@@ -931,6 +1185,24 @@
 	}
 	.lead {
 		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+	}
+	/* HARD EVIDENCE (chat-panel.md Global CSS:291 `.badge-danger{color:#fff;
+	   background-color:#e74c3c}` + badge base:289 padding .25em .4em / 75% / fw-700
+	   / radius .25rem). The reference brand DND pill (span.badge.badge-danger.ml-2). */
+	.dnd-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 3px;
+		padding: 0.25em 0.4em;
+		border-radius: 0.25rem;
+		background: #e74c3c;
+		color: #ffffff;
+		font-size: 75%;
+		font-weight: 700;
+		line-height: 1;
+		white-space: nowrap;
 	}
 	.tabs {
 		display: flex;
@@ -1009,14 +1281,102 @@
 	.actions button:hover {
 		background: rgba(255, 255, 255, 0.18);
 	}
-	.gear-menu {
-		position: relative;
-		display: inline-flex;
+	/* Active (toggled-on) state for the search icon / gear — the toolbar is open. */
+	.actions button.on {
+		background: rgba(255, 255, 255, 0.22);
 	}
-	.menu.gear-dropdown {
-		top: 100%;
-		left: auto;
-		right: 0;
+
+	/* HARD EVIDENCE (chat-panel.md CSS:143 `.chatToolbar,.chatHeader{background-color:
+	   var(--msgs-header-bg);color:var(--msgs-header-color)}` — the toolbar shares the
+	   header's navy #0a6db1 / white; const 21 is `div.shadow.p-2.w-100.chatToolbar`). */
+	.chatToolbar {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		width: 100%;
+		/* p-2 = 8px. */
+		padding: 8px;
+		background: var(--content-header-bg);
+		color: var(--content-header-color);
+		box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+		flex-shrink: 0;
+	}
+	#chat-settings {
+		margin: 0;
+	}
+	/* Bootstrap input-group shape: input flush with the trailing icon buttons. */
+	.input-group {
+		display: flex;
+		align-items: stretch;
+	}
+	.input-group .form-control {
+		flex: 1;
+		min-width: 0;
+		border: none;
+		border-radius: 3px 0 0 3px;
+		padding: 4px 8px;
+		font-size: 13px;
+		color: var(--content-text);
+		background: #ffffff;
+	}
+	.input-group .form-control:only-child {
+		border-radius: 3px;
+	}
+	/* span#addon-chat-* icon buttons (const 36/38/40): `.input-group-text` with
+	   padding:0/margin:0 (chat-panel.md CSS:158). */
+	.input-group-text {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0;
+		margin: 0;
+		min-width: 32px;
+		border: none;
+		background: #f4f4f4;
+		color: #333333;
+		cursor: pointer;
+	}
+	.input-group-text:last-child {
+		border-radius: 0 3px 3px 0;
+	}
+	.input-group-text:hover:not(:disabled) {
+		background: #e2e2e2;
+	}
+	.input-group-text:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+	/* #mod-only checkbox row "Show only Moderators messages" (const 43/44/45). */
+	.mod-only-row {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 13px;
+	}
+	.mod-only-row label {
+		margin: 0;
+		cursor: pointer;
+	}
+	.mod-only-row .form-check-input {
+		cursor: pointer;
+	}
+	/* Separate (non-reference) advanced-search entry — kept so the AdvancedSearch
+	   modal stays reachable now that the header search icon opens this toolbar. */
+	.advanced-search-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		align-self: flex-start;
+		background: transparent;
+		border: none;
+		padding: 0;
+		color: #ffffff;
+		font-size: 12px;
+		text-decoration: underline;
+		cursor: pointer;
+	}
+	.advanced-search-link:hover {
+		opacity: 0.85;
 	}
 	.messages {
 		list-style: none;
@@ -1339,6 +1699,18 @@
 		white-space: pre-wrap;
 		font-size: var(--msg-font-size);
 	}
+	/* HARD EVIDENCE (alerts-panel.md Global CSS:201-202 — the classes are GLOBAL,
+	   `!important`): `.mentionColor{color:#048d04!important;font-style:italic}` (the
+	   viewer was @-mentioned) and `.questionColor{color:#2095f2!important}` (the body
+	   contains "?"). We only add the class when there's NO inline `author_text_color`
+	   (inline wins), so the plain `color` here doesn't need `!important` to be beaten. */
+	.body.mentionColor {
+		color: #048d04;
+		font-style: italic;
+	}
+	.body.questionColor {
+		color: #2095f2;
+	}
 	.img-open {
 		display: block;
 		background: transparent;
@@ -1369,29 +1741,37 @@
 		background: var(--content-bg);
 		flex-shrink: 0;
 	}
-	.pill {
+	/* HARD EVIDENCE (bundle @1459046 scoped rule + user-captured computed dump):
+	   #textAreaHolder { background-color: var(--textarea-bg); border-radius: 8px;
+	   padding: 5px; margin: 5px } — computes 45px tall, white, flex/center via the
+	   d-flex align-items-center utilities, color #ccc inherited from Darkly body. */
+	#textAreaHolder {
 		display: flex;
 		align-items: center;
-		gap: 0.2rem;
-		flex: 1;
 		min-width: 0;
-		/* Reference #textAreaHolder.textSendDiv: white, BORDERLESS, 8px radius
-		   (not a 999px pill with a gray border) — presenter-deep chatHolder. */
+		color: #ccc;
 		background: var(--content-bg);
 		border: none;
 		border-radius: 8px;
-		/* HARD EVIDENCE (stylesheet): #textAreaHolder { background: var(--textarea-bg);
-		   border-radius: 8px; padding: 5px; margin: 5px }. */
 		padding: 5px;
 		margin: 5px;
 	}
-	/* Reference div.px-0.flex-fill: the textarea grows to fill, no h-padding. */
-	.txt-wrap {
-		flex: 1;
+	/* Reference .flex-fill.d-flex.mx-0 — the measured #chatWidth row (const 62). */
+	#textAreaHolder .flex-fill.d-flex.mx-0 {
+		display: flex;
+		flex: 1 1 auto;
+		margin-left: 0;
+		margin-right: 0;
 		min-width: 0;
-		padding: 0;
 	}
-	.pill textarea {
+	/* Reference div.px-0.flex-fill: the textarea grows to fill, no h-padding. */
+	.px-0.flex-fill {
+		flex: 1 1 auto;
+		min-width: 0;
+		padding-left: 0;
+		padding-right: 0;
+	}
+	#textAreaHolder textarea {
 		/* BS .form-control is display:block — kills the inline baseline gap that
 		   inflated the holder to 51px (reference holder computes 45px). */
 		display: block;
@@ -1401,15 +1781,22 @@
 		   `border-0` class (`border: 0 !important`) kills the .txt-area border entirely,
 		   so the ACTIVE effect is ONLY the soft box-shadow (no rectangle). */
 		border: 0;
+		/* HARD EVIDENCE (scoped .txt-area @1455794): border-radius:0; margins 0. */
+		border-radius: 0;
+		margin: 0;
 		/* Bootstrap .form-control transition — the focus shadow FADES in. */
 		transition:
 			border-color 0.15s ease-in-out,
 			box-shadow 0.15s ease-in-out;
 		outline: none;
-		background: transparent;
+		appearance: none;
+		/* HARD EVIDENCE (scoped @1455794 + @1459563): background-color
+		   var(--textarea-bg)!important (#fff) — the textarea itself paints white. */
+		background: var(--content-bg);
 		/* Reference .txt-area.form-control.border-0: --lightTheme-textarea-color
 		   #676767, 14px / weight 400 / line-height 21px, min-height 35, max-height
-		   300, padding 6px 5px (presenter-deep chatTextarea computed). */
+		   300 (scoped #textAreaTxt @1459503), padding 6px 5px (BS .form-control
+		   .375rem top/bottom + scoped 5px left/right). */
 		color: var(--content-text);
 		font-size: 14px;
 		font-weight: 400;
@@ -1423,7 +1810,7 @@
 	}
 	/* Reference .txt-area:focus: 1px border + 1px box-shadow. Reuses the existing
 	   --border theme token (keeps our color, introduces no new literal). */
-	.pill textarea:focus {
+	#textAreaHolder textarea:focus {
 		/* HARD EVIDENCE: `.txt-area:focus { border-color: var(--darker-gray);
 		   box-shadow: 1px 1px 1px var(--darker-gray) }` (--darker-gray #aaa6a6) — but
 		   the border never paints (border-0 wins with width 0 !important), so the
@@ -1431,34 +1818,19 @@
 		box-shadow: 1px 1px 1px #aaa6a6;
 	}
 	/* Reference div.textAreaBtnsCol: centered column holding the single + button. */
+	/* HARD EVIDENCE (const 65 + scoped @1459563): the button column — flex row,
+	   centered, p-0 m-0, background var(--textarea-bg) (white, same as textarea).
+	   The l0e/t0e buttons render DIRECTLY in it — no wrapper, no popover. */
 	.textAreaBtnsCol {
 		display: flex;
 		flex-direction: row;
 		align-items: center;
 		justify-content: center;
+		text-align: center;
 		padding: 0;
 		margin: 0;
-		gap: 0.2rem;
 		flex-shrink: 0;
-	}
-	.opts-wrap {
-		position: relative;
-		display: inline-flex;
-	}
-	/* Popover the + toggles — a small white card above the button with the
-	   emoji / image / GIF controls. */
-	.opts-pop {
-		position: absolute;
-		bottom: calc(100% + 6px);
-		right: 0;
-		z-index: 30;
-		display: flex;
-		align-items: center;
-		gap: 0.2rem;
-		background: #ffffff;
-		border: 1px solid #d9d9d9;
-		border-radius: 8px;
-		padding: 2px 6px;
+		background: var(--content-bg);
 	}
 	/* Reference span.textAreaBtns: icon-only button, --textarea-holder-btns-color
 	   #676767, hover --textarea-holder-btns-hover-color var(--accent). */
@@ -1487,8 +1859,9 @@
 		font-size: 12px;
 		font-weight: 300;
 	}
-	/* Emoji picker popover — opens above the button (the composer sits at the
-	   bottom of the panel), mirroring ReactionBar's native-glyph grid. */
+	/* Emoji picker popover — hosts the static EmojiMart replica above the button
+	   (reference ngbPopover popoverClass="popOverDiv": .popover-body padding 0,
+	   so the picker's own #d9d9d9 border/5px radius IS the popover chrome). */
 	.emoji-wrap {
 		position: relative;
 		display: inline-flex;
@@ -1498,31 +1871,7 @@
 		bottom: calc(100% + 0.3rem);
 		right: 0;
 		z-index: 20;
-		display: grid;
-		grid-template-columns: repeat(6, 1fr);
-		gap: 0.1rem;
-		width: max-content;
-		max-width: 14rem;
-		background: var(--content-bg);
-		border: 1px solid #e3e5ec;
-		border-radius: 10px;
-		padding: 0.3rem;
-	}
-	.emoji-cell {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		background: transparent;
-		border: none;
-		border-radius: 6px;
-		width: 1.7rem;
-		height: 1.7rem;
-		font-size: 1.05rem;
-		line-height: 1;
-		cursor: pointer;
-	}
-	.emoji-cell:hover {
-		background: #f0f4fb;
+		padding: 0;
 	}
 	/* GIF search popover — mirrors the emoji popover chrome. */
 	.gif-wrap {
@@ -1578,14 +1927,29 @@
 		color: #8a909c;
 		font-size: 12px;
 	}
-	.readonly {
+	/* HARD EVIDENCE (chat-panel.md CSS:146-147 `.chatDisabled{height:40px;
+	   min-height:40px;width:100%;background-color:#fff;color:#000}` + chat-composer.md
+	   DOM 3 u0e: `div.chatDisabled.d-flex.align-items-center > h5.pl-3 > i.fa-lock
+	   + " Chat Disabled"`). The "webinarMode" sibling uses the same #fff/#000 bar. */
+	.chatDisabled {
+		display: flex;
+		align-items: center;
+		height: 40px;
+		min-height: 40px;
+		width: 100%;
+		background-color: #ffffff;
+		color: #000000;
+		flex-shrink: 0;
+	}
+	.chatDisabled h5 {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		/* pl-3 = 16px left padding. */
+		padding-left: 16px;
 		margin: 0;
-		padding: 0.6rem;
-		border-top: 1px solid #e3e5ec;
-		background: #f7f8fa;
-		color: #8a909c;
-		font-size: 0.8rem;
-		text-align: center;
+		font-size: 1.25rem;
+		font-weight: 500;
 	}
 
 	/* ── P1-2 typing indicator (EXACT bundle CSS, IMPLEMENTATION-PLAN.md P1-2) ──

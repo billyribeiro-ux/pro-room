@@ -120,15 +120,25 @@
 		position: fixed;
 		right: 0;
 		bottom: 0;
+		/* HARD EVIDENCE (decoded webcams-stage.md §Scoped CSS .webcamsHolderScreen
+		   line 165 + Resolved lines 327-333): z-index 100, 350x260, position fixed,
+		   bottom:0 right:0, background #000, 1px solid #fafafa. z-index kept at 1040
+		   so it clears our z-1030 nav (reference z-100 is relative to its own room
+		   stacking; documented divergence). */
 		z-index: 1040; /* floating layer: above the z-1030 nav, below modals */
 		width: 350px;
 		height: 260px;
 		display: flex;
 		flex-direction: column;
 		background: #000;
-		/* Reference .webcamsHolderScreen: 1px solid #fafafa, flush bottom-right. */
 		border: 1px solid #fafafa;
+		/* HARD EVIDENCE (decoded webcams-stage.md §Global CSS BS5 .card lines 244-246):
+		   .webcamsHolderScreen inherits --bs-border-radius .375rem = 6px. */
 		border-radius: 6px;
+		/* HARD EVIDENCE (decoded webcams-stage.md DOM 3 line 83 + §States line 367):
+		   the live card is jQuery-UI resizable (8 handles). Trivial CSS affordance
+		   per plan §12: resize:both + overflow:hidden. */
+		resize: both;
 		overflow: hidden;
 		cursor: move;
 		touch-action: none;
@@ -141,7 +151,10 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: 2px 5px;
+		/* HARD EVIDENCE (decoded webcams-stage.md §Scoped CSS line 167):
+		   .webcamsHolderScreen .card-title { padding:5px; font-size:12px }. */
+		padding: 5px;
+		font-size: 12px;
 		background: rgba(0, 0, 0, 0.5);
 		color: #fff;
 		flex-shrink: 0;

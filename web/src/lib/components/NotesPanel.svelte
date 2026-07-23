@@ -19,6 +19,10 @@
 	let error = $state<string | null>(null);
 	let busy = $state(false);
 	let editorOpen = $state(false);
+	// Per-tab cog dropdown (reference LSe: #dropdownMenuNote, a live Bootstrap
+	// dropdown gated by isP||canEditNotes — notes.md §3a). Holds the id of the
+	// tab whose menu is open, or null.
+	let cogOpenFor = $state<string | null>(null);
 
 	const selected = $derived(notes.find((n) => n.id === selectedId) ?? notes[0] ?? null);
 	const selectedIndex = $derived(notes.findIndex((n) => n.id === selected?.id));
@@ -159,15 +163,28 @@
 	}
 </script>
 
+<svelte:window onkeydown={(e) => e.key === 'Escape' && (cogOpenFor = null)} />
+
 <div class="notes">
 	<div class="subtabs" role="tablist" aria-label="Notes">
 		{#each notes as n, i (n.id)}
-			<button
-				type="button"
+			{@const isSel = selected?.id === n.id}
+			<!-- A div (not button) because the reference note tab (BSe) hosts the
+			     nested interactive cog dropdown (LSe) — button>button is invalid
+			     HTML. Click/keyboard/aria mirror the prior button. -->
+			<div
+				class="tab"
+				class:active={isSel}
 				role="tab"
-				aria-selected={selected?.id === n.id}
-				class:active={selected?.id === n.id}
+				tabindex="0"
+				aria-selected={isSel}
 				onclick={() => select(n.id)}
+				onkeydown={(e) => {
+					if (e.key === 'Enter' || e.key === ' ') {
+						e.preventDefault();
+						select(n.id);
+					}
+				}}
 			>
 				<!-- Reference: the first (Welcome Mat) tab carries a GREEN badge-success
 				     pill holding the fa-home glyph; other tabs are the bare title (the
@@ -178,12 +195,90 @@
 						class="welcome-badge"
 						title="This note is the Welcome Mat, and will be shown by default when nobody is presenting"
 					>
-						<!-- HARD EVIDENCE (states["pane:Notes"] node7 i.fas.fa-home font-size 9px). -->
+						<!-- HARD EVIDENCE (notes.md Resolved: span.badge.badge-success #00bc8c,
+						     i.fas.fa-home font-size 9px). -->
 					<Icon name="home" size={9} />
 					</span>
 				{/if}
 				{n.title}
-			</button>
+				<!-- HARD EVIDENCE (notes.md §3a LSe): per-tab cog dropdown, gated by
+				     isP||canEditNotes → canManage here. fa-cog #dropdownMenuNote with
+				     Edit/Rename/Bring-everyone-here/Make-Welcome-Mat/Delete items. -->
+				{#if canManage}
+					<span class="cog-anchor">
+						<span
+							class="cog-toggle"
+							role="button"
+							tabindex="0"
+							aria-haspopup="menu"
+							aria-label="Note options"
+							aria-expanded={cogOpenFor === n.id}
+							onclick={(e) => {
+								e.stopPropagation();
+								cogOpenFor = cogOpenFor === n.id ? null : n.id;
+							}}
+							onkeydown={(e) => {
+								if (e.key === 'Enter' || e.key === ' ') {
+									e.preventDefault();
+									e.stopPropagation();
+									cogOpenFor = cogOpenFor === n.id ? null : n.id;
+								}
+							}}
+						>
+							<Icon name="cog" size={12} />
+						</span>
+						{#if cogOpenFor === n.id}
+							<div class="cog-menu" role="menu">
+								<!-- Wired to EXISTING handlers only. -->
+								<button
+									type="button"
+									role="menuitem"
+									onclick={(e) => {
+										e.stopPropagation();
+										cogOpenFor = null;
+										select(n.id);
+										editorOpen = true;
+									}}
+								>
+									<Icon name="edit" size={12} /> Edit Note
+								</button>
+								<button
+									type="button"
+									role="menuitem"
+									onclick={(e) => {
+										e.stopPropagation();
+										cogOpenFor = null;
+										rename(n);
+									}}
+								>
+									<Icon name="pencil-alt" size={12} /> Rename Note
+								</button>
+								<!-- ⚙ BACKEND: bringFocusToTab / setAsWelcomeTab are server
+								     admin commands (notes.md Behavior). No client handler
+								     exists yet — rendered honest-disabled, never faked. -->
+								<button type="button" role="menuitem" disabled title="Requires server support">
+									<Icon name="eye" size={12} /> Bring everyone here
+								</button>
+								<button type="button" role="menuitem" disabled title="Requires server support">
+									<Icon name="home" size={12} /> Make Welcome Mat
+								</button>
+								<button
+									type="button"
+									role="menuitem"
+									class="del"
+									onclick={(e) => {
+										e.stopPropagation();
+										cogOpenFor = null;
+										remove(n);
+									}}
+								>
+									<Icon name="trash-alt" size={12} /> Delete
+								</button>
+							</div>
+						{/if}
+					</span>
+				{/if}
+			</div>
 		{/each}
 		{#if canManage}
 			<button type="button" class="new" onclick={createNote} disabled={busy}>
@@ -234,7 +329,10 @@
 					>
 						<Icon name="caret-right" />
 					</button>
-					<button type="button" class="ic" onclick={() => (editorOpen = true)} aria-label="Edit">
+					<!-- HARD EVIDENCE (notes.md Global CSS `.noteOptions .noteEdit`
+					     + Resolved): Edit button is a FILLED --note-next-bg #45a2ff /
+					     #fff button. -->
+					<button type="button" class="ic edit" onclick={() => (editorOpen = true)} aria-label="Edit">
 						<Icon name="pen" />
 					</button>
 					<button type="button" class="ic" onclick={() => rename(selected)} aria-label="Rename">
@@ -282,15 +380,16 @@
 		border-top: 1px solid var(--tabs-border-color, #0a6db1);
 		flex-shrink: 0;
 	}
-	.subtabs button {
+	/* HARD EVIDENCE (notes.md Resolved a.nav-link.active + Global CSS
+	   `.noteTabset .nav-link`): font-size 12px / line-height 12px, padding 8px
+	   (0.5rem), margin 5px, border-radius 3px, color --tabs-color #fff. */
+	.subtabs .tab,
+	.subtabs .new {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.3rem;
 		background: transparent;
 		border: 1px solid transparent;
-		/* HARD EVIDENCE (states["pane:Notes"] node10 .nav-link color rgb(204,204,204)):
-		   idle sub-tab color = var(--tabs-color); LIVE room cascade sets
-		   --tabs-color: #fff (the earlier #ccc came from a stale capture state). */
 		color: var(--tabs-color, #ffffff);
 		font-size: 12px;
 		line-height: 12px;
@@ -300,25 +399,80 @@
 		border-radius: 3px;
 		cursor: pointer;
 	}
-	.subtabs button.active {
-		/* Active sub-tab pill: --tab-active-bg #45a2ff, white (report.md:2459,936). */
+	.subtabs .tab {
+		position: relative;
+	}
+	.subtabs .tab.active {
+		/* Active sub-tab pill: --tab-active-bg #45a2ff, white (notes.md Resolved). */
 		background: var(--tab-active-bg, #45a2ff);
 		border-color: transparent;
 		color: #ffffff;
 	}
-	.subtabs button:hover:not(.active) {
-		/* Hover border: --tabs-border-color #0a6db1 (report.md:2460). */
+	.subtabs .tab:hover:not(.active) {
+		/* Hover border: --tabs-border-color #0a6db1 (notes.md States). */
 		border: 1px solid var(--tabs-border-color, #0a6db1);
 		border-radius: 3px;
 	}
 	.subtabs .new {
 		color: #ffffff;
-		border-color: transparent;
-		background: transparent;
 	}
-	.subtabs button:disabled {
+	.subtabs .new:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
+	}
+	/* Per-tab cog dropdown (LSe). Menu themed --archives-dropdown-menu-bg-color
+	   #0e3651 / item color --tabs-dropdown-color #45a2ff (notes.md Global CSS
+	   `.noteTabset .dropdown-menu`). */
+	.cog-anchor {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+	}
+	.cog-toggle {
+		display: inline-flex;
+		align-items: center;
+		color: inherit;
+		cursor: pointer;
+	}
+	.cog-menu {
+		position: absolute;
+		top: calc(100% + 4px);
+		right: 0;
+		z-index: 1000;
+		min-width: 220px;
+		background: var(--archives-dropdown-menu-bg-color, #0e3651);
+		border: none;
+		border-radius: 6px;
+		padding: 0.5rem 0;
+		display: flex;
+		flex-direction: column;
+	}
+	.cog-menu button {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		width: 100%;
+		background: transparent;
+		border: none;
+		/* --tabs-dropdown-color #45a2ff, font-size 15px (notes.md Global CSS
+		   `.noteTabset .dropdown-menu .dropdown-item`). */
+		color: var(--tabs-dropdown-color, #45a2ff);
+		font-size: 15px;
+		text-align: left;
+		padding: 0.3rem 1rem;
+		cursor: pointer;
+		white-space: nowrap;
+	}
+	.cog-menu button:hover:not(:disabled) {
+		opacity: 0.85;
+	}
+	.cog-menu button:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+	.cog-menu button.del {
+		/* Delete item echoes the reference --note-delete-bg red accent. */
+		color: var(--note-delete-bg, #bb352a);
 	}
 	/* Reference `.badge.badge-success` on the Welcome-Mat tab: a small green pill
 	   holding the fa-home glyph (Darkly success #00bc8c, white icon, p-0). */
@@ -374,17 +528,30 @@
 		opacity: 0.4;
 		cursor: not-allowed;
 	}
+	/* HARD EVIDENCE (notes.md Global CSS `.noteOptions .noteEdit,.noteNext`
+	   + token --note-next-bg): Edit is a FILLED #45a2ff / #fff button; hover
+	   text → --note-options-hover-color #212529. */
+	.ic.edit {
+		background: var(--note-next-bg, #45a2ff);
+		border-color: var(--note-next-bg, #45a2ff);
+		color: #ffffff;
+	}
+	.ic.edit:hover:not(:disabled) {
+		border-color: var(--note-next-bg, #45a2ff);
+		color: var(--note-options-hover-color, #212529);
+	}
 	/* Reference note delete is a FILLED --note-delete-bg #bb352a button
-	   (report.md:743,938). */
+	   (notes.md Resolved button.noteDelete). */
 	.ic.del {
 		background: var(--note-delete-bg, #bb352a);
 		border-color: var(--note-delete-bg, #bb352a);
 		color: #ffffff;
 	}
-	.ic.del:hover {
-		opacity: 0.9;
+	.ic.del:hover:not(:disabled) {
+		/* Reference `.noteOptions .noteDelete:hover{color:#212529}` — text darkens,
+		   fill unchanged (notes.md Global CSS + --note-options-hover-color). */
 		border-color: var(--note-delete-bg, #bb352a);
-		color: #ffffff;
+		color: var(--note-options-hover-color, #212529);
 	}
 	.download {
 		display: inline-flex;
@@ -402,7 +569,8 @@
 		background: var(--note-download-bg, #92d528);
 	}
 	.download:hover {
-		color: #212529;
+		/* Reference `.noteDownload:hover{color:#212529}` (--note-options-hover-color). */
+		color: var(--note-options-hover-color, #212529);
 	}
 	.body {
 		flex: 1;

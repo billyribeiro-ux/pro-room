@@ -43,7 +43,15 @@ test('camera X removes the tile — no lingering black tile (BUG A)', async ({ p
 
 	// Click the X. THE FIX: the tile is fully removed (pre-fix it lingered, black,
 	// because the muted-but-published track kept #refresh re-adding it).
-	await closeX.click();
+	// A parallel worker's poll window (reference-centered, draggable) can float
+	// over the tile at ANY moment — minimize panels then click, retrying like a
+	// real user would.
+	await expect(async () => {
+		for (const btn of await page.locator(".poll-panel [aria-label='Minimize']").all()) {
+			await btn.click({ timeout: 1_000 }).catch(() => {});
+		}
+		await closeX.click({ timeout: 2_000 });
+	}).toPass({ timeout: 25_000 });
 	await expect(closeX).toHaveCount(0, { timeout: 10_000 });
 
 	// Toolbar returns to the start-Camera state.

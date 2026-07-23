@@ -71,6 +71,9 @@
 	// reveals it; content fills the width when closed.
 	let sidebarOpen = $state(false);
 	let polls = $state<PollDetail[]>([]);
+	// Poll windows the viewer minimized (reference: minimize hides the window;
+	// the pulsing "Poll" link in the alerts header restores all of them).
+	let minimizedPolls = $state(new Set<string>());
 	let showCreatePoll = $state(false);
 	let showRecPreview = $state(false);
 	let showMobileInfo = $state(false);
@@ -202,13 +205,14 @@
 		narrow.current ? true : layout.position === 'left' || layout.position === 'top'
 	);
 	const splitInitial = $derived(
-		// Captured desktop split: alerts/chat 21.2364% / presentation 78.7636%
-		// (aria-valuenow 21.23640617096612 — report.md:121,154). Pane A is the
-		// dock for left/top and the stage for right/bottom.
+		// HARD EVIDENCE (IMPLEMENTATION-PLAN-V2 §2, proroom-all-admin.md §4.3):
+		// the SHIPPED default split is 26.73% dock / 73.27% stage (543px/1487px
+		// calc basis); the 21.2364 valuenow elsewhere was a dragged mid-session
+		// state, so the shipped default wins. Pane A is the dock for left/top.
 		narrow.current
 			? 45
 			: layout.position === 'left'
-				? 21.2364
+				? 26.73
 				: layout.position === 'top'
 					? 40
 					: layout.position === 'right'
@@ -531,7 +535,12 @@
 		// BOTTOM of the feed (same ordering as chat — latest always at the bottom).
 		alerts = [...a].reverse();
 		mainMessages = [...m].reverse();
-		polls = p;
+		// Only OPEN polls float on (re)load — the reference poll window appears on
+		// broadcast and doesn't resurrect long-closed polls on refresh. A poll
+		// closed DURING the session keeps its panel (with the Closed badge) via the
+		// live update path until dismissed; without this filter, historic closed
+		// polls stack floating windows over the stage and block clicks.
+		polls = p.filter((x) => x.status === 'open');
 		loaded = { ...loaded, main: true };
 		// The off-topic channel is lazy; only refetch it if it was already loaded.
 		if (loaded.off_topic) {
@@ -667,8 +676,28 @@
 	height (matching the reference). Closed polls remain to show final tallies. -->
 	{#if polls.length > 0}
 		<aside class="poll-overlay" aria-label="Active polls">
-			{#each polls as poll (poll.id)}
-				<PollPanel {poll} canManage={caps?.can_post_alert ?? false} onChange={upsertPoll} />
+			{#each polls as poll, i (poll.id)}
+				{#if !minimizedPolls.has(poll.id)}
+					<!-- Each poll is its own centered fixed window (reference pollModalHolder);
+					     concurrent windows cascade by 32px so none is buried unreachable
+					     under a perfectly-overlapping sibling (reference separates via drag).
+					     HARD EVIDENCE (alerts-panel.md E2e + poll.md): minimize HIDES the
+					     window entirely; the pulsing "Poll" link in the alerts header
+					     (AlertFeed pollMinimized/onRestorePoll) restores it. -->
+					<div
+						class="poll-window"
+						style:transform={`translate(calc(-50% + ${i * 32}px), calc(-50% + ${i * 32}px))`}
+					>
+						<PollPanel
+							{poll}
+							canManage={caps?.can_post_alert ?? false}
+							onChange={upsertPoll}
+							onMinimize={() => {
+								minimizedPolls = new Set([...minimizedPolls, poll.id]);
+							}}
+						/>
+					</div>
+				{/if}
 			{/each}
 		</aside>
 	{/if}
@@ -948,6 +977,9 @@
 		onCreatePoll={caps?.can_post_alert ? () => (showCreatePoll = true) : undefined}
 		{typingNames}
 		onTyping={sendTyping}
+		pollActive={polls.length > 0}
+		pollMinimized={minimizedPolls.size > 0}
+		onRestorePoll={() => (minimizedPolls = new Set())}
 	/>
 {/snippet}
 
@@ -1084,17 +1116,25 @@
 		min-width: 0;
 		min-height: 0;
 	}
+	/* HARD EVIDENCE (decoded poll.md scoped CSS): .pollModalHolder { position:fixed;
+	   left:50%; top:50%; z-index:501; width:580px; max-width:calc(100vw - 100px);
+	   max-height:calc(100vh - 50px) } — the poll window floats CENTERED (draggable
+	   from there), never pinned over the bottom webcam strip. */
+	/* HARD EVIDENCE (decoded poll.md): each poll is its OWN fixed centered window
+	   (.pollModalHolder { position:fixed; left:50%; top:50%; z-index:501; width:580px;
+	   max-width:calc(100vw - 100px); max-height:calc(100vh - 50px) }) — NOT a stacked
+	   column. The wrapper contributes no box at all; PollPanel positions itself. */
 	.poll-overlay {
+		display: contents;
+	}
+	.poll-window {
 		position: fixed;
-		right: 1rem;
-		bottom: 1rem;
-		z-index: 1040; /* floating layer: above the z-1030 nav, below modals */
-		width: min(340px, calc(100vw - 2rem));
-		max-height: 70vh;
+		left: 50%;
+		top: 50%;
+		z-index: 501;
+		width: min(580px, calc(100vw - 100px));
+		max-height: calc(100vh - 50px);
 		overflow-y: auto;
-		display: flex;
-		flex-direction: column;
-		gap: 0.6rem;
 	}
 	.media-float {
 		position: fixed;

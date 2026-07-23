@@ -9,6 +9,7 @@ import {
 	type TrackPublication
 } from 'livekit-client';
 import { logEvent } from './stores/sessionLog.svelte';
+import { showToast, dismissToast } from './stores/toast.svelte';
 
 /** A participant currently sharing their screen, plus the attachable video track. */
 export interface SharePublisher {
@@ -123,6 +124,12 @@ export class ScreenShareRoom {
 	   media elements directly. Newly-subscribed tracks inherit the current values. */
 	// eslint-disable-next-line svelte/prefer-svelte-reactivity -- imperative registry of media elements driven directly, not reactive state
 	#audioEls = new Set<HTMLMediaElement>();
+	/** Persistent "Reconnecting to media..." toast handles — HARD EVIDENCE
+	 * (bundle offset 1074987/1076138): the reference guards each with a nullable
+	 * field so the toast shows once per outage and is toastr.clear()'d on
+	 * reconnect. */
+	#mediaToastId: string | null = null;
+	#presenterToastId: string | null = null;
 	/** Current remote-audio output level (0..1) and mute, applied to every #audioEls
 	   element and to any track that subscribes later. Persist on the instance so a
 	   late-joining presenter's audio honors the listener's chosen volume. */
@@ -195,9 +202,47 @@ export class ScreenShareRoom {
 				// can unlock it via resumeAudio() — otherwise listeners hear nothing.
 				this.audioBlocked = this.#room ? !this.#room.canPlaybackAudio : false;
 			})
+			.on(RoomEvent.Reconnecting, () => {
+				logEvent('LiveKit reconnecting');
+				// HARD EVIDENCE (bundle offset 1074987): on media-socket loss the
+				// reference shows toastr.info('Reconnecting to media... <i class="fas
+				// fa-cog fa-spin ms-2"></i>', "Media", {disableTimeOut:true,
+				// tapToDismiss:true, closeButton:true, enableHtml:true}), deduped by a
+				// nullable handle; plus, when local mic/cam/screen tracks are live, a
+				// second toastr.info("Reconnecting media (presenter)... re-sharing
+				// mic/cam/screen", "Presenter", {disableTimeOut:true,
+				// tapToDismiss:false, closeButton:false}).
+				if (!this.#mediaToastId) {
+					this.#mediaToastId = showToast('Media', 'Reconnecting to media... ', 0, {
+						spinner: true
+					});
+				}
+				const lp = this.#room?.localParticipant;
+				const publishing =
+					!!lp && (lp.audioTrackPublications.size > 0 || lp.videoTrackPublications.size > 0);
+				if (publishing && !this.#presenterToastId) {
+					this.#presenterToastId = showToast(
+						'Presenter',
+						'Reconnecting media (presenter)... re-sharing mic/cam/screen',
+						0,
+						{ closeButton: false }
+					);
+				}
+			})
+			.on(RoomEvent.Reconnected, () => {
+				// HARD EVIDENCE (bundle offset 1076138): on media-server reconnect the
+				// reference clears both toasts via toastr.clear(toastId) and nulls the
+				// handles. LiveKit re-publishes local tracks itself during resume.
+				logEvent('LiveKit reconnected');
+				this.#clearReconnectToasts();
+				this.#refresh();
+			})
 			.on(RoomEvent.Disconnected, () => {
 				logEvent('LiveKit disconnected');
 				this.connected = false;
+				// Terminal for this Room instance — a stale "Reconnecting..." spinner
+				// with no retry underway would be dishonest; drop it with the session.
+				this.#clearReconnectToasts();
 				this.#refresh();
 			});
 
@@ -563,8 +608,22 @@ export class ScreenShareRoom {
 	 * BEFORE awaiting disconnect() so the Disconnected event's #refresh sees a null
 	 * room (empty lists) and any late track event is ignored. Idempotent.
 	 */
+	/** Reference `clearReconnectToasts()` (bundle offset 1072512): clear both
+	 * reconnect toasts by id and null the handles. */
+	#clearReconnectToasts(): void {
+		if (this.#mediaToastId) {
+			dismissToast(this.#mediaToastId);
+			this.#mediaToastId = null;
+		}
+		if (this.#presenterToastId) {
+			dismissToast(this.#presenterToastId);
+			this.#presenterToastId = null;
+		}
+	}
+
 	async #teardown(): Promise<void> {
 		if (activeInstance === this) activeInstance = null;
+		this.#clearReconnectToasts();
 		this.#externalStream?.getTracks().forEach((t) => t.stop());
 		this.#externalStream = null;
 		this.#externalPub = null;
