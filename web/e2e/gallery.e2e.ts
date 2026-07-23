@@ -1,4 +1,4 @@
-import { devLoginIfBounced } from './util';
+import { devLoginIfBounced, resolveApi } from './util';
 import { test, expect, type Page } from '@playwright/test';
 
 /**
@@ -9,7 +9,7 @@ import { test, expect, type Page } from '@playwright/test';
  * API (:8081, AUTH_DEV_BYPASS → super-admin) and a live room.
  */
 
-const API = 'http://localhost:8081';
+let API = 'http://localhost:8080'; // resolved by resolveApi() in beforeAll
 const SHOTS = 'e2e/screenshots';
 let roomId: string;
 
@@ -18,6 +18,7 @@ async function shot(page: Page, name: string) {
 }
 
 test.beforeAll(async ({ request }) => {
+	API = await resolveApi(request);
 	const res = await request.get(`${API}/api/rooms`);
 	expect(res.ok(), 'GET /api/rooms (is the Rust API up on :8081?)').toBeTruthy();
 	const rooms = (await res.json()) as Array<{ id: string; is_live: boolean }>;

@@ -1,4 +1,4 @@
-import { devLoginIfBounced } from './util';
+import { devLoginIfBounced, resolveApi } from './util';
 import { test, expect, type Page } from '@playwright/test';
 
 /**
@@ -16,7 +16,7 @@ import { test, expect, type Page } from '@playwright/test';
  * a live room. The web server is started by playwright.config.ts (vite dev:4173).
  */
 
-const API = 'http://localhost:8081';
+let API = 'http://localhost:8080'; // resolved by resolveApi() in beforeAll
 const SHOTS = 'e2e/screenshots';
 
 let roomId: string;
@@ -66,6 +66,7 @@ async function closeModal(page: Page) {
 }
 
 test.beforeAll(async ({ request }) => {
+	API = await resolveApi(request);
 	// Discover a room and make sure it is live so presenter capabilities are on.
 	const res = await request.get(`${API}/api/rooms`);
 	expect(res.ok(), 'GET /api/rooms should succeed (is the Rust API up on :8081?)').toBeTruthy();
@@ -207,15 +208,15 @@ test('react to an alert with an emoji', async ({ page }) => {
 	// reaction, so the 🚀 toggle deterministically lands as "mine".
 	const symbol = `RX${Date.now() % 1_000_000}`;
 	await page.evaluate(
-		async ({ rid, sym }) => {
-			await fetch(`http://localhost:8081/api/rooms/${rid}/alerts`, {
+		async ({ rid, sym, api }) => {
+			await fetch(`${api}/api/rooms/${rid}/alerts`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				credentials: 'include',
 				body: JSON.stringify({ symbol: sym, side: 'buy', note: 'react-test' })
 			});
 		},
-		{ rid: roomId, sym: symbol }
+		{ rid: roomId, sym: symbol, api: API }
 	);
 
 	const row = page.locator('.alerts-pane li.msg-box', { hasText: symbol });

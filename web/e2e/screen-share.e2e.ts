@@ -1,4 +1,4 @@
-import { devLoginIfBounced } from './util';
+import { devLoginIfBounced, resolveApi } from './util';
 import { test, expect } from '@playwright/test';
 
 /**
@@ -8,10 +8,11 @@ import { test, expect } from '@playwright/test';
  * API on :8081 (AUTH_DEV_BYPASS → super-admin can_publish_screen).
  */
 
-const API = 'http://localhost:8081';
+let API = 'http://localhost:8080'; // resolved by resolveApi() in beforeAll
 let roomId: string;
 
 test.beforeAll(async ({ request }) => {
+	API = await resolveApi(request);
 	const res = await request.get(`${API}/api/rooms`);
 	expect(res.ok()).toBeTruthy();
 	const rooms = (await res.json()) as Array<{ id: string; is_live: boolean }>;
