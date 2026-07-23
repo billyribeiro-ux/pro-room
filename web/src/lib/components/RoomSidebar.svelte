@@ -242,21 +242,14 @@
 						     leading icon (fa-bell / fa-comment / fa-closed-captioning) + a
 						     span.pl-2 label. -->
 						<div class="archives-menu" role="menu">
-							<!-- HARD EVIDENCE (decoded sidebar.md §Role variants + §Behavior):
-							     Recording (aPe, launchRecordings()) is the FIRST Archives item,
-							     shown when isPresenter || !hideRecs. ⚙ BACKEND: no recordings
-							     storage/surface exists yet, so it renders honestly disabled
-							     (never fabricated). Gated on canManage (presenter/admin). -->
-							{#if canManage}
-								<button
-									type="button"
-									class="archives-item"
-									role="menuitem"
-									title="Recordings need backend storage (pending)"
-									disabled
-									><Icon name="video" size={14} /><span class="label">Recording</span></button
-								>
-							{/if}
+							<!-- HARD EVIDENCE (proroom-all-admin.md §5.1 dropdown:1 [246×103] +
+							     proroom-full-presenter.md §5.3 dropdown:1): the RENDERED Archives
+							     dropdown holds EXACTLY 3 items — Alert Logs / Chat Logs / Transcript
+							     History — in BOTH the admin AND presenter captures (the exact roles
+							     where the bundle's `aPe` Recording item would render if it shipped).
+							     Per rendered-capture > bundle-template precedence, no Recording item
+							     renders. (sidebar.md's `aPe` template gate loses to two rendered
+							     captures at that role.) -->
 							<button
 								type="button"
 								class="archives-item"
@@ -970,9 +963,11 @@
 		opacity: 0.55;
 		cursor: not-allowed;
 	}
-	/* The reference cog is a plain `fas fa-cog` glyph inside the users-btns
-	   div with no captured colored-button background — its exact bg/color is
-	   not in the evidence, so this styling is unverified (flagged). */
+	/* HARD EVIDENCE (script-results-and-manifests.md ref-sidebar node 41 computed:
+	   `button#user-options-btn.btn-dark` bg rgb(33,37,41)=#212529 / color
+	   rgb(255,255,255)=#fff; cross-confirmed by proroom-all-admin.md §4.2 index 47
+	   bg rgb(33,37,41)). The `.btn-dark #adb5bd` stylesheet value loses to the two
+	   rendered captures per rendered-capture > stylesheet precedence. */
 	.mini-cog {
 		background: #212529;
 		color: #ffffff;

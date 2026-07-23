@@ -115,12 +115,13 @@
 	let body = $state('');
 	let sending = $state(false);
 
-	// HARD EVIDENCE (color-system.md §DOM / alerts-panel.md:123,201-202): the body
-	// ngClass map toggles `.mentionColor{#048d04 italic}` when the message mentions
-	// the current viewer (`isMention`) and `.questionColor{#2095f2}` when the body
-	// contains "?" — BOTH gated on `!hasCustomFollowedUserColors`, i.e. only when NO
-	// per-author inline colour is present (inline `author_text_color` WINS). The
-	// viewer's display name is the mention target (@name).
+	// HARD EVIDENCE (color-system.md:108-110/282-283 + proroom-NUCLEAR-member.md:359):
+	// the body ngClass map toggles `.mentionColor` when the message mentions the current
+	// viewer (`isMention`) and `.questionColor{#2095f2}` (rendered-confirmed, ×11) when
+	// the body contains "?" — BOTH gated on `!hasCustomFollowedUserColors`, i.e. only
+	// when NO per-author inline colour is present (inline `author_text_color` WINS). The
+	// viewer's display name is the mention target (@name). (The .mentionColor #048d04
+	// value itself is an honest gap — see the .body.mentionColor CSS note.)
 	const viewerName = $derived((auth.user?.display_name ?? '').trim().toLowerCase());
 	// Match `@name` case-insensitively as a bounded token (avoids `@jane` matching
 	// `@janed`); only when a viewer name is known.
@@ -734,6 +735,21 @@
 			{@const hasInlineText = m.author_text_color != null}
 			{@const isMention = !hasInlineText && bodyMentionsViewer(m.body)}
 			{@const isQuestion = !hasInlineText && !isMention && m.body.includes('?')}
+			<!-- HARD EVIDENCE (proroom-ultra-admin-room.md §4d, lines 416/448-455): the
+			     `strong.username` colour is a 3-TIER, class-driven DEFAULT (no inline
+			     style on any of the 40 authors) — admin/presenter #e8e8e8, bot #d7d7d7,
+			     member #0a6db1 (`--nickname-color`/`--username-color`). PRECEDENCE: a
+			     per-author INLINE colour (the wire `author_bg_color`→invert / `author_color`
+			     path below) ALWAYS wins; the tier class is only the fallback when no inline
+			     colour exists (`hasInlineUser`). Signal used: `m.author_role` (Role =
+			     member|admin|super_admin — the only role signal that reaches a chat row,
+			     types.ts:125). admin/super_admin → the admin/presenter tier (#e8e8e8);
+			     everyone else → the member tier (the #0a6db1 default already on `.username`).
+			     HONEST GAP — bot tier (#d7d7d7, LornaBot): no bot signal reaches the row
+			     (Role has no 'bot'; AuthorBadges carries no bot flag — types.ts:81-86), so
+			     the bot shade is not wired; a bot author currently renders in the member
+			     tier until a wire bot flag exists. -->
+			{@const hasInlineUser = m.author_bg_color != null || m.author_color != null}
 			<!-- P1-1 derived styles (live DOM mechanics):
 			     - metaColor / metaFilter: when a custom row bg is set, the kebab,
 			       username, and created-at are `color: <bg>; filter: invert(1)`.
@@ -743,13 +759,19 @@
 			     Absent values → undefined → NO inline style (stylesheet default). -->
 			{@const metaColor = m.author_bg_color ?? undefined}
 			{@const metaFilter = m.author_bg_color ? 'invert(1)' : undefined}
-			{@const usernameColor = m.author_bg_color ?? m.author_color ?? 'var(--username-color)'}
+			<!-- P1-1: inline per-author username colour (bg-invert wins over author_color).
+			     When NEITHER is set we emit NO inline colour (undefined), so the class-driven
+			     3-tier DEFAULT (`.username` #0a6db1 member / `.username.staff-name` #e8e8e8
+			     admin) resolves via CSS — matching the reference, where the tier is a class,
+			     not an inline style (proroom-ultra-admin-room.md §4d line 454-455). -->
+			{@const usernameColor = m.author_bg_color ?? m.author_color ?? undefined}
 			<!-- P1-1 (live DOM): a per-author custom row bg is applied INLINE on the row
 			     (div.msg-box.pb-1 style="background-color: <bg>"). Absent → no inline
 			     style, stylesheet default wins. -->
 			<li
 				class="msg-box"
 				class:elevated={staff}
+				class:msg-box-adm={staff}
 				style:background-color={m.author_bg_color ?? undefined}
 			>
 				<!-- Reference row (captured DOM, proroom-all-admin.json): div.mr-1.d-flex
@@ -860,6 +882,7 @@
 							<div class="name-block" style:color={m.author_text_color ?? undefined}>
 								<span
 									class="username"
+									class:staff-name={staff && !hasInlineUser}
 									style:color={usernameColor}
 									style:filter={metaFilter}
 									role="button"
@@ -1665,6 +1688,14 @@
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
+	/* HARD EVIDENCE (proroom-ultra-admin-room.md §4d lines 448-455): the admin/presenter
+	   author-tier username colour is #e8e8e8 (rgb 232,232,232) — a class-driven DEFAULT,
+	   applied only when the author has NO inline colour (see `class:staff-name` gate). The
+	   member tier is the #0a6db1 `--username-color` default already on `.username`; the bot
+	   tier (#d7d7d7) is an honest gap (no bot signal reaches the row — see the markup note). */
+	.username.staff-name {
+		color: #e8e8e8;
+	}
 	/* Badges sit after the username and must not be squeezed — only the name
 	   truncates. (Badges renders an inline cluster as the row's next child.) */
 	.name-block :global(.badges) {
@@ -1699,11 +1730,17 @@
 		white-space: pre-wrap;
 		font-size: var(--msg-font-size);
 	}
-	/* HARD EVIDENCE (alerts-panel.md Global CSS:201-202 — the classes are GLOBAL,
-	   `!important`): `.mentionColor{color:#048d04!important;font-style:italic}` (the
-	   viewer was @-mentioned) and `.questionColor{color:#2095f2!important}` (the body
-	   contains "?"). We only add the class when there's NO inline `author_text_color`
-	   (inline wins), so the plain `color` here doesn't need `!important` to be beaten. */
+	/* HARD EVIDENCE (question tint): `proroom-NUCLEAR-member.md:359` — question-body
+	   `.questionColor` computes `rgb(32,149,242)` = #2095f2 (×11 rendered rows). The
+	   class is toggled by the template ngClass map `{mentionColor, questionColor}`
+	   (color-system.md:108-110/282-283). Both classes are applied ONLY when there is
+	   no inline `author_text_color` (the reference `!hasCustomFollowedUserColors` gate —
+	   inline author colour wins), so the plain `color` here needs no `!important`.
+	   HONEST GAP (mention tint): `.mentionColor` (#048d04 italic) is the template flag
+	   for an @-mention, but color-system.md:282 states its CSS rule was NOT located in
+	   the bundle and no rendered capture computes it — so #048d04 is an UNVERIFIED value
+	   carried from prior work, not a cited computed style. Left as-is pending a capture
+	   of a mention row; do not treat #048d04 as evidence-backed. */
 	.body.mentionColor {
 		color: #048d04;
 		font-style: italic;

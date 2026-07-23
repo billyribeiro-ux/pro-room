@@ -294,10 +294,14 @@
 		font-size: 0.85rem;
 		border: 1px solid var(--border);
 	}
-	/* Darkly btn-success, full-width (btn-block). */
+	/* HARD EVIDENCE (modals-admin.md §DOM session-control L79: footer Done is `btn
+	   btn-success btn-block`; an in-`.modal-content` `.btn-success` computes bg
+	   #92d528 = --modal-btn-success-bg via `.modal-content .btn-success{
+	   background-color:var(--modal-btn-success-bg)}` — NOT the Darkly badge #00bc8c).
+	   --modal-success is the #92d528 alias in layout.css. */
 	.btn.success {
-		background: var(--modal-success, #00bc8c);
-		border-color: var(--modal-success, #00bc8c);
+		background: var(--modal-success, #92d528);
+		border-color: var(--modal-success, #92d528);
 		color: #fff;
 	}
 	.btn.success:hover {

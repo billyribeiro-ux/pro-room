@@ -246,7 +246,9 @@
 						/>
 						QA sound <span class="status">{dnd.qa ? 'off' : 'on'}</span>
 					</label>
-					<label>
+					<!-- HARD EVIDENCE (proroom-full-presenter.md §5.3 dropdown:3): the NTA row
+					     carries title "Non-trade alert sound" (the label reads "NTA sound"). -->
+					<label title="Non-trade alert sound">
 						<input
 							id="non-trade-donot-disturb"
 							name="non-trade-donot-disturb"

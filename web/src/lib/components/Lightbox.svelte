@@ -187,14 +187,22 @@
 		padding: 0.25rem 0.5rem;
 		font-size: 0.875rem;
 	}
+	/* HARD EVIDENCE (overlays-toasts.md §DOM 3 L155-156: Download Image is
+	   `button.btn.btn-primary.btn-sm` inside the imgur `.modal-content`; the app
+	   override `.modal-content .btn-primary{background-color:var(--modal-btn-close-bg)}`
+	   — cited verbatim in modals-core.md L194 / modals-admin.md L257 — paints every
+	   in-modal .btn-primary #0a6db1, e.g. the Reload Log List button). So the
+	   Download button is #0a6db1, NOT the #45a2ff active-tab accent. Plan V2 §1.1
+	   [P3] Lightbox: "Download-Image .btn-primary #0a6db1 (btn-sm)". */
 	.btn-primary {
-		background: var(--accent, #45a2ff);
-		border: 1px solid var(--accent, #45a2ff);
+		background: var(--modal-close-bg, #0a6db1);
+		border: 1px solid var(--modal-close-bg, #0a6db1);
 		color: #fff;
 	}
 	.btn-primary:hover {
-		background: var(--accent-hover, #2f8fe6);
-		border-color: var(--accent-hover, #2f8fe6);
+		/* --modal-btn-hover-opacity 0.9 across all modal buttons (modals-core.md
+		   Resolved `.modal-content .btn:hover{opacity:.9}`). */
+		opacity: 0.9;
 	}
 	.dl-icon {
 		flex: 0 0 auto;

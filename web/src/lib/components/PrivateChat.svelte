@@ -207,6 +207,11 @@
 
 		<form onsubmit={onSubmit}>
 			<div class="pill">
+				<!-- HARD EVIDENCE (decoded reply-qa-pm.md L146/L152): the PM composer
+				     textarea `#textAreaTxtPM` placeholder is "Type your message here..."
+				     (THREE dots) — distinct from the Reply modal's two-dot
+				     "Type your message here.." (L38) and the main-chat two-dot variant.
+				     This is the PM-specific surface, so it takes the three-dot form. -->
 				<textarea
 					id="pm-composer"
 					name="private-message"
@@ -214,7 +219,7 @@
 					bind:value={body}
 					rows="1"
 					maxlength="2000"
-					placeholder="Type your message here.."
+					placeholder="Type your message here..."
 					aria-label="Message"
 					oninput={autogrow}
 					onkeydown={onComposerKeydown}></textarea>

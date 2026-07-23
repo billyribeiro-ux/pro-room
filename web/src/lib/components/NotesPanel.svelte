@@ -480,7 +480,13 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		background: var(--positive, #00bc8c);
+		/* HARD EVIDENCE (script-results-and-manifests.md ref-presentation node 6
+		   .badge.badge-success bg rgb(0,188,140); notes.md Resolved .badge-success
+		   #00bc8c): the welcome badge is the FIXED Darkly --success #00bc8c in the
+		   room — pinned here (not the app-theme --positive token, which flips to
+		   #4a9e15 under :root[data-theme='light'] in layout.css:145) so it stays
+		   #00bc8c regardless of the app's light/dark toggle. */
+		background: #00bc8c;
 		color: #ffffff;
 		/* HARD EVIDENCE (states["pane:Notes"] node6 .badge.badge-success.p-0):
 		   border-top-left-radius 6px, padding 0px all sides. */
@@ -589,7 +595,13 @@
 		min-height: 0.6em;
 	}
 	.rendered :global(a) {
-		color: var(--accent);
+		/* HARD EVIDENCE (proroom-modals-and-deep.md §pane:Notes [40] link color
+		   rgb(69,162,255); notes.md Resolved: note-body link #45a2ff): note-body
+		   links are the fixed room accent #45a2ff (--app-link-color /
+		   --modal-alert-link-color), NOT the app-theme --accent token (which flips
+		   to #1d7fe0 under :root[data-theme='light'] in layout.css:143). Pinned to
+		   the reference hex so links stay #45a2ff in both app themes. */
+		color: #45a2ff;
 		text-decoration: underline;
 	}
 	.rendered :global(ul),

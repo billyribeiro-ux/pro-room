@@ -257,7 +257,11 @@
 		color: #fff;
 	}
 	.close-btn {
-		background: var(--modal-btn-secondary, #444);
+		/* HARD EVIDENCE (proroom-modals-and-deep.md §Buttons [15] "THE OWN-COLOR
+		   FINDING"): the User-Info modal footer Close is `button.btn.btn-primary`
+		   computing bg rgb(10,109,177) = #0a6db1 (--modal-btn-close-bg), text #fff —
+		   NOT the grey btn-secondary #6c757d. */
+		background: var(--modal-close-bg, #0a6db1);
 		color: #fff;
 		border: none;
 		border-radius: var(--radius);

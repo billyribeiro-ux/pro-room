@@ -63,10 +63,14 @@
 <div class="overlay" aria-live="polite">
 	{#if showConnected}
 		<!-- HARD EVIDENCE (mixed-files/connected.html + bundle CSS): the transient
-		     connected chip is #connectedMsg.notConnectedOverlay — fa-check + "Conected"
-		     (the reference's literal spelling), animated fadeIn. -->
+		     connected chip is #connectedMsg.notConnectedOverlay — fa-check + label,
+		     animated fadeIn. HARD EVIDENCE (overlays-toasts.md L109): the reference literal
+		     is "Conected" (one "n" — a typo in connected.html). Per IMPLEMENTATION-PLAN-V2
+		     §2.10 P2 + §4 (documented reference bug), we keep the CORRECT "Connected"
+		     spelling and deliberately do NOT replicate the typo — the chrome
+		     (bg/position/fadeIn) matches; only the misspelling is dropped. -->
 		<div class="banner up" role="status" transition:fade={{ duration: 1000 }}>
-			<Icon name="check" /> Conected
+			<Icon name="check" /> Connected
 		</div>
 	{/if}
 </div>

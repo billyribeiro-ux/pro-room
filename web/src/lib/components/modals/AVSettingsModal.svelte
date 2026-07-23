@@ -233,7 +233,9 @@
 
 	{#snippet footer()}
 		<button type="button" class="success" onclick={handleSave}>Save</button>
-		<button type="button" class="ghost" onclick={onClose}>Close</button>
+		<!-- HARD EVIDENCE (modals-core.md §DOM av-settings L87): the footer Close is
+		     `btn btn-secondary` (#6c757d), not a transparent ghost. -->
+		<button type="button" class="secondary" onclick={onClose}>Close</button>
 	{/snippet}
 </Modal>
 
@@ -359,13 +361,34 @@
 		border-color: var(--accent);
 		color: var(--accent);
 	}
+	/* HARD EVIDENCE (modals-core.md §DOM av-settings L87 + §Resolved L268: footer
+	   Close is `btn btn-secondary` computing bg #6c757d = --modal-btn-secondary,
+	   text #fff). */
+	.secondary {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		background: var(--modal-btn-secondary, #6c757d);
+		border: 1px solid var(--modal-btn-secondary, #6c757d);
+		color: #fff;
+		border-radius: var(--radius);
+		padding: 0.4rem 0.85rem;
+		font-size: 0.82rem;
+		font-weight: 600;
+	}
+	.secondary:hover {
+		opacity: 0.9;
+	}
 	.test {
 		flex: 0 0 auto;
 		white-space: nowrap;
 	}
-	/* Darkly btn-primary = navy #375a7f (--modal-btn-primary). */
+	/* HARD EVIDENCE (modals-core.md §DOM av-settings L86: presenter pane "Change
+	   Devices" is `btn btn-primary`; an in-`.modal-content` `.btn-primary` computes
+	   #0a6db1 = --modal-btn-close-bg via the app override — NOT the Darkly navy
+	   #375a7f). --modal-btn-primary is the #0a6db1 alias in layout.css. */
 	.primary {
-		background: var(--modal-btn-primary, #375a7f);
+		background: var(--modal-btn-primary, #0a6db1);
 		color: #fff;
 		border: none;
 		border-radius: var(--radius);
@@ -380,9 +403,13 @@
 		align-self: flex-start;
 		margin-top: 0.9rem;
 	}
+	/* HARD EVIDENCE (modals-core.md §DOM av-settings L87: footer Save is `btn
+	   btn-success`; §Resolved L273: an in-`.modal-content` `.btn-success` (av Save /
+	   webrtc Copy) computes bg #92d528 = --modal-btn-success-bg via the app override
+	   `.modal-content .btn-success{background-color:var(--modal-btn-success-bg)}`, L196
+	   — NOT the Darkly badge green #00bc8c). */
 	.success {
-		background: var(--positive);
-		/* Darkly btn-success text is #fff. */
+		background: var(--modal-success, #92d528);
 		color: #fff;
 		border: none;
 		border-radius: var(--radius);
@@ -391,6 +418,7 @@
 		font-weight: 700;
 	}
 	.success:hover {
-		background: color-mix(in srgb, var(--positive) 85%, #000);
+		/* --modal-btn-hover-opacity 0.9 (modals-core.md §Resolved). */
+		opacity: 0.9;
 	}
 </style>

@@ -153,10 +153,14 @@
 		cursor: pointer;
 	}
 	.btn.primary {
-		/* Reference footer Close is Darkly btn-primary #375a7f (not the teal accent). */
-		background: var(--modal-btn-primary, #375a7f);
+		/* HARD EVIDENCE (modals-admin.md §DOM scheduled-alerts L87: footer Close is
+		   `btn btn-primary`; §Resolved: an in-`.modal-content` `.btn-primary` computes
+		   bg #0a6db1 = --modal-btn-close-bg via `.modal-content .btn-primary{
+		   background-color:var(--modal-btn-close-bg)}` — NOT the Darkly navy #375a7f).
+		   --modal-btn-primary is the #0a6db1 alias in layout.css. */
+		background: var(--modal-btn-primary, #0a6db1);
 		color: #fff;
-		border-color: var(--modal-btn-primary, #375a7f);
+		border-color: var(--modal-btn-primary, #0a6db1);
 	}
 	.btn.primary:hover {
 		opacity: 0.9;

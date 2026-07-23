@@ -161,12 +161,13 @@
 		return a.note ? `${head} ${a.note}` : head;
 	}
 
-	// HARD EVIDENCE (decoded alerts-panel.md line 122-123, 293-294 + color-system.md
-	// Global CSS): the body `.msg-left.text-formated` gets `mentionColor` when
-	// `msg.isMention` and `questionColor` when `txt.includes("?")`, BOTH only when the
-	// author has no custom colours (`!hasCustomFollowedUserColors`). Our equivalent
-	// "no custom colour" gate is the absence of an inline `author_text_color` (same
-	// rule as chat). mention = the body carries an `@name` token; question = a "?".
+	// HARD EVIDENCE (color-system.md:108-110/282-283 + proroom-NUCLEAR-member.md:359):
+	// the body `.msg-left.text-formated` gets `mentionColor` when `msg.isMention` and
+	// `questionColor` when the text contains "?" (questionColor confirmed rendered =
+	// #2095f2, ×11), BOTH only when the author has no custom colours
+	// (`!hasCustomFollowedUserColors`). Our equivalent "no custom colour" gate is the
+	// absence of an inline `author_text_color` (same rule as chat). mention = the body
+	// carries an `@name` token; question = a "?".
 	function isMention(a: AlertItem): boolean {
 		return parseMessage(bodyText(a)).some((seg) => seg.kind === 'mention');
 	}
@@ -961,13 +962,17 @@
 		white-space: pre-wrap;
 		font-size: var(--msg-font-size);
 	}
-	/* HARD EVIDENCE (decoded alerts-panel.md Global CSS, line 202-203):
-	   `.mentionColor{color:#048d04!important;font-style:italic}` and
-	   `.questionColor{color:#2095f2!important}` — global, per-author body tints.
-	   questionColor is defined AFTER mentionColor to mirror the reference stylesheet
-	   source-order cascade (both !important → later wins the colour when both apply,
-	   while mention keeps its italic). Applied on the body only when there is no
-	   inline author colour (see the class:… gate in markup). */
+	/* HARD EVIDENCE (question tint): `proroom-NUCLEAR-member.md:359` — the question
+	   body `.questionColor` computes `rgb(32,149,242)` = #2095f2 (×11 rendered rows).
+	   The class is toggled by the template ngClass map (color-system.md:108-110). It is
+	   applied only when there is no inline author colour (reference
+	   `!hasCustomFollowedUserColors` gate — see the `class:… ` gate in markup).
+	   questionColor is placed AFTER mentionColor to mirror the reference source order
+	   (later wins the colour when both apply, while mention keeps its italic).
+	   HONEST GAP (mention tint): `.mentionColor` (#048d04 italic) — color-system.md:282
+	   states its CSS rule was NOT located in the bundle and no capture computes it, so
+	   #048d04 is UNVERIFIED (carried from prior work), not a cited computed style. Left
+	   as-is pending a rendered mention row; do not treat #048d04 as evidence-backed. */
 	.body.mentionColor {
 		color: #048d04;
 		font-style: italic;
