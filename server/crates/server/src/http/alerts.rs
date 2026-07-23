@@ -90,6 +90,7 @@ async fn create(
     let event = RoomEvent::Alert {
         alert: alert.clone(),
         author_name: user.display_name.clone(),
+        author_avatar: crate::util::gravatar_url(&user.email),
         author_badges,
     };
     let _ = state.hub.publish(id, &event.to_json()).await;

@@ -270,7 +270,12 @@
 				// last 100. The feed auto-scrolls to it when the viewer is at the bottom.
 				alerts = [
 					...alerts,
-					{ ...ev.alert, author_name: ev.author_name, author_badges: ev.author_badges }
+					{
+						...ev.alert,
+						author_name: ev.author_name,
+						author_avatar: ev.author_avatar,
+						author_badges: ev.author_badges
+					}
 				].slice(-100);
 				// The server echoes the alert back to its author too; don't self-notify
 				// (no chime, no "Alert from @you" toast) — only notify on others' alerts.
@@ -293,6 +298,7 @@
 				const item = {
 					...ev.message,
 					author_name: ev.author_name,
+					author_avatar: ev.author_avatar,
 					author_role: ev.author_role,
 					author_badges: ev.author_badges
 				};

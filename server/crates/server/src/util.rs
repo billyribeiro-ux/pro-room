@@ -45,9 +45,30 @@ pub fn slugify(input: &str) -> String {
     slug.trim_end_matches('-').to_owned()
 }
 
+/// Gravatar avatar URL for an email — the reference roster / message avatars are
+/// `secure.gravatar.com/avatar/<md5(lowercased, trimmed email)>?d=mm&s=50` (the
+/// `mm` "mystery man" default at 50px). Computed server-side so the raw email is
+/// never exposed to clients; only this derived URL is sent.
+#[must_use]
+pub fn gravatar_url(email: &str) -> String {
+    let digest = md5::compute(email.trim().to_lowercase().as_bytes());
+    format!("https://secure.gravatar.com/avatar/{digest:x}?d=mm&s=50")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn gravatar_matches_reference_format() {
+        // Lowercase + trim, then md5 — the canonical Gravatar hash.
+        assert_eq!(
+            gravatar_url("  JC@Example.com "),
+            gravatar_url("jc@example.com")
+        );
+        assert!(gravatar_url("a@b.com").starts_with("https://secure.gravatar.com/avatar/"));
+        assert!(gravatar_url("a@b.com").ends_with("?d=mm&s=50"));
+    }
 
     #[test]
     fn slugifies() {

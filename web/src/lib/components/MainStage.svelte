@@ -101,7 +101,7 @@
 					tabindex="-1"
 					aria-hidden="true"
 				>
-					<Icon name="broadcast-tower" size={12} /> Streams
+					<Icon name="podcast" size={12} /> Streams
 				</button>
 			{/if}
 		{/each}

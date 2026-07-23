@@ -496,10 +496,16 @@
 						{/if}
 					</div>
 
-					<!-- Avatar is ALWAYS the author's identity — an image message keeps its
-					     35px avatar and renders the image in the BODY instead
-					     (report.md:1314; the image-as-avatar swap was a divergence). -->
-					<span class="avatar" aria-hidden="true">{initials(m.author_name)}</span>
+					<!-- Avatar is the author's Gravatar (35x35 object-fit cover, matching the
+					     reference `.avatar > img`); initials are the fallback. An image message
+					     keeps its avatar and renders the image in the BODY (report.md:1314). -->
+					<span class="avatar" aria-hidden="true">
+						{#if m.author_avatar}
+							<img src={m.author_avatar} alt="" width="35" height="35" />
+						{:else}
+							{initials(m.author_name)}
+						{/if}
+					</span>
 
 					<span
 						class="username"
@@ -988,10 +994,17 @@
 		height: 35px;
 		flex-shrink: 0;
 		border-radius: 0;
+		overflow: hidden;
 		background: #e7e9ef;
 		color: #5a6273;
 		font-size: 0.78rem;
 		font-weight: 700;
+	}
+	.avatar img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		display: block;
 	}
 
 	.username {

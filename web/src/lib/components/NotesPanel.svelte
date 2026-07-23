@@ -169,10 +169,18 @@
 				class:active={selected?.id === n.id}
 				onclick={() => select(n.id)}
 			>
-				<!-- Reference: only the first/home tab carries an icon (fa-home); other
-				     tabs are the bare title (the fa-edit glyph is the dynamic
-				     unsaved-changes indicator, not a per-tab decoration). -->
-				{#if i === 0}<Icon name="home" size={12} />{/if}
+				<!-- Reference: the first (Welcome Mat) tab carries a GREEN badge-success
+				     pill holding the fa-home glyph; other tabs are the bare title (the
+				     fa-edit glyph is the dynamic unsaved-changes indicator, not a per-tab
+				     decoration). -->
+				{#if i === 0}
+					<span
+						class="welcome-badge"
+						title="This note is the Welcome Mat, and will be shown by default when nobody is presenting"
+					>
+						<Icon name="home" size={12} />
+					</span>
+				{/if}
 				{n.title}
 			</button>
 		{/each}
@@ -298,6 +306,18 @@
 	.subtabs button:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
+	}
+	/* Reference `.badge.badge-success` on the Welcome-Mat tab: a small green pill
+	   holding the fa-home glyph (Darkly success #00bc8c, white icon, p-0). */
+	.welcome-badge {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--positive, #00bc8c);
+		color: #ffffff;
+		border-radius: 4px;
+		padding: 2px 4px;
+		line-height: 0;
 	}
 	/* Reference .noteOptions: sticky BOTTOM bar, --note-options-bg #f4f4f4,
 	   padding 10px, holding the action buttons (Download etc.). */

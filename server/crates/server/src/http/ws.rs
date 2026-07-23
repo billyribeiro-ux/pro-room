@@ -169,7 +169,7 @@ async fn publish_presence(state: &AppState, room: RoomId) {
         .map(|r| {
             let author_badges = badges.remove(&r.user_id).unwrap_or_default();
             PresentUser {
-                avatar_url: gravatar_url(&r.email),
+                avatar_url: crate::util::gravatar_url(&r.email),
                 is_presenter: r.role != domain::Role::Member,
                 author_badges,
                 user_id: r.user_id,
@@ -181,13 +181,4 @@ async fn publish_presence(state: &AppState, room: RoomId) {
         .hub
         .publish(room, &RoomEvent::Presence { users }.to_json())
         .await;
-}
-
-/// Reference roster avatars are Gravatars keyed by the trimmed, lowercased email
-/// (md5) with the `mm` "mystery man" fallback at 50px — matching the captured
-/// `secure.gravatar.com/avatar/<hash>?d=mm&s=50` URLs. The email itself never
-/// leaves the server; only this derived URL is broadcast.
-fn gravatar_url(email: &str) -> String {
-    let digest = md5::compute(email.trim().to_lowercase().as_bytes());
-    format!("https://secure.gravatar.com/avatar/{digest:x}?d=mm&s=50")
 }
